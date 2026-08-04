@@ -16,6 +16,8 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/muesli/termenv"
 
 	"gitlab.yg-devworks.com/yves/jigger/internal/brew"
 	"gitlab.yg-devworks.com/yves/jigger/internal/complete"
@@ -35,6 +37,8 @@ func main() {
 		os.Exit(runPick(arg(2)))
 	case "complete":
 		runComplete(arg(2))
+	case "demo":
+		runDemo()
 	case "--version", "-v", "version":
 		fmt.Println("jigger", version)
 	default:
@@ -76,6 +80,10 @@ func runPick(line string) int {
 	}
 	defer tty.Close()
 
+	// stdout est capturé par le widget → lipgloss croirait à un pipe sans couleur.
+	// On fixe le profil couleur d'après le vrai terminal (le TTY).
+	lipgloss.SetColorProfile(termenv.NewOutput(tty).Profile)
+
 	model := ui.New(title(res), res)
 	prog := tea.NewProgram(model, tea.WithInput(tty), tea.WithOutput(tty))
 	final, err := prog.Run()
@@ -111,6 +119,24 @@ func insertText(res complete.Result, name string) string {
 	return name
 }
 
+// runDemo imprime un aperçu statique du sélecteur (pour prévisualiser le rendu sans
+// installer le widget). stdout est ici un vrai terminal → couleurs détectées.
+func runDemo() {
+	lipgloss.SetColorProfile(termenv.TrueColor) // aperçu toujours coloré
+	res := complete.Result{
+		Executable: true,
+		Items: []complete.Item{
+			{Name: "git", Badge: "F", Installed: true},
+			{Name: "gitui", Badge: "F"},
+			{Name: "gh", Badge: "F", Installed: true},
+			{Name: "git-delta", Badge: "F"},
+			{Name: "google-chrome", Badge: "C"},
+			{Name: "firefox", Badge: "C"},
+		},
+	}
+	fmt.Println(ui.New("brew install", res).View())
+}
+
 // title résume le contexte affiché en tête du sélecteur.
 func title(res complete.Result) string {
 	if res.Sub == "" {
@@ -118,4 +144,3 @@ func title(res complete.Result) string {
 	}
 	return "brew " + res.Sub
 }
-

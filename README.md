@@ -61,6 +61,7 @@ Le plugin s'appuie sur deux sous-commandes ; utilisables seules :
 jigger complete "install fire"   # candidats, un par ligne (complétion classique)
 jigger pick "brew uninstall wg"  # sélecteur interactif ; imprime la nouvelle ligne
                                  # code retour : 0 = insérer, 10 = exécuter, 2 = annulé
+jigger demo                      # aperçu statique coloré du sélecteur
 ```
 
 Le catalogue (`brew formulae` / `brew casks`) est mis en cache 24 h sous

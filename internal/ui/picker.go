@@ -1,6 +1,6 @@
 // Package ui fournit le sélecteur interactif (Bubble Tea + Lip Gloss) aux couleurs
-// de Cocktails : accent teal, badges F/C, indicateur « installé », rappels de touches
-// ⇥ (insérer) / ↩ (exécuter).
+// de Cocktails : accent teal, icônes distinctes formula/cask, indicateur « installé »,
+// rappels de touches ⇥ (insérer) / ↩ (exécuter).
 package ui
 
 import (
@@ -13,34 +13,44 @@ import (
 	"gitlab.yg-devworks.com/yves/jigger/internal/complete"
 )
 
-// Palette (identique à l'app Cocktails).
+// Palette (vive, dérivée de Cocktails).
 var (
-	accent   = lipgloss.Color("#2DD4BF")
-	fg       = lipgloss.Color("#ECEEF5")
-	muted    = lipgloss.Color("#8A93A6")
-	green    = lipgloss.Color("#43C07A")
-	violet   = lipgloss.Color("#A78BFA")
-	selBg    = lipgloss.Color("#0E2A26")
-	borderCl = lipgloss.Color("#2DD4BF")
+	accent  = lipgloss.Color("#2DD4BF") // teal
+	accentD = lipgloss.Color("#0B3A34") // teal profond (fond sélection)
+	ink     = lipgloss.Color("#EAFBF7") // texte clair
+	fg      = lipgloss.Color("#D3D8E3") // texte normal
+	muted   = lipgloss.Color("#7C8598")
+	amber   = lipgloss.Color("#F5B841") // formula ◆
+	violet  = lipgloss.Color("#B79BFF") // cask ▣
+	green   = lipgloss.Color("#4ADE80") // installé
+	panelBg = lipgloss.Color("#0C131F")
 )
+
+const rowWidth = 46
 
 var (
 	boxStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
-			BorderForeground(borderCl).
+			BorderForeground(accent).
+			Background(panelBg).
 			Padding(0, 1)
-	titleStyle    = lipgloss.NewStyle().Foreground(accent).Bold(true)
-	promptStyle   = lipgloss.NewStyle().Foreground(accent)
-	rowStyle      = lipgloss.NewStyle().Foreground(fg)
-	selRowStyle   = lipgloss.NewStyle().Foreground(accent).Background(selBg).Bold(true)
-	barStyle      = lipgloss.NewStyle().Foreground(accent)
-	mutedStyle    = lipgloss.NewStyle().Foreground(muted)
-	badgeFStyle   = lipgloss.NewStyle().Foreground(muted)
-	badgeCStyle   = lipgloss.NewStyle().Foreground(violet)
-	installedDot  = lipgloss.NewStyle().Foreground(green).Render("●")
-	footerStyle   = lipgloss.NewStyle().Foreground(muted)
-	hintKeyStyle  = lipgloss.NewStyle().Foreground(accent).Bold(true)
-	hintTextStyle = lipgloss.NewStyle().Foreground(muted)
+	promptStyle = lipgloss.NewStyle().Foreground(accent).Bold(true)
+	titleStyle  = lipgloss.NewStyle().Foreground(accent).Bold(true)
+	filterStyle = lipgloss.NewStyle().Foreground(muted)
+
+	// Styles rendus À L'AFFICHAGE (pas à l'init) : le profil couleur n'est connu
+	// qu'au lancement (fixé depuis le TTY dans main), sinon le rendu serait « fade ».
+	formulaStyle = lipgloss.NewStyle().Foreground(amber).Bold(true)
+	caskStyle    = lipgloss.NewStyle().Foreground(violet).Bold(true)
+	dotStyle     = lipgloss.NewStyle().Foreground(green)
+
+	nameStyle   = lipgloss.NewStyle().Foreground(fg)
+	selStyle    = lipgloss.NewStyle().Background(accentD).Foreground(ink).Bold(true)
+	selBarStyle = lipgloss.NewStyle().Foreground(accent).Background(accentD).Bold(true)
+
+	keyStyle   = lipgloss.NewStyle().Foreground(accent).Bold(true)
+	hintStyle  = lipgloss.NewStyle().Foreground(muted)
+	emptyStyle = lipgloss.NewStyle().Foreground(muted).Italic(true)
 )
 
 const visibleRows = 12
@@ -66,12 +76,7 @@ func New(title string, res complete.Result) Model {
 	ti.Placeholder = "filtrer…"
 	ti.Focus()
 
-	m := Model{
-		title:      title,
-		all:        res.Items,
-		executable: res.Executable,
-		input:      ti,
-	}
+	m := Model{title: title, all: res.Items, executable: res.Executable, input: ti}
 	m.applyFilter()
 	return m
 }
@@ -108,7 +113,7 @@ func (m *Model) clampOffset() {
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if key, ok := msg.(tea.KeyMsg); ok {
 		switch key.String() {
-		case "esc", "ctrl-c", "ctrl+c":
+		case "esc", "ctrl+c":
 			m.Chosen = nil
 			return m, tea.Quit
 		case "up", "ctrl+p":
@@ -149,64 +154,59 @@ func (m *Model) choose(execute bool) {
 func (m Model) View() string {
 	var b strings.Builder
 
-	b.WriteString(promptStyle.Render("❯ ") + titleStyle.Render(m.title) + "\n")
-	b.WriteString(mutedStyle.Render("/ ") + m.input.View() + "\n")
+	b.WriteString(promptStyle.Render("❯") + " " + titleStyle.Render(m.title) + "\n")
+	b.WriteString(filterStyle.Render("› ") + m.input.View() + "\n")
 
 	if len(m.filtered) == 0 {
-		b.WriteString(mutedStyle.Render("aucun candidat"))
+		b.WriteString(emptyStyle.Render("aucun candidat"))
 		return boxStyle.Render(b.String())
 	}
 
 	end := min(m.offset+visibleRows, len(m.filtered))
 	for i := m.offset; i < end; i++ {
-		b.WriteString(m.renderRow(m.filtered[i], i == m.cursor))
-		b.WriteByte('\n')
+		b.WriteString(m.renderRow(m.filtered[i], i == m.cursor) + "\n")
 	}
-
 	b.WriteString(m.footer())
 	return boxStyle.Render(b.String())
 }
 
 func (m Model) renderRow(it complete.Item, selected bool) string {
-	bar := "  "
-	if selected {
-		bar = barStyle.Render("▎ ")
-	}
-
-	var badge string
+	icon := "•"
 	switch it.Badge {
 	case "F":
-		badge = badgeFStyle.Render("F ")
+		icon = formulaStyle.Render("◆")
 	case "C":
-		badge = badgeCStyle.Render("C ")
-	default:
-		badge = "  "
+		icon = caskStyle.Render("▣")
 	}
 
-	name := it.Name
-	if selected {
-		name = selRowStyle.Render(name)
-	} else {
-		name = rowStyle.Render(name)
-	}
-
-	dot := " "
+	dotCell := " "
 	if it.Installed {
-		dot = installedDot
+		dotCell = dotStyle.Render("●")
 	}
 
-	return bar + badge + name + " " + dot
+	// corps : icône + nom, complété jusqu'à laisser la place au point « installé ».
+	name := nameStyle.Render(it.Name)
+	body := icon + "  " + name
+	if w := lipgloss.Width(body); w < rowWidth-1 {
+		body += strings.Repeat(" ", rowWidth-1-w)
+	}
+	body += dotCell
+
+	if selected {
+		return selBarStyle.Render("▌") + selStyle.Render(" "+body+" ")
+	}
+	return "  " + body
 }
 
 func (m Model) footer() string {
-	sep := footerStyle.Render("  ·  ")
+	sep := hintStyle.Render("   ")
 	parts := []string{
-		hintKeyStyle.Render("↑↓") + " " + hintTextStyle.Render("naviguer"),
-		hintKeyStyle.Render("⇥") + " " + hintTextStyle.Render("insérer"),
+		keyStyle.Render("↑↓") + hintStyle.Render(" naviguer"),
+		keyStyle.Render("⇥") + hintStyle.Render(" insérer"),
 	}
 	if m.executable {
-		parts = append(parts, hintKeyStyle.Render("↩")+" "+hintTextStyle.Render("exécuter"))
+		parts = append(parts, keyStyle.Render("↩")+hintStyle.Render(" exécuter"))
 	}
-	parts = append(parts, hintKeyStyle.Render("esc")+" "+hintTextStyle.Render("annuler"))
-	return "\n" + strings.Join(parts, sep)
+	parts = append(parts, keyStyle.Render("esc")+hintStyle.Render(" annuler"))
+	return hintStyle.Render(strings.Repeat("─", rowWidth+1)) + "\n" + strings.Join(parts, sep)
 }
