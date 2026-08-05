@@ -61,7 +61,12 @@ var (
 	keyStyle   = lipgloss.NewStyle().Foreground(accent).Bold(true)
 	hintStyle  = lipgloss.NewStyle().Foreground(muted)
 	emptyStyle = lipgloss.NewStyle().Foreground(muted).Italic(true)
+	verStyle   = lipgloss.NewStyle().Foreground(muted)
 )
+
+// Version est affichée (discrètement) dans l'en-tête du sélecteur pour lever toute
+// ambiguïté sur le binaire réellement lancé. Renseignée par main au démarrage.
+var Version = ""
 
 // Model est le sélecteur.
 type Model struct {
@@ -167,7 +172,17 @@ func (m Model) View() string {
 	var b strings.Builder
 
 	// Lignes « normales » : couleur de texte seulement ; le cadre remplit le fond.
-	b.WriteString(promptStyle.Render("❯") + " " + titleStyle.Render(m.title) + "\n")
+	// Version poussée à droite (repère du binaire lancé), sur la même ligne que le titre.
+	head := promptStyle.Render("❯") + " " + titleStyle.Render(m.title)
+	if Version != "" {
+		ver := verStyle.Render("jigger " + Version)
+		gap := boxW - lipgloss.Width(head) - lipgloss.Width(ver)
+		if gap < 1 {
+			gap = 1
+		}
+		head += strings.Repeat(" ", gap) + ver
+	}
+	b.WriteString(head + "\n")
 	b.WriteString(filterHint.Render("› ") + m.input.View() + "\n")
 
 	if len(m.filtered) == 0 {

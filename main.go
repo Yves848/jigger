@@ -24,9 +24,11 @@ import (
 	"gitlab.yg-devworks.com/yves/jigger/internal/ui"
 )
 
-var version = "0.1.0"
+var version = "0.1.1"
 
 func main() {
+	ui.Version = version // affichée dans l'en-tête du sélecteur (repère du binaire lancé)
+
 	if len(os.Args) < 2 {
 		usage()
 		os.Exit(2)
