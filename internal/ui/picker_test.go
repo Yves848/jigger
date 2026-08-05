@@ -46,3 +46,48 @@ func TestRenderHasIconsAndColor(t *testing.T) {
 		t.Error("fond de sélection (couleur d'arrière-plan) absent")
 	}
 }
+
+// Régression : filtrer progressivement une longue liste ne doit jamais dupliquer de
+// candidats. (Bug d'aliasing : `m.filtered = m.all` puis `m.filtered[:0]` réécrivait
+// le début du tableau sous-jacent de `m.all`, laissant les originaux à leur place et
+// donc en double — d'où les « powershell / powershell@preview » empilés.)
+func TestProgressiveFilterNoDuplicates(t *testing.T) {
+	// Liste triée où les candidats « pow… » sont situés loin dans le tableau.
+	items := []complete.Item{}
+	for _, n := range []string{"aa", "ab", "ac", "ad", "ae", "af", "ag", "ah"} {
+		items = append(items, complete.Item{Name: n, Badge: "F"})
+	}
+	items = append(items,
+		complete.Item{Name: "powershell", Badge: "F", Installed: true},
+		complete.Item{Name: "powershell@preview", Badge: "C"},
+	)
+
+	m := New("brew search", complete.Result{Items: items})
+
+	for _, q := range []string{"p", "po", "pow", "powe", "power", "powers"} {
+		m.input.SetValue(q)
+		m.applyFilter()
+
+		seen := map[string]int{}
+		for _, it := range m.filtered {
+			seen[it.Name]++
+		}
+		for name, n := range seen {
+			if n > 1 {
+				t.Fatalf("filtre %q : candidat %q présent %d fois (attendu 1)", q, name, n)
+			}
+		}
+	}
+
+	if len(m.filtered) != 2 {
+		t.Fatalf("filtre final « powers » : attendu 2 candidats, obtenu %d (%v)", len(m.filtered), names(m.filtered))
+	}
+}
+
+func names(items []complete.Item) []string {
+	out := make([]string, len(items))
+	for i, it := range items {
+		out[i] = it.Name
+	}
+	return out
+}

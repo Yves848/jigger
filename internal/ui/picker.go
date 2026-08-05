@@ -93,16 +93,20 @@ func (m Model) Init() tea.Cmd { return textinput.Blink }
 
 func (m *Model) applyFilter() {
 	q := strings.ToLower(strings.TrimSpace(m.input.Value()))
+	// Toujours reconstruire dans un nouveau tableau : ne JAMAIS réutiliser le backing
+	// de m.all (un `m.filtered = m.all` suivi d'un `m.filtered[:0]` réécrirait m.all et
+	// dupliquerait les candidats au fil des frappes).
+	filtered := make([]complete.Item, 0, len(m.all))
 	if q == "" {
-		m.filtered = m.all
+		filtered = append(filtered, m.all...)
 	} else {
-		m.filtered = m.filtered[:0]
 		for _, it := range m.all {
 			if strings.Contains(strings.ToLower(it.Name), q) {
-				m.filtered = append(m.filtered, it)
+				filtered = append(filtered, it)
 			}
 		}
 	}
+	m.filtered = filtered
 	if m.cursor >= len(m.filtered) {
 		m.cursor = max(0, len(m.filtered)-1)
 	}
