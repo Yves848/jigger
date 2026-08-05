@@ -24,9 +24,10 @@ var (
 	violet  = lipgloss.Color("#B79BFF") // cask ▣
 	green   = lipgloss.Color("#4ADE80") // installé
 	panelBg = lipgloss.Color("#0C131F")
+	sepCl   = lipgloss.Color("#26374C")
 )
 
-// Largeur intérieure fixe : toutes les lignes la remplissent → fond uniforme.
+// Largeur intérieure fixe : chaque ligne est complétée à cette largeur.
 const (
 	boxW        = 52
 	nameMax     = boxW - 8
@@ -34,32 +35,32 @@ const (
 )
 
 var (
+	// Le cadre porte le fond ET la largeur : lipgloss remplit uniformément les zones
+	// nues (espaces sans fond) avec panelBg, y compris après les resets internes.
 	boxStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(accent).
+			BorderBackground(panelBg).
 			Background(panelBg).
 			Width(boxW)
 
-	// Lignes d'en-tête / pied, rendues sur toute la largeur avec le fond du panneau.
-	lineStyle = lipgloss.NewStyle().Background(panelBg).Width(boxW)
-	rowStyle  = lipgloss.NewStyle().Background(panelBg).Width(boxW)
-	selStyle  = lipgloss.NewStyle().Background(accentD).Foreground(ink).Bold(true).Width(boxW)
+	// Ligne sélectionnée : un seul style qui remplit toute la largeur en teal.
+	selRowStyle = lipgloss.NewStyle().Background(accentD).Foreground(ink).Bold(true).Width(boxW)
 
-	promptStyle = lipgloss.NewStyle().Foreground(accent).Bold(true).Background(panelBg)
-	titleStyle  = lipgloss.NewStyle().Foreground(accent).Bold(true).Background(panelBg)
-	filterHint  = lipgloss.NewStyle().Foreground(muted).Background(panelBg)
+	promptStyle = lipgloss.NewStyle().Foreground(accent).Bold(true)
+	titleStyle  = lipgloss.NewStyle().Foreground(accent).Bold(true)
+	filterHint  = lipgloss.NewStyle().Foreground(muted)
 
 	formulaStyle = lipgloss.NewStyle().Foreground(amber).Bold(true)
 	caskStyle    = lipgloss.NewStyle().Foreground(violet).Bold(true)
 	bulletStyle  = lipgloss.NewStyle().Foreground(muted)
 	nameStyle    = lipgloss.NewStyle().Foreground(fg)
 	dotStyle     = lipgloss.NewStyle().Foreground(green)
-	barStyle     = lipgloss.NewStyle().Foreground(accent).Bold(true)
 
-	sepStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#243244")).Background(panelBg)
+	sepStyle   = lipgloss.NewStyle().Foreground(sepCl)
 	keyStyle   = lipgloss.NewStyle().Foreground(accent).Bold(true)
 	hintStyle  = lipgloss.NewStyle().Foreground(muted)
-	emptyStyle = lipgloss.NewStyle().Foreground(muted).Italic(true).Background(panelBg)
+	emptyStyle = lipgloss.NewStyle().Foreground(muted).Italic(true)
 )
 
 // Model est le sélecteur.
@@ -161,12 +162,12 @@ func (m *Model) choose(execute bool) {
 func (m Model) View() string {
 	var b strings.Builder
 
-	header := promptStyle.Render("❯") + " " + titleStyle.Render(m.title)
-	b.WriteString(lineStyle.Render(header) + "\n")
-	b.WriteString(lineStyle.Render(filterHint.Render("› ")+m.input.View()) + "\n")
+	// Lignes « normales » : couleur de texte seulement ; le cadre remplit le fond.
+	b.WriteString(promptStyle.Render("❯") + " " + titleStyle.Render(m.title) + "\n")
+	b.WriteString(filterHint.Render("› ") + m.input.View() + "\n")
 
 	if len(m.filtered) == 0 {
-		b.WriteString(emptyStyle.Render("  aucun candidat"))
+		b.WriteString("  " + emptyStyle.Render("aucun candidat"))
 		return boxStyle.Render(b.String())
 	}
 
@@ -180,33 +181,41 @@ func (m Model) View() string {
 }
 
 func (m Model) renderRow(it complete.Item, selected bool) string {
-	var icon string
-	switch it.Badge {
-	case "F":
-		icon = formulaStyle.Render("◆")
-	case "C":
-		icon = caskStyle.Render("▣")
-	default:
-		icon = bulletStyle.Render("•")
-	}
-
 	name := it.Name
 	if len(name) > nameMax {
 		name = name[:nameMax-1] + "…"
 	}
 
-	suffix := ""
-	if it.Installed {
-		suffix = "  " + dotStyle.Render("●")
+	glyph := "•"
+	switch it.Badge {
+	case "F":
+		glyph = "◆"
+	case "C":
+		glyph = "▣"
 	}
 
-	// La ligne entière est rendue à la largeur du panneau → fond uniforme, pas de couture.
+	// Ligne sélectionnée : un seul style Background+Width (motif fiable qui remplit
+	// toute la largeur en teal). Le texte passe en clair ; la forme ◆/▣ reste.
 	if selected {
-		content := barStyle.Render("▌") + " " + icon + "  " + nameStyle.Foreground(ink).Render(name) + suffix
-		return selStyle.Render(content)
+		text := "▌ " + glyph + "  " + name
+		if it.Installed {
+			text += "  ●"
+		}
+		return selRowStyle.Render(text)
 	}
-	content := "  " + icon + "  " + nameStyle.Render(name) + suffix
-	return rowStyle.Render(content)
+
+	color := bulletStyle
+	switch it.Badge {
+	case "F":
+		color = formulaStyle
+	case "C":
+		color = caskStyle
+	}
+	row := "  " + color.Render(glyph) + "  " + nameStyle.Render(name)
+	if it.Installed {
+		row += "  " + dotStyle.Render("●")
+	}
+	return row
 }
 
 func (m Model) footer() string {
@@ -219,5 +228,5 @@ func (m Model) footer() string {
 		parts = append(parts, keyStyle.Render("↩")+hintStyle.Render(" exécuter"))
 	}
 	parts = append(parts, keyStyle.Render("esc")+hintStyle.Render(" annuler"))
-	return lineStyle.Render(strings.Join(parts, sep))
+	return strings.Join(parts, sep)
 }
