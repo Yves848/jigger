@@ -55,6 +55,7 @@ var (
 	caskStyle    = lipgloss.NewStyle().Foreground(violet).Bold(true)
 	bulletStyle  = lipgloss.NewStyle().Foreground(muted)
 	nameStyle    = lipgloss.NewStyle().Foreground(fg)
+	verStylePkg  = lipgloss.NewStyle().Foreground(muted) // version installée (atténuée)
 	dotStyle     = lipgloss.NewStyle().Foreground(green)
 
 	sepStyle   = lipgloss.NewStyle().Foreground(sepCl)
@@ -213,14 +214,28 @@ func (m Model) renderRow(it complete.Item, selected bool) string {
 		glyph = "▣"
 	}
 
+	// Partie droite (alignée au bord) : version installée puis point « installé ».
+	// On la compose d'abord en texte nu pour calculer le remplissage.
+	rightPlain := ""
+	if it.Version != "" {
+		rightPlain = it.Version
+	}
+	if it.Installed {
+		if rightPlain != "" {
+			rightPlain += "  "
+		}
+		rightPlain += "●"
+	}
+
 	// Ligne sélectionnée : un seul style Background+Width (motif fiable qui remplit
 	// toute la largeur en teal). Le texte passe en clair ; la forme ◆/▣ reste.
 	if selected {
-		text := "▌ " + glyph + "  " + name
-		if it.Installed {
-			text += "  ●"
+		leftPlain := "▌ " + glyph + "  " + name
+		gap := boxW - lipgloss.Width(leftPlain) - lipgloss.Width(rightPlain)
+		if gap < 1 {
+			gap = 1
 		}
-		return selRowStyle.Render(text)
+		return selRowStyle.Render(leftPlain + strings.Repeat(" ", gap) + rightPlain)
 	}
 
 	color := bulletStyle
@@ -230,11 +245,23 @@ func (m Model) renderRow(it complete.Item, selected bool) string {
 	case "C":
 		color = caskStyle
 	}
-	row := "  " + color.Render(glyph) + "  " + nameStyle.Render(name)
-	if it.Installed {
-		row += "  " + dotStyle.Render("●")
+	leftPlain := "  " + glyph + "  " + name
+	gap := boxW - lipgloss.Width(leftPlain) - lipgloss.Width(rightPlain)
+	if gap < 1 {
+		gap = 1
 	}
-	return row
+	left := "  " + color.Render(glyph) + "  " + nameStyle.Render(name)
+	right := ""
+	if it.Version != "" {
+		right = verStylePkg.Render(it.Version)
+	}
+	if it.Installed {
+		if it.Version != "" {
+			right += "  "
+		}
+		right += dotStyle.Render("●")
+	}
+	return left + strings.Repeat(" ", gap) + right
 }
 
 func (m Model) footer() string {

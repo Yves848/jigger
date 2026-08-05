@@ -15,6 +15,7 @@ type Item struct {
 	Name      string
 	Badge     string // "F" (formula), "C" (cask), "" (sous-commande / option)
 	Installed bool
+	Version   string // version installée (vide si non installé/inconnue)
 }
 
 // Result décrit le contexte de complétion et les candidats.
@@ -116,7 +117,7 @@ func Complete(line string, cat *brew.Catalog) Result {
 		sort.Strings(pool)
 		for _, n := range pool {
 			if strings.HasPrefix(strings.ToLower(n), lw) {
-				res.Items = append(res.Items, Item{Name: n, Badge: badge(cat, n), Installed: cat.Installed[n]})
+				res.Items = append(res.Items, Item{Name: n, Badge: badge(cat, n), Installed: cat.Installed[n], Version: cat.Version(n)})
 			}
 		}
 	}

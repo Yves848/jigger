@@ -22,7 +22,7 @@ func TestRenderHasIconsAndColor(t *testing.T) {
 	res := complete.Result{
 		Executable: true,
 		Items: []complete.Item{
-			{Name: "git", Badge: "F", Installed: true},
+			{Name: "git", Badge: "F", Installed: true, Version: "2.55.0"},
 			{Name: "firefox", Badge: "C"},
 		},
 	}
@@ -33,6 +33,9 @@ func TestRenderHasIconsAndColor(t *testing.T) {
 	}
 	if !strings.Contains(out, "▣") {
 		t.Error("icône cask (▣) absente")
+	}
+	if !strings.Contains(out, "2.55.0") {
+		t.Error("version installée (2.55.0) absente du rendu")
 	}
 
 	distinct := map[string]bool{}

@@ -137,9 +137,9 @@ func runDemo() {
 	res := complete.Result{
 		Executable: true,
 		Items: []complete.Item{
-			{Name: "git", Badge: "F", Installed: true},
+			{Name: "git", Badge: "F", Installed: true, Version: "2.55.0"},
 			{Name: "gitui", Badge: "F"},
-			{Name: "gh", Badge: "F", Installed: true},
+			{Name: "gh", Badge: "F", Installed: true, Version: "2.62.0"},
 			{Name: "git-delta", Badge: "F"},
 			{Name: "google-chrome", Badge: "C"},
 			{Name: "firefox", Badge: "C"},

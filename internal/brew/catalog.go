@@ -17,10 +17,14 @@ import (
 type Catalog struct {
 	Formulae  []string
 	Casks     []string
-	Installed map[string]bool // nom -> installé
+	Installed map[string]bool   // nom -> installé
+	Versions  map[string]string // nom -> version installée (vide si inconnue)
 	formulaeM map[string]bool
 	casksM    map[string]bool
 }
+
+// Version renvoie la version installée d'un paquet (vide si non installé/inconnue).
+func (c *Catalog) Version(name string) string { return c.Versions[name] }
 
 // IsCask indique si un nom est un cask connu.
 func (c *Catalog) IsCask(name string) bool { return c.casksM[name] }
@@ -93,18 +97,27 @@ func Load() *Catalog {
 
 	formulae := cachedLines("formulae", day, "formulae")
 	casks := cachedLines("casks", day, "casks")
-	installed := cachedLines("installed", 0, "list", "-1") // ttl 0 = toujours frais
+	// ttl 0 = toujours frais. « --versions » donne « nom version » par installé.
+	installed := cachedLines("installed", 0, "list", "--versions")
 
-	return NewCatalog(formulae, casks, installed)
+	return NewCatalogVersions(formulae, casks, installed)
 }
 
-// NewCatalog construit un catalogue à partir de listes de noms (utilisé par Load et
-// par les tests, sans lancer brew).
+// NewCatalog construit un catalogue à partir de listes de noms (sans versions).
+// Conservé pour les tests qui n'ont pas besoin des versions.
 func NewCatalog(formulae, casks, installed []string) *Catalog {
+	return NewCatalogVersions(formulae, casks, installed)
+}
+
+// NewCatalogVersions construit un catalogue. `installed` accepte soit des noms simples
+// (« git »), soit des lignes « nom version » (sortie de `brew list --versions`) : le
+// premier champ est le nom, le second (s'il existe) la version.
+func NewCatalogVersions(formulae, casks, installed []string) *Catalog {
 	c := &Catalog{
 		Formulae:  formulae,
 		Casks:     casks,
 		Installed: make(map[string]bool, len(installed)),
+		Versions:  make(map[string]string, len(installed)),
 		formulaeM: make(map[string]bool, len(formulae)),
 		casksM:    make(map[string]bool, len(casks)),
 	}
@@ -114,8 +127,16 @@ func NewCatalog(formulae, casks, installed []string) *Catalog {
 	for _, n := range casks {
 		c.casksM[n] = true
 	}
-	for _, n := range installed {
-		c.Installed[n] = true
+	for _, line := range installed {
+		fields := strings.Fields(line)
+		if len(fields) == 0 {
+			continue
+		}
+		name := fields[0]
+		c.Installed[name] = true
+		if len(fields) > 1 {
+			c.Versions[name] = fields[1]
+		}
 	}
 	return c
 }
