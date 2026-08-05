@@ -85,15 +85,20 @@ func runPick(line string) int {
 	lipgloss.SetColorProfile(termenv.NewOutput(tty).Profile)
 
 	model := ui.New(title(res), res)
-	// Écran alterné : le sélecteur prend l'écran le temps du choix puis le restaure
-	// proprement en sortant (sinon Bubble Tea laisse sa dernière image affichée).
-	prog := tea.NewProgram(model, tea.WithInput(tty), tea.WithOutput(tty), tea.WithAltScreen())
+	// Popup « classique » : rendu inline, sous la ligne de commande (pas d'écran
+	// alterné). Bubble Tea laisse sa dernière image affichée en sortie ; on l'efface
+	// nous-mêmes juste après (cf. clearInline).
+	prog := tea.NewProgram(model, tea.WithInput(tty), tea.WithOutput(tty))
 	final, err := prog.Run()
 	if err != nil {
 		return 1
 	}
 
 	m := final.(ui.Model)
+	// Effacement manuel du popup inline, quel que soit le choix (insérer, exécuter,
+	// annuler) : on repart d'un terminal propre, le widget zsh redessine le prompt.
+	clearInline(tty, strings.Count(m.View(), "\n")+1)
+
 	if m.Chosen == nil {
 		return 2 // annulé
 	}
@@ -103,6 +108,17 @@ func runPick(line string) int {
 		return 10 // ↩ : commande à exécuter
 	}
 	return 0 // ⇥ : insérée
+}
+
+// clearInline efface le popup rendu en inline. En sortie, Bubble Tea (renderer
+// standard) a déjà vidé la dernière ligne du cadre et laissé le curseur en colonne 0
+// dessus ; les height-1 lignes au-dessus restent affichées. On remonte donc jusqu'au
+// haut du cadre puis on efface jusqu'au bas de l'écran.
+func clearInline(w *os.File, height int) {
+	if height > 1 {
+		fmt.Fprintf(w, "\x1b[%dA", height-1) // curseur vers le haut du cadre
+	}
+	fmt.Fprint(w, "\x1b[J") // efface du curseur jusqu'au bas de l'écran
 }
 
 // insertText renvoie le texte à insérer, avec --cask automatique pour un cask pur
