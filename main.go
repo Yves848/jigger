@@ -85,19 +85,21 @@ func runPick(line string) int {
 	lipgloss.SetColorProfile(termenv.NewOutput(tty).Profile)
 
 	model := ui.New(title(res), res)
-	// Popup « classique » : rendu inline, sous la ligne de commande (pas d'écran
-	// alterné). Bubble Tea laisse sa dernière image affichée en sortie ; on l'efface
-	// nous-mêmes juste après (cf. clearInline).
+	// Popup « classique » : rendu inline, SOUS la ligne de commande — qui reste
+	// visible. On sauvegarde le curseur (fin de la ligne en cours d'édition) avec
+	// ESC 7, puis on descend d'une ligne pour que le cadre se dessine dessous (pas
+	// d'écran alterné). En sortie, ESC 8 restaure le curseur sur le prompt et ESC[J
+	// efface tout ce qui est en dessous (le popup). Le widget zsh redessine ensuite.
+	fmt.Fprint(tty, "\x1b7\r\n")
 	prog := tea.NewProgram(model, tea.WithInput(tty), tea.WithOutput(tty))
 	final, err := prog.Run()
 	if err != nil {
+		fmt.Fprint(tty, "\x1b8\x1b[J")
 		return 1
 	}
 
 	m := final.(ui.Model)
-	// Effacement manuel du popup inline, quel que soit le choix (insérer, exécuter,
-	// annuler) : on repart d'un terminal propre, le widget zsh redessine le prompt.
-	clearInline(tty, strings.Count(m.View(), "\n")+1)
+	fmt.Fprint(tty, "\x1b8\x1b[J") // restaure le curseur sur le prompt + efface le popup
 
 	if m.Chosen == nil {
 		return 2 // annulé
@@ -108,17 +110,6 @@ func runPick(line string) int {
 		return 10 // ↩ : commande à exécuter
 	}
 	return 0 // ⇥ : insérée
-}
-
-// clearInline efface le popup rendu en inline. En sortie, Bubble Tea (renderer
-// standard) a déjà vidé la dernière ligne du cadre et laissé le curseur en colonne 0
-// dessus ; les height-1 lignes au-dessus restent affichées. On remonte donc jusqu'au
-// haut du cadre puis on efface jusqu'au bas de l'écran.
-func clearInline(w *os.File, height int) {
-	if height > 1 {
-		fmt.Fprintf(w, "\x1b[%dA", height-1) // curseur vers le haut du cadre
-	}
-	fmt.Fprint(w, "\x1b[J") // efface du curseur jusqu'au bas de l'écran
 }
 
 // insertText renvoie le texte à insérer, avec --cask automatique pour un cask pur
