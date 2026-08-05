@@ -16,9 +16,9 @@ import (
 // Palette (vive, dérivée de Cocktails).
 var (
 	accent  = lipgloss.Color("#2DD4BF") // teal
-	accentD = lipgloss.Color("#0B3A34") // teal profond (fond sélection)
-	ink     = lipgloss.Color("#EAFBF7") // texte clair
-	fg      = lipgloss.Color("#D3D8E3") // texte normal
+	accentD = lipgloss.Color("#0E312C") // teal profond (fond sélection)
+	ink     = lipgloss.Color("#EAFBF7") // texte clair (sélection)
+	fg      = lipgloss.Color("#CBD2DE") // texte normal
 	muted   = lipgloss.Color("#7C8598")
 	amber   = lipgloss.Color("#F5B841") // formula ◆
 	violet  = lipgloss.Color("#B79BFF") // cask ▣
@@ -26,34 +26,41 @@ var (
 	panelBg = lipgloss.Color("#0C131F")
 )
 
-const rowWidth = 46
+// Largeur intérieure fixe : toutes les lignes la remplissent → fond uniforme.
+const (
+	boxW        = 52
+	nameMax     = boxW - 8
+	visibleRows = 12
+)
 
 var (
 	boxStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(accent).
 			Background(panelBg).
-			Padding(0, 1)
-	promptStyle = lipgloss.NewStyle().Foreground(accent).Bold(true)
-	titleStyle  = lipgloss.NewStyle().Foreground(accent).Bold(true)
-	filterStyle = lipgloss.NewStyle().Foreground(muted)
+			Width(boxW)
 
-	// Styles rendus À L'AFFICHAGE (pas à l'init) : le profil couleur n'est connu
-	// qu'au lancement (fixé depuis le TTY dans main), sinon le rendu serait « fade ».
+	// Lignes d'en-tête / pied, rendues sur toute la largeur avec le fond du panneau.
+	lineStyle = lipgloss.NewStyle().Background(panelBg).Width(boxW)
+	rowStyle  = lipgloss.NewStyle().Background(panelBg).Width(boxW)
+	selStyle  = lipgloss.NewStyle().Background(accentD).Foreground(ink).Bold(true).Width(boxW)
+
+	promptStyle = lipgloss.NewStyle().Foreground(accent).Bold(true).Background(panelBg)
+	titleStyle  = lipgloss.NewStyle().Foreground(accent).Bold(true).Background(panelBg)
+	filterHint  = lipgloss.NewStyle().Foreground(muted).Background(panelBg)
+
 	formulaStyle = lipgloss.NewStyle().Foreground(amber).Bold(true)
 	caskStyle    = lipgloss.NewStyle().Foreground(violet).Bold(true)
+	bulletStyle  = lipgloss.NewStyle().Foreground(muted)
+	nameStyle    = lipgloss.NewStyle().Foreground(fg)
 	dotStyle     = lipgloss.NewStyle().Foreground(green)
+	barStyle     = lipgloss.NewStyle().Foreground(accent).Bold(true)
 
-	nameStyle   = lipgloss.NewStyle().Foreground(fg)
-	selStyle    = lipgloss.NewStyle().Background(accentD).Foreground(ink).Bold(true)
-	selBarStyle = lipgloss.NewStyle().Foreground(accent).Background(accentD).Bold(true)
-
+	sepStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#243244")).Background(panelBg)
 	keyStyle   = lipgloss.NewStyle().Foreground(accent).Bold(true)
 	hintStyle  = lipgloss.NewStyle().Foreground(muted)
-	emptyStyle = lipgloss.NewStyle().Foreground(muted).Italic(true)
+	emptyStyle = lipgloss.NewStyle().Foreground(muted).Italic(true).Background(panelBg)
 )
-
-const visibleRows = 12
 
 // Model est le sélecteur.
 type Model struct {
@@ -154,11 +161,12 @@ func (m *Model) choose(execute bool) {
 func (m Model) View() string {
 	var b strings.Builder
 
-	b.WriteString(promptStyle.Render("❯") + " " + titleStyle.Render(m.title) + "\n")
-	b.WriteString(filterStyle.Render("› ") + m.input.View() + "\n")
+	header := promptStyle.Render("❯") + " " + titleStyle.Render(m.title)
+	b.WriteString(lineStyle.Render(header) + "\n")
+	b.WriteString(lineStyle.Render(filterHint.Render("› ")+m.input.View()) + "\n")
 
 	if len(m.filtered) == 0 {
-		b.WriteString(emptyStyle.Render("aucun candidat"))
+		b.WriteString(emptyStyle.Render("  aucun candidat"))
 		return boxStyle.Render(b.String())
 	}
 
@@ -166,36 +174,39 @@ func (m Model) View() string {
 	for i := m.offset; i < end; i++ {
 		b.WriteString(m.renderRow(m.filtered[i], i == m.cursor) + "\n")
 	}
+	b.WriteString(sepStyle.Render(strings.Repeat("─", boxW)) + "\n")
 	b.WriteString(m.footer())
 	return boxStyle.Render(b.String())
 }
 
 func (m Model) renderRow(it complete.Item, selected bool) string {
-	icon := "•"
+	var icon string
 	switch it.Badge {
 	case "F":
 		icon = formulaStyle.Render("◆")
 	case "C":
 		icon = caskStyle.Render("▣")
+	default:
+		icon = bulletStyle.Render("•")
 	}
 
-	dotCell := " "
+	name := it.Name
+	if len(name) > nameMax {
+		name = name[:nameMax-1] + "…"
+	}
+
+	suffix := ""
 	if it.Installed {
-		dotCell = dotStyle.Render("●")
+		suffix = "  " + dotStyle.Render("●")
 	}
 
-	// corps : icône + nom, complété jusqu'à laisser la place au point « installé ».
-	name := nameStyle.Render(it.Name)
-	body := icon + "  " + name
-	if w := lipgloss.Width(body); w < rowWidth-1 {
-		body += strings.Repeat(" ", rowWidth-1-w)
-	}
-	body += dotCell
-
+	// La ligne entière est rendue à la largeur du panneau → fond uniforme, pas de couture.
 	if selected {
-		return selBarStyle.Render("▌") + selStyle.Render(" "+body+" ")
+		content := barStyle.Render("▌") + " " + icon + "  " + nameStyle.Foreground(ink).Render(name) + suffix
+		return selStyle.Render(content)
 	}
-	return "  " + body
+	content := "  " + icon + "  " + nameStyle.Render(name) + suffix
+	return rowStyle.Render(content)
 }
 
 func (m Model) footer() string {
@@ -208,5 +219,5 @@ func (m Model) footer() string {
 		parts = append(parts, keyStyle.Render("↩")+hintStyle.Render(" exécuter"))
 	}
 	parts = append(parts, keyStyle.Render("esc")+hintStyle.Render(" annuler"))
-	return hintStyle.Render(strings.Repeat("─", rowWidth+1)) + "\n" + strings.Join(parts, sep)
+	return lineStyle.Render(strings.Join(parts, sep))
 }
