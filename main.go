@@ -85,7 +85,9 @@ func runPick(line string) int {
 	lipgloss.SetColorProfile(termenv.NewOutput(tty).Profile)
 
 	model := ui.New(title(res), res)
-	prog := tea.NewProgram(model, tea.WithInput(tty), tea.WithOutput(tty))
+	// Écran alterné : le sélecteur prend l'écran le temps du choix puis le restaure
+	// proprement en sortant (sinon Bubble Tea laisse sa dernière image affichée).
+	prog := tea.NewProgram(model, tea.WithInput(tty), tea.WithOutput(tty), tea.WithAltScreen())
 	final, err := prog.Run()
 	if err != nil {
 		return 1
