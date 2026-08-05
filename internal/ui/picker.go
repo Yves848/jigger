@@ -78,6 +78,7 @@ type Model struct {
 	cursor     int
 	offset     int
 	executable bool
+	quitting   bool // sortie en cours → View() vide pour que Bubble Tea efface le cadre
 
 	Chosen  *complete.Item // sélection (nil si annulé)
 	Execute bool           // ↩ : la commande est à exécuter
@@ -133,6 +134,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch key.String() {
 		case "esc", "ctrl+c":
 			m.Chosen = nil
+			m.quitting = true
 			return m, tea.Quit
 		case "up", "ctrl+p":
 			if m.cursor > 0 {
@@ -148,9 +150,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		case "tab":
 			m.choose(false)
+			m.quitting = true
 			return m, tea.Quit
 		case "enter":
 			m.choose(m.executable) // ↩ exécute si la commande est complète
+			m.quitting = true
 			return m, tea.Quit
 		}
 	}
@@ -170,6 +174,13 @@ func (m *Model) choose(execute bool) {
 }
 
 func (m Model) View() string {
+	// À la sortie, on rend une vue vide : Bubble Tea remonte (en mouvements relatifs,
+	// donc robuste au défilement) et efface tout le cadre du popup. Évite tout résidu
+	// à l'écran quand on annule avec Esc (aucun redraw du buffer côté zsh ne le masque).
+	if m.quitting {
+		return ""
+	}
+
 	var b strings.Builder
 
 	// Lignes « normales » : couleur de texte seulement ; le cadre remplit le fond.

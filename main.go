@@ -24,7 +24,7 @@ import (
 	"gitlab.yg-devworks.com/yves/jigger/internal/ui"
 )
 
-var version = "0.1.1"
+var version = "0.1.2"
 
 func main() {
 	ui.Version = version // affichée dans l'en-tête du sélecteur (repère du binaire lancé)
@@ -88,21 +88,21 @@ func runPick(line string) int {
 
 	model := ui.New(title(res), res)
 	// Popup « classique » : rendu inline, SOUS la ligne de commande — qui reste
-	// visible. On sauvegarde le curseur (fin de la ligne en cours d'édition) avec
-	// ESC 7, puis on descend d'une ligne pour que le cadre se dessine dessous (pas
-	// d'écran alterné). En sortie, ESC 8 restaure le curseur sur le prompt et ESC[J
-	// efface tout ce qui est en dessous (le popup). Le widget zsh redessine ensuite.
-	fmt.Fprint(tty, "\x1b7\r\n")
+	// visible. On descend d'une ligne (\r\n) pour que le cadre se dessine dessous (pas
+	// d'écran alterné). Bubble Tea gère ensuite son cadre en mouvements *relatifs*
+	// (robuste au défilement) et, à la sortie, l'efface lui-même : le modèle rend une
+	// vue vide quand `quitting` (cf. picker.View) → EraseScreenBelow. On remonte enfin
+	// d'une ligne pour reposer le curseur sur la ligne de commande ; le widget zsh la
+	// redessine (reset-prompt).
+	fmt.Fprint(tty, "\r\n")
 	prog := tea.NewProgram(model, tea.WithInput(tty), tea.WithOutput(tty))
 	final, err := prog.Run()
+	fmt.Fprint(tty, "\x1b[1A\r") // curseur → début de la ligne de commande
 	if err != nil {
-		fmt.Fprint(tty, "\x1b8\x1b[J")
 		return 1
 	}
 
 	m := final.(ui.Model)
-	fmt.Fprint(tty, "\x1b8\x1b[J") // restaure le curseur sur le prompt + efface le popup
-
 	if m.Chosen == nil {
 		return 2 // annulé
 	}
