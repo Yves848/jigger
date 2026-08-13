@@ -25,6 +25,8 @@ il ne requiert que `brew`.
   sans presser la moindre touche. `^N`/`^P` naviguent, `⇥` insère, `^G` ferme.
   Les flèches `↑`/`↓` ne sont **jamais** détournées : l'historique zsh reste l'historique
   zsh.
+- **Bloc oh-my-posh** (optionnel) : version de brew et nombre de mises à jour en attente
+  dans le prompt, sans jamais le ralentir.
 
 ## Installation
 
@@ -71,6 +73,72 @@ JIGGER_KEY='^ '   # touche d'insertion (défaut Tab)
 à poser **avant** le `source`. Le popup s'efface de lui-même si le terminal est trop
 étroit, trop court, ou ne répond pas à l'interrogation de position du curseur.
 
+## Bloc oh-my-posh
+
+Un bloc Homebrew dans le prompt : la **version de brew**, et le **nombre de mises à jour**
+en attente quand il y en a.
+
+```
+ yves@MacBook  ~/git/jigger   main   6.0.17 ⇡9 ❯
+                                     ▲       ▲
+                                     │       └─ 9 paquets obsolètes (masqué si 0)
+                                     └───────── version de brew
+```
+
+`brew outdated` coûte de une à cinq secondes : il est donc **exclu du chemin du prompt**.
+jigger le lance en tâche de fond et dépose le résultat dans un fichier d'une ligne, que le
+hook `precmd` relit avec les seuls builtins de zsh — **0,03 ms par prompt, aucun fork**. La
+valeur affichée est celle du dernier calcul ; passé `JIGGER_PROMPT_TTL`, un rafraîchissement
+part détaché et le prompt suivant est à jour.
+
+oh-my-posh n'ayant plus de segment `command` depuis la v26, tout passe par deux variables
+d'environnement et un segment `text`.
+
+**1. Activer le hook** — dans `~/.zshrc`, *avant* le `source` :
+
+```sh
+JIGGER_PROMPT=1
+source /chemin/vers/jigger/shell/jigger.plugin.zsh
+```
+
+**2. Ajouter le segment** — les thèmes livrés par Homebrew sont écrasés à chaque mise à
+jour : travaille sur une copie.
+
+```sh
+mkdir -p ~/.config/oh-my-posh
+cp "$(brew --prefix oh-my-posh)/themes/catppuccin_mocha.omp.json" \
+   ~/.config/oh-my-posh/mon-theme.omp.json
+```
+
+Colle le contenu de [`shell/oh-my-posh/brew.segment.json`](shell/oh-my-posh/brew.segment.json)
+dans le tableau `segments` du bloc voulu, puis fais pointer `~/.zshrc` sur ta copie :
+
+```sh
+eval "$(oh-my-posh init zsh --config ~/.config/oh-my-posh/mon-theme.omp.json)"
+```
+
+Le segment n'affiche **rien** tant que le cache n'existe pas — le bloc apparaît au
+deuxième prompt, une fois le premier rafraîchissement terminé.
+
+### Réglages
+
+```sh
+JIGGER_PROMPT=1        # active le bloc (défaut 0)
+JIGGER_PROMPT_TTL=1800 # âge du cache, en secondes, avant rafraîchissement (défaut 30 min)
+JIGGER_CACHE_DIR=…     # emplacement du cache (défaut ~/Library/Caches/jigger)
+```
+
+### Variables exposées
+
+| Variable | Contenu |
+|---|---|
+| `JIGGER_BREW_VERSION` | version de brew, sans suffixe de commits : `6.0.17` |
+| `JIGGER_BREW_OUTDATED` | total obsolète — **non défini** s'il vaut zéro |
+
+`JIGGER_BREW_OUTDATED` n'existe que s'il y a quelque chose à signaler : le template se
+réduit ainsi à un `{{ if .Env.JIGGER_BREW_OUTDATED }}`, sans comparaison de chaînes. Rien
+n'interdit de s'en servir ailleurs que dans oh-my-posh (starship, un prompt maison…).
+
 ## Sous la capot (CLI)
 
 Le plugin s'appuie sur ces sous-commandes ; utilisables seules :
@@ -82,6 +150,9 @@ jigger complete "install fire"   # candidats, un par ligne (complétion classiqu
 jigger pick "brew uninstall wg"  # sélecteur interactif ; imprime la nouvelle ligne
                                  # code retour : 0 = insérer, 10 = exécuter, 2 = annulé
 jigger demo                      # aperçu statique coloré du sélecteur
+jigger prompt                    # état brew en cache : version⇥formulae⇥casks⇥epoch
+jigger prompt --refresh          # interroge brew et réécrit le cache (lent, détaché)
+jigger prompt --path             # chemin du fichier de cache
 ```
 
 `render` est **sans état** : l'index sélectionné vit côté shell et lui revient par

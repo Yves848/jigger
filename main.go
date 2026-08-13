@@ -10,6 +10,9 @@
 //	                           puis le cadre. C'est ce que le widget zsh appelle à
 //	                           chaque frappe pour le popup vivant.
 //	jigger complete "<ligne>"  candidats (un par ligne) pour une complétion classique.
+//	jigger prompt              état de Homebrew en cache, pour le bloc oh-my-posh.
+//	                           --refresh interroge brew et réécrit le cache (lent, à
+//	                           lancer détaché) ; --path imprime le fichier de cache.
 //	jigger --version           version.
 package main
 
@@ -25,10 +28,11 @@ import (
 
 	"gitlab.yg-devworks.com/yves/jigger/internal/brew"
 	"gitlab.yg-devworks.com/yves/jigger/internal/complete"
+	"gitlab.yg-devworks.com/yves/jigger/internal/prompt"
 	"gitlab.yg-devworks.com/yves/jigger/internal/ui"
 )
 
-var version = "0.2.0"
+var version = "0.3.0"
 
 func main() {
 	ui.Version = version // affichée dans l'en-tête du sélecteur (repère du binaire lancé)
@@ -45,6 +49,8 @@ func main() {
 		os.Exit(runRender(os.Args[2:]))
 	case "complete":
 		runComplete(arg(2))
+	case "prompt":
+		os.Exit(runPrompt(os.Args[2:]))
 	case "demo":
 		runDemo()
 	case "--version", "-v", "version":
@@ -63,7 +69,45 @@ func arg(i int) string {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: jigger pick|complete \"<ligne brew>\" | jigger render --line \"<ligne brew>\"")
+	fmt.Fprintln(os.Stderr, "usage: jigger pick|complete \"<ligne brew>\" | jigger render --line \"<ligne brew>\" | jigger prompt [--refresh|--path]")
+}
+
+// runPrompt imprime l'état de Homebrew en cache — « version<TAB>formulae<TAB>casks<TAB>epoch » —
+// pour le bloc oh-my-posh. Sans cache, il n'imprime rien : le prompt masque alors le bloc.
+//
+// Cette commande sort **toujours** en 0 quand elle est appelée pour afficher : un prompt
+// n'a pas à signaler que brew est indisponible. Seul --refresh, qui n'est lancé que
+// détaché, remonte ses échecs (utile en débogage).
+func runPrompt(args []string) int {
+	fs := flag.NewFlagSet("prompt", flag.ContinueOnError)
+	refresh := fs.Bool("refresh", false, "interroge brew et réécrit le cache (lent)")
+	path := fs.Bool("path", false, "imprime le chemin du fichier de cache")
+	if err := fs.Parse(args); err != nil {
+		return 2
+	}
+
+	dir := prompt.Dir()
+	if *path {
+		fmt.Println(prompt.File(dir))
+		return 0
+	}
+
+	if *refresh {
+		s, err := prompt.Refresh(dir)
+		if err != nil {
+			// Verrou pris par un autre shell, ou brew injoignable : le cache précédent
+			// reste en place et sera réessayé au prochain prompt périmé.
+			fmt.Fprintln(os.Stderr, "jigger prompt --refresh :", err)
+			return 1
+		}
+		fmt.Println(s.Line())
+		return 0
+	}
+
+	if s, ok := prompt.Read(dir); ok {
+		fmt.Println(s.Line())
+	}
+	return 0
 }
 
 // runComplete imprime les candidats (complétion non interactive).
