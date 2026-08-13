@@ -278,3 +278,73 @@ if (( JIGGER_LIVE )); then
   add-zle-hook-widget line-init _jigger_line_init
   add-zle-hook-widget line-finish _jigger_line_finish
 fi
+
+# ── Bloc Homebrew pour oh-my-posh ─────────────────────────────────────────────────────
+#
+# Exporte à chaque prompt JIGGER_BREW_VERSION et JIGGER_BREW_OUTDATED, qu'un segment
+# `text` d'oh-my-posh affiche (cf. shell/oh-my-posh/brew.segment.json). Désactivé par
+# défaut : ça ne sert qu'à ceux qui utilisent oh-my-posh.
+#
+#   JIGGER_PROMPT=1
+#   source /chemin/vers/jigger.plugin.zsh
+#
+# Règle qui gouverne tout ce qui suit : **aucun fork dans le chemin normal**. `brew
+# outdated` coûte plusieurs secondes ; il tourne en tâche de fond (`jigger prompt
+# --refresh`) et dépose son résultat dans un fichier d'une ligne, que ce hook relit avec
+# les seuls builtins de zsh. Un prompt ne doit rien attendre.
+: "${JIGGER_PROMPT:=0}"
+# Âge du cache (secondes) au-delà duquel on relance un rafraîchissement détaché.
+: "${JIGGER_PROMPT_TTL:=1800}"
+
+if (( JIGGER_PROMPT )); then
+  zmodload -i zsh/datetime          # $EPOCHSECONDS, pour ne pas forker `date`
+  autoload -Uz add-zsh-hook
+
+  # Même règle que os.UserCacheDir() côté Go, qui sur macOS ignore XDG_CACHE_HOME.
+  # `jigger prompt --path` donne le chemin exact — mais l'interroger coûterait un fork.
+  if [[ -z $JIGGER_CACHE_DIR ]]; then
+    if [[ $OSTYPE == darwin* ]]; then
+      typeset -g JIGGER_CACHE_DIR="$HOME/Library/Caches/jigger"
+    else
+      typeset -g JIGGER_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/jigger"
+    fi
+  fi
+  typeset -g _jigger_status_file="$JIGGER_CACHE_DIR/status"
+  typeset -gi _jigger_last_refresh=0
+
+  _jigger_prompt_precmd() {
+    local line
+    local -a champs
+    local -i age=$JIGGER_PROMPT_TTL   # cache absent → réputé périmé
+
+    if [[ -r $_jigger_status_file ]] && read -r line < $_jigger_status_file; then
+      # Découpage sur tabulation par expansion (pas de `cut`). Le drapeau `p` fait
+      # interpréter \t dans le séparateur : pas de tabulation littérale dans ce
+      # fichier, qu'un éditeur pourrait convertir en espaces.
+      champs=( "${(@ps.\t.)line}" )
+      # `<->` = suite de chiffres : une ligne bricolée à la main ne doit pas se
+      # retrouver dans une expansion arithmétique.
+      if (( $#champs == 4 )) && [[ "$champs[2]$champs[3]$champs[4]" == <-> ]]; then
+        export JIGGER_BREW_VERSION="$champs[1]"
+        # Le compteur n'est exporté que s'il y a quelque chose à signaler : le template
+        # oh-my-posh se réduit alors à « {{ if .Env.JIGGER_BREW_OUTDATED }} ».
+        if (( champs[2] + champs[3] > 0 )); then
+          export JIGGER_BREW_OUTDATED=$(( champs[2] + champs[3] ))
+        else
+          unset JIGGER_BREW_OUTDATED
+        fi
+        age=$(( EPOCHSECONDS - champs[4] ))
+      fi
+    fi
+
+    # Rafraîchissement paresseux : on affiche toujours la valeur connue, et on prépare
+    # la suivante. Le garde-fou évite qu'une rafale de prompts (ou dix onglets) ne
+    # relance brew en boucle ; le verrou côté Go couvre le cas inter-processus.
+    if (( age >= JIGGER_PROMPT_TTL && EPOCHSECONDS - _jigger_last_refresh > 60 )); then
+      _jigger_last_refresh=$EPOCHSECONDS
+      { jigger prompt --refresh >/dev/null 2>&1 &! } 2>/dev/null
+    fi
+  }
+
+  add-zsh-hook precmd _jigger_prompt_precmd
+fi

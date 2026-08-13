@@ -1,0 +1,7 @@
+{
+  "$comment": "Bloc Homebrew pour oh-my-posh — mode d'emploi dans le README de jigger, § « Bloc oh-my-posh ». Les deux variables sont posées par le hook de jigger.plugin.zsh (JIGGER_PROMPT=1) ; sans elles, le segment disparaît.",
+  "type": "text",
+  "style": "plain",
+  "foreground": "#FAB387",
+  "template": "{{ if .Env.JIGGER_BREW_VERSION }} {{ .Env.JIGGER_BREW_VERSION }}{{ if .Env.JIGGER_BREW_OUTDATED }} <#F9E2AF>⇡{{ .Env.JIGGER_BREW_OUTDATED }}</>{{ end }} {{ end }}"
+}

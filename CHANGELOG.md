@@ -6,6 +6,31 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le ve
 [SemVer](https://semver.org/lang/fr/). Les versions antérieures à `v0.1.6` sont antérieures
 à ce journal ; leur détail est dans l'historique git.
 
+## [v0.3.0] — 2026-08-14
+
+### Ajouté
+
+- **Bloc oh-my-posh** : la version de brew et le nombre de mises à jour en attente
+  s'affichent dans le prompt. `JIGGER_PROMPT=1` active un hook `precmd` qui exporte
+  `JIGGER_BREW_VERSION` et `JIGGER_BREW_OUTDATED` ; le segment `text` à coller est livré
+  dans `shell/oh-my-posh/brew.segment.json`. `JIGGER_BREW_OUTDATED` reste **non défini**
+  quand tout est à jour, ce qui masque le compteur sans comparaison dans le template.
+- `jigger prompt` : lit l'état de Homebrew en cache (`--refresh` l'interroge et le
+  réécrit, `--path` donne le fichier).
+
+### Détails d'implémentation
+
+- `brew outdated` coûtant de une à cinq secondes, il ne tourne **jamais** dans le chemin
+  du prompt : `jigger prompt --refresh` est lancé détaché quand le cache dépasse
+  `JIGGER_PROMPT_TTL` (30 min par défaut), et le hook se contente de relire une ligne
+  avec les builtins de zsh — **0,03 ms par prompt, aucun fork**.
+- Écriture atomique du cache (fichier temporaire + `rename`) et verrou de
+  rafraîchissement : dix terminaux ouverts ne déclenchent qu'un seul appel à brew. Un
+  verrou de plus de 5 minutes est réputé abandonné.
+- Si brew est injoignable, le cache précédent est **conservé** : un prompt n'affiche
+  jamais d'erreur.
+- `JIGGER_CACHE_DIR` permet de déplacer le cache (et sert aux tests).
+
 ## [v0.2.0] — 2026-08-13
 
 ### Ajouté

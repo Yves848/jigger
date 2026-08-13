@@ -33,8 +33,8 @@ func (c *Catalog) IsCask(name string) bool { return c.casksM[name] }
 // IsFormula indique si un nom est une formula connue.
 func (c *Catalog) IsFormula(name string) bool { return c.formulaeM[name] }
 
-// brewPath renvoie le chemin du binaire brew (Apple Silicon puis Intel).
-func brewPath() string {
+// Path renvoie le chemin du binaire brew (Apple Silicon puis Intel).
+func Path() string {
 	for _, p := range []string{"/opt/homebrew/bin/brew", "/usr/local/bin/brew"} {
 		if _, err := os.Stat(p); err == nil {
 			return p
@@ -52,7 +52,7 @@ func prefix() string {
 	if p := os.Getenv("HOMEBREW_PREFIX"); p != "" {
 		return p
 	}
-	return filepath.Dir(filepath.Dir(brewPath())) // …/bin/brew -> …
+	return filepath.Dir(filepath.Dir(Path())) // …/bin/brew -> …
 }
 
 // installedFromDirs lit les paquets installés directement sur le disque, sous la forme
@@ -106,13 +106,21 @@ func latestVersionDir(pkgDir string) string {
 	return latest
 }
 
-// cacheDir renvoie ~/.cache/jigger (créé si besoin).
-func cacheDir() string {
-	base, err := os.UserCacheDir()
-	if err != nil {
-		base = os.TempDir()
+// CacheDir renvoie le dossier de cache de jigger (créé si besoin) :
+// $JIGGER_CACHE_DIR s'il est défini, sinon <cache utilisateur>/jigger — soit
+// ~/Library/Caches/jigger sur macOS, ~/.cache/jigger ailleurs.
+//
+// La surcharge sert aux tests, mais aussi au hook zsh du prompt : celui-ci doit
+// désigner le même fichier sans avoir le droit de forker pour le demander.
+func CacheDir() string {
+	dir := os.Getenv("JIGGER_CACHE_DIR")
+	if dir == "" {
+		base, err := os.UserCacheDir()
+		if err != nil {
+			base = os.TempDir()
+		}
+		dir = filepath.Join(base, "jigger")
 	}
-	dir := filepath.Join(base, "jigger")
 	_ = os.MkdirAll(dir, 0o755)
 	return dir
 }
@@ -120,14 +128,14 @@ func cacheDir() string {
 // cachedLines renvoie les lignes de `brew <args>`, mises en cache <ttl>. Le fichier
 // de cache accélère massivement les invocations répétées (chaque appel du widget).
 func cachedLines(cacheName string, ttl time.Duration, args ...string) []string {
-	path := filepath.Join(cacheDir(), cacheName)
+	path := filepath.Join(CacheDir(), cacheName)
 	if info, err := os.Stat(path); err == nil && time.Since(info.ModTime()) < ttl {
 		if data, err := os.ReadFile(path); err == nil {
 			return splitLines(data)
 		}
 	}
 
-	out, err := exec.Command(brewPath(), args...).Output()
+	out, err := exec.Command(Path(), args...).Output()
 	if err != nil {
 		// En cas d'échec, on se rabat sur un cache périmé s'il existe.
 		if data, rerr := os.ReadFile(path); rerr == nil {
