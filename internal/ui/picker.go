@@ -15,9 +15,8 @@ import (
 
 // Palette (vive, dérivée de Cocktails).
 var (
-	accent  = lipgloss.Color("#2DD4BF") // teal
-	accentD = lipgloss.Color("#0E312C") // teal profond (fond sélection)
-	ink     = lipgloss.Color("#EAFBF7") // texte clair (sélection)
+	accent  = lipgloss.Color("#2DD4BF") // teal (accent + ligne courante)
+	ink     = lipgloss.Color("#EAFBF7") // texte clair (pastilles de touches)
 	fg      = lipgloss.Color("#CBD2DE") // texte normal
 	muted   = lipgloss.Color("#7C8598")
 	amber   = lipgloss.Color("#F5B841") // formula ◆
@@ -30,7 +29,7 @@ var (
 // Largeur intérieure fixe : chaque ligne est complétée à cette largeur.
 const (
 	boxW        = 58
-	rowW        = boxW - 4 // largeur intérieure d'une ligne (marge + bordure de chaque côté)
+	rowW        = boxW - 2 // largeur d'une ligne : gouttière de 2 colonnes à droite
 	nameMax     = boxW - 12
 	visibleRows = 6
 )
@@ -45,17 +44,15 @@ var (
 			Background(panelBg).
 			Width(boxW)
 
-	// Ligne sélectionnée : une boîte arrondie autonome, détachée du cadre du popup.
-	// La marge gauche est peinte au fond du panneau, sinon elle apparaîtrait en noir.
-	selBoxStyle = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(accent).
-			BorderBackground(panelBg).
-			Background(accentD).
-			Foreground(ink).
+	// Ligne courante : pas de cadre, un simple soulignement. Elle garde exactement la
+	// géométrie d'une ligne ordinaire (même indentation, même gouttière), donc rien ne
+	// se décale quand le curseur bouge. Le soulignement porte aussi sur le remplissage
+	// (lipgloss souligne les espaces par défaut) : la règle court sur toute la largeur.
+	selStyle = lipgloss.NewStyle().
+			Foreground(accent).
+			Background(panelBg).
 			Bold(true).
-			MarginLeft(1).
-			MarginBackground(panelBg).
+			Underline(true).
 			Width(rowW)
 
 	// Rappels de touches : pastilles (fond + remplissage). Une vraie bordure coûterait
@@ -219,10 +216,10 @@ func (m Model) View() string {
 
 	end := min(m.offset+visibleRows, len(m.filtered))
 	for i := m.offset; i < end; i++ {
-		b.WriteString(m.renderRow(m.filtered[i], i == m.cursor) + "\n")
-		if i != m.cursor {
-			b.WriteString("\n") // interligne ; la sélection le remplace par ses bordures
-		}
+		// Toutes les lignes ont désormais la même hauteur (contenu + interligne) : la
+		// sélection ne se signale plus que par sa couleur et son soulignement, donc la
+		// hauteur du popup est constante par construction.
+		b.WriteString(m.renderRow(m.filtered[i], i == m.cursor) + "\n\n")
 	}
 	b.WriteString(m.footer())
 	return boxStyle.Render(b.String())
@@ -255,17 +252,18 @@ func (m Model) renderRow(it complete.Item, selected bool) string {
 		rightPlain += "●"
 	}
 
-	// Ligne sélectionnée : une boîte arrondie à elle seule. Elle occupe 3 lignes
-	// (bordure, contenu, bordure) là où une ligne ordinaire en occupe 2 (contenu +
-	// interligne) — comme il y a toujours exactement une sélection, la hauteur totale
-	// du popup ne bouge pas quand le curseur se déplace.
+	// Géométrie commune aux deux états : 2 colonnes d'indentation à gauche, gouttière de
+	// 2 colonnes à droite. On calcule le remplissage sur le texte nu, avant tout style.
+	leftPlain := "  " + glyph + "  " + name
+	gap := rowW - lipgloss.Width(leftPlain) - lipgloss.Width(rightPlain)
+	if gap < 1 {
+		gap = 1
+	}
+
+	// Ligne courante : rendue d'un seul tenant en texte nu, sans les couleurs par segment
+	// (leurs séquences de reset interrompraient le soulignement au milieu de la ligne).
 	if selected {
-		leftPlain := glyph + "  " + name
-		gap := rowW - lipgloss.Width(leftPlain) - lipgloss.Width(rightPlain)
-		if gap < 1 {
-			gap = 1
-		}
-		return selBoxStyle.Render(leftPlain + strings.Repeat(" ", gap) + rightPlain)
+		return selStyle.Render(leftPlain + strings.Repeat(" ", gap) + rightPlain)
 	}
 
 	color := bulletStyle
@@ -274,15 +272,6 @@ func (m Model) renderRow(it complete.Item, selected bool) string {
 		color = formulaStyle
 	case "C":
 		color = caskStyle
-	}
-	// Ligne ordinaire : alignée sur le contenu de la boîte de sélection (2 colonnes
-	// d'indentation = marge + bordure), et suivie d'un interligne ajouté par View.
-	leftPlain := "  " + glyph + "  " + name
-	// On réserve à droite la même gouttière que la boîte de sélection (sa bordure et
-	// sa marge), pour que versions et points « installé » s'alignent d'une ligne à l'autre.
-	gap := boxW - 2 - lipgloss.Width(leftPlain) - lipgloss.Width(rightPlain)
-	if gap < 1 {
-		gap = 1
 	}
 	left := "  " + color.Render(glyph) + "  " + nameStyle.Render(name)
 	right := ""

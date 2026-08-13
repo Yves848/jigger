@@ -33,14 +33,17 @@ func TestRenderHasIconsAndColor(t *testing.T) {
 		},
 	}
 	out := New("brew install", res).View()
+	// Sur la ligne courante, lipgloss emballe chaque caractère dans sa propre séquence
+	// (conséquence du soulignement des espaces) : on cherche donc dans le texte visible.
+	shown := visible(out)
 
-	if !strings.Contains(out, "◆") {
+	if !strings.Contains(shown, "◆") {
 		t.Error("icône formula (◆) absente")
 	}
-	if !strings.Contains(out, "▣") {
+	if !strings.Contains(shown, "▣") {
 		t.Error("icône cask (▣) absente")
 	}
-	if !strings.Contains(out, "2.55.0") {
+	if !strings.Contains(shown, "2.55.0") {
 		t.Error("version installée (2.55.0) absente du rendu")
 	}
 
@@ -52,7 +55,7 @@ func TestRenderHasIconsAndColor(t *testing.T) {
 		t.Errorf("rendu peu coloré : %d teintes distinctes (attendu ≥ 5)", len(distinct))
 	}
 	if !strings.Contains(out, "48;2;") {
-		t.Error("fond de sélection (couleur d'arrière-plan) absent")
+		t.Error("fond du panneau (couleur d'arrière-plan) absent")
 	}
 }
 
@@ -101,9 +104,37 @@ func names(items []complete.Item) []string {
 	return out
 }
 
-// La ligne sélectionnée est dessinée dans sa propre boîte arrondie (en plus du cadre
-// du popup) : on compte les coins, le cadre extérieur en fournissant déjà un.
-func TestSelectedRowIsBoxed(t *testing.T) {
+// underlinedColumns rejoue les séquences SGR d'une ligne pour dire, colonne par colonne,
+// si l'attribut « souligné » est actif. C'est le seul moyen honnête de vérifier que la
+// règle court bien sous le remplissage et pas seulement sous le texte.
+func underlinedColumns(line string) []bool {
+	var cols []bool
+	on := false
+	for len(line) > 0 {
+		if loc := ansi.FindStringIndex(line); loc != nil && loc[0] == 0 {
+			for _, p := range strings.Split(line[2:loc[1]-1], ";") {
+				switch p {
+				case "4":
+					on = true
+				case "24", "0", "":
+					on = false
+				}
+			}
+			line = line[loc[1]:]
+			continue
+		}
+		r := []rune(line)[0]
+		for w := lipgloss.Width(string(r)); w > 0; w-- {
+			cols = append(cols, on)
+		}
+		line = line[len(string(r)):]
+	}
+	return cols
+}
+
+// La ligne courante ne porte plus de boîte : seul le cadre du popup dessine des coins,
+// et la sélection se signale par un soulignement qui court sur toute la largeur.
+func TestSelectedRowIsUnderlinedNotBoxed(t *testing.T) {
 	lipgloss.SetColorProfile(termenv.TrueColor)
 
 	out := New("brew install", complete.Result{Items: []complete.Item{
@@ -111,11 +142,36 @@ func TestSelectedRowIsBoxed(t *testing.T) {
 		{Name: "wgetpaste", Badge: "F"},
 	}}).View()
 
-	if got := strings.Count(out, "╭"); got < 2 {
-		t.Errorf("coin haut-gauche vu %d fois (attendu ≥ 2 : cadre + ligne sélectionnée)", got)
+	if got := strings.Count(out, "╭"); got != 1 {
+		t.Errorf("coin haut-gauche vu %d fois (attendu 1 : le cadre du popup, sans boîte de sélection)", got)
 	}
-	if got := strings.Count(out, "╰"); got < 2 {
-		t.Errorf("coin bas-gauche vu %d fois (attendu ≥ 2 : cadre + ligne sélectionnée)", got)
+
+	var row string
+	for _, line := range strings.Split(out, "\n") {
+		if strings.Contains(visible(line), "wget ") || strings.HasSuffix(strings.TrimRight(visible(line), " │"), "wget") {
+			row = line
+			break
+		}
+	}
+	if row == "" {
+		t.Fatal("ligne sélectionnée (wget) introuvable dans le rendu")
+	}
+
+	cols := underlinedColumns(row)
+	first, last := -1, -1
+	for i, u := range cols {
+		if u {
+			if first < 0 {
+				first = i
+			}
+			last = i
+		}
+	}
+	if first < 0 {
+		t.Fatalf("aucun soulignement sur la ligne courante : %q", visible(row))
+	}
+	if span := last - first + 1; span != rowW {
+		t.Errorf("soulignement large de %d colonnes, attendu %d (il doit courir sous le remplissage)", span, rowW)
 	}
 }
 
@@ -165,7 +221,9 @@ func TestShowsAtMostSixCandidates(t *testing.T) {
 	for _, n := range []string{"p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8"} {
 		items = append(items, complete.Item{Name: n, Badge: "F"})
 	}
-	out := New("brew install", complete.Result{Items: items}).View()
+	// Texte visible : la ligne courante est fragmentée caractère par caractère par le
+	// soulignement, son nom ne serait pas trouvé dans le rendu brut.
+	out := visible(New("brew install", complete.Result{Items: items}).View())
 
 	shown := 0
 	for _, it := range items {
