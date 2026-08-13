@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 )
@@ -43,6 +44,66 @@ func brewPath() string {
 		return p
 	}
 	return "brew"
+}
+
+// prefix renvoie le préfixe Homebrew (le parent de bin/brew), d'où pendent Cellar
+// et Caskroom.
+func prefix() string {
+	if p := os.Getenv("HOMEBREW_PREFIX"); p != "" {
+		return p
+	}
+	return filepath.Dir(filepath.Dir(brewPath())) // …/bin/brew -> …
+}
+
+// installedFromDirs lit les paquets installés directement sur le disque, sous la forme
+// « nom version » (le format de `brew list --versions`). Homebrew range chaque paquet
+// dans <Cellar|Caskroom>/<nom>/<version> : un readdir suffit, là où `brew list` coûte
+// ~300 ms de démarrage Ruby — inacceptable pour un rendu à chaque frappe.
+//
+// Un répertoire absent ou illisible n'est pas une erreur (pas de cask installé, préfixe
+// inattendu) : il ne contribue simplement rien.
+func installedFromDirs(dirs ...string) []string {
+	var lines []string
+	for _, dir := range dirs {
+		if dir == "" {
+			continue
+		}
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			continue
+		}
+		for _, e := range entries {
+			if !e.IsDir() || strings.HasPrefix(e.Name(), ".") {
+				continue
+			}
+			if v := latestVersionDir(filepath.Join(dir, e.Name())); v != "" {
+				lines = append(lines, e.Name()+" "+v)
+			}
+		}
+	}
+	sort.Strings(lines)
+	return lines
+}
+
+// latestVersionDir renvoie le nom du dernier sous-répertoire par ordre alphabétique —
+// la version la plus récente dans l'immense majorité des cas, et de toute façon celle
+// que `brew list --versions` citerait en dernier. Vide si le paquet n'a aucun keg
+// (répertoire résiduel après une désinstallation).
+func latestVersionDir(pkgDir string) string {
+	entries, err := os.ReadDir(pkgDir)
+	if err != nil {
+		return ""
+	}
+	latest := ""
+	for _, e := range entries {
+		if !e.IsDir() || strings.HasPrefix(e.Name(), ".") {
+			continue
+		}
+		if e.Name() > latest {
+			latest = e.Name()
+		}
+	}
+	return latest
 }
 
 // cacheDir renvoie ~/.cache/jigger (créé si besoin).
@@ -91,14 +152,21 @@ func splitLines(data []byte) []string {
 }
 
 // Load construit le catalogue. Formulae/casks sont mis en cache 24 h (ils changent
-// rarement) ; les installés sont relus à chaque fois (rapide, et doit être frais).
+// rarement) ; les installés sont lus sur le disque à chaque fois — toujours frais, et
+// pour un coût négligeable (cf. installedFromDirs).
 func Load() *Catalog {
 	const day = 24 * time.Hour
 
 	formulae := cachedLines("formulae", day, "formulae")
 	casks := cachedLines("casks", day, "casks")
-	// ttl 0 = toujours frais. « --versions » donne « nom version » par installé.
-	installed := cachedLines("installed", 0, "list", "--versions")
+
+	p := prefix()
+	installed := installedFromDirs(filepath.Join(p, "Cellar"), filepath.Join(p, "Caskroom"))
+	if len(installed) == 0 {
+		// Préfixe inattendu (ou vraiment rien d'installé) : on repasse par brew, lent
+		// mais sûr. « --versions » donne « nom version » par installé.
+		installed = cachedLines("installed", 0, "list", "--versions")
+	}
 
 	return NewCatalogVersions(formulae, casks, installed)
 }

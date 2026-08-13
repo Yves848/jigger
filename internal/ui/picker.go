@@ -201,121 +201,19 @@ func (m Model) View() string {
 		return ""
 	}
 
-	var b strings.Builder
-
-	// Version poussée à droite (repère du binaire lancé), sur la même ligne que le titre.
-	head := promptStyle.Render("❯") + pad(1) + titleStyle.Render(m.title)
-	if Version != "" {
-		ver := verStyle.Render("jigger " + Version)
-		gap := boxW - lipgloss.Width(head) - lipgloss.Width(ver)
-		if gap < 1 {
-			gap = 1
-		}
-		head += pad(gap) + ver
-	}
-	b.WriteString(head + "\n")
-	b.WriteString(filterHint.Render("› ") + m.input.View() + "\n")
-
-	if len(m.filtered) == 0 {
-		b.WriteString(pad(2) + emptyStyle.Render("aucun candidat"))
-		return boxStyle.Render(b.String())
-	}
-
-	// Lignes jointives : la ligne courante se signale par sa couleur et son soulignement,
-	// il n'y a plus d'interligne à intercaler. Toutes les lignes faisant une ligne de haut,
-	// la hauteur du popup ne dépend pas de la position du curseur.
-	end := min(m.offset+visibleRows, len(m.filtered))
-	for i := m.offset; i < end; i++ {
-		b.WriteString(m.renderRow(m.filtered[i], i == m.cursor) + "\n")
-	}
-	b.WriteString("\n") // respiration avant le pied
-	b.WriteString(m.footer())
-	return boxStyle.Render(b.String())
-}
-
-// pad rend n espaces au fond du panneau. Indispensable partout où du remplissage sépare
-// deux segments stylés : un espace en texte nu hérite du reset précédent, donc du fond du
-// terminal, et trahit une bande plus claire au milieu de la ligne.
-func pad(n int) string {
-	if n < 1 {
-		return ""
-	}
-	return base.Render(strings.Repeat(" ", n))
-}
-
-func (m Model) renderRow(it complete.Item, selected bool) string {
-	name := it.Name
-	if len(name) > nameMax {
-		name = name[:nameMax-1] + "…"
-	}
-
-	glyph := "•"
-	switch it.Badge {
-	case "F":
-		glyph = "◆"
-	case "C":
-		glyph = "▣"
-	}
-
-	// Partie droite (alignée au bord) : version installée puis point « installé ».
-	// On la compose d'abord en texte nu pour calculer le remplissage.
-	rightPlain := ""
-	if it.Version != "" {
-		rightPlain = it.Version
-	}
-	if it.Installed {
-		if rightPlain != "" {
-			rightPlain += "  "
-		}
-		rightPlain += "●"
-	}
-
-	// Géométrie commune aux deux états : 2 colonnes d'indentation à gauche, gouttière de
-	// 2 colonnes à droite. On calcule le remplissage sur le texte nu, avant tout style.
-	leftPlain := "  " + glyph + "  " + name
-	gap := rowW - lipgloss.Width(leftPlain) - lipgloss.Width(rightPlain)
-	if gap < 1 {
-		gap = 1
-	}
-
-	// Ligne courante : rendue d'un seul tenant en texte nu, sans les couleurs par segment
-	// (leurs séquences de reset interrompraient le soulignement au milieu de la ligne).
-	if selected {
-		return selStyle.Render(leftPlain + strings.Repeat(" ", gap) + rightPlain)
-	}
-
-	color := bulletStyle
-	switch it.Badge {
-	case "F":
-		color = formulaStyle
-	case "C":
-		color = caskStyle
-	}
-	left := pad(2) + color.Render(glyph) + pad(2) + nameStyle.Render(name)
-	right := ""
-	if it.Version != "" {
-		right = verStylePkg.Render(it.Version)
-	}
-	if it.Installed {
-		if it.Version != "" {
-			right += pad(2)
-		}
-		right += dotStyle.Render("●")
-	}
-	return left + pad(gap) + right
-}
-
-func (m Model) footer() string {
-	sep := pad(2)
-	pill := func(key, label string) string {
-		return pillStyle.Render(key) + hintStyle.Render(" "+label)
-	}
-	parts := []string{
-		pill("⇥", "insérer"),
-	}
+	keys := []Key{{"⇥", "insérer"}}
 	if m.executable {
-		parts = append(parts, pill("↩", "exécuter"))
+		keys = append(keys, Key{"↩", "exécuter"})
 	}
-	parts = append(parts, pill("↑↓", "naviguer"), pill("esc", "annuler"))
-	return pad(2) + strings.Join(parts, sep)
+	keys = append(keys, Key{"↑↓", "naviguer"}, Key{"esc", "annuler"})
+
+	return Frame{
+		Title:      m.title,
+		Items:      m.filtered,
+		Sel:        m.cursor,
+		Offset:     m.offset,
+		FilterView: filterHint.Render("› ") + m.input.View(),
+		Empty:      "aucun candidat",
+		Keys:       keys,
+	}.Render()
 }

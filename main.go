@@ -6,11 +6,15 @@
 //	jigger pick "<ligne>"      sélecteur interactif ; imprime la nouvelle ligne.
 //	                           Code de sortie : 0 = insérer (⇥), 10 = exécuter (↩),
 //	                           2 = annulé (rien imprimé).
+//	jigger render --line "…"   popup sans état ni clavier : une ligne de métadonnées
+//	                           puis le cadre. C'est ce que le widget zsh appelle à
+//	                           chaque frappe pour le popup vivant.
 //	jigger complete "<ligne>"  candidats (un par ligne) pour une complétion classique.
 //	jigger --version           version.
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"strings"
@@ -24,7 +28,7 @@ import (
 	"gitlab.yg-devworks.com/yves/jigger/internal/ui"
 )
 
-var version = "0.1.6"
+var version = "0.2.0"
 
 func main() {
 	ui.Version = version // affichée dans l'en-tête du sélecteur (repère du binaire lancé)
@@ -37,6 +41,8 @@ func main() {
 	switch os.Args[1] {
 	case "pick":
 		os.Exit(runPick(arg(2)))
+	case "render":
+		os.Exit(runRender(os.Args[2:]))
 	case "complete":
 		runComplete(arg(2))
 	case "demo":
@@ -57,7 +63,7 @@ func arg(i int) string {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: jigger pick|complete \"<ligne brew>\"")
+	fmt.Fprintln(os.Stderr, "usage: jigger pick|complete \"<ligne brew>\" | jigger render --line \"<ligne brew>\"")
 }
 
 // runComplete imprime les candidats (complétion non interactive).
@@ -66,6 +72,97 @@ func runComplete(line string) {
 	for _, it := range res.Items {
 		fmt.Println(it.Name)
 	}
+}
+
+// tropDeCandidats : au-delà, une liste non filtrée n'apprend rien (les ~7 000 formulae
+// commencent par « 0ad », « 0xtools »…). On affiche alors une invite à filtrer. En
+// dessous — les paquets installés, typiquement quelques centaines — la liste complète
+// reste utile à parcourir.
+const tropDeCandidats = 300
+
+// runRender imprime, sans état ni clavier, une ligne de métadonnées puis le popup. C'est
+// le mode appelé par le widget zsh à chaque frappe : tout l'état (l'index sélectionné)
+// vit côté shell et revient par --sel.
+//
+// La ligne de métadonnées est faite de champs `clé=valeur` séparés par des tabulations,
+// `left=` toujours en dernier — c'est le seul champ qui peut contenir des espaces, le
+// shell le récupère donc comme « tout ce qui suit ».
+func runRender(args []string) int {
+	fs := flag.NewFlagSet("render", flag.ContinueOnError)
+	line := fs.String("line", "", "ligne à compléter (jusqu'au curseur)")
+	sel := fs.Int("sel", 0, "index du candidat courant")
+	cols := fs.Int("cols", 0, "largeur du terminal")
+	rows := fs.Int("rows", 8, "nombre de candidats affichés")
+	color := fs.String("color", "auto", "profil couleur : auto|never|16|256|truecolor")
+	if err := fs.Parse(args); err != nil {
+		return 2
+	}
+
+	lipgloss.SetColorProfile(colorProfile(*color))
+
+	res := complete.Complete(*line, brew.Load())
+
+	frame := ui.Frame{
+		Title: title(res),
+		Items: res.Items,
+		Rows:  *rows,
+		Keys: []ui.Key{
+			{Key: "⇥", Label: "insérer"},
+			{Key: "^N ^P", Label: "naviguer"},
+			{Key: "^G", Label: "fermer"},
+		},
+	}
+	if *cols > 0 {
+		frame.Width = min(58, *cols-2)
+	}
+
+	// Contexte paquet, mot vide : on invite à filtrer plutôt que d'égrener le catalogue.
+	if res.Executable && res.Word == "" && len(res.Items) > tropDeCandidats {
+		frame.Items = nil
+		frame.Empty = fmt.Sprintf("tapez pour filtrer… (%d paquets)", len(res.Items))
+	} else if len(res.Items) == 0 {
+		frame.Empty = "aucun candidat"
+	}
+
+	left := *line
+	if len(frame.Items) > 0 {
+		frame.Sel = min(max(*sel, 0), len(frame.Items)-1)
+		frame.Offset = ui.ScrollOffset(frame.Sel, len(frame.Items), *rows)
+		left = res.Prefix + insertText(res, frame.Items[frame.Sel].Name)
+	} else {
+		frame.Sel = -1
+	}
+
+	fmt.Printf("count=%d\tsel=%d\texec=%s\tleft=%s\n",
+		len(frame.Items), frame.Sel, boolField(res.Executable), left)
+	fmt.Println(frame.Render())
+	return 0
+}
+
+// colorProfile traduit --color. La sortie de `render` est toujours capturée par le
+// widget : lipgloss n'a donc aucun moyen de deviner ce que vaut le terminal, et rendrait
+// tout en gris. C'est le shell — qui, lui, connaît $COLORTERM et $TERM — qui tranche ;
+// « auto » se rabat sur stderr, resté attaché au terminal dans une substitution.
+func colorProfile(name string) termenv.Profile {
+	switch name {
+	case "never":
+		return termenv.Ascii
+	case "16":
+		return termenv.ANSI
+	case "256":
+		return termenv.ANSI256
+	case "truecolor":
+		return termenv.TrueColor
+	default:
+		return termenv.NewOutput(os.Stderr).Profile
+	}
+}
+
+func boolField(b bool) string {
+	if b {
+		return "1"
+	}
+	return "0"
 }
 
 // runPick lance le sélecteur et imprime la nouvelle ligne. Le TUI dessine sur /dev/tty

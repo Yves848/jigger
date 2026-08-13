@@ -13,7 +13,13 @@ install: build
 test:
 	go test ./...
 
+# Le widget zsh ne se teste que dans un vrai pseudo-terminal (cf. tests/zpty.zsh).
+test-shell: build
+	./tests/zpty.zsh --suite
+
+test-all: test test-shell
+
 clean:
 	rm -f $(BINARY)
 
-.PHONY: build install test clean
+.PHONY: build install test test-shell test-all clean

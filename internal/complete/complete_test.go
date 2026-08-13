@@ -1,6 +1,7 @@
 package complete
 
 import (
+	"fmt"
 	"testing"
 
 	"gitlab.yg-devworks.com/yves/jigger/internal/brew"
@@ -88,5 +89,25 @@ func TestStripsLeadingBrew(t *testing.T) {
 	res := Complete("brew uninstall gi", testCatalog())
 	if got := names(res.Items); len(got) != 1 || got[0] != "git" {
 		t.Fatalf("attendu [git], obtenu %v", got)
+	}
+}
+
+// BenchmarkComplete garde un œil sur le filtrage : le popup vivant appelle Complete à
+// chaque frappe, sur un catalogue de plusieurs milliers de noms. Budget indicatif :
+// quelques ms au plus (le reste du budget part dans le démarrage du binaire).
+func BenchmarkComplete(b *testing.B) {
+	formulae := make([]string, 0, 8000)
+	casks := make([]string, 0, 2000)
+	for i := range 8000 {
+		formulae = append(formulae, fmt.Sprintf("formula-%04d", i))
+	}
+	for i := range 2000 {
+		casks = append(casks, fmt.Sprintf("cask-%04d", i))
+	}
+	cat := brew.NewCatalog(formulae, casks, formulae[:200])
+
+	b.ResetTimer()
+	for b.Loop() {
+		Complete("brew install form", cat)
 	}
 }
