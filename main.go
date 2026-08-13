@@ -24,7 +24,7 @@ import (
 	"gitlab.yg-devworks.com/yves/jigger/internal/ui"
 )
 
-var version = "0.1.5"
+var version = "0.1.6"
 
 func main() {
 	ui.Version = version // affichée dans l'en-tête du sélecteur (repère du binaire lancé)
@@ -74,6 +74,14 @@ func runPick(line string) int {
 	res := complete.Complete(line, brew.Load())
 	if len(res.Items) == 0 {
 		return 1
+	}
+
+	// Candidat unique : il n'y a rien à choisir. On insère directement, sans ouvrir le
+	// popup (ni même le TTY) — comme le fait la complétion zsh sur une correspondance
+	// unique.
+	if len(res.Items) == 1 {
+		fmt.Print(res.Prefix + insertText(res, res.Items[0].Name))
+		return 0
 	}
 
 	tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0)
