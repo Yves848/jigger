@@ -28,13 +28,20 @@ var (
 
 // Largeur intérieure fixe : chaque ligne est complétée à cette largeur.
 const (
-	boxW        = 58
-	rowW        = boxW - 2 // largeur d'une ligne : gouttière de 2 colonnes à droite
-	nameMax     = boxW - 12
-	visibleRows = 6
+	boxW    = 58
+	rowW    = boxW - 2 // largeur d'une ligne : gouttière de 2 colonnes à droite
+	nameMax = boxW - 12
+	// Les lignes sont désormais jointives (plus d'interligne) : à hauteur de popup
+	// constante, on affiche deux fois plus de candidats.
+	visibleRows = 12
 )
 
 var (
+	// Tout style de texte doit porter le fond du panneau : la séquence de reset émise en
+	// fin de segment coupe sinon le fond posé par le cadre, et le reste de la ligne
+	// (remplissage compris) s'affiche sur le fond du terminal — d'où une bande visible.
+	base = lipgloss.NewStyle().Background(panelBg)
+
 	// Le cadre porte le fond ET la largeur : lipgloss remplit uniformément les zones
 	// nues (espaces sans fond) avec panelBg, y compris après les resets internes.
 	boxStyle = lipgloss.NewStyle().
@@ -59,22 +66,20 @@ var (
 	// deux lignes de plus au pied du popup pour le même effet.
 	pillStyle = lipgloss.NewStyle().Background(sepCl).Foreground(ink).Bold(true).Padding(0, 1)
 
-	promptStyle = lipgloss.NewStyle().Foreground(accent).Bold(true)
-	titleStyle  = lipgloss.NewStyle().Foreground(accent).Bold(true)
-	filterHint  = lipgloss.NewStyle().Foreground(muted)
+	promptStyle = base.Foreground(accent).Bold(true)
+	titleStyle  = base.Foreground(accent).Bold(true)
+	filterHint  = base.Foreground(muted)
 
-	formulaStyle = lipgloss.NewStyle().Foreground(amber).Bold(true)
-	caskStyle    = lipgloss.NewStyle().Foreground(violet).Bold(true)
-	bulletStyle  = lipgloss.NewStyle().Foreground(muted)
-	nameStyle    = lipgloss.NewStyle().Foreground(fg)
-	verStylePkg  = lipgloss.NewStyle().Foreground(muted) // version installée (atténuée)
-	dotStyle     = lipgloss.NewStyle().Foreground(green)
+	formulaStyle = base.Foreground(amber).Bold(true)
+	caskStyle    = base.Foreground(violet).Bold(true)
+	bulletStyle  = base.Foreground(muted)
+	nameStyle    = base.Foreground(fg)
+	verStylePkg  = base.Foreground(muted) // version installée (atténuée)
+	dotStyle     = base.Foreground(green)
 
-	sepStyle   = lipgloss.NewStyle().Foreground(sepCl)
-	keyStyle   = lipgloss.NewStyle().Foreground(accent).Bold(true)
-	hintStyle  = lipgloss.NewStyle().Foreground(muted)
-	emptyStyle = lipgloss.NewStyle().Foreground(muted).Italic(true)
-	verStyle   = lipgloss.NewStyle().Foreground(muted)
+	hintStyle  = base.Foreground(muted)
+	emptyStyle = base.Foreground(muted).Italic(true)
+	verStyle   = base.Foreground(muted)
 )
 
 // Version est affichée (discrètement) dans l'en-tête du sélecteur pour lever toute
@@ -101,6 +106,9 @@ func New(title string, res complete.Result) Model {
 	ti := textinput.New()
 	ti.Prompt = ""
 	ti.Placeholder = "filtrer…"
+	// Même raison que `pad` : sans fond explicite, la saisie s'affiche sur celui du terminal.
+	ti.TextStyle = base.Foreground(ink)
+	ti.PlaceholderStyle = base.Foreground(muted)
 	ti.Focus()
 
 	m := Model{title: title, all: res.Items, executable: res.Executable, input: ti}
@@ -195,34 +203,44 @@ func (m Model) View() string {
 
 	var b strings.Builder
 
-	// Lignes « normales » : couleur de texte seulement ; le cadre remplit le fond.
 	// Version poussée à droite (repère du binaire lancé), sur la même ligne que le titre.
-	head := promptStyle.Render("❯") + " " + titleStyle.Render(m.title)
+	head := promptStyle.Render("❯") + pad(1) + titleStyle.Render(m.title)
 	if Version != "" {
 		ver := verStyle.Render("jigger " + Version)
 		gap := boxW - lipgloss.Width(head) - lipgloss.Width(ver)
 		if gap < 1 {
 			gap = 1
 		}
-		head += strings.Repeat(" ", gap) + ver
+		head += pad(gap) + ver
 	}
 	b.WriteString(head + "\n")
 	b.WriteString(filterHint.Render("› ") + m.input.View() + "\n")
 
 	if len(m.filtered) == 0 {
-		b.WriteString("  " + emptyStyle.Render("aucun candidat"))
+		b.WriteString(pad(2) + emptyStyle.Render("aucun candidat"))
 		return boxStyle.Render(b.String())
 	}
 
+	// Lignes jointives : la ligne courante se signale par sa couleur et son soulignement,
+	// il n'y a plus d'interligne à intercaler. Toutes les lignes faisant une ligne de haut,
+	// la hauteur du popup ne dépend pas de la position du curseur.
 	end := min(m.offset+visibleRows, len(m.filtered))
 	for i := m.offset; i < end; i++ {
-		// Toutes les lignes ont désormais la même hauteur (contenu + interligne) : la
-		// sélection ne se signale plus que par sa couleur et son soulignement, donc la
-		// hauteur du popup est constante par construction.
-		b.WriteString(m.renderRow(m.filtered[i], i == m.cursor) + "\n\n")
+		b.WriteString(m.renderRow(m.filtered[i], i == m.cursor) + "\n")
 	}
+	b.WriteString("\n") // respiration avant le pied
 	b.WriteString(m.footer())
 	return boxStyle.Render(b.String())
+}
+
+// pad rend n espaces au fond du panneau. Indispensable partout où du remplissage sépare
+// deux segments stylés : un espace en texte nu hérite du reset précédent, donc du fond du
+// terminal, et trahit une bande plus claire au milieu de la ligne.
+func pad(n int) string {
+	if n < 1 {
+		return ""
+	}
+	return base.Render(strings.Repeat(" ", n))
 }
 
 func (m Model) renderRow(it complete.Item, selected bool) string {
@@ -273,22 +291,22 @@ func (m Model) renderRow(it complete.Item, selected bool) string {
 	case "C":
 		color = caskStyle
 	}
-	left := "  " + color.Render(glyph) + "  " + nameStyle.Render(name)
+	left := pad(2) + color.Render(glyph) + pad(2) + nameStyle.Render(name)
 	right := ""
 	if it.Version != "" {
 		right = verStylePkg.Render(it.Version)
 	}
 	if it.Installed {
 		if it.Version != "" {
-			right += "  "
+			right += pad(2)
 		}
 		right += dotStyle.Render("●")
 	}
-	return left + strings.Repeat(" ", gap) + right
+	return left + pad(gap) + right
 }
 
 func (m Model) footer() string {
-	sep := hintStyle.Render("  ")
+	sep := pad(2)
 	pill := func(key, label string) string {
 		return pillStyle.Render(key) + hintStyle.Render(" "+label)
 	}
@@ -299,5 +317,5 @@ func (m Model) footer() string {
 		parts = append(parts, pill("↩", "exécuter"))
 	}
 	parts = append(parts, pill("↑↓", "naviguer"), pill("esc", "annuler"))
-	return "  " + strings.Join(parts, sep)
+	return pad(2) + strings.Join(parts, sep)
 }

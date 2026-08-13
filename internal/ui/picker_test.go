@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 	"testing"
@@ -132,6 +133,68 @@ func underlinedColumns(line string) []bool {
 	return cols
 }
 
+// backgroundColumns dit, colonne par colonne, si un fond (SGR 48) est actif — le pendant
+// de underlinedColumns pour traquer les bandes laissées par un reset au milieu de ligne.
+func backgroundColumns(line string) []bool {
+	var cols []bool
+	on := false
+	for len(line) > 0 {
+		if loc := ansi.FindStringIndex(line); loc != nil && loc[0] == 0 {
+			params := strings.Split(line[2:loc[1]-1], ";")
+			for i := 0; i < len(params); i++ {
+				switch params[i] {
+				case "48":
+					on = true
+					i = len(params) // le reste de la séquence décrit la couleur
+				case "49", "0", "":
+					on = false
+				}
+			}
+			line = line[loc[1]:]
+			continue
+		}
+		r := []rune(line)[0]
+		for w := lipgloss.Width(string(r)); w > 0; w-- {
+			cols = append(cols, on)
+		}
+		line = line[len(string(r)):]
+	}
+	return cols
+}
+
+// Régression visuelle : un segment stylé émet un reset qui coupe le fond posé par le
+// cadre ; tout ce qui suit en texte nu s'affichait alors sur le fond du terminal, d'où
+// une bande plus claire au milieu des lignes non sélectionnées. Chaque colonne d'une
+// ligne de candidat doit porter un fond.
+func TestRowsHaveNoBackgroundGap(t *testing.T) {
+	lipgloss.SetColorProfile(termenv.TrueColor)
+
+	out := New("brew install", complete.Result{Items: []complete.Item{
+		{Name: "git", Badge: "F", Installed: true, Version: "2.55.0"},
+		{Name: "git-absorb", Badge: "F"},
+		{Name: "firefox", Badge: "C", Installed: true},
+	}}).View()
+
+	for _, name := range []string{"git-absorb", "firefox"} {
+		var row string
+		for _, line := range strings.Split(out, "\n") {
+			if strings.Contains(visible(line), name) {
+				row = line
+				break
+			}
+		}
+		if row == "" {
+			t.Fatalf("ligne %q introuvable", name)
+		}
+		for col, hasBg := range backgroundColumns(row) {
+			if !hasBg {
+				t.Errorf("ligne %q : colonne %d sans fond (bande visible) — %q", name, col, visible(row))
+				break
+			}
+		}
+	}
+}
+
 // La ligne courante ne porte plus de boîte : seul le cadre du popup dessine des coins,
 // et la sélection se signale par un soulignement qui court sur toute la largeur.
 func TestSelectedRowIsUnderlinedNotBoxed(t *testing.T) {
@@ -213,13 +276,15 @@ func TestFooterKeysArePills(t *testing.T) {
 	}
 }
 
-// Le sélecteur aéré ne montre que quelques candidats : au-delà, on défile.
-func TestShowsAtMostSixCandidates(t *testing.T) {
+// Le sélecteur plafonne à visibleRows candidats : au-delà, on défile. (Nommer des
+// paquets « p01 »… évite qu'un nom soit sous-chaîne d'un autre — « p1 » dans « p10 » —
+// ce qui gonflerait le compte.)
+func TestShowsAtMostVisibleRowsCandidates(t *testing.T) {
 	lipgloss.SetColorProfile(termenv.TrueColor)
 
 	items := []complete.Item{}
-	for _, n := range []string{"p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8"} {
-		items = append(items, complete.Item{Name: n, Badge: "F"})
+	for i := 1; i <= visibleRows+4; i++ {
+		items = append(items, complete.Item{Name: fmt.Sprintf("p%02d", i), Badge: "F"})
 	}
 	// Texte visible : la ligne courante est fragmentée caractère par caractère par le
 	// soulignement, son nom ne serait pas trouvé dans le rendu brut.
@@ -231,7 +296,7 @@ func TestShowsAtMostSixCandidates(t *testing.T) {
 			shown++
 		}
 	}
-	if shown != 6 {
-		t.Errorf("%d candidats affichés, attendu 6", shown)
+	if shown != visibleRows {
+		t.Errorf("%d candidats affichés, attendu %d", shown, visibleRows)
 	}
 }
