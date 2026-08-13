@@ -29,9 +29,10 @@ var (
 
 // Largeur intérieure fixe : chaque ligne est complétée à cette largeur.
 const (
-	boxW        = 52
-	nameMax     = boxW - 8
-	visibleRows = 12
+	boxW        = 58
+	rowW        = boxW - 4 // largeur intérieure d'une ligne (marge + bordure de chaque côté)
+	nameMax     = boxW - 12
+	visibleRows = 6
 )
 
 var (
@@ -44,8 +45,22 @@ var (
 			Background(panelBg).
 			Width(boxW)
 
-	// Ligne sélectionnée : un seul style qui remplit toute la largeur en teal.
-	selRowStyle = lipgloss.NewStyle().Background(accentD).Foreground(ink).Bold(true).Width(boxW)
+	// Ligne sélectionnée : une boîte arrondie autonome, détachée du cadre du popup.
+	// La marge gauche est peinte au fond du panneau, sinon elle apparaîtrait en noir.
+	selBoxStyle = lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(accent).
+			BorderBackground(panelBg).
+			Background(accentD).
+			Foreground(ink).
+			Bold(true).
+			MarginLeft(1).
+			MarginBackground(panelBg).
+			Width(rowW)
+
+	// Rappels de touches : pastilles (fond + remplissage). Une vraie bordure coûterait
+	// deux lignes de plus au pied du popup pour le même effet.
+	pillStyle = lipgloss.NewStyle().Background(sepCl).Foreground(ink).Bold(true).Padding(0, 1)
 
 	promptStyle = lipgloss.NewStyle().Foreground(accent).Bold(true)
 	titleStyle  = lipgloss.NewStyle().Foreground(accent).Bold(true)
@@ -205,8 +220,10 @@ func (m Model) View() string {
 	end := min(m.offset+visibleRows, len(m.filtered))
 	for i := m.offset; i < end; i++ {
 		b.WriteString(m.renderRow(m.filtered[i], i == m.cursor) + "\n")
+		if i != m.cursor {
+			b.WriteString("\n") // interligne ; la sélection le remplace par ses bordures
+		}
 	}
-	b.WriteString(sepStyle.Render(strings.Repeat("─", boxW)) + "\n")
 	b.WriteString(m.footer())
 	return boxStyle.Render(b.String())
 }
@@ -238,15 +255,17 @@ func (m Model) renderRow(it complete.Item, selected bool) string {
 		rightPlain += "●"
 	}
 
-	// Ligne sélectionnée : un seul style Background+Width (motif fiable qui remplit
-	// toute la largeur en teal). Le texte passe en clair ; la forme ◆/▣ reste.
+	// Ligne sélectionnée : une boîte arrondie à elle seule. Elle occupe 3 lignes
+	// (bordure, contenu, bordure) là où une ligne ordinaire en occupe 2 (contenu +
+	// interligne) — comme il y a toujours exactement une sélection, la hauteur totale
+	// du popup ne bouge pas quand le curseur se déplace.
 	if selected {
-		leftPlain := "▌ " + glyph + "  " + name
-		gap := boxW - lipgloss.Width(leftPlain) - lipgloss.Width(rightPlain)
+		leftPlain := glyph + "  " + name
+		gap := rowW - lipgloss.Width(leftPlain) - lipgloss.Width(rightPlain)
 		if gap < 1 {
 			gap = 1
 		}
-		return selRowStyle.Render(leftPlain + strings.Repeat(" ", gap) + rightPlain)
+		return selBoxStyle.Render(leftPlain + strings.Repeat(" ", gap) + rightPlain)
 	}
 
 	color := bulletStyle
@@ -256,8 +275,12 @@ func (m Model) renderRow(it complete.Item, selected bool) string {
 	case "C":
 		color = caskStyle
 	}
+	// Ligne ordinaire : alignée sur le contenu de la boîte de sélection (2 colonnes
+	// d'indentation = marge + bordure), et suivie d'un interligne ajouté par View.
 	leftPlain := "  " + glyph + "  " + name
-	gap := boxW - lipgloss.Width(leftPlain) - lipgloss.Width(rightPlain)
+	// On réserve à droite la même gouttière que la boîte de sélection (sa bordure et
+	// sa marge), pour que versions et points « installé » s'alignent d'une ligne à l'autre.
+	gap := boxW - 2 - lipgloss.Width(leftPlain) - lipgloss.Width(rightPlain)
 	if gap < 1 {
 		gap = 1
 	}
@@ -276,14 +299,16 @@ func (m Model) renderRow(it complete.Item, selected bool) string {
 }
 
 func (m Model) footer() string {
-	sep := hintStyle.Render("   ")
+	sep := hintStyle.Render("  ")
+	pill := func(key, label string) string {
+		return pillStyle.Render(key) + hintStyle.Render(" "+label)
+	}
 	parts := []string{
-		keyStyle.Render("↑↓") + hintStyle.Render(" naviguer"),
-		keyStyle.Render("⇥") + hintStyle.Render(" insérer"),
+		pill("⇥", "insérer"),
 	}
 	if m.executable {
-		parts = append(parts, keyStyle.Render("↩")+hintStyle.Render(" exécuter"))
+		parts = append(parts, pill("↩", "exécuter"))
 	}
-	parts = append(parts, keyStyle.Render("esc")+hintStyle.Render(" annuler"))
-	return strings.Join(parts, sep)
+	parts = append(parts, pill("↑↓", "naviguer"), pill("esc", "annuler"))
+	return "  " + strings.Join(parts, sep)
 }
