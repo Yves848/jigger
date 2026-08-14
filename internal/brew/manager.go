@@ -84,14 +84,16 @@ func (Manager) Insert(cat *pm.Catalog, sub, prefix, name string) string {
 	return name
 }
 
-// Warm reconstitue les listes de noms. Homebrew les sert en une seconde environ ; elles
-// sont de toute façon relues à la demande par Load, ce réchauffement n'étant qu'une
-// occasion de le faire hors du chemin d'une frappe.
+// Warm reconstitue les listes de noms. Homebrew les sert en une seconde environ — c'est
+// précisément pour cela que Load ne les demande plus lui-même : ce réchauffement est le
+// seul endroit où l'on attend brew.
 //
-// Les paquets installés n'ont pas de cache à refaire : ils sont lus dans Cellar et
-// Caskroom, donc toujours frais (cf. installedFromDirs).
+// Les paquets installés se lisent dans Cellar et Caskroom, donc toujours frais et sans
+// rien à refaire (cf. installedFromDirs). Leur cache ne sert qu'au préfixe inattendu, où
+// il faut passer par `brew list` : on ne le remplit que là.
 func (Manager) Warm(scope pm.Scope) error {
 	if scope == pm.ScopeInstalled {
+		warmInstalled()
 		return nil
 	}
 	ttl := 24 * time.Hour
@@ -100,5 +102,6 @@ func (Manager) Warm(scope pm.Scope) error {
 	}
 	cachedLines("formulae", ttl, "formulae")
 	cachedLines("casks", ttl, "casks")
+	warmInstalled()
 	return nil
 }

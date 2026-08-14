@@ -135,10 +135,15 @@ $env:JIGGER_KEYS_EXTRA = 'éèçàù'           # touches à relayer en plus des
 Le popup s'efface de lui-même si le terminal est trop étroit — et, sous zsh, s'il ne
 répond pas à l'interrogation de position du curseur.
 
-Sous PowerShell, quand le prompt occupe la dernière ligne de l'écran — le cas ordinaire
-d'un terminal en usage —, **jigger pousse l'écran** pour dégager la place du cadre, comme
-le fait `fzf --height`. Sous zsh, il s'abstient plutôt : le popup n'apparaît alors que
-s'il y a déjà de la place dessous.
+Quand le prompt occupe la dernière ligne de l'écran — le cas ordinaire d'un terminal en
+usage —, **jigger pousse l'écran** pour dégager la place du cadre, comme le fait
+`fzf --height`. C'est vrai des deux shells : sans cela, le popup ne s'afficherait pour
+ainsi dire jamais.
+
+Chacun des deux greffons **vérifie la version du binaire** au chargement. Greffon et
+binaire vont par paire : un binaire plus ancien ne connaît pas les options que le greffon
+lui passe, il sort en erreur, et le popup ne s'affiche jamais — sans un mot. Il le dit
+désormais.
 
 `JIGGER_KEYS_EXTRA` mérite un mot : PSReadLine n'offre aucun crochet appelé à chaque
 frappe. jigger réenregistre donc, une à une, les touches qui modifient la ligne — les

@@ -6,6 +6,54 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le ve
 [SemVer](https://semver.org/lang/fr/). Les versions antérieures à `v0.1.6` sont antérieures
 à ce journal ; leur détail est dans l'historique git.
 
+## [v0.7.0] — 2026-08-15
+
+Le portage Windows des deux versions précédentes avait corrigé, chemin faisant, des
+défauts qui n'avaient rien de propre à winget : ils étaient tout autant dans le greffon
+zsh, où personne ne les avait vus. Cette version les y corrige — le côté Homebrew revient
+au niveau du côté PowerShell.
+
+### Corrigé
+
+- **Le popup zsh ne s'affichait pour ainsi dire jamais.** Il n'était dessiné que s'il
+  tenait sous la ligne de commande — or dans un terminal en usage, le prompt occupe la
+  dernière ligne de l'écran, et il n'y a rien en dessous. Le greffon fait désormais la
+  place en poussant l'écran, comme n'importe quel sélecteur en incrustation (`fzf
+  --height`), et remet le curseur sur la ligne de commande, qui a monté d'autant. C'est
+  le pendant du `New-JiggerRoom` de la 0.6.0 ; zle n'a rien à en savoir, il se déplace en
+  relatif à partir de là où il a laissé le curseur.
+- **⇥ ouvrait le sélecteur plein écran par surprise, sous zsh aussi.** Quand le popup
+  n'avait rien à proposer — aucun candidat, ou pas la place de s'afficher —, ⇥ tombait
+  sur `jigger pick`, qui dessinait par-dessus le prompt et attendait une touche. ⇥ rend
+  maintenant la main à la complétion du shell ; le sélecteur plein écran reste ce qu'on
+  obtient avec `JIGGER_LIVE=0`, c'est-à-dire quand on l'a demandé.
+- **Une frappe pouvait attendre après brew.** Passé 24 h, le catalogue était reconstruit
+  dans le chemin du rendu : `brew formulae` puis `brew casks`, soit une bonne seconde,
+  la première fois qu'on tapait `brew i…` de la journée. Le catalogue se lit désormais
+  dans le cache et rien d'autre ; un cache périmé est utilisé tel quel et déclenche un
+  réchauffement détaché, qui le refera pour la frappe suivante — la règle que winget
+  suivait déjà. À la toute première utilisation, le cadre le dit (« catalogue Homebrew en
+  préparation… ») plutôt que d'annoncer « aucun candidat ».
+- `brew list --versions` ne tourne plus, lui non plus, dans le chemin d'une frappe : ce
+  recours au préfixe Homebrew inattendu est passé dans `jigger warm`.
+
+### Ajouté
+
+- **Le greffon zsh vérifie la version du binaire** au `source`, et signale un binaire
+  absent du `PATH`. Greffon et binaire vont par paire : le greffon passe à `jigger render`
+  des options qu'un binaire plus ancien ne connaît pas — celui-ci sort alors en erreur, et
+  le popup ne s'affiche jamais, sans un mot. C'est le pendant du contrôle que le module
+  PowerShell fait depuis la 0.6.0.
+- **Le greffon zsh réchauffe le catalogue** : au chargement (`jigger warm` détaché, comme
+  à l'import du module PowerShell), et après un `brew update`, `tap` ou `untap` — les
+  seules sous-commandes qui changent la liste des noms connus. La détection des commandes
+  mutantes ne vit plus dans le bloc oh-my-posh : le catalogue sert à la complétion, pas au
+  prompt, et n'a donc pas à dépendre de `JIGGER_PROMPT`.
+- Le harnais zpty **sait simuler le défilement** — il répondait jusqu'ici invariablement
+  « ligne 3 » à l'interrogation de position, ce qui rendait le premier bogue ci-dessus
+  strictement invisible. Deux cas de plus : le popup avec le prompt en bas de l'écran, et
+  ⇥ sans candidat.
+
 ## [v0.6.0] — 2026-08-14
 
 ### Modifié

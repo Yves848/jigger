@@ -105,24 +105,48 @@ func cachedLines(cacheName string, ttl time.Duration, args ...string) []string {
 	return lines
 }
 
-// Load construit le catalogue. Formulae/casks sont mis en cache 24 h (ils changent
-// rarement) ; les installés sont lus sur le disque à chaque fois — toujours frais, et
-// pour un coût négligeable (cf. installedFromDirs).
+// warmInstalled remplit le cache des installés — et seulement là où il sert : quand
+// Cellar et Caskroom ne donnent rien (préfixe inattendu), Load se rabat dessus. Ailleurs,
+// ce cache n'est jamais lu, et `brew list` coûterait 300 ms pour rien.
+func warmInstalled() {
+	p := prefix()
+	if len(installedFromDirs(filepath.Join(p, "Cellar"), filepath.Join(p, "Caskroom"))) > 0 {
+		return
+	}
+	cachedLines("installed", 0, "list", "--versions")
+}
+
+// Load construit le catalogue à partir des fichiers de cache — et sans jamais appeler
+// brew, qui coûte une bonne seconde là où l'on rend un cadre à chaque frappe. Un cache
+// périmé est utilisé tel quel et déclenche un réchauffement détaché, qui le refera pour
+// la frappe suivante (même règle que winget, cf. TriggerWarm).
+//
+// Les installés, eux, sont lus sur le disque à chaque fois : toujours frais, et pour un
+// coût négligeable (cf. installedFromDirs).
 func Load() *pm.Catalog {
 	const day = 24 * time.Hour
 
-	formulae := cachedLines("formulae", day, "formulae")
-	casks := cachedLines("casks", day, "casks")
+	formulae, formulaeFrais := pm.Cached("formulae", day)
+	casks, casksFrais := pm.Cached("casks", day)
+	if !formulaeFrais || !casksFrais {
+		pm.TriggerWarm()
+	}
 
 	p := prefix()
 	installed := installedFromDirs(filepath.Join(p, "Cellar"), filepath.Join(p, "Caskroom"))
 	if len(installed) == 0 {
-		// Préfixe inattendu (ou vraiment rien d'installé) : on repasse par brew, lent
-		// mais sûr. « --versions » donne « nom version » par installé.
-		installed = cachedLines("installed", 0, "list", "--versions")
+		// Préfixe inattendu (ou vraiment rien d'installé) : on repasse par le cache que
+		// `warm` a rempli avec `brew list --versions`.
+		installed, _ = pm.Cached("installed", day)
 	}
 
-	return NewCatalog(formulae, casks, installed)
+	cat := NewCatalog(formulae, casks, installed)
+	if len(formulae) == 0 && len(casks) == 0 {
+		// Première utilisation : le réchauffement vient d'être lancé, mais il dure une
+		// seconde ou deux. Mieux vaut le dire que d'annoncer « aucun candidat ».
+		cat.Note = "catalogue Homebrew en préparation…"
+	}
+	return cat
 }
 
 // NewCatalog construit un catalogue à partir des trois listes de Homebrew. `installed`
