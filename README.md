@@ -25,8 +25,8 @@ il ne requiert que `brew`.
   sans presser la moindre touche. `^N`/`^P` naviguent, `⇥` insère, `^G` ferme.
   Les flèches `↑`/`↓` ne sont **jamais** détournées : l'historique zsh reste l'historique
   zsh.
-- **Bloc oh-my-posh** (optionnel) : version de brew et nombre de mises à jour en attente
-  dans le prompt, sans jamais le ralentir.
+- **Bloc oh-my-posh** (optionnel) : version de brew et mises à jour en attente (formulae
+  et casks séparément) dans le prompt, sans jamais le ralentir.
 
 ## Installation
 
@@ -75,15 +75,19 @@ JIGGER_KEY='^ '   # touche d'insertion (défaut Tab)
 
 ## Bloc oh-my-posh
 
-Un bloc Homebrew dans le prompt : la **version de brew**, et le **nombre de mises à jour**
-en attente quand il y en a.
+Un bloc Homebrew dans le prompt : la **version de brew**, et les **mises à jour en
+attente**, formulae et casks comptés séparément.
 
 ```
- yves@MacBook  ~/git/jigger   main   6.0.17 ⇡9 ❯
-                                     ▲       ▲
-                                     │       └─ 9 paquets obsolètes (masqué si 0)
-                                     └───────── version de brew
+ yves@MacBook  ~/git/jigger   main   6.0.17 ⇡7F ⇡2C ❯
+                                     ▲       ▲    ▲
+                                     │       │    └─ 2 casks obsolètes
+                                     │       └────── 7 formulae obsolètes
+                                     └────────────── version de brew
 ```
+
+Chaque compteur disparaît quand il tombe à zéro — ` 6.0.17 ⇡2C` s'il ne reste que des
+casks, ` 6.0.17` tout court quand tout est à jour.
 
 `brew outdated` coûte de une à cinq secondes : il est donc **exclu du chemin du prompt**.
 jigger le lance en tâche de fond et dépose le résultat dans un fichier d'une ligne, que le
@@ -133,11 +137,21 @@ JIGGER_CACHE_DIR=…     # emplacement du cache (défaut ~/Library/Caches/jigger
 | Variable | Contenu |
 |---|---|
 | `JIGGER_BREW_VERSION` | version de brew, sans suffixe de commits : `6.0.17` |
-| `JIGGER_BREW_OUTDATED` | total obsolète — **non défini** s'il vaut zéro |
+| `JIGGER_BREW_FORMULAE` | formulae obsolètes |
+| `JIGGER_BREW_CASKS` | casks obsolètes |
+| `JIGGER_BREW_OUTDATED` | total des deux |
 
-`JIGGER_BREW_OUTDATED` n'existe que s'il y a quelque chose à signaler : le template se
-réduit ainsi à un `{{ if .Env.JIGGER_BREW_OUTDATED }}`, sans comparaison de chaînes. Rien
-n'interdit de s'en servir ailleurs que dans oh-my-posh (starship, un prompt maison…).
+Un compteur **n'est pas défini** quand il vaut zéro. Le template se réduit ainsi à un
+`{{ if .Env.JIGGER_BREW_FORMULAE }}`, sans comparaison de chaînes — et le bloc s'efface
+tout seul quand il n'y a rien à dire. Pour n'afficher qu'un chiffre plutôt que le détail
+F/C, remplace les deux blocs du template par :
+
+```
+{{ if .Env.JIGGER_BREW_OUTDATED }} <#F9E2AF>⇡{{ .Env.JIGGER_BREW_OUTDATED }}</>{{ end }}
+```
+
+Rien n'interdit de se servir de ces variables ailleurs que dans oh-my-posh (starship, un
+prompt maison…).
 
 ## Sous la capot (CLI)
 
