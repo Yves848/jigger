@@ -6,6 +6,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 
 	"gitlab.yg-devworks.com/yves/jigger/internal/complete"
+	"gitlab.yg-devworks.com/yves/jigger/internal/pm"
 )
 
 // Key est un rappel de touche affiché en pastille au pied du popup.
@@ -117,13 +118,7 @@ func (f Frame) renderRow(it complete.Item, selected bool) string {
 		name = name[:nameMax-1] + "…"
 	}
 
-	glyph := "•"
-	switch it.Badge {
-	case "F":
-		glyph = "◆"
-	case "C":
-		glyph = "▣"
-	}
+	glyph := glyphe(it.Badge)
 
 	// Partie droite (alignée au bord) : version installée puis point « installé ».
 	// On la compose d'abord en texte nu pour calculer le remplissage.
@@ -152,14 +147,7 @@ func (f Frame) renderRow(it complete.Item, selected bool) string {
 		return selStyle.Width(f.rowWidth()).Render(leftPlain + strings.Repeat(" ", gap) + rightPlain)
 	}
 
-	color := bulletStyle
-	switch it.Badge {
-	case "F":
-		color = formulaStyle
-	case "C":
-		color = caskStyle
-	}
-	left := pad(2) + color.Render(glyph) + pad(2) + nameStyle.Render(name)
+	left := pad(2) + couleur(it.Badge).Render(glyph) + pad(2) + nameStyle.Render(name)
 	right := ""
 	if it.Version != "" {
 		right = verStylePkg.Render(it.Version)
@@ -171,6 +159,30 @@ func (f Frame) renderRow(it complete.Item, selected bool) string {
 		right += dotStyle.Render("●")
 	}
 	return left + pad(gap) + right
+}
+
+// Chaque gestionnaire range ses paquets en deux classes (cf. pm) : la classe ordinaire
+// — formula, paquet du catalogue winget, bucket main — porte le losange ambré, l'autre
+// le carré violet. Une sous-commande ou une option, qui n'appartient à aucune, garde la
+// puce discrète.
+func glyphe(badge string) string {
+	switch badge {
+	case pm.BadgeFormula, pm.BadgeWinget, pm.BadgeScoop:
+		return "◆"
+	case pm.BadgeCask, pm.BadgeOther:
+		return "▣"
+	}
+	return "•"
+}
+
+func couleur(badge string) lipgloss.Style {
+	switch badge {
+	case pm.BadgeFormula, pm.BadgeWinget, pm.BadgeScoop:
+		return formulaStyle
+	case pm.BadgeCask, pm.BadgeOther:
+		return caskStyle
+	}
+	return bulletStyle
 }
 
 func (f Frame) footer() string {

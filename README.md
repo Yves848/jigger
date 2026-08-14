@@ -1,69 +1,109 @@
 # jigger
 
-**Assistance [Homebrew](https://brew.sh) dans le terminal** — complétion contextuelle
+**Assistance aux gestionnaires de paquets dans le terminal** — complétion contextuelle
 et sélecteur interactif, dans _ton_ vrai shell.
 
-`jigger` est un petit binaire Go autonome (démarrage quasi instantané) branché dans zsh :
-dès que tu tapes une commande `brew`, un **sélecteur** ([Bubble Tea] / [Lip Gloss])
-s'affiche sous le prompt et suit ta frappe, proposant les bons candidats selon le
-contexte. ⇥ insère le candidat courant dans la ligne ; tu n'as jamais à demander.
+`jigger` est un petit binaire Go autonome (démarrage quasi instantané) branché dans le
+shell : dès que tu tapes une commande de gestionnaire de paquets, un **sélecteur**
+([Bubble Tea] / [Lip Gloss]) s'affiche sous le prompt et suit ta frappe, proposant les
+bons candidats selon le contexte. ⇥ insère le candidat courant dans la ligne ; tu n'as
+jamais à demander.
+
+| Plateforme | Shell | Gestionnaires |
+|---|---|---|
+| macOS, Linux | zsh (`shell/jigger.plugin.zsh`) | [Homebrew](https://brew.sh) |
+| Windows | PowerShell (`shell/jigger.psm1`) | [winget](https://learn.microsoft.com/windows/package-manager/), [scoop](https://scoop.sh) |
+
+C'est le **premier mot de la ligne** qui décide : `brew`, `winget` ou `scoop`. Chacun
+apporte ses sous-commandes, ses options et son catalogue ; tout le reste — le popup, les
+touches, le bloc de prompt — est commun.
 
 Compagnon en ligne de commande de l'app GUI **Cocktails**, mais **totalement indépendant** :
-il ne requiert que `brew`.
+il ne requiert que le gestionnaire lui-même.
 
 ## Ce qu'il fait
 
 - **Complétion contextuelle**
-  - premier mot → sous-commandes brew (`install`, `uninstall`, `search`…) ;
-  - après `install`, `info`, `deps`… → **tous** les paquets (formulae + casks) ;
-  - après `uninstall`, `reinstall`, `pin`… → seulement les **paquets installés** ;
-  - après `-` → les **options** de la sous-commande (`list --versions`, `install --cask`…).
-- **Badges** F / C (formula / cask) et **indicateur « installé »** dans le sélecteur.
-- **`--cask` automatique** : choisir un cask « pur » derrière `install`/`reinstall` insère
-  `--cask <nom>` (évite l'erreur brew « use --cask »).
-- **Popup vivant** : le cadre apparaît dès « `brew ` » et se filtre au fil de la frappe,
+  - premier mot → sous-commandes (`install`, `uninstall`, `search`…) ;
+  - après `install`, `show`, `info`… → **tous** les paquets connus ;
+  - après `uninstall`, `upgrade`, `pin`… → seulement les paquets **installés** ;
+  - après `-` → les **options** de la sous-commande (`winget install --exact`,
+    `brew list --versions`…).
+- **Badges** et **indicateur « installé »** dans le sélecteur : ◆ pour le cas ordinaire
+  (formula, paquet du catalogue winget, bucket `main`), ▣ pour l'autre (cask, application
+  détectée hors catalogue, bucket tiers).
+- **Corrections automatiques** — celles qui évitent une commande fautive :
+  - brew : choisir un cask « pur » derrière `install`/`reinstall` insère `--cask <nom>` ;
+  - scoop : un nom présent dans plusieurs buckets s'insère qualifié, `main/flux` ;
+  - winget : un identifiant contenant des espaces s'insère entre guillemets.
+- **Popup vivant** : le cadre apparaît dès « `winget ` » et se filtre au fil de la frappe,
   sans presser la moindre touche. `^N`/`^P` naviguent, `⇥` insère, `^G` ferme.
-  Les flèches `↑`/`↓` ne sont **jamais** détournées : l'historique zsh reste l'historique
-  zsh.
-- **Bloc oh-my-posh** (optionnel) : version de brew et mises à jour en attente dans le
-  prompt — formulae et casks comptés séparément, chacun sous son icône — sans jamais le
-  ralentir.
+  Les flèches `↑`/`↓` ne sont **jamais** détournées : l'historique du shell reste
+  l'historique du shell.
+- **Bloc oh-my-posh** (optionnel) : version du gestionnaire et mises à jour en attente
+  dans le prompt, comptées séparément — sans jamais le ralentir.
 
 ## Installation
 
 ```sh
-# 1. le binaire (Go ≥ 1.24)
+# le binaire (Go ≥ 1.24)
 go install gitlab.yg-devworks.com/yves/jigger@latest   # → $GOBIN/jigger
 #   ou :  git clone … && make install
+```
 
-# 2. le plugin zsh (dans ~/.zshrc)
+Le binaire `jigger` doit être dans le `PATH`.
+
+### zsh (Homebrew)
+
+```sh
+# dans ~/.zshrc
 source /chemin/vers/jigger/shell/jigger.plugin.zsh
 ```
 
-Le binaire `jigger` doit être dans le `PATH`. Recharge ton shell (`exec zsh`).
+Recharge ton shell (`exec zsh`).
+
+### PowerShell (winget, scoop)
+
+```powershell
+# dans $PROFILE  (notepad $PROFILE pour l'ouvrir)
+Import-Module C:\chemin\vers\jigger\shell\jigger.psm1
+```
+
+Recharge ton shell (`. $PROFILE`, ou un nouvel onglet). PowerShell 7 est recommandé ;
+PSReadLine est requis (il est livré avec Windows).
+
+Deux réserves, à connaître :
+
+- le **mode Vi** de PSReadLine désactive le popup vivant (⇥ reste disponible) : relayer
+  les caractères imprimables casserait la navigation en mode commande ;
+- `PredictionViewStyle = ListView` dessine, lui aussi, sous la ligne de commande.
+  Garde `InlineView` si tu veux le popup.
 
 ## Usage
 
-Tape simplement une commande brew — le popup vit tout seul :
+Tape simplement une commande — le popup vit tout seul :
 
 ```
-brew ␣                  → les sous-commandes
-brew install fire       → les paquets « fire… », mis à jour à chaque lettre
-brew uninstall ␣        → les paquets installés
-brew list --            → les options de list
+winget ␣                 → les sous-commandes
+winget install Git.      → les paquets « Git.… », mis à jour à chaque lettre
+scoop uninstall ␣        → les applications installées
+winget list --           → les options de list
+brew install fire        → idem, côté macOS
 ```
 
 | Touche | Effet |
 |---|---|
-| `⇥` | insère le candidat courant (`--cask` ajouté si besoin) |
+| `⇥` | insère le candidat courant (corrigé si besoin) |
 | `^N` / `^P` | candidat suivant / précédent |
 | `^G` | ferme le popup pour la ligne en cours (`⇥` le rouvre) |
-| `↑` / `↓` | **inchangées** — historique zsh |
+| `↑` / `↓` | **inchangées** — historique du shell |
 
-Après `brew install`, le mot est vide et le catalogue compte des milliers d'entrées :
+Après `winget install`, le mot est vide et le catalogue compte des milliers d'entrées :
 le cadre invite alors à taper au moins une lettre plutôt que d'égrener la liste.
 
 ### Réglages
+
+Identiques dans les deux shells — à poser **avant** le `source` / l'`Import-Module` :
 
 ```sh
 JIGGER_LIVE=0     # désactive le popup vivant : ⇥ ouvre le sélecteur plein écran
@@ -71,65 +111,89 @@ JIGGER_ROWS=12    # candidats affichés (défaut 8 ; réduit si le terminal est 
 JIGGER_KEY='^ '   # touche d'insertion (défaut Tab)
 ```
 
-à poser **avant** le `source`. Le popup s'efface de lui-même si le terminal est trop
-étroit, trop court, ou ne répond pas à l'interrogation de position du curseur.
+```powershell
+$env:JIGGER_LIVE = '0'
+$env:JIGGER_ROWS = '12'
+$env:JIGGER_KEY  = 'Ctrl+Spacebar'   # noms de touches PSReadLine
+$env:JIGGER_COMMANDS = 'winget,scoop'      # commandes qui déclenchent le popup
+$env:JIGGER_KEYS_EXTRA = 'éèçàù'           # touches à relayer en plus des ASCII
+```
+
+Le popup s'efface de lui-même si le terminal est trop étroit ou trop court — et, sous
+zsh, s'il ne répond pas à l'interrogation de position du curseur.
+
+`JIGGER_KEYS_EXTRA` mérite un mot : PSReadLine n'offre aucun crochet appelé à chaque
+frappe. jigger réenregistre donc, une à une, les touches qui modifient la ligne — les
+ASCII imprimables, plus celles de cette liste. Sur un clavier AZERTY, la rangée des
+chiffres non pressée donne « éèçàù » : d'où le réglage, et sa valeur par défaut.
 
 ## Bloc oh-my-posh
 
-Un bloc Homebrew dans le prompt : la **version de brew**, et les **mises à jour en
-attente**, formulae et casks comptés séparément.
+Un bloc dans le prompt : la **version du gestionnaire**, et les **mises à jour en
+attente**, comptées séparément.
 
 ```
- yves@MacBook  ~/git/jigger   main  🍺 6.0.17  🧪 7  📦 2 ❯
-                                    ▲             ▲     ▲
-                                    │             │     └── 2 casks obsolètes
-                                    │             └── 7 formulae obsolètes
-                                    └── version de brew
+ yves@MacBook  ~/git/jigger   main  🍺 6.0.17  🧪 7  📦 2 ❯      ← macOS
+ PS D:\jigger  🪟 1.29.280  📦 48  🥄 1 ❯                        ← Windows
 ```
 
-Une **bière** pour brew, une **éprouvette** pour les formulae, un **colis** pour les casks.
-Chaque compteur disparaît quand il tombe à zéro — ` 6.0.17   2` s'il ne reste que
-des casks, ` 6.0.17` tout court quand tout est à jour. Un compteur ne s'affichant
-**jamais** à zéro, sa seule présence signifie « à mettre à jour » : ni flèche ni lettre
-à ajouter.
+Sur macOS : une **bière** pour brew, une **éprouvette** pour les formulae, un **colis**
+pour les casks. Sous Windows : une **fenêtre** pour la version de winget, un **colis**
+pour les paquets winget à mettre à niveau, une **cuillère** pour les applications scoop.
+
+Chaque compteur disparaît quand il tombe à zéro — ` 1.29.280  🥄 1` s'il ne reste que
+scoop, ` 1.29.280` tout court quand tout est à jour. Un compteur ne s'affichant **jamais**
+à zéro, sa seule présence signifie « à mettre à jour » : ni flèche ni lettre à ajouter.
 
 Ce sont des **émojis** : aucune police particulière n'est requise, et ils s'affichent
 partout. Si tu préfères des glyphes **Nerd Font** monochromes — qui prennent la couleur du
-segment, là où un émoji impose la sienne — remplace-les par `\uf0fc` (chope), `\uf0c3`
-(fiole) et `\uf1b2` (cube).
+segment, là où un émoji impose la sienne —, chaque fichier de segment indique les
+codes correspondants.
 
 Dans les deux cas, écris-les en **échappements JSON** plutôt qu'en clair : c'est la seule
 forme qui traverse sans dommage les éditeurs, les copier-coller et les outils qui
 normalisent l'Unicode. Les thèmes livrés par oh-my-posh font de même.
 
-`brew outdated` coûte de une à cinq secondes : il est donc **exclu du chemin du prompt**.
-jigger le lance en tâche de fond et dépose le résultat dans un fichier d'une ligne, que le
-hook `precmd` relit avec les seuls builtins de zsh — **0,03 ms par prompt, aucun fork**. La
-valeur affichée est celle du dernier calcul ; passé `JIGGER_PROMPT_TTL`, un rafraîchissement
-part détaché et le prompt suivant est à jour.
+Compter les mises à jour coûte de une à cinq secondes — `brew outdated` comme
+`winget list --upgrade-available` : c'est donc **exclu du chemin du prompt**. jigger le
+lance en tâche de fond et dépose le résultat dans un fichier d'une ligne, que le hook
+relit avec les seules primitives du shell — **aucun processus lancé, aucune attente**. La
+valeur affichée est celle du dernier calcul ; passé `JIGGER_PROMPT_TTL`, un
+rafraîchissement part détaché et le prompt suivant est à jour.
 
-Ce TTL seul laisserait le compteur mentir une demi-heure après un `brew upgrade`. jigger
-repère donc, en `preexec`, les commandes brew qui changent l'état — `install`, `upgrade`,
-`uninstall`, `update`, `tap`… — et rafraîchit **dans la foulée** : le prompt qui suit
-l'upgrade est déjà juste. C'est la seule fois où le prompt attend quelque chose (moins
-d'une seconde en général, après une commande qui a duré bien plus) ; `JIGGER_PROMPT_SYNC=0`
-rend ce rafraîchissement détaché, au prix d'un compteur juste au prompt d'*après*.
+Ce TTL seul laisserait le compteur mentir une demi-heure après un `winget upgrade`. jigger
+repère donc les commandes qui changent l'état — `install`, `upgrade`, `uninstall`,
+`update`, `bucket`… — au moment où elles partent, et rafraîchit **dans la foulée** : le
+prompt qui suit l'upgrade est déjà juste. C'est la seule fois où le prompt attend quelque
+chose (moins d'une seconde en général, après une commande qui a duré bien plus) ;
+`JIGGER_PROMPT_SYNC=0` rend ce rafraîchissement détaché, au prix d'un compteur juste au
+prompt d'*après*.
 
 Seul ce que le shell voit passer est détecté : une mise à jour lancée ailleurs — autre
 onglet, application graphique — reste rattrapée par le TTL.
 
-oh-my-posh n'ayant plus de segment `command` depuis la v26, tout passe par deux variables
+oh-my-posh n'ayant plus de segment `command` depuis la v26, tout passe par des variables
 d'environnement et un segment `text`.
 
-**1. Activer le hook** — dans `~/.zshrc`, *avant* le `source` :
+**1. Activer le hook** — *avant* le chargement du greffon :
 
 ```sh
-JIGGER_PROMPT=1
+JIGGER_PROMPT=1                                    # ~/.zshrc
 source /chemin/vers/jigger/shell/jigger.plugin.zsh
 ```
 
-**2. Ajouter le segment** — les thèmes livrés par Homebrew sont écrasés à chaque mise à
-jour : travaille sur une copie.
+```powershell
+$env:JIGGER_PROMPT = '1'                           # $PROFILE
+Import-Module C:\chemin\vers\jigger\shell\jigger.psm1
+```
+
+Sous PowerShell, `prompt` est le seul « precmd » disponible : jigger **enveloppe** celui
+qui est en place. Importe donc jigger **après** oh-my-posh, sans quoi le bloc aurait
+toujours un coup de retard. (Sous zsh, l'ordre des `source` n'a pas d'importance : le
+hook se place de lui-même en tête de `precmd_functions`.)
+
+**2. Ajouter le segment** — les thèmes livrés avec oh-my-posh sont écrasés à chaque mise
+à jour : travaille sur une copie.
 
 ```sh
 mkdir -p ~/.config/oh-my-posh
@@ -138,7 +202,8 @@ cp "$(brew --prefix oh-my-posh)/themes/catppuccin_mocha.omp.json" \
 ```
 
 Colle le contenu de [`shell/oh-my-posh/brew.segment.json`](shell/oh-my-posh/brew.segment.json)
-dans le tableau `segments` du bloc voulu, puis fais pointer `~/.zshrc` sur ta copie :
+— ou de [`windows.segment.json`](shell/oh-my-posh/windows.segment.json) — dans le tableau
+`segments` du bloc voulu, puis fais pointer ton profil sur ta copie :
 
 ```sh
 eval "$(oh-my-posh init zsh --config ~/.config/oh-my-posh/mon-theme.omp.json)"
@@ -152,13 +217,11 @@ deuxième prompt, une fois le premier rafraîchissement terminé.
 ```sh
 JIGGER_PROMPT=1        # active le bloc (défaut 0)
 JIGGER_PROMPT_TTL=1800 # âge du cache, en secondes, avant rafraîchissement (défaut 30 min)
-JIGGER_PROMPT_SYNC=1   # après une commande brew mutante, rafraîchir avant d'afficher le
+JIGGER_PROMPT_SYNC=1   # après une commande mutante, rafraîchir avant d'afficher le
                        # prompt (défaut) ; 0 = détaché, juste au prompt suivant
-JIGGER_CACHE_DIR=…     # emplacement du cache (défaut ~/Library/Caches/jigger)
+JIGGER_CACHE_DIR=…     # emplacement du cache (défaut ~/Library/Caches/jigger sur macOS,
+                       # %LOCALAPPDATA%\jigger sous Windows)
 ```
-
-L'ordre des `source` dans `~/.zshrc` n'a pas d'importance : le hook de jigger se place de
-lui-même en tête de `precmd_functions`, avant celui d'oh-my-posh qui calcule le prompt.
 
 ### Variables exposées
 
@@ -168,62 +231,95 @@ lui-même en tête de `precmd_functions`, avant celui d'oh-my-posh qui calcule l
 | `JIGGER_BREW_FORMULAE` | formulae obsolètes |
 | `JIGGER_BREW_CASKS` | casks obsolètes |
 | `JIGGER_BREW_OUTDATED` | total des deux |
+| `JIGGER_WINGET_VERSION` | version de winget : `1.29.280` |
+| `JIGGER_WINGET_OUTDATED` | paquets winget à mettre à niveau |
+| `JIGGER_SCOOP_OUTDATED` | applications scoop à mettre à niveau |
+| `JIGGER_OUTDATED` | total des deux |
 
 Un compteur **n'est pas défini** quand il vaut zéro. Le template se réduit ainsi à un
-`{{ if .Env.JIGGER_BREW_FORMULAE }}`, sans comparaison de chaînes — et le bloc s'efface
+`{{ if .Env.JIGGER_WINGET_OUTDATED }}`, sans comparaison de chaînes — et le bloc s'efface
 tout seul quand il n'y a rien à dire. Pour n'afficher qu'un chiffre plutôt que le détail
-F/C, remplace les deux blocs du template par :
+par gestionnaire, remplace les deux blocs du template par :
 
 ```
-{{ if .Env.JIGGER_BREW_OUTDATED }} <#F9E2AF>\u21e1{{ .Env.JIGGER_BREW_OUTDATED }}</>{{ end }}
+{{ if .Env.JIGGER_OUTDATED }} <#F9E2AF>\u21e1{{ .Env.JIGGER_OUTDATED }}</>{{ end }}
 ```
 
 Rien n'interdit de se servir de ces variables ailleurs que dans oh-my-posh (starship, un
-prompt maison…).
+prompt maison…). Sous PowerShell, `Update-JiggerPrompt` est exportée exprès : appelle-la
+depuis ta propre fonction `prompt`.
 
-## Sous la capot (CLI)
+## Sous le capot (CLI)
 
-Le plugin s'appuie sur ces sous-commandes ; utilisables seules :
+Le greffon s'appuie sur ces sous-commandes ; utilisables seules :
 
 ```sh
-jigger render --line "brew install fire" --sel 0 --cols 80   # une frame du popup vivant
+jigger render --line "winget install Git." --sel 0 --cols 80   # une frame du popup vivant
                                  # 1re ligne : count=… sel=… exec=… left=<ligne complétée>
 jigger complete "install fire"   # candidats, un par ligne (complétion classique)
-jigger pick "brew uninstall wg"  # sélecteur interactif ; imprime la nouvelle ligne
+jigger pick "scoop uninstall 7z" # sélecteur interactif ; imprime la nouvelle ligne
                                  # code retour : 0 = insérer, 10 = exécuter, 2 = annulé
 jigger demo                      # aperçu statique coloré du sélecteur
-jigger prompt                    # état brew en cache : version⇥formulae⇥casks⇥epoch
-jigger prompt --refresh          # interroge brew et réécrit le cache (lent, détaché)
+jigger prompt                    # état en cache : version⇥compteur1⇥compteur2⇥epoch
+jigger prompt --refresh          # interroge le gestionnaire et réécrit le cache (lent)
 jigger prompt --path             # chemin du fichier de cache
+jigger warm                      # reconstitue les catalogues périmés (lent, détaché)
+jigger warm --installed          # les seules listes de paquets installés
+jigger warm --all                # tout, périmé ou non
 ```
 
 `render` est **sans état** : l'index sélectionné vit côté shell et lui revient par
-`--sel`. C'est ce qui permet au widget de rester maître du clavier — zsh garde sa ligne,
-jigger ne fait qu'imprimer un cadre.
+`--sel`. C'est ce qui permet au greffon de rester maître du clavier — le shell garde sa
+ligne, jigger ne fait qu'imprimer un cadre.
 
-Le catalogue (`brew formulae` / `brew casks`) est mis en cache 24 h sous
-`~/Library/Caches/jigger`. Les paquets installés sont lus directement dans
-`Cellar`/`Caskroom` (~1 ms) plutôt que par `brew list --versions` (~300 ms) : c'est ce
-qui rend tenable un rendu à chaque frappe (**~8 ms** par appel, de bout en bout).
+**Rien de lent n'est jamais dans le chemin d'un rendu** (~8 ms de travail, ~30 ms de bout
+en bout sous Windows, où démarrer un processus coûte le plus cher). Chaque gestionnaire y
+parvient à sa façon :
+
+| | catalogue | installés | obsolètes |
+|---|---|---|---|
+| **brew** | `brew formulae` / `casks`, en cache 24 h | lus dans `Cellar`/`Caskroom` (~1 ms) | `brew outdated --json=v2`, en tâche de fond |
+| **scoop** | lu dans `buckets/*/bucket/*.json` | lus dans `apps/<nom>/<version>` | comparaison des manifestes, sur le disque |
+| **winget** | `winget search .`, en cache 24 h | `winget list`, en cache 10 min | `winget list --upgrade-available`, en tâche de fond |
+
+scoop n'a besoin d'**aucun cache** : tout ce que jigger lui demande est déjà sur le
+disque, dans une arborescence qui ressemble à s'y méprendre au `Cellar` de Homebrew. Même
+le compte des mises à jour en attente s'y lit — c'est ce que fait `scoop status`, mais
+sans démarrer PowerShell ni toucher au réseau.
+
+winget est à l'opposé : aucune sortie machine (que des tableaux de largeur fixe, aux
+en-têtes **traduits** — d'où un découpage aux frontières de colonnes, et des jeux d'essai
+en français), et près de deux secondes par appel. Ses deux listes sont donc tenues en
+cache et reconstituées par `jigger warm`, que `render` lance détaché dès qu'il les trouve
+périmées. Le catalogue s'obtient en cherchant `.` : le point qui sépare l'éditeur du
+paquet dans tous les identifiants de la source officielle (`Git.Git`,
+`Microsoft.PowerShell`) — soit, ici, 14 401 noms.
 
 ## Tests
 
 ```sh
-make test-all     # tests Go + suite zsh
+make test-all     # tests Go + suite du shell de la plateforme
 ```
 
-Le widget ne se teste que dans un vrai pseudo-terminal : `tests/zpty.zsh` lance un zsh
+Le widget zsh ne se teste que dans un vrai pseudo-terminal : `tests/zpty.zsh` lance un zsh
 interactif sous `zpty`, tape une séquence de touches et vérifie ce qui est réellement
 écrit à l'écran. `JIGGER_TEST_PLUGINS=1` y ajoute zsh-autosuggestions et
 zsh-syntax-highlighting, pour prouver qu'ils cohabitent.
 
+PSReadLine, lui, ne se pilote pas sans console : `tests/smoke.ps1` couvre tout le reste —
+les touches effectivement reprises, l'analyse de la sortie de `render`, les séquences
+d'affichage et d'effacement, la détection des commandes mutantes, et l'export des
+variables du prompt depuis un cache fabriqué. Le popup à l'écran, lui, se vérifie à la
+main.
+
 ## Feuille de route
 
 - Complétion **fish** et **bash**.
-- Wrapper `brew()` : proposer d'**enchaîner** sur les commandes suggérées par brew
-  (« To install …, run: … »).
-- Aperçu (`brew desc`) dans le sélecteur.
-- Distribution comme **commande externe brew** (`brew jigger`) via un tap.
+- Wrapper de commande : proposer d'**enchaîner** sur les commandes suggérées par le
+  gestionnaire (« To install …, run: … »).
+- Aperçu (`brew desc`, `winget show`) dans le sélecteur.
+- Distribution comme **commande externe brew** (`brew jigger`) via un tap, et paquet
+  **scoop** / **winget**.
 
 ## Licence
 

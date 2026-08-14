@@ -5,14 +5,26 @@ import (
 	"testing"
 
 	"gitlab.yg-devworks.com/yves/jigger/internal/brew"
+	"gitlab.yg-devworks.com/yves/jigger/internal/pm"
+	"gitlab.yg-devworks.com/yves/jigger/internal/scoop"
+	"gitlab.yg-devworks.com/yves/jigger/internal/winget"
 )
 
-func testCatalog() *brew.Catalog {
+func testCatalog() *pm.Catalog {
 	return brew.NewCatalog(
 		[]string{"git", "wget", "node", "ripgrep", "firefly"},        // formulae
 		[]string{"firefox", "visual-studio-code", "firefly-desktop"}, // casks
 		[]string{"git", "ripgrep"},                                   // installés
 	)
+}
+
+// complete est Complete sur un catalogue donné, pour le gestionnaire donné.
+func complete(line string, m pm.Manager, cat *pm.Catalog) Result {
+	return CompleteWith(line, m, cat)
+}
+
+func brewComplete(line string, cat *pm.Catalog) Result {
+	return complete(line, brew.New(), cat)
 }
 
 func names(items []Item) []string {
@@ -24,7 +36,7 @@ func names(items []Item) []string {
 }
 
 func TestFirstWord_CompletesSubcommands(t *testing.T) {
-	res := Complete("inst", testCatalog())
+	res := brewComplete("inst", testCatalog())
 	if got := names(res.Items); len(got) != 1 || got[0] != "install" {
 		t.Fatalf("attendu [install], obtenu %v", got)
 	}
@@ -34,14 +46,14 @@ func TestFirstWord_CompletesSubcommands(t *testing.T) {
 }
 
 func TestOptionCompletion(t *testing.T) {
-	res := Complete("list --vers", testCatalog())
+	res := brewComplete("list --vers", testCatalog())
 	if got := names(res.Items); len(got) != 1 || got[0] != "--versions" {
 		t.Fatalf("attendu [--versions], obtenu %v", got)
 	}
 }
 
 func TestInstall_CompletesAllPackages(t *testing.T) {
-	res := Complete("install fire", testCatalog())
+	res := brewComplete("install fire", testCatalog())
 	got := names(res.Items)
 	// firefly (formula) + firefox, firefly-desktop (casks)
 	want := map[string]bool{"firefly": true, "firefox": true, "firefly-desktop": true}
@@ -59,7 +71,7 @@ func TestInstall_CompletesAllPackages(t *testing.T) {
 }
 
 func TestUninstall_CompletesInstalledOnly(t *testing.T) {
-	res := Complete("uninstall ", testCatalog())
+	res := brewComplete("uninstall ", testCatalog())
 	got := names(res.Items)
 	if len(got) != 2 {
 		t.Fatalf("attendu 2 installés, obtenu %v", got)
@@ -73,22 +85,87 @@ func TestUninstall_CompletesInstalledOnly(t *testing.T) {
 
 func TestBadgeAndCaskDetection(t *testing.T) {
 	cat := testCatalog()
-	res := Complete("install firefox", cat)
-	if len(res.Items) != 1 || res.Items[0].Badge != "C" {
+	res := brewComplete("install firefox", cat)
+	if len(res.Items) != 1 || res.Items[0].Badge != pm.BadgeCask {
 		t.Fatalf("firefox devrait porter le badge C, obtenu %v", res.Items)
 	}
-	if !NeedsCask(cat, "firefox") {
-		t.Fatal("firefox (cask pur) devrait nécessiter --cask")
+	// Un cask pur derrière install : brew exige --cask, jigger l'ajoute.
+	if got := res.Insert("firefox"); got != "--cask firefox" {
+		t.Fatalf("insertion de firefox = %q, attendu « --cask firefox »", got)
 	}
-	if NeedsCask(cat, "git") {
-		t.Fatal("git (formula) ne devrait pas nécessiter --cask")
+	if got := brewComplete("install git", cat).Insert("git"); got != "git" {
+		t.Fatalf("insertion de git = %q, attendu « git »", got)
+	}
+	// Ligne qui tranche déjà : on n'ajoute rien.
+	if got := brewComplete("install --cask fire", cat).Insert("firefox"); got != "firefox" {
+		t.Fatalf("insertion derrière --cask = %q, attendu « firefox »", got)
 	}
 }
 
-func TestStripsLeadingBrew(t *testing.T) {
-	res := Complete("brew uninstall gi", testCatalog())
+func TestStripsLeadingCommand(t *testing.T) {
+	res := brewComplete("brew uninstall gi", testCatalog())
 	if got := names(res.Items); len(got) != 1 || got[0] != "git" {
 		t.Fatalf("attendu [git], obtenu %v", got)
+	}
+}
+
+// Le mot de commande peut arriver avec son chemin et son extension — c'est le cas d'une
+// ligne complétée par PowerShell.
+func TestStripsCommandPath(t *testing.T) {
+	cat := scoopCatalog()
+	res := complete(`C:\Users\y\scoop\shims\scoop.exe install 7z`, scoop.New(), cat)
+	if got := names(res.Items); len(got) != 1 || got[0] != "7zip" {
+		t.Fatalf("attendu [7zip], obtenu %v", got)
+	}
+	if res.Title() != "scoop install" {
+		t.Fatalf("titre = %q", res.Title())
+	}
+}
+
+// scoopCatalog imite ce que LoadFrom construit : deux buckets, dont un nom présent dans
+// les deux.
+func scoopCatalog() *pm.Catalog {
+	cat := pm.NewCatalog()
+	cat.Add("7zip", pm.BadgeScoop)
+	cat.Add("flux", pm.BadgeScoop)
+	cat.Add("winrar", pm.BadgeOther)
+	cat.Qualified["flux"] = "main/flux"
+	cat.MarkInstalled("7zip", "26.00", pm.BadgeScoop)
+	cat.Sort()
+	return cat
+}
+
+func TestScoop_QualifieUnNomAmbigu(t *testing.T) {
+	res := complete("scoop install fl", scoop.New(), scoopCatalog())
+	if got := res.Insert("flux"); got != "main/flux" {
+		t.Fatalf("insertion = %q, attendu « main/flux »", got)
+	}
+	// Un nom sans ambiguïté s'insère tel quel.
+	if got := res.Insert("winrar"); got != "winrar" {
+		t.Fatalf("insertion = %q, attendu « winrar »", got)
+	}
+}
+
+func TestWinget_SousCommandesEtOptions(t *testing.T) {
+	cat := pm.NewCatalog()
+	cat.Add("Git.Git", pm.BadgeWinget)
+	cat.MarkInstalled("Canon IJ Scan Utility", "2.2.0.5", pm.BadgeOther)
+	cat.Sort()
+
+	if got := names(complete("winget unin", winget.New(), cat).Items); len(got) != 1 || got[0] != "uninstall" {
+		t.Fatalf("attendu [uninstall], obtenu %v", got)
+	}
+	if got := names(complete("winget install --ex", winget.New(), cat).Items); len(got) != 1 || got[0] != "--exact" {
+		t.Fatalf("attendu [--exact], obtenu %v", got)
+	}
+	// `uninstall` ne propose que des paquets installés — et protège celui dont
+	// l'identifiant contient des espaces.
+	res := complete("winget uninstall ", winget.New(), cat)
+	if got := names(res.Items); len(got) != 1 || got[0] != "Canon IJ Scan Utility" {
+		t.Fatalf("attendu le seul installé, obtenu %v", got)
+	}
+	if got := res.Insert("Canon IJ Scan Utility"); got != `"Canon IJ Scan Utility"` {
+		t.Fatalf("insertion = %q, attendue entre guillemets", got)
 	}
 }
 
@@ -108,6 +185,6 @@ func BenchmarkComplete(b *testing.B) {
 
 	b.ResetTimer()
 	for b.Loop() {
-		Complete("brew install form", cat)
+		brewComplete("brew install form", cat)
 	}
 }

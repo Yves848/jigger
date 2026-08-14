@@ -1,0 +1,7 @@
+{
+  "$comment": "Bloc winget/scoop pour oh-my-posh \u2014 mode d'emploi dans le README de jigger, \u00a7 \u00ab Bloc oh-my-posh \u00bb. Les variables sont pos\u00e9es par le hook de jigger.psm1 (JIGGER_PROMPT=1) ; sans elles, le segment dispara\u00eet. \u00c9mojis : fen\u00eatre (version de winget), colis (paquets winget \u00e0 mettre \u00e0 niveau), cuill\u00e8re (applications scoop) \u2014 aucune police particuli\u00e8re requise. Pour des glyphes Nerd Font monochromes, qui prennent la couleur du segment, les remplacer par \\ue70f, \\uf1b2 et \\uf0f5. Pour un seul chiffre au lieu du d\u00e9tail par gestionnaire, remplacer les deux blocs conditionnels par \u00ab {{ if .Env.JIGGER_OUTDATED }} <#F9E2AF>\\u21e1{{ .Env.JIGGER_OUTDATED }}</>{{ end }} \u00bb.",
+  "type": "text",
+  "style": "plain",
+  "foreground": "#FAB387",
+  "template": "{{ if .Env.JIGGER_WINGET_VERSION }}\ud83e\ude9f {{ .Env.JIGGER_WINGET_VERSION }}{{ if .Env.JIGGER_WINGET_OUTDATED }} <#F9E2AF>\ud83d\udce6 {{ .Env.JIGGER_WINGET_OUTDATED }}</>{{ end }}{{ if .Env.JIGGER_SCOOP_OUTDATED }} <#F9E2AF>\ud83e\udd44 {{ .Env.JIGGER_SCOOP_OUTDATED }}</>{{ end }} {{ end }}"
+}

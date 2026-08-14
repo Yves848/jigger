@@ -1,3 +1,4 @@
 /jigger
 *.test
 dist/
+/jigger.exe

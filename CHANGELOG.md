@@ -6,6 +6,55 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le ve
 [SemVer](https://semver.org/lang/fr/). Les versions antérieures à `v0.1.6` sont antérieures
 à ce journal ; leur détail est dans l'historique git.
 
+## [v0.5.0] — 2026-08-14
+
+### Ajouté
+
+- **Windows : winget et scoop**, avec la même ligne de commande et le même popup que
+  Homebrew. C'est désormais le premier mot de la ligne qui désigne le gestionnaire —
+  `brew`, `winget` ou `scoop` —, chacun apportant ses sous-commandes, ses options, son
+  catalogue et ses corrections d'insertion. Un nouveau paquet `internal/pm` porte ce
+  contrat ; `internal/brew`, `internal/winget` et `internal/scoop` le remplissent.
+- **Module PowerShell** (`shell/jigger.psm1`), pendant du plugin zsh : popup vivant, ⇥,
+  `^N`/`^P`/`^G`, et le bloc de prompt. PSReadLine n'offrant aucun crochet appelé à chaque
+  frappe, jigger réenregistre les touches qui modifient la ligne derrière un relais qui
+  rappelle la fonction PSReadLine d'origine avant de redessiner : aucun comportement
+  d'édition n'est réécrit. `JIGGER_KEYS_EXTRA` couvre les touches non ASCII (« éèçàù »
+  d'un clavier AZERTY).
+- **`jigger warm`** reconstitue les catalogues lents hors du chemin d'un rendu.
+  `--installed` refait les seules listes de paquets installés — ce qui change après une
+  installation —, `--all` refait tout. `render` le lance détaché dès qu'il trouve un cache
+  périmé : une frappe n'attend jamais après winget.
+- **Corrections d'insertion propres à chaque gestionnaire** : scoop qualifie par son
+  bucket un nom qui en occupe plusieurs (`main/flux`, là où scoop se contente d'un
+  avertissement avant de choisir à ta place) ; winget protège par des guillemets un
+  identifiant contenant des espaces.
+- Segment oh-my-posh Windows (`shell/oh-my-posh/windows.segment.json`) et variables
+  `JIGGER_WINGET_VERSION`, `JIGGER_WINGET_OUTDATED`, `JIGGER_SCOOP_OUTDATED`,
+  `JIGGER_OUTDATED`.
+- `tests/smoke.ps1` : la suite d'assertions du module PowerShell, et `make test-all` la
+  lance à la place de la suite zsh sous Windows.
+
+### Modifié
+
+- Les candidats sont triés **sans tenir compte de la casse**. Un tri brut aurait rangé
+  tous les identifiants winget capitalisés avant les autres — `Microsoft.PowerShell` loin
+  devant `mailspring` — alors que le filtre, lui, ignore la casse : la liste aurait paru
+  mélangée.
+- `prompt.Status` nomme ses deux compteurs `Primary` et `Secondary` : ils portent les
+  formulae et les casks sous Homebrew, winget et scoop sous Windows. Le format du fichier
+  de cache, lui, ne change pas — les hooks des deux shells lisent la même ligne.
+
+### Notes
+
+- Le catalogue winget s'obtient en cherchant `.` : le point qui sépare l'éditeur du paquet
+  dans tous les identifiants de la source officielle. winget n'ayant aucune sortie machine,
+  ses tableaux sont découpés aux frontières de colonnes lues sur l'en-tête — la seule
+  méthode qui survive à des en-têtes traduits et à des identifiants contenant des espaces.
+  Les jeux d'essai sont des sorties réellement capturées, en français.
+- scoop n'a besoin d'aucun cache : catalogue, paquets installés et mises à jour en attente
+  se lisent tous sur le disque, en quelques millisecondes.
+
 ## [v0.4.3] — 2026-08-14
 
 ### Corrigé

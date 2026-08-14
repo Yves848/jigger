@@ -1,0 +1,12 @@
+Nom                                                                   ID                                             Version                Correspondance
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Git                                                                   Git.Git                                        2.55.0.3               
+Git                                                                   Microsoft.Git                                  2.55.0.0.3             
+OpenCherry Desktop                                                    4nrry.OpenCherryDesktop                        0.0.1                  Tag: git
+DevMate                                                               ADELA.Devmate                                  0.1.0                  Tag: git
+GitTop                                                                AmarBego.GitTop                                0.5.3                  Tag: git
+OffGitx64                                                             Andrea.OffGitx64                               1.1                    Tag: git
+GitNodes                                                              AndreaBozzo.GitNodes                           0.1.0                  Tag: git
+RepoZ                                                                 AndreasWascher.RepoZ                           5.5                    Tag: git
+Araxis Merge                                                          Araxis.Merge                                   2026.0                 Tag: git
+sem                                                                   AtaraxyLabs.sem                                0.13.0                 Tag: git

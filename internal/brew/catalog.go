@@ -4,34 +4,15 @@
 package brew
 
 import (
-	"bufio"
-	"bytes"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
 	"time"
+
+	"gitlab.yg-devworks.com/yves/jigger/internal/pm"
 )
-
-// Catalog contient les ensembles de noms nécessaires à la complétion.
-type Catalog struct {
-	Formulae  []string
-	Casks     []string
-	Installed map[string]bool   // nom -> installé
-	Versions  map[string]string // nom -> version installée (vide si inconnue)
-	formulaeM map[string]bool
-	casksM    map[string]bool
-}
-
-// Version renvoie la version installée d'un paquet (vide si non installé/inconnue).
-func (c *Catalog) Version(name string) string { return c.Versions[name] }
-
-// IsCask indique si un nom est un cask connu.
-func (c *Catalog) IsCask(name string) bool { return c.casksM[name] }
-
-// IsFormula indique si un nom est une formula connue.
-func (c *Catalog) IsFormula(name string) bool { return c.formulaeM[name] }
 
 // Path renvoie le chemin du binaire brew (Apple Silicon puis Intel).
 func Path() string {
@@ -106,63 +87,28 @@ func latestVersionDir(pkgDir string) string {
 	return latest
 }
 
-// CacheDir renvoie le dossier de cache de jigger (créé si besoin) :
-// $JIGGER_CACHE_DIR s'il est défini, sinon <cache utilisateur>/jigger — soit
-// ~/Library/Caches/jigger sur macOS, ~/.cache/jigger ailleurs.
-//
-// La surcharge sert aux tests, mais aussi au hook zsh du prompt : celui-ci doit
-// désigner le même fichier sans avoir le droit de forker pour le demander.
-func CacheDir() string {
-	dir := os.Getenv("JIGGER_CACHE_DIR")
-	if dir == "" {
-		base, err := os.UserCacheDir()
-		if err != nil {
-			base = os.TempDir()
-		}
-		dir = filepath.Join(base, "jigger")
-	}
-	_ = os.MkdirAll(dir, 0o755)
-	return dir
-}
-
 // cachedLines renvoie les lignes de `brew <args>`, mises en cache <ttl>. Le fichier
 // de cache accélère massivement les invocations répétées (chaque appel du widget).
 func cachedLines(cacheName string, ttl time.Duration, args ...string) []string {
-	path := filepath.Join(CacheDir(), cacheName)
-	if info, err := os.Stat(path); err == nil && time.Since(info.ModTime()) < ttl {
-		if data, err := os.ReadFile(path); err == nil {
-			return splitLines(data)
-		}
+	if lines, frais := pm.Cached(cacheName, ttl); frais {
+		return lines
 	}
 
-	out, err := exec.Command(Path(), args...).Output()
+	out, err := pm.Run(Path(), args...)
 	if err != nil {
 		// En cas d'échec, on se rabat sur un cache périmé s'il existe.
-		if data, rerr := os.ReadFile(path); rerr == nil {
-			return splitLines(data)
-		}
-		return nil
+		lines, _ := pm.Cached(cacheName, ttl)
+		return lines
 	}
-	_ = os.WriteFile(path, out, 0o644)
-	return splitLines(out)
-}
-
-func splitLines(data []byte) []string {
-	var lines []string
-	sc := bufio.NewScanner(bytes.NewReader(data))
-	sc.Buffer(make([]byte, 0, 64*1024), 1024*1024)
-	for sc.Scan() {
-		if line := strings.TrimSpace(sc.Text()); line != "" {
-			lines = append(lines, line)
-		}
-	}
+	lines := pm.SplitLines(out)
+	_ = pm.Store(cacheName, lines)
 	return lines
 }
 
 // Load construit le catalogue. Formulae/casks sont mis en cache 24 h (ils changent
 // rarement) ; les installés sont lus sur le disque à chaque fois — toujours frais, et
 // pour un coût négligeable (cf. installedFromDirs).
-func Load() *Catalog {
+func Load() *pm.Catalog {
 	const day = 24 * time.Hour
 
 	formulae := cachedLines("formulae", day, "formulae")
@@ -176,43 +122,27 @@ func Load() *Catalog {
 		installed = cachedLines("installed", 0, "list", "--versions")
 	}
 
-	return NewCatalogVersions(formulae, casks, installed)
+	return NewCatalog(formulae, casks, installed)
 }
 
-// NewCatalog construit un catalogue à partir de listes de noms (sans versions).
-// Conservé pour les tests qui n'ont pas besoin des versions.
-func NewCatalog(formulae, casks, installed []string) *Catalog {
-	return NewCatalogVersions(formulae, casks, installed)
-}
-
-// NewCatalogVersions construit un catalogue. `installed` accepte soit des noms simples
-// (« git »), soit des lignes « nom version » (sortie de `brew list --versions`) : le
-// premier champ est le nom, le second (s'il existe) la version.
-func NewCatalogVersions(formulae, casks, installed []string) *Catalog {
-	c := &Catalog{
-		Formulae:  formulae,
-		Casks:     casks,
-		Installed: make(map[string]bool, len(installed)),
-		Versions:  make(map[string]string, len(installed)),
-		formulaeM: make(map[string]bool, len(formulae)),
-		casksM:    make(map[string]bool, len(casks)),
-	}
+// NewCatalog construit un catalogue à partir des trois listes de Homebrew. `installed`
+// accepte soit des noms simples (« git »), soit des lignes « nom version » (sortie de
+// `brew list --versions`) : le premier champ est le nom, le second (s'il existe) la
+// version.
+func NewCatalog(formulae, casks, installed []string) *pm.Catalog {
+	cat := pm.NewCatalog()
 	for _, n := range formulae {
-		c.formulaeM[n] = true
+		cat.Add(n, pm.BadgeFormula)
 	}
+	// Un nom déjà pris par une formula garde son badge : seul un cask *pur* est un cask
+	// aux yeux de la complétion — c'est lui, et lui seul, qui réclame `--cask`.
 	for _, n := range casks {
-		c.casksM[n] = true
+		cat.Add(n, pm.BadgeCask)
 	}
 	for _, line := range installed {
-		fields := strings.Fields(line)
-		if len(fields) == 0 {
-			continue
-		}
-		name := fields[0]
-		c.Installed[name] = true
-		if len(fields) > 1 {
-			c.Versions[name] = fields[1]
-		}
+		nom, version, _ := strings.Cut(line, " ")
+		cat.MarkInstalled(nom, strings.TrimSpace(version), pm.BadgeFormula)
 	}
-	return c
+	cat.Sort()
+	return cat
 }

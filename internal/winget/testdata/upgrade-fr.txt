@@ -1,0 +1,52 @@
+Nom                                                                ID                                 Version                       Disponible                    Source
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+1Password CLI                                                      AgileBits.1Password.CLI            2.34.0                        2.34.1                        winget
+7-Zip 26.01 (x64)                                                  7zip.7zip                          26.01                         26.02                         winget
+Chromaprint                                                        AcoustID.Chromaprint               1.6.0                         1.6.1                         winget
+Claude                                                             Anthropic.Claude                   1.3561.0.0                    1.30096.1                     winget
+Creality Print 7.1                                                 Creality.CrealityPrint             7.1.0                         7.2.1                         winget
+Dell Command | Update for Windows Universal                        Dell.CommandUpdate.Universal       5.6.0                         5.7.0                         winget
+Deno                                                               DenoLand.Deno                      2.7.12                        2.9.5                         winget
+eza                                                                eza-community.eza                  0.23.4                        0.23.5                        winget
+FreeCAD 1.1.1 (Installation pour l'utilisateur courant)            FreeCAD.FreeCAD                    1.1.1                         1.1.3                         winget
+fzf                                                                junegunn.fzf                       0.71.0                        0.74.2                        winget
+Git                                                                Git.Git                            2.53.0.3                      2.55.0.3                      winget
+GitHub CLI                                                         GitHub.cli                         2.90.0                        2.97.0                        winget
+GitHub Desktop                                                     GitHub.GitHubDesktop               3.6.3                         3.6.4                         winget
+glab v1.95.0                                                       GLab.GLab                          1.95.0                        1.113.0                       winget
+Go Programming Language amd64 go1.26.2                             GoLang.Go                          1.26.2                        1.26.5                        winget
+GoLand 2026.1.4                                                    JetBrains.GoLand                   2026.1.4                      2026.2.1                      winget
+gum                                                                charmbracelet.gum                  0.13.0                        0.17.0                        winget
+Inno Setup version 6.7.1                                           JRSoftware.InnoSetup               6.7.1                         6.7.3                         winget
+Java(TM) SE Development Kit 26 (64-bit)                            Oracle.JDK.26                      26.0.0.0                      26.0.2.0                      winget
+KiCad 10.0                                                         KiCad.KiCad                        10.0.3                        10.0.5                        winget
+Microsoft .NET Runtime - 6.0.20 (x64)                              Microsoft.DotNet.Runtime.6         6.0.20                        6.0.36                        winget
+Microsoft .NET SDK 10.0.300 (x64)                                  Microsoft.DotNet.SDK.10            10.0.300                      10.0.400                      winget
+Microsoft ASP.NET Core 7.0.7 - Shared Framework (x64)              Microsoft.DotNet.AspNetCore.7      7.0.7                         7.0.20                        winget
+Microsoft GameInput                                                Microsoft.GameInput                3.3.221.0                     3.4.218                       winget
+Microsoft Teams                                                    Microsoft.Teams                    26163.405.4842.717            26198.304.4946.9672           winget
+Microsoft Visual C++ 2010  x86 Redistributable - 10.0.30319        Microsoft.VCRedist.2010.x86        10.0.30319                    10.0.40219                    winget
+Microsoft Visual C++ 2015-2022 Redistributable (x64) - 14.44.35211 Microsoft.VCRedist.2015+.x64       14.44.35211.0                 14.51.36247.0                 winget
+Microsoft Visual C++ 2015-2022 Redistributable (x86) - 14.42.34438 Microsoft.VCRedist.2015+.x86       14.42.34438.0                 14.51.36247.0                 winget
+Microsoft Windows Desktop Runtime - 6.0.28 (x64)                   Microsoft.DotNet.DesktopRuntime.6  6.0.28                        6.0.36                        winget
+Microsoft Windows Desktop Runtime - 7.0.7 (x64)                    Microsoft.DotNet.DesktopRuntime.7  7.0.7                         7.0.20                        winget
+Microsoft Windows Desktop Runtime - 8.0.11 (x64)                   Microsoft.DotNet.DesktopRuntime.8  8.0.11                        8.0.30                        winget
+Microsoft Windows Desktop Runtime - 9.0.7 (x64)                    Microsoft.DotNet.DesktopRuntime.9  9.0.7                         9.0.19                        winget
+Microsoft Windows Desktop Runtime 10.0.10 (x64)                    Microsoft.DotNet.DesktopRuntime.10 10.0.10                       10.0.11                       winget
+Neovim                                                             Neovim.Neovim                      0.12.1                        0.12.4                        winget
+Nushell                                                            Nushell.Nushell                    0.112.2                       0.114.1                       winget
+OBS Studio                                                         OBSProject.OBSStudio               32.1.2                        32.2.1                        winget
+Obsidian                                                           Obsidian.Obsidian                  1.12.7                        1.13.7                        winget
+PowerShell                                                         Microsoft.PowerShell               7.6.3.0                       7.6.4.0                       winget
+Python 3.14.4 (64-bit)                                             Python.Python.3.14                 3.14.4                        3.14.7                        winget
+RipGrep GNU                                                        BurntSushi.ripgrep.GNU             15.1.0                        15.2.0                        winget
+Seelen UI                                                          Seelen.SeelenUI                    2.6.8                         2.7.1                         winget
+Sous-système Windows pour Linux                                    Microsoft.WSL                      2.6.3.0                       2.7.11                        winget
+starship                                                           Starship.Starship                  1.24.2                        1.26.0                        winget
+Terminal Windows                                                   Microsoft.WindowsTerminal          1.24.10921.0                  1.24.11911.0                  winget
+Thonny 4.1.7                                                       AivarAnnamaa.Thonny                4.1.7                         5.0.0                         winget
+Warp                                                               Warp.Warp                          v0.2026.08.05.09.03.stable_01 v0.2026.08.12.21.54.stable_00 winget
+Yazi                                                               sxyazi.yazi                        26.1.22                       26.5.6                        winget
+zoxide                                                             ajeetdsouza.zoxide                 0.9.9                         0.10.0                        winget
+48 mises à niveau disponibles.
+1 package(s) a(ont) des numéros de version qui ne peuvent pas être déterminés. Utilisez --include-unknown pour afficher tous les résultats.

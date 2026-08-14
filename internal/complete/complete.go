@@ -1,73 +1,64 @@
-// Package complete analyse une ligne de commande brew et propose des candidats
-// contextuels : sous-commandes, options (--…) ou noms de paquets selon la position,
-// et — pour uninstall/reinstall… — seulement les paquets installés.
+// Package complete analyse une ligne de commande et propose des candidats contextuels :
+// sous-commandes, options (--…) ou noms de paquets selon la position, et — pour
+// uninstall, upgrade… — seulement les paquets installés.
+//
+// Rien ici ne connaît Homebrew, winget ou scoop : c'est le premier mot de la ligne qui
+// désigne le gestionnaire (cf. internal/managers), lequel fournit ses sous-commandes,
+// ses options et son catalogue.
 package complete
 
 import (
-	"sort"
 	"strings"
 
-	"gitlab.yg-devworks.com/yves/jigger/internal/brew"
+	"gitlab.yg-devworks.com/yves/jigger/internal/managers"
+	"gitlab.yg-devworks.com/yves/jigger/internal/pm"
 )
 
-// Item est un candidat de complétion.
-type Item struct {
-	Name      string
-	Badge     string // "F" (formula), "C" (cask), "" (sous-commande / option)
-	Installed bool
-	Version   string // version installée (vide si non installé/inconnue)
-}
+// Item est un candidat de complétion. C'est le type du gestionnaire : le popup affiche
+// tel quel ce que celui-ci a produit.
+type Item = pm.Item
 
 // Result décrit le contexte de complétion et les candidats.
 type Result struct {
 	Prefix     string // texte avant le mot courant (pour reconstruire la ligne)
 	Word       string // mot en cours de complétion
+	Cmd        string // gestionnaire : « brew », « winget », « scoop »
 	Sub        string // sous-commande courante (« install », « uninstall »…)
 	Items      []Item
-	Executable bool // contexte paquet → accepter complète une commande exécutable
+	Executable bool   // contexte paquet → accepter complète une commande exécutable
+	Note       string // message à afficher à la place de « aucun candidat »
+
+	mgr pm.Manager
+	cat *pm.Catalog
 }
 
-// Sous-commandes proposées pour le premier mot.
-var subcommands = []string{
-	"install", "uninstall", "reinstall", "upgrade", "info", "search", "list", "deps",
-	"uses", "pin", "unpin", "tap", "untap", "outdated", "cleanup", "autoremove", "doctor",
-	"services", "link", "unlink", "home", "desc", "leaves", "missing", "update",
-}
-
-// Options communes à toutes les sous-commandes.
-var commonOptions = []string{"--help", "--verbose", "--debug", "--quiet"}
-
-// Options spécifiques par sous-commande.
-var optionsBySub = map[string][]string{
-	"install":   {"--cask", "--formula", "--force", "--HEAD", "--build-from-source", "--no-quarantine", "--dry-run"},
-	"reinstall": {"--cask", "--formula", "--force", "--no-quarantine"},
-	"uninstall": {"--cask", "--formula", "--force", "--zap", "--ignore-dependencies"},
-	"upgrade":   {"--cask", "--formula", "--greedy", "--dry-run", "--force"},
-	"list":      {"--versions", "--cask", "--formula", "--pinned", "--full-name", "-1"},
-	"outdated":  {"--cask", "--formula", "--greedy", "--verbose", "--json"},
-	"info":      {"--json", "--cask", "--formula", "--github"},
-	"deps":      {"--tree", "--installed", "--cask", "--formula", "--include-build"},
-	"uses":      {"--installed", "--recursive", "--cask", "--formula"},
-	"search":    {"--cask", "--formula", "--desc"},
-	"cleanup":   {"--prune", "--dry-run", "-s"},
-	"services":  {"--all"},
-}
-
-// Sous-commandes dont les arguments sont des paquets déjà installés.
-var installedOnly = map[string]bool{
-	"uninstall": true, "remove": true, "rm": true, "reinstall": true, "upgrade": true,
-	"pin": true, "unpin": true, "link": true, "unlink": true, "uses": true,
-}
-
-func optionsFor(sub string) []string {
-	if specific, ok := optionsBySub[sub]; ok {
-		return append(append([]string{}, specific...), commonOptions...)
+// Insert rend le texte à insérer pour un candidat : le nom, éventuellement corrigé par
+// le gestionnaire (`--cask` de brew, qualification par bucket de scoop).
+func (r Result) Insert(name string) string {
+	if r.mgr == nil || r.cat == nil {
+		return name
 	}
-	return commonOptions
+	return r.mgr.Insert(r.cat, r.Sub, r.Prefix, name)
 }
 
-// Complete calcule le contexte et les candidats pour la ligne donnée.
-func Complete(line string, cat *brew.Catalog) Result {
+// Title résume le contexte, en tête du popup : « winget install ».
+func (r Result) Title() string {
+	if r.Sub == "" {
+		return r.Cmd
+	}
+	return r.Cmd + " " + r.Sub
+}
+
+// Complete calcule le contexte et les candidats pour la ligne donnée, en interrogeant
+// le gestionnaire qu'elle nomme.
+func Complete(line string) Result {
+	m := managers.Detect(line)
+	return CompleteWith(line, m, m.Load())
+}
+
+// CompleteWith est Complete sur un gestionnaire et un catalogue donnés (tests, et tout
+// appelant qui a déjà chargé le catalogue).
+func CompleteWith(line string, m pm.Manager, cat *pm.Catalog) Result {
 	var prefix, word string
 	if i := strings.LastIndex(line, " "); i < 0 {
 		word = line
@@ -76,7 +67,7 @@ func Complete(line string, cat *brew.Catalog) Result {
 	}
 
 	before := strings.Fields(strings.TrimSpace(prefix))
-	if len(before) > 0 && strings.EqualFold(before[0], "brew") {
+	if len(before) > 0 && strings.EqualFold(motCommande(before[0]), m.Cmd()) {
 		before = before[1:]
 	}
 	sub := ""
@@ -88,50 +79,53 @@ func Complete(line string, cat *brew.Catalog) Result {
 	isOption := strings.HasPrefix(word, "-")
 	isPackage := !isOption && !firstWord
 
-	res := Result{Prefix: prefix, Word: word, Sub: sub, Executable: isPackage}
+	res := Result{
+		Prefix: prefix, Word: word, Cmd: m.Cmd(), Sub: sub,
+		Executable: isPackage, mgr: m, cat: cat,
+	}
 	lw := strings.ToLower(word)
 
 	switch {
 	case isOption:
-		for _, o := range optionsFor(sub) {
+		for _, o := range m.Options(sub) {
 			if strings.HasPrefix(strings.ToLower(o), lw) {
 				res.Items = append(res.Items, Item{Name: o})
 			}
 		}
 	case firstWord:
-		for _, s := range subcommands {
+		for _, s := range m.Subcommands() {
 			if strings.HasPrefix(s, lw) {
 				res.Items = append(res.Items, Item{Name: s})
 			}
 		}
 	default: // paquet
-		var pool []string
-		if installedOnly[sub] {
-			for n := range cat.Installed {
-				pool = append(pool, n)
-			}
-		} else {
-			pool = append(pool, cat.Formulae...)
-			pool = append(pool, cat.Casks...)
+		pool := cat.Names
+		if m.InstalledOnly(sub) {
+			pool = cat.InstalledNames()
 		}
-		sort.Strings(pool)
 		for _, n := range pool {
 			if strings.HasPrefix(strings.ToLower(n), lw) {
-				res.Items = append(res.Items, Item{Name: n, Badge: badge(cat, n), Installed: cat.Installed[n], Version: cat.Version(n)})
+				res.Items = append(res.Items, Item{
+					Name:      n,
+					Badge:     cat.Badge(n),
+					Installed: cat.Installed[n],
+					Version:   cat.Version(n),
+				})
 			}
+		}
+		if len(res.Items) == 0 {
+			res.Note = cat.Note
 		}
 	}
 	return res
 }
 
-func badge(cat *brew.Catalog, name string) string {
-	if cat.IsCask(name) && !cat.IsFormula(name) {
-		return "C"
+// motCommande ramène un mot à un nom de commande : sans chemin ni extension. Une ligne
+// peut très bien commencer par `C:\Users\…\scoop\shims\scoop.exe`.
+func motCommande(s string) string {
+	s = strings.Trim(s, `"'`)
+	if i := strings.LastIndexAny(s, `/\`); i >= 0 {
+		s = s[i+1:]
 	}
-	return "F"
-}
-
-// NeedsCask indique s'il faut ajouter --cask pour installer ce paquet (cask pur).
-func NeedsCask(cat *brew.Catalog, name string) bool {
-	return cat.IsCask(name) && !cat.IsFormula(name)
+	return strings.TrimSuffix(strings.ToLower(s), ".exe")
 }
