@@ -6,6 +6,22 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le ve
 [SemVer](https://semver.org/lang/fr/). Les versions antérieures à `v0.1.6` sont antérieures
 à ce journal ; leur détail est dans l'historique git.
 
+## [v0.4.0] — 2026-08-14
+
+### Ajouté
+
+- Le bloc oh-my-posh compte désormais **formulae et casks séparément** :
+  ` 6.0.17 ⇡7F ⇡2C`. Les badges `F`/`C` sont ceux du sélecteur. Deux nouvelles
+  variables, `JIGGER_BREW_FORMULAE` et `JIGGER_BREW_CASKS`, exportées selon la même règle
+  que les autres compteurs — **non définies quand elles valent zéro**, si bien que chaque
+  moitié du bloc s'efface d'elle-même.
+
+### Modifié
+
+- Le segment livré dans `shell/oh-my-posh/brew.segment.json` affiche le détail F/C. Le
+  total reste disponible dans `JIGGER_BREW_OUTDATED` : le template d'origine, à un seul
+  chiffre, est rappelé dans le README et dans le fichier lui-même.
+
 ## [v0.3.0] — 2026-08-14
 
 ### Ajouté

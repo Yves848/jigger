@@ -312,6 +312,16 @@ if (( JIGGER_PROMPT )); then
   typeset -g _jigger_status_file="$JIGGER_CACHE_DIR/status"
   typeset -gi _jigger_last_refresh=0
 
+  # Exporte <nom>=<valeur>, ou le retire de l'environnement si la valeur est nulle. C'est
+  # ce qui permet aux templates de tester la simple présence de la variable.
+  _jigger_export_compteur() {
+    if (( $2 > 0 )); then
+      export $1=$2
+    else
+      unset $1
+    fi
+  }
+
   _jigger_prompt_precmd() {
     local line
     local -a champs
@@ -326,13 +336,12 @@ if (( JIGGER_PROMPT )); then
       # retrouver dans une expansion arithmétique.
       if (( $#champs == 4 )) && [[ "$champs[2]$champs[3]$champs[4]" == <-> ]]; then
         export JIGGER_BREW_VERSION="$champs[1]"
-        # Le compteur n'est exporté que s'il y a quelque chose à signaler : le template
-        # oh-my-posh se réduit alors à « {{ if .Env.JIGGER_BREW_OUTDATED }} ».
-        if (( champs[2] + champs[3] > 0 )); then
-          export JIGGER_BREW_OUTDATED=$(( champs[2] + champs[3] ))
-        else
-          unset JIGGER_BREW_OUTDATED
-        fi
+        # Un compteur n'est exporté que s'il a quelque chose à signaler : le template
+        # oh-my-posh se réduit alors à « {{ if .Env.JIGGER_BREW_FORMULAE }} », sans
+        # comparaison de chaînes. Le total reste exposé pour qui préfère un seul chiffre.
+        _jigger_export_compteur JIGGER_BREW_FORMULAE $champs[2]
+        _jigger_export_compteur JIGGER_BREW_CASKS    $champs[3]
+        _jigger_export_compteur JIGGER_BREW_OUTDATED $(( champs[2] + champs[3] ))
         age=$(( EPOCHSECONDS - champs[4] ))
       fi
     fi

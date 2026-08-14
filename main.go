@@ -32,7 +32,7 @@ import (
 	"gitlab.yg-devworks.com/yves/jigger/internal/ui"
 )
 
-var version = "0.3.0"
+var version = "0.4.0"
 
 func main() {
 	ui.Version = version // affichée dans l'en-tête du sélecteur (repère du binaire lancé)

@@ -1,7 +1,7 @@
 {
-  "$comment": "Bloc Homebrew pour oh-my-posh — mode d'emploi dans le README de jigger, § « Bloc oh-my-posh ». Les deux variables sont posées par le hook de jigger.plugin.zsh (JIGGER_PROMPT=1) ; sans elles, le segment disparaît.",
+  "$comment": "Bloc Homebrew pour oh-my-posh — mode d'emploi dans le README de jigger, § « Bloc oh-my-posh ». Les variables sont posées par le hook de jigger.plugin.zsh (JIGGER_PROMPT=1) ; sans elles, le segment disparaît. Pour un seul chiffre au lieu du détail F/C, remplacer les deux blocs par « {{ if .Env.JIGGER_BREW_OUTDATED }} <#F9E2AF>⇡{{ .Env.JIGGER_BREW_OUTDATED }}</>{{ end }} ».",
   "type": "text",
   "style": "plain",
   "foreground": "#FAB387",
-  "template": "{{ if .Env.JIGGER_BREW_VERSION }} {{ .Env.JIGGER_BREW_VERSION }}{{ if .Env.JIGGER_BREW_OUTDATED }} <#F9E2AF>⇡{{ .Env.JIGGER_BREW_OUTDATED }}</>{{ end }} {{ end }}"
+  "template": "{{ if .Env.JIGGER_BREW_VERSION }} {{ .Env.JIGGER_BREW_VERSION }}{{ if .Env.JIGGER_BREW_FORMULAE }} <#F9E2AF>⇡{{ .Env.JIGGER_BREW_FORMULAE }}F</>{{ end }}{{ if .Env.JIGGER_BREW_CASKS }} <#F9E2AF>⇡{{ .Env.JIGGER_BREW_CASKS }}C</>{{ end }} {{ end }}"
 }
