@@ -80,23 +80,27 @@ Un bloc Homebrew dans le prompt : la **version de brew**, et les **mises à jour
 attente**, formulae et casks comptés séparément.
 
 ```
-  yves@MacBook  ~/../jigger   main   6.0.17   7   2 ❯
-                                       ▲           ▲    ▲
-                                       │           │    └── 2 casks obsolètes
-                                       │           └── 7 formulae obsolètes
-                                       └── version de brew
+ yves@MacBook  ~/git/jigger   main  🍺 6.0.17  🧪 7  📦 2 ❯
+                                    ▲             ▲     ▲
+                                    │             │     └── 2 casks obsolètes
+                                    │             └── 7 formulae obsolètes
+                                    └── version de brew
 ```
 
-Une **chope** pour brew, une **fiole** pour les formulae, un **cube** pour les casks.
+Une **bière** pour brew, une **éprouvette** pour les formulae, un **colis** pour les casks.
 Chaque compteur disparaît quand il tombe à zéro — ` 6.0.17   2` s'il ne reste que
 des casks, ` 6.0.17` tout court quand tout est à jour. Un compteur ne s'affichant
 **jamais** à zéro, sa seule présence signifie « à mettre à jour » : ni flèche ni lettre
 à ajouter.
 
-Les glyphes sont écrits en **échappements JSON** (`\uf0fc`, `\uf0c3`, `\uf1b2`) plutôt
-qu'en clair — c'est la seule forme qui traverse sans dommage les éditeurs, les
-copier-coller et les outils qui normalisent l'Unicode. Ils viennent de la zone à usage
-privé d'une **Nerd Font** : sans elle, le bloc s'affiche en carrés vides.
+Ce sont des **émojis** : aucune police particulière n'est requise, et ils s'affichent
+partout. Si tu préfères des glyphes **Nerd Font** monochromes — qui prennent la couleur du
+segment, là où un émoji impose la sienne — remplace-les par `\uf0fc` (chope), `\uf0c3`
+(fiole) et `\uf1b2` (cube).
+
+Dans les deux cas, écris-les en **échappements JSON** plutôt qu'en clair : c'est la seule
+forme qui traverse sans dommage les éditeurs, les copier-coller et les outils qui
+normalisent l'Unicode. Les thèmes livrés par oh-my-posh font de même.
 
 `brew outdated` coûte de une à cinq secondes : il est donc **exclu du chemin du prompt**.
 jigger le lance en tâche de fond et dépose le résultat dans un fichier d'une ligne, que le

@@ -6,6 +6,17 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le ve
 [SemVer](https://semver.org/lang/fr/). Les versions antérieures à `v0.1.6` sont antérieures
 à ce journal ; leur détail est dans l'historique git.
 
+## [v0.4.2] — 2026-08-14
+
+### Modifié
+
+- Le bloc oh-my-posh utilise des **émojis** plutôt que des glyphes Nerd Font :
+  `🍺 6.0.17  🧪 9  📦 1`. Ils ne dépendent d'aucune police particulière — le bloc
+  s'affiche donc partout, là où un glyphe de la zone à usage privé se réduisait à un carré
+  vide sans Nerd Font. La contrepartie : un émoji impose sa propre couleur, seuls les
+  compteurs suivent celle du segment. Les glyphes Nerd Font restent documentés dans le
+  README et dans le fragment, pour qui préfère du monochrome.
+
 ## [v0.4.1] — 2026-08-14
 
 ### Corrigé
