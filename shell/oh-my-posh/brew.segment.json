@@ -1,7 +1,7 @@
 {
-  "$comment": "Bloc Homebrew pour oh-my-posh — mode d'emploi dans le README de jigger, § « Bloc oh-my-posh ». Les variables sont posées par le hook de jigger.plugin.zsh (JIGGER_PROMPT=1) ; sans elles, le segment disparaît. Pour un seul chiffre au lieu du détail F/C, remplacer les deux blocs par « {{ if .Env.JIGGER_BREW_OUTDATED }} <#F9E2AF>⇡{{ .Env.JIGGER_BREW_OUTDATED }}</>{{ end }} ».",
+  "$comment": "Bloc Homebrew pour oh-my-posh \u2014 mode d'emploi dans le README de jigger, \u00a7 \u00ab Bloc oh-my-posh \u00bb. Les variables sont pos\u00e9es par le hook de jigger.plugin.zsh (JIGGER_PROMPT=1) ; sans elles, le segment dispara\u00eet. Ic\u00f4nes : \\uf0fc chope (brew), \\uf0c3 fiole (formulae), \\uf1b2 cube (casks) \u2014 \u00e9crites en \u00e9chappements JSON, seule forme qui traverse sans dommage les \u00e9diteurs et les copier-coller. Pour un seul chiffre au lieu du d\u00e9tail par type, remplacer les deux blocs conditionnels par \u00ab {{ if .Env.JIGGER_BREW_OUTDATED }} <#F9E2AF>\\u21e1{{ .Env.JIGGER_BREW_OUTDATED }}</>{{ end }} \u00bb.",
   "type": "text",
   "style": "plain",
   "foreground": "#FAB387",
-  "template": "{{ if .Env.JIGGER_BREW_VERSION }} {{ .Env.JIGGER_BREW_VERSION }}{{ if .Env.JIGGER_BREW_FORMULAE }} <#F9E2AF>⇡{{ .Env.JIGGER_BREW_FORMULAE }}F</>{{ end }}{{ if .Env.JIGGER_BREW_CASKS }} <#F9E2AF>⇡{{ .Env.JIGGER_BREW_CASKS }}C</>{{ end }} {{ end }}"
+  "template": "{{ if .Env.JIGGER_BREW_VERSION }}\uf0fc {{ .Env.JIGGER_BREW_VERSION }}{{ if .Env.JIGGER_BREW_FORMULAE }} <#F9E2AF>\uf0c3 {{ .Env.JIGGER_BREW_FORMULAE }}</>{{ end }}{{ if .Env.JIGGER_BREW_CASKS }} <#F9E2AF>\uf1b2 {{ .Env.JIGGER_BREW_CASKS }}</>{{ end }} {{ end }}"
 }

@@ -6,6 +6,24 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le ve
 [SemVer](https://semver.org/lang/fr/). Les versions antérieures à `v0.1.6` sont antérieures
 à ce journal ; leur détail est dans l'historique git.
 
+## [v0.4.1] — 2026-08-14
+
+### Corrigé
+
+- **L'icône Homebrew du bloc oh-my-posh ne s'est jamais affichée.** Le glyphe, écrit en
+  clair dans le fichier, n'a pas survécu aux éditions successives du template : le bloc
+  s'ouvrait sur un blanc depuis la v0.3.0. Tous les glyphes sont désormais écrits en
+  **échappements JSON** (`\uf0fc`…), la seule forme qui traverse sans dommage les
+  éditeurs, les copier-coller et les outils qui normalisent l'Unicode — c'est d'ailleurs
+  ce que font les thèmes livrés par oh-my-posh.
+
+### Modifié
+
+- Chaque type de paquet a son **icône** plutôt qu'une lettre : une **fiole** pour les
+  formulae, un **cube** pour les casks. ` 6.0.17   9   1` remplace
+  ` 6.0.17 ⇡9F ⇡1C`. La flèche disparaît aussi : un compteur ne s'affichant jamais à
+  zéro, sa seule présence dit déjà « à mettre à jour ».
+
 ## [v0.4.0] — 2026-08-14
 
 ### Ajouté
