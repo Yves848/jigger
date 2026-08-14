@@ -239,6 +239,55 @@ func TestRefreshRenonceSiUnVerrouEstDejaPris(t *testing.T) {
 	}
 }
 
+func TestRefreshWaitAttendQueLeVerrouSeLibere(t *testing.T) {
+	dir := t.TempDir()
+
+	// Le cas réel : un rafraîchissement paresseux est parti pendant `brew upgrade` et
+	// tient encore le verrou quand le shell, upgrade terminé, force la mise à jour.
+	libere, ok := lock(dir)
+	if !ok {
+		t.Fatal("le premier verrou devrait être obtenu")
+	}
+	go func() {
+		time.Sleep(3 * intervalleVerrou)
+		libere()
+	}()
+
+	s, err := RefreshWaitWith(dir, fauxBrew(versionAvecCommits, outdatedJSON, nil), AttenteVerrou)
+	if err != nil {
+		t.Fatalf("RefreshWaitWith : %v", err)
+	}
+	if s.Formulae != 2 || s.Casks != 1 {
+		t.Errorf("état inattendu : %+v", s)
+	}
+	if _, ok := Read(dir); !ok {
+		t.Error("le cache doit avoir été écrit")
+	}
+}
+
+func TestRefreshWaitAbandonneApresSonDelai(t *testing.T) {
+	dir := t.TempDir()
+
+	libere, ok := lock(dir)
+	if !ok {
+		t.Fatal("le premier verrou devrait être obtenu")
+	}
+	defer libere()
+
+	debut := time.Now()
+	_, err := RefreshWaitWith(dir, fauxBrew(versionAvecCommits, outdatedJSON, nil), 2*intervalleVerrou)
+	if !errors.Is(err, ErrVerrouille) {
+		t.Errorf("erreur = %v, attendu ErrVerrouille", err)
+	}
+	// Il a bien attendu — sans quoi le test précédent passerait pour de mauvaises raisons.
+	if ecoule := time.Since(debut); ecoule < 2*intervalleVerrou {
+		t.Errorf("abandon au bout de %v, sans avoir attendu son délai", ecoule)
+	}
+	if _, ok := Read(dir); ok {
+		t.Error("aucun cache ne doit avoir été écrit")
+	}
+}
+
 func TestLeVerrouSeLibere(t *testing.T) {
 	dir := t.TempDir()
 

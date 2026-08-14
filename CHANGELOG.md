@@ -6,6 +6,28 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le ve
 [SemVer](https://semver.org/lang/fr/). Les versions antérieures à `v0.1.6` sont antérieures
 à ce journal ; leur détail est dans l'historique git.
 
+## [v0.4.3] — 2026-08-14
+
+### Corrigé
+
+- **Le bloc oh-my-posh restait figé après un `brew upgrade`.** Le cache n'était rafraîchi
+  que par péremption de TTL : le compteur pouvait donc annoncer dix mises à jour en
+  attente pendant une demi-heure après les avoir toutes installées. jigger repère
+  désormais, en `preexec`, les commandes brew qui changent l'état (`install`, `upgrade`,
+  `uninstall`, `update`, `tap`, `pin`…) et rafraîchit avant d'afficher le prompt suivant —
+  la seule attente que le plugin s'autorise, et seulement là où le cache est *connu* faux.
+  `JIGGER_PROMPT_SYNC=0` la rend détachée, au prix d'un compteur juste au prompt d'après.
+- Le hook `precmd` de jigger se place de lui-même **en tête** de `precmd_functions` :
+  chargé après oh-my-posh, il exportait ses compteurs une fois le prompt déjà calculé, et
+  le bloc gardait un coup de retard quel que soit le reste.
+
+### Ajouté
+
+- `jigger prompt --refresh --wait` attend le verrou au lieu d'y renoncer. C'est ce
+  qu'emprunte le rafraîchissement forcé : un rafraîchissement paresseux parti pendant
+  l'upgrade tient le verrou tant que brew ne lui répond pas, et renoncer là aurait laissé
+  le compteur faux dans le cas même qu'on corrige.
+
 ## [v0.4.2] — 2026-08-14
 
 ### Modifié

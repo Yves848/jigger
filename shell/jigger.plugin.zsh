@@ -292,9 +292,21 @@ fi
 # outdated` coûte plusieurs secondes ; il tourne en tâche de fond (`jigger prompt
 # --refresh`) et dépose son résultat dans un fichier d'une ligne, que ce hook relit avec
 # les seuls builtins de zsh. Un prompt ne doit rien attendre.
+#
+# Unique exception, assumée : le prompt qui suit une commande brew mutante. Là, le cache
+# est *connu* faux, et l'attendre coûte moins cher que d'afficher un mensonge (cf.
+# JIGGER_PROMPT_SYNC).
 : "${JIGGER_PROMPT:=0}"
 # Âge du cache (secondes) au-delà duquel on relance un rafraîchissement détaché.
 : "${JIGGER_PROMPT_TTL:=1800}"
+# Le TTL seul laisserait le compteur mentir une demi-heure après un `brew upgrade`. On
+# repère donc les commandes brew qui changent l'état, et on rafraîchit dans la foulée —
+# en avant-plan, pour que le prompt qui suit immédiatement l'upgrade soit déjà juste.
+# C'est le seul endroit où le plugin fait attendre le prompt (quelques dixièmes de
+# seconde, après une commande qui a duré bien plus). JIGGER_PROMPT_SYNC=0 rend ce
+# rafraîchissement détaché : plus rien n'attend, mais le compteur ne se corrige qu'au
+# prompt suivant.
+: "${JIGGER_PROMPT_SYNC:=1}"
 
 if (( JIGGER_PROMPT )); then
   zmodload -i zsh/datetime          # $EPOCHSECONDS, pour ne pas forker `date`
@@ -311,6 +323,55 @@ if (( JIGGER_PROMPT )); then
   fi
   typeset -g _jigger_status_file="$JIGGER_CACHE_DIR/status"
   typeset -gi _jigger_last_refresh=0
+  typeset -gi _jigger_prompt_dirty=0   # une commande brew mutante vient de tourner
+
+  # Sous-commandes qui changent ce que `brew outdated` répondra. `update` en fait partie :
+  # il ne touche à rien d'installé, mais renouvelle le catalogue, donc la liste des
+  # obsolètes. `cleanup` et `doctor`, eux, n'y changent rien.
+  typeset -ga _jigger_brew_mutants=(
+    install reinstall uninstall remove rm upgrade update tap untap pin unpin
+    bundle autoremove
+  )
+  # Mots qui précèdent une commande sans en être une : la commande brew reste à venir.
+  typeset -ga _jigger_prefixes=(
+    ';' '&' '&&' '||' '|' '|&' '(' ')' '{' '}' '!' then do else elif
+    sudo command env exec nohup time arch
+  )
+
+  # _jigger_prompt_preexec repère `brew <mutant>` dans la ligne sur le point de s'exécuter.
+  # On ne lit que des mots — rien n'est évalué — et on n'accepte `brew` qu'en tête de
+  # commande : « git commit -m 'brew upgrade' » ne déclenche donc rien.
+  _jigger_prompt_preexec() {
+    (( _jigger_prompt_dirty )) && return
+    local mot
+    local -i debut=1 brew=0
+    # ${(z)…} découpe comme le ferait le shell, sans rien exécuter.
+    for mot in ${(z)${3:-$1}}; do
+      if (( brew )); then
+        [[ $mot == -* ]] && continue   # « brew --quiet upgrade » compte pour un upgrade
+        if (( ${_jigger_brew_mutants[(Ie)$mot]} )); then
+          _jigger_prompt_dirty=1
+          return
+        fi
+        brew=0 debut=0
+        continue
+      fi
+      if (( ${_jigger_prefixes[(Ie)$mot]} )); then
+        debut=1
+        continue
+      fi
+      # Options d'un préfixe (`arch -arm64 brew …`) et affectations en tête
+      # (`HOMEBREW_NO_AUTO_UPDATE=1 brew …`) : la commande n'a toujours pas commencé.
+      if (( debut )) && [[ $mot == -* || $mot == *=* ]]; then
+        continue
+      fi
+      if (( debut )) && [[ ${mot:t} == brew ]]; then
+        brew=1
+        continue
+      fi
+      debut=0
+    done
+  }
 
   # Exporte <nom>=<valeur>, ou le retire de l'environnement si la valeur est nulle. C'est
   # ce qui permet aux templates de tester la simple présence de la variable.
@@ -326,6 +387,20 @@ if (( JIGGER_PROMPT )); then
     local line
     local -a champs
     local -i age=$JIGGER_PROMPT_TTL   # cache absent → réputé périmé
+
+    # Le cache est connu faux : on le refait avant de lire, pas au prochain TTL. --wait
+    # parce que le rafraîchissement paresseux d'un autre onglet a fort bien pu partir
+    # pendant l'upgrade et tenir encore le verrou : sans attendre, on renoncerait
+    # justement dans le cas qu'on cherche à corriger.
+    if (( _jigger_prompt_dirty )); then
+      _jigger_prompt_dirty=0
+      _jigger_last_refresh=$EPOCHSECONDS
+      if (( JIGGER_PROMPT_SYNC )); then
+        command jigger prompt --refresh --wait >/dev/null 2>&1
+      else
+        { command jigger prompt --refresh --wait >/dev/null 2>&1 &! } 2>/dev/null
+      fi
+    fi
 
     if [[ -r $_jigger_status_file ]] && read -r line < $_jigger_status_file; then
       # Découpage sur tabulation par expansion (pas de `cut`). Le drapeau `p` fait
@@ -355,5 +430,13 @@ if (( JIGGER_PROMPT )); then
     fi
   }
 
+  add-zsh-hook preexec _jigger_prompt_preexec
   add-zsh-hook precmd _jigger_prompt_precmd
+
+  # oh-my-posh calcule tout son prompt dans son propre precmd, à partir de
+  # l'environnement tel qu'il le trouve. Si le nôtre passait après, il exporterait des
+  # compteurs qui ne seraient affichés qu'au prompt d'après — le bloc aurait toujours un
+  # coup de retard, exactement le symptôme qu'on corrige. On se place donc en tête, quel
+  # que soit l'ordre des `source` dans ~/.zshrc.
+  precmd_functions=( _jigger_prompt_precmd ${precmd_functions:#_jigger_prompt_precmd} )
 fi

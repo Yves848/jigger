@@ -12,7 +12,8 @@
 //	jigger complete "<ligne>"  candidats (un par ligne) pour une complétion classique.
 //	jigger prompt              état de Homebrew en cache, pour le bloc oh-my-posh.
 //	                           --refresh interroge brew et réécrit le cache (lent, à
-//	                           lancer détaché) ; --path imprime le fichier de cache.
+//	                           lancer détaché), --wait lui fait attendre le verrou
+//	                           plutôt que renoncer ; --path imprime le fichier de cache.
 //	jigger --version           version.
 package main
 
@@ -32,7 +33,7 @@ import (
 	"gitlab.yg-devworks.com/yves/jigger/internal/ui"
 )
 
-var version = "0.4.2"
+var version = "0.4.3"
 
 func main() {
 	ui.Version = version // affichée dans l'en-tête du sélecteur (repère du binaire lancé)
@@ -69,7 +70,7 @@ func arg(i int) string {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: jigger pick|complete \"<ligne brew>\" | jigger render --line \"<ligne brew>\" | jigger prompt [--refresh|--path]")
+	fmt.Fprintln(os.Stderr, "usage: jigger pick|complete \"<ligne brew>\" | jigger render --line \"<ligne brew>\" | jigger prompt [--refresh [--wait]|--path]")
 }
 
 // runPrompt imprime l'état de Homebrew en cache — « version<TAB>formulae<TAB>casks<TAB>epoch » —
@@ -81,6 +82,7 @@ func usage() {
 func runPrompt(args []string) int {
 	fs := flag.NewFlagSet("prompt", flag.ContinueOnError)
 	refresh := fs.Bool("refresh", false, "interroge brew et réécrit le cache (lent)")
+	wait := fs.Bool("wait", false, "avec --refresh : attend le verrou au lieu de renoncer")
 	path := fs.Bool("path", false, "imprime le chemin du fichier de cache")
 	if err := fs.Parse(args); err != nil {
 		return 2
@@ -93,7 +95,13 @@ func runPrompt(args []string) int {
 	}
 
 	if *refresh {
-		s, err := prompt.Refresh(dir)
+		rafraichir := prompt.Refresh
+		if *wait {
+			// Le cache est connu faux (une commande brew mutante vient de tourner) :
+			// on prend son tour dans la file plutôt que de renoncer.
+			rafraichir = prompt.RefreshWait
+		}
+		s, err := rafraichir(dir)
 		if err != nil {
 			// Verrou pris par un autre shell, ou brew injoignable : le cache précédent
 			// reste en place et sera réessayé au prochain prompt périmé.
