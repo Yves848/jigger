@@ -25,8 +25,9 @@ il ne requiert que `brew`.
   sans presser la moindre touche. `^N`/`^P` naviguent, `⇥` insère, `^G` ferme.
   Les flèches `↑`/`↓` ne sont **jamais** détournées : l'historique zsh reste l'historique
   zsh.
-- **Bloc oh-my-posh** (optionnel) : version de brew et mises à jour en attente (formulae
-  et casks séparément) dans le prompt, sans jamais le ralentir.
+- **Bloc oh-my-posh** (optionnel) : version de brew et mises à jour en attente dans le
+  prompt — formulae et casks comptés séparément, chacun sous son icône — sans jamais le
+  ralentir.
 
 ## Installation
 
@@ -79,15 +80,23 @@ Un bloc Homebrew dans le prompt : la **version de brew**, et les **mises à jour
 attente**, formulae et casks comptés séparément.
 
 ```
- yves@MacBook  ~/git/jigger   main   6.0.17 ⇡7F ⇡2C ❯
-                                     ▲       ▲    ▲
-                                     │       │    └─ 2 casks obsolètes
-                                     │       └────── 7 formulae obsolètes
-                                     └────────────── version de brew
+  yves@MacBook  ~/../jigger   main   6.0.17   7   2 ❯
+                                       ▲           ▲    ▲
+                                       │           │    └── 2 casks obsolètes
+                                       │           └── 7 formulae obsolètes
+                                       └── version de brew
 ```
 
-Chaque compteur disparaît quand il tombe à zéro — ` 6.0.17 ⇡2C` s'il ne reste que des
-casks, ` 6.0.17` tout court quand tout est à jour.
+Une **chope** pour brew, une **fiole** pour les formulae, un **cube** pour les casks.
+Chaque compteur disparaît quand il tombe à zéro — ` 6.0.17   2` s'il ne reste que
+des casks, ` 6.0.17` tout court quand tout est à jour. Un compteur ne s'affichant
+**jamais** à zéro, sa seule présence signifie « à mettre à jour » : ni flèche ni lettre
+à ajouter.
+
+Les glyphes sont écrits en **échappements JSON** (`\uf0fc`, `\uf0c3`, `\uf1b2`) plutôt
+qu'en clair — c'est la seule forme qui traverse sans dommage les éditeurs, les
+copier-coller et les outils qui normalisent l'Unicode. Ils viennent de la zone à usage
+privé d'une **Nerd Font** : sans elle, le bloc s'affiche en carrés vides.
 
 `brew outdated` coûte de une à cinq secondes : il est donc **exclu du chemin du prompt**.
 jigger le lance en tâche de fond et dépose le résultat dans un fichier d'une ligne, que le
@@ -147,7 +156,7 @@ tout seul quand il n'y a rien à dire. Pour n'afficher qu'un chiffre plutôt que
 F/C, remplace les deux blocs du template par :
 
 ```
-{{ if .Env.JIGGER_BREW_OUTDATED }} <#F9E2AF>⇡{{ .Env.JIGGER_BREW_OUTDATED }}</>{{ end }}
+{{ if .Env.JIGGER_BREW_OUTDATED }} <#F9E2AF>\u21e1{{ .Env.JIGGER_BREW_OUTDATED }}</>{{ end }}
 ```
 
 Rien n'interdit de se servir de ces variables ailleurs que dans oh-my-posh (starship, un
