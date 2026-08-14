@@ -3,8 +3,9 @@
 # Deux modes, complémentaires :
 #
 #   • popup vivant — dès que la ligne courante est une commande brew, le sélecteur
-#     s'affiche sous le prompt et suit la frappe, sans rien demander. ^N/^P naviguent,
-#     ⇥ insère le candidat courant, ^G ferme le popup pour la ligne en cours.
+#     s'affiche sous le prompt et suit la frappe, sans rien demander. ↓ (ou ^N) fait
+#     entrer dans la liste, ↑ (ou ^P) en ressort et rend l'historique, ⇥ insère le
+#     candidat courant, ^G ferme le popup pour la ligne en cours.
 #   • Tab classique — quand le popup vivant est éteint (JIGGER_LIVE=0), ⇥ ouvre le
 #     sélecteur interactif plein écran (`jigger pick`, avec son filtre en sous-chaîne).
 #
@@ -42,6 +43,8 @@ typeset -g _jigger_key=''       # signature du dernier rendu
 typeset -g _jigger_shown=0      # un cadre est-il actuellement à l'écran ?
 typeset -g _jigger_row_value='' # ligne écran du curseur (réponse au DSR)
 typeset -gi _jigger_dsr_misses=0 # DSR restés sans réponse d'affilée
+typeset -gi _jigger_focused=0   # le popup a-t-il le clavier ? (cf. _jigger_step)
+typeset -g _jigger_up_widget='' _jigger_down_widget='' # ce que les flèches faisaient
 
 _jigger_is_brew() { [[ $LBUFFER == 'brew' || $LBUFFER == 'brew '* ]] }
 
@@ -61,9 +64,10 @@ _jigger_color() {
 # _jigger_fetch appelle le binaire et met à jour l'état. Renvoie non-zéro s'il n'y a rien
 # à afficher.
 _jigger_fetch() {
-  local rows=${1:-$JIGGER_ROWS} out
+  local rows=${1:-$JIGGER_ROWS} out focus=false
+  (( _jigger_focused )) && focus=true
   out=$(command jigger render --line "$LBUFFER" --sel "$_jigger_sel" --cols "$COLUMNS" \
-        --rows "$rows" --color "$(_jigger_color)" 2>/dev/null) || return 1
+        --rows "$rows" --color "$(_jigger_color)" --focus=$focus 2>/dev/null) || return 1
 
   local -a lines
   lines=("${(@f)out}")
@@ -171,7 +175,7 @@ _jigger_redisplay() {
     _jigger_selline=$LBUFFER
   fi
 
-  local key="$LBUFFER|$_jigger_sel|$COLUMNS|$rows"
+  local key="$LBUFFER|$_jigger_sel|$_jigger_focused|$COLUMNS|$rows"
   if [[ $key != $_jigger_key ]]; then
     _jigger_key=$key
     _jigger_fetch $rows || { _jigger_frame=''; _jigger_count=0; _jigger_erase; return }
@@ -179,29 +183,58 @@ _jigger_redisplay() {
   [[ -n $_jigger_frame ]] && _jigger_draw "$_jigger_frame"
 }
 
-# ^N / ^P : naviguent si le popup est là, sinon rendent la main au widget d'origine
-# (historique). Les flèches ↑↓ ne sont jamais touchées.
-_jigger_next() {
-  if _jigger_active; then
+# _jigger_step décide de ce que fait une flèche, et rend 0 si le popup l'a prise. C'est
+# là que vit le focus, et la règle tient en deux phrases :
+#
+#   • ↓ fait entrer dans la liste (et y descend). Le popup a dès lors le clavier.
+#   • ↑ y remonte, et rend la main dès qu'on est déjà sur le premier candidat.
+#
+# Hors focus, les deux flèches restent l'historique — c'est le point : on ne perd pas
+# l'historique parce qu'un popup est ouvert. Le cadre montre où en est le focus (ligne
+# courante soulignée ou au repos), sans quoi la règle serait invisible.
+_jigger_step() {
+  _jigger_active || return 1
+  if (( $1 > 0 )); then
+    _jigger_focused=1
     (( _jigger_sel++ ))
-    _jigger_selline=$LBUFFER
   else
-    zle .down-line-or-history
+    (( _jigger_focused )) || return 1   # popup ouvert, mais pas au clavier
+    if (( _jigger_sel > 0 )); then
+      (( _jigger_sel-- ))
+    else
+      _jigger_focused=0
+    fi
   fi
+  _jigger_selline=$LBUFFER
+  return 0
 }
-_jigger_prev() {
-  if _jigger_active; then
-    (( _jigger_sel > 0 )) && (( _jigger_sel-- ))
-    _jigger_selline=$LBUFFER
-  else
-    zle .up-line-or-history
-  fi
+
+# ↑↓ : au popup s'il a (ou prend) le clavier, sinon au widget qui les tenait avant nous —
+# celui de l'historique, ou celui qu'un autre plugin y a mis.
+_jigger_down() { _jigger_step 1  || zle ${_jigger_down_widget:-.down-line-or-history} }
+_jigger_up()   { _jigger_step -1 || zle ${_jigger_up_widget:-.up-line-or-history} }
+
+# ^N / ^P : les mêmes, pour qui les préfère aux flèches.
+_jigger_next() { _jigger_step 1  || zle .down-line-or-history }
+_jigger_prev() { _jigger_step -1 || zle .up-line-or-history }
+
+# _jigger_bound_widget rend le widget déjà lié à une séquence, pour le lui rendre quand
+# le popup n'a pas le focus. Échoue si la touche est libre — ou si elle est déjà à nous,
+# ce qui arriverait en re-sourçant le plugin : on s'appellerait en boucle.
+_jigger_bound_widget() {
+  local -a champs
+  champs=( ${(z)"$(bindkey -- "$1" 2>/dev/null)"} )
+  (( ${#champs} >= 2 )) || return 1
+  local w=${(Q)champs[2]}
+  [[ -z $w || $w == undefined-key || $w == _jigger_* ]] && return 1
+  print -r -- $w
 }
 
 # ^G : ferme le popup jusqu'à la fin de la ligne. Sans popup, c'est l'abandon habituel.
 _jigger_dismiss() {
   if _jigger_active; then
     _jigger_dismissed=1
+    _jigger_focused=0
     _jigger_frame=''
     _jigger_erase
   else
@@ -258,6 +291,7 @@ _jigger_line_init() {
   _jigger_shown=0   # nouvelle ligne : l'écran a défilé, il n'y a plus rien à effacer
   _jigger_sel=0
   _jigger_selline=''
+  _jigger_focused=0
   _jigger_dismissed=0
   _jigger_count=0
   _jigger_frame=''
@@ -267,6 +301,8 @@ _jigger_line_init() {
 zle -N _jigger_widget
 zle -N _jigger_next
 zle -N _jigger_prev
+zle -N _jigger_up
+zle -N _jigger_down
 zle -N _jigger_dismiss
 
 bindkey "$JIGGER_KEY" _jigger_widget
@@ -274,6 +310,21 @@ if (( JIGGER_LIVE )); then
   bindkey '^N' _jigger_next
   bindkey '^P' _jigger_prev
   bindkey '^G' _jigger_dismiss
+
+  # Les flèches : on relève d'abord ce qu'elles faisaient, puis on les prend. Les deux
+  # formes des séquences (mode normal et mode application) sont couvertes, plus celle
+  # que déclare le terminfo — c'est ce que fait zsh lui-même.
+  typeset -ga _jigger_up_keys=( '^[[A' '^[OA' )
+  typeset -ga _jigger_down_keys=( '^[[B' '^[OB' )
+  if zmodload -i zsh/terminfo 2>/dev/null; then
+    [[ -n ${terminfo[kcuu1]-} ]] && _jigger_up_keys+=( ${terminfo[kcuu1]} )
+    [[ -n ${terminfo[kcud1]-} ]] && _jigger_down_keys+=( ${terminfo[kcud1]} )
+  fi
+  for _jigger_k in $_jigger_up_keys;   do _jigger_up_widget=$(_jigger_bound_widget $_jigger_k)   && break; done
+  for _jigger_k in $_jigger_down_keys; do _jigger_down_widget=$(_jigger_bound_widget $_jigger_k) && break; done
+  for _jigger_k in $_jigger_up_keys;   do bindkey $_jigger_k _jigger_up;   done
+  for _jigger_k in $_jigger_down_keys; do bindkey $_jigger_k _jigger_down; done
+  unset _jigger_k
   add-zle-hook-widget line-pre-redraw _jigger_redisplay
   add-zle-hook-widget line-init _jigger_line_init
   add-zle-hook-widget line-finish _jigger_line_finish

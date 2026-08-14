@@ -76,6 +76,16 @@ func CompleteWith(line string, m pm.Manager, cat *pm.Catalog) Result {
 	}
 
 	firstWord := len(before) == 0
+
+	// « winget » tout court : le mot en cours *est* le nom de la commande. Le chercher
+	// parmi les sous-commandes ne donnerait rien — aucune ne s'appelle « winget… » — et
+	// le popup annoncerait « aucun candidat » là où l'utilisateur attend justement de
+	// voir ce qu'il peut taper. On considère donc la commande comme acquise, et on
+	// propose la suite.
+	if firstWord && prefix == "" && strings.EqualFold(motCommande(word), m.Cmd()) {
+		prefix, word = word+" ", ""
+	}
+
 	isOption := strings.HasPrefix(word, "-")
 	isPackage := !isOption && !firstWord
 

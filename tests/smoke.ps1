@@ -89,6 +89,38 @@ check 'le relais de fin voit le module'     $modules.fin 'jigger'
 Import-Module $module -Force
 check 'réimport : repli intact' $global:JiggerFallbacks['Backspace'] 'BackwardDeleteChar'
 
+section 'les flèches sont reprises, sans perdre l''historique'
+check '↓ est reprise'  (($handlers | Where-Object { $_.Key -ceq 'DownArrow' }).Function) 'jigger:descendre'
+check '↑ est reprise'  (($handlers | Where-Object { $_.Key -ceq 'UpArrow' }).Function) 'jigger:monter'
+# Le repli doit être ce que la flèche faisait avant nous — l'historique, sous une forme
+# ou une autre selon les réglages —, jamais un relais de jigger.
+foreach ($k in 'UpArrow', 'DownArrow') {
+    $repli = $global:JiggerFallbacks[$k]
+    check "repli de $k" ($repli -and -not $repli.StartsWith('jigger:')) $true
+}
+
+section 'le focus décide qui prend les flèches'
+# La règle : ↓ fait entrer dans la liste, ↑ en ressort et rend l'historique. Hors focus,
+# les deux flèches ne sont pas prises — c'est ce que dit `pris=$false`.
+$transitions = & $jigger {
+    $script:Sel = 0
+    $script:Focused = $false
+    $etapes = @()
+    foreach ($sens in -1, 1, 1, -1, -1, -1) {
+        $pris = Step-JiggerSelection $sens $true
+        $etapes += "$pris/$($script:Sel)/$($script:Focused)"
+    }
+    $etapes += "$(Step-JiggerSelection 1 $false)/$($script:Sel)/$($script:Focused)"
+    $etapes
+}
+check '↑ sur un popup sans focus : à l''historique' $transitions[0] 'False/0/False'
+check '↓ entre dans la liste'                       $transitions[1] 'True/1/True'
+check '↓ descend'                                   $transitions[2] 'True/2/True'
+check '↑ remonte'                                   $transitions[3] 'True/1/True'
+check '↑ atteint le premier candidat'               $transitions[4] 'True/0/True'
+check '↑ au premier candidat rend le clavier'       $transitions[5] 'True/0/False'
+check 'sans popup, rien n''est pris'                $transitions[6] 'False/0/False'
+
 section 'la ligne est reconnue (ou non) comme celle d''un gestionnaire'
 foreach ($cas in @(
     @('winget install', $true), @('scoop ', $true), @('winget', $true),
@@ -168,6 +200,30 @@ Set-Content -Path (Join-Path $cache 'status') -Value "n'importe quoi" -NoNewline
 [Environment]::SetEnvironmentVariable('JIGGER_WINGET_VERSION', $null)
 Update-JiggerPrompt
 check 'cache corrompu ignoré'     ([string]::IsNullOrEmpty($env:JIGGER_WINGET_VERSION)) $true
+
+section 'une commande mutante fait refaire la liste des installés'
+# Le cas : `winget install X` puis `winget uninstall X` — sans rafraîchissement, le paquet
+# fraîchement installé manque à la complétion jusqu'à la péremption du cache. Et cela ne
+# dépend pas du bloc de prompt, qui est désactivé ici comme il l'est par défaut.
+$env:JIGGER_PROMPT = '0'
+Import-Module $module -Force
+$jigger = Get-Module jigger
+& $jigger {
+    # Doublure : on relève ce que le module demande au binaire, sans rien lancer.
+    $script:Appels = @()
+    # `script:` est indispensable : sans lui, la doublure ne vivrait que le temps de
+    # ce bloc, et le module continuerait d'appeler la vraie.
+    function script:Start-JiggerBackground([string[]]$Arguments) { $script:Appels += ($Arguments -join ' ') }
+}
+& $jigger { $script:Dirty = $true }
+Update-JiggerPrompt
+$appels = @(& $jigger { $script:Appels })
+check 'les installés sont refaits'  ($appels -contains 'warm --installed') $true
+check 'sans bloc de prompt, rien de plus' $appels.Count 1
+
+& $jigger { $script:Appels = @(); $script:Dirty = $false }
+Update-JiggerPrompt
+check 'aucune commande mutante, aucun appel' @(& $jigger { $script:Appels }).Count 0
 
 Remove-Item -Recurse -Force $cache -ErrorAction SilentlyContinue
 

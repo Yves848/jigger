@@ -2,3 +2,4 @@
 *.test
 dist/
 /jigger.exe
+/conpty-test.exe

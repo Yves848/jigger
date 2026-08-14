@@ -36,6 +36,11 @@ _jigger_rc() {
 PS1='%% '
 PATH="$root:\$PATH"
 COLORTERM=truecolor
+# Les flèches arrivent en trois octets (ESC [ A), et le harnais tape caractère par
+# caractère avec des pauses entre eux : sans allonger le délai, zsh conclurait à un
+# simple Échap avant d'avoir vu le reste. C'est un artefact du pseudo-terminal, pas du
+# plugin — un humain tape ses flèches d'un coup.
+KEYTIMEOUT=100
 # Stub : la ligne réellement exécutée est la seule chose observable de façon fiable
 # (zsh réécrit la ligne en incrémental, le texte complet n'apparaît jamais dans le flux).
 brew() { print -r -- "CMD:[\$*]" }
@@ -193,6 +198,24 @@ suite() {
   print -r -- "→ ^P remonte, et ne dépasse pas le premier"
   out=$(visible "$(jigger_type $'brew u\x0e\x10\x10\t\n')")
   check "retour sur uninstall"          "$out" 'CMD:[uninstall]'
+
+  print -r -- "→ ↓ fait entrer dans la liste, ↑ en ressort"
+  out=$(visible "$(jigger_type $'brew u\e[B\t\n')")
+  check "↓ descend d'un candidat"       "$out" 'CMD:[upgrade]'
+  out=$(visible "$(jigger_type $'brew u\e[B\e[A\e[A\t\n')")
+  check "↑ remonte, puis rend le clavier" "$out" 'CMD:[uninstall]'
+
+  print -r -- "→ tant que le popup n'a pas le clavier, ↑ reste l'historique"
+  # La commande précédente doit revenir dans la ligne, popup ouvert ou non : c'est toute
+  # la raison d'être du focus.
+  out=$(visible "$(jigger_type $'brew leaves\nbrew u\e[A\n')")
+  check "commande précédente rappelée"  "${out#*CMD:\[leaves\]}" 'CMD:[leaves]'
+
+  print -r -- "→ le pied dit où ira la prochaine flèche"
+  out=$(visible "$(jigger_type 'brew u')")
+  check "invite à entrer dans la liste" "$out" '↓  parcourir'
+  out=$(visible "$(jigger_type $'brew u\e[B')")
+  check "puis à naviguer"               "$out" '↑↓  naviguer'
 
   print -r -- "→ ^G ferme le popup et laisse la ligne intacte"
   out=$(visible "$(jigger_type $'brew u\x07\n')")

@@ -37,9 +37,11 @@ il ne requiert que le gestionnaire lui-même.
   - scoop : un nom présent dans plusieurs buckets s'insère qualifié, `main/flux` ;
   - winget : un identifiant contenant des espaces s'insère entre guillemets.
 - **Popup vivant** : le cadre apparaît dès « `winget ` » et se filtre au fil de la frappe,
-  sans presser la moindre touche. `^N`/`^P` naviguent, `⇥` insère, `^G` ferme.
-  Les flèches `↑`/`↓` ne sont **jamais** détournées : l'historique du shell reste
-  l'historique du shell.
+  sans presser la moindre touche. `↓` fait entrer dans la liste, `⇥` insère, `^G` ferme.
+- **Focus explicite** : le popup ne prend les flèches qu'une fois qu'on y est entré. `↓`
+  l'y fait entrer, `↑` en ressort dès le premier candidat — et tant qu'il n'a pas le
+  clavier, `↑`/`↓` restent l'historique du shell. La ligne courante le montre : soulignée
+  quand le popup a le clavier, au repos quand il ne l'a pas.
 - **Bloc oh-my-posh** (optionnel) : version du gestionnaire et mises à jour en attente
   dans le prompt, comptées séparément — sans jamais le ralentir.
 
@@ -76,8 +78,10 @@ Deux réserves, à connaître :
 
 - le **mode Vi** de PSReadLine désactive le popup vivant (⇥ reste disponible) : relayer
   les caractères imprimables casserait la navigation en mode commande ;
-- `PredictionViewStyle = ListView` dessine, lui aussi, sous la ligne de commande.
-  Garde `InlineView` si tu veux le popup.
+- `PredictionViewStyle = ListView` dessine au même endroit que le popup. jigger range la
+  vue le temps du cadre — la prédiction repasse en `InlineView`, à la suite du curseur —
+  et la lui rend dès qu'il s'efface. Sans quoi les deux se disputeraient les mêmes lignes
+  à chaque frappe.
 
 ## Usage
 
@@ -94,9 +98,18 @@ brew install fire        → idem, côté macOS
 | Touche | Effet |
 |---|---|
 | `⇥` | insère le candidat courant (corrigé si besoin) |
-| `^N` / `^P` | candidat suivant / précédent |
+| `↓` | entre dans la liste, puis descend d'un candidat |
+| `↑` | remonte ; au premier candidat, rend le clavier au shell |
+| `^N` / `^P` | les mêmes, pour qui les préfère aux flèches |
 | `^G` | ferme le popup pour la ligne en cours (`⇥` le rouvre) |
-| `↑` / `↓` | **inchangées** — historique du shell |
+
+Tant que le popup n'a pas le clavier, `↑` et `↓` sont **l'historique du shell**, popup
+ouvert ou non : ouvrir une liste de candidats ne coûte pas l'accès à la commande
+précédente. Ce qu'elles feront se lit dans le cadre — pied `↓ parcourir` et ligne
+courante au repos tant qu'il n'a pas le focus, `↑↓ naviguer` et ligne soulignée dès
+qu'il l'a. Et jigger rend toujours la touche à ce qu'elle faisait avant lui : si un autre
+greffon tient déjà tes flèches (recherche par préfixe dans l'historique, par exemple),
+c'est lui qui reprend la main.
 
 Après `winget install`, le mot est vide et le catalogue compte des milliers d'entrées :
 le cadre invite alors à taper au moins une lettre plutôt que d'égrener la liste.
@@ -119,8 +132,13 @@ $env:JIGGER_COMMANDS = 'winget,scoop'      # commandes qui déclenchent le popup
 $env:JIGGER_KEYS_EXTRA = 'éèçàù'           # touches à relayer en plus des ASCII
 ```
 
-Le popup s'efface de lui-même si le terminal est trop étroit ou trop court — et, sous
-zsh, s'il ne répond pas à l'interrogation de position du curseur.
+Le popup s'efface de lui-même si le terminal est trop étroit — et, sous zsh, s'il ne
+répond pas à l'interrogation de position du curseur.
+
+Sous PowerShell, quand le prompt occupe la dernière ligne de l'écran — le cas ordinaire
+d'un terminal en usage —, **jigger pousse l'écran** pour dégager la place du cadre, comme
+le fait `fzf --height`. Sous zsh, il s'abstient plutôt : le popup n'apparaît alors que
+s'il y a déjà de la place dessous.
 
 `JIGGER_KEYS_EXTRA` mérite un mot : PSReadLine n'offre aucun crochet appelé à chaque
 frappe. jigger réenregistre donc, une à une, les touches qui modifient la ligne — les
@@ -256,6 +274,7 @@ Le greffon s'appuie sur ces sous-commandes ; utilisables seules :
 ```sh
 jigger render --line "winget install Git." --sel 0 --cols 80   # une frame du popup vivant
                                  # 1re ligne : count=… sel=… exec=… left=<ligne complétée>
+                                 # --focus=true : le popup a le clavier (cf. § Usage)
 jigger complete "install fire"   # candidats, un par ligne (complétion classique)
 jigger pick "scoop uninstall 7z" # sélecteur interactif ; imprime la nouvelle ligne
                                  # code retour : 0 = insérer, 10 = exécuter, 2 = annulé
@@ -306,11 +325,19 @@ interactif sous `zpty`, tape une séquence de touches et vérifie ce qui est ré
 écrit à l'écran. `JIGGER_TEST_PLUGINS=1` y ajoute zsh-autosuggestions et
 zsh-syntax-highlighting, pour prouver qu'ils cohabitent.
 
-PSReadLine, lui, ne se pilote pas sans console : `tests/smoke.ps1` couvre tout le reste —
-les touches effectivement reprises, l'analyse de la sortie de `render`, les séquences
-d'affichage et d'effacement, la détection des commandes mutantes, et l'export des
-variables du prompt depuis un cache fabriqué. Le popup à l'écran, lui, se vérifie à la
-main.
+Sous Windows, `tests/conpty` joue le même rôle : il lance un pwsh dans un **pseudo-terminal**
+(ConPTY), tape une séquence de touches et **rend l'écran** tel qu'on le verrait, cadre
+compris. `tests/pty.ps1` (`make test-pty`) en tire ses assertions, dans la situation qui
+compte — prompt sur la dernière ligne de l'écran, comme dans un terminal en usage.
+
+```sh
+go run ./tests/conpty -rc essai.ps1 -keys 'winget ins\t' -screen   # l'écran final
+```
+
+`tests/smoke.ps1` couvre ce qui ne demande pas de console : les touches effectivement
+reprises, l'analyse de la sortie de `render`, les séquences d'affichage et d'effacement,
+la détection des commandes mutantes, et l'export des variables du prompt depuis un cache
+fabriqué.
 
 ## Feuille de route
 

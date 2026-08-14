@@ -62,6 +62,15 @@ var (
 			Underline(true).
 			Width(rowW)
 
+	// Ligne courante quand le popup n'a pas le clavier : elle reste désignée — c'est
+	// elle que ⇥ insère — mais au repos, sur le fond des pastilles plutôt qu'en accent
+	// souligné. C'est la convention des listes du système : sélection grisée tant que le
+	// contrôle n'a pas le focus, colorée dès qu'il l'a.
+	selIdleStyle = lipgloss.NewStyle().
+			Foreground(fg).
+			Background(sepCl).
+			Width(rowW)
+
 	// Rappels de touches : pastilles (fond + remplissage). Une vraie bordure coûterait
 	// deux lignes de plus au pied du popup pour le même effet.
 	pillStyle = lipgloss.NewStyle().Background(sepCl).Foreground(ink).Bold(true).Padding(0, 1)
@@ -215,5 +224,6 @@ func (m Model) View() string {
 		FilterView: filterHint.Render("› ") + m.input.View(),
 		Empty:      "aucun candidat",
 		Keys:       keys,
+		Focused:    true, // le sélecteur plein écran possède le clavier, par construction
 	}.Render()
 }

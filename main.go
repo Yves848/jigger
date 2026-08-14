@@ -42,7 +42,7 @@ import (
 	"gitlab.yg-devworks.com/yves/jigger/internal/ui"
 )
 
-var version = "0.5.0"
+var version = "0.6.0"
 
 func main() {
 	ui.Version = version // affichée dans l'en-tête du sélecteur (repère du binaire lancé)
@@ -194,6 +194,7 @@ func runRender(args []string) int {
 	cols := fs.Int("cols", 0, "largeur du terminal")
 	rows := fs.Int("rows", 8, "nombre de candidats affichés")
 	color := fs.String("color", "auto", "profil couleur : auto|never|16|256|truecolor")
+	focus := fs.Bool("focus", false, "le popup a le clavier : les flèches lui reviennent")
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
@@ -202,13 +203,21 @@ func runRender(args []string) int {
 
 	res := complete.Complete(*line)
 
+	// Le pied dit où ira la prochaine flèche : sans le focus, ↓ sert à entrer dans la
+	// liste (↑ reste l'historique) ; avec, les deux parcourent les candidats.
+	navigation := ui.Key{Key: "↓", Label: "parcourir"}
+	if *focus {
+		navigation = ui.Key{Key: "↑↓", Label: "naviguer"}
+	}
+
 	frame := ui.Frame{
-		Title: res.Title(),
-		Items: res.Items,
-		Rows:  *rows,
+		Title:   res.Title(),
+		Items:   res.Items,
+		Rows:    *rows,
+		Focused: *focus,
 		Keys: []ui.Key{
 			{Key: "⇥", Label: "insérer"},
-			{Key: "^N ^P", Label: "naviguer"},
+			navigation,
 			{Key: "^G", Label: "fermer"},
 		},
 	}

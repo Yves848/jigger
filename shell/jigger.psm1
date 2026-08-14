@@ -3,8 +3,9 @@
 # C'est le pendant de jigger.plugin.zsh, avec les mêmes deux modes :
 #
 #   • popup vivant — dès que la ligne courante est une commande winget ou scoop, le
-#     sélecteur s'affiche sous le prompt et suit la frappe, sans rien demander. ^N/^P
-#     naviguent, ⇥ insère le candidat courant, ^G ferme le popup pour la ligne en cours.
+#     sélecteur s'affiche sous le prompt et suit la frappe, sans rien demander. ↓ (ou ^N)
+#     fait entrer dans la liste, ↑ (ou ^P) en ressort et rend l'historique, ⇥ insère le
+#     candidat courant, ^G ferme le popup pour la ligne en cours.
 #   • Tab classique — quand le popup vivant est éteint (JIGGER_LIVE=0), ⇥ ouvre le
 #     sélecteur interactif plein écran (`jigger pick`).
 #
@@ -17,9 +18,9 @@
 #
 # L'affichage est écrit directement sur la console, sous la ligne de commande, entre un
 # ESC 7 (mémorise le curseur) et un ESC 8 (le remet) : PSReadLine ne s'aperçoit de rien,
-# puisque le curseur n'a pas bougé. Et pour ne jamais faire défiler l'écran sous ses
-# pieds — ce qui décalerait tout son affichage —, on n'écrit que ce qui tient entre le
-# curseur et le bas de la fenêtre.
+# puisque le curseur n'a pas bougé. Quand il n'y a pas la place — le prompt occupe la
+# dernière ligne, ce qui est le cas ordinaire d'un terminal en usage —, on la fait en
+# poussant l'écran, puis on recale l'ancre de PSReadLine (cf. New-JiggerRoom).
 #
 # Installation, dans $PROFILE :
 #   Import-Module C:\chemin\vers\jigger\shell\jigger.psm1
@@ -78,11 +79,29 @@ $script:Frame     = ''     # cadre déjà rendu (évite un processus par redessi
 $script:Key       = ''     # signature du dernier rendu
 $script:Shown     = $false # un cadre est-il actuellement à l'écran ?
 $script:Failures  = 0      # échecs d'affichage d'affilée
+$script:Focused   = $false # le popup a-t-il le clavier ? (cf. Step-JiggerSelection)
 
 # ── Vérifications d'installation ──────────────────────────────────────────────────────
 
 if (-not (Get-Command $script:Exe -ErrorAction SilentlyContinue)) {
     Write-Warning "jigger : binaire « $($script:Exe) » introuvable dans le PATH. Module inactif."
+    return
+}
+
+# Le module et le binaire vont par paire : le module passe à `jigger render` des options
+# qu'un binaire plus ancien ne connaît pas. Celui-ci sortirait alors en erreur, et le
+# popup ne s'afficherait jamais — sans un mot, ce qui est la pire façon de tomber en
+# panne. Un appel au démarrage (~25 ms) suffit à le dire.
+$script:VersionRequise = [version]'0.6.0'
+$version = $null
+try {
+    $brut = @(& $script:Exe --version 2>$null)[0]
+    $version = [version](($brut -split '\s+')[-1])
+} catch { }
+if ($version -and $version -lt $script:VersionRequise) {
+    $chemin = (Get-Command $script:Exe).Source
+    Write-Warning ("jigger : le binaire $chemin est en $version, or ce module en demande " +
+        "$($script:VersionRequise). Recompile-le (« make install ») ou remplace celui du PATH. Module inactif.")
     return
 }
 if (-not (Get-Module PSReadLine)) {
@@ -150,8 +169,9 @@ function Test-JiggerActive {
 # Get-JiggerFrame appelle le binaire et met à jour l'état. Rend $false s'il n'y a rien à
 # afficher.
 function Get-JiggerFrame([string]$Buffer, [int]$Rows, [int]$Columns) {
+    $focus = if ($script:Focused) { 'true' } else { 'false' }
     $out = & $script:Exe render --line $Buffer --sel $script:Sel --cols $Columns `
-                --rows $Rows --color $script:Color 2>$null
+                --rows $Rows --color $script:Color --focus=$focus 2>$null
     if ($LASTEXITCODE -ne 0 -or $null -eq $out) { return $false }
     $lines = @($out)
     if ($lines.Count -lt 2) { return $false }
@@ -190,17 +210,80 @@ function Format-JiggerDraw([string]$Frame) {
     return $SAVE + "`r`n" + $corps + $CLREOL + $CLRDOWN + $RESTORE
 }
 
+# La liste de prédictions de PSReadLine (PredictionViewStyle ListView) se dessine
+# exactement là où le popup se dessine : sous la ligne de commande. Les deux se disputent
+# alors les mêmes lignes à chaque frappe — et l'écran scintille.
+#
+# Tant que le popup est là, on ramène donc la prédiction à sa forme en ligne, qui
+# n'occupe aucune ligne à elle seule (le texte grisé à la suite du curseur). Elle n'est
+# pas perdue, juste rangée ; PSReadLine retrouve sa vue dès que le cadre s'efface.
+$script:VuePrediction = ''
+
+function Suspend-JiggerPrediction {
+    if ($script:VuePrediction) { return }   # déjà rangée
+    try {
+        $vue = "$((Get-PSReadLineOption).PredictionViewStyle)"
+        if ($vue -ne 'ListView') { return }
+        $script:VuePrediction = $vue
+        Set-PSReadLineOption -PredictionViewStyle InlineView
+    } catch { }
+}
+
+function Resume-JiggerPrediction {
+    if (-not $script:VuePrediction) { return }
+    try { Set-PSReadLineOption -PredictionViewStyle $script:VuePrediction } catch { }
+    $script:VuePrediction = ''
+}
+
 # Show-JiggerPopup écrit le cadre sous la ligne de commande.
 function Show-JiggerPopup {
+    Suspend-JiggerPrediction
     [Console]::Write((Format-JiggerDraw $script:Frame))
     $script:Shown = $true
 }
 
 # Hide-JiggerPopup efface tout ce qui est sous la ligne de commande.
 function Hide-JiggerPopup {
+    Resume-JiggerPrediction
     if (-not $script:Shown) { return }
     [Console]::Write((Format-JiggerDraw ''))
     $script:Shown = $false
+}
+
+# New-JiggerRoom pousse l'écran de $Lignes pour dégager la place du popup, puis remet le
+# curseur sur la ligne de commande — qui a suivi le mouvement.
+#
+# Sans cela, le popup ne s'afficherait pour ainsi dire jamais : dans un terminal en
+# usage, le prompt occupe la dernière ligne de l'écran, et il n'y a rien en dessous. On
+# fait donc ce que fait n'importe quel sélecteur en incrustation (fzf --height, entre
+# autres) : on défile.
+#
+# Reste que PSReadLine retient la ligne où commence sa saisie, et qu'un défilement qu'il
+# n'a pas provoqué la lui fait mentir de $Lignes — sa ligne se réafficherait alors plus
+# bas, précédée d'autant de vide. On corrige donc son ancre. C'est la seule chose que
+# jigger touche à l'intérieur de PSReadLine, et un échec y est sans conséquence : on
+# renonce simplement au défilement.
+function New-JiggerRoom([int]$Lignes) {
+    if ($Lignes -le 0) { return $true }
+    if (-not (Move-JiggerAnchor $Lignes)) { return $false }
+
+    $bas = [Console]::WindowTop + [Console]::WindowHeight
+    [Console]::Write($SAVE + "$ESC[$bas;1H" + ("`n" * $Lignes) + $RESTORE + "$ESC[${Lignes}A")
+    return $true
+}
+
+# Move-JiggerAnchor recule de $Lignes la ligne d'ancrage de PSReadLine.
+function Move-JiggerAnchor([int]$Lignes) {
+    try {
+        $type = [Microsoft.PowerShell.PSConsoleReadLine]
+        $drapeaux = [System.Reflection.BindingFlags]'NonPublic, Instance'
+        $singleton = $type.GetField('_singleton', [System.Reflection.BindingFlags]'NonPublic, Static').GetValue($null)
+        $ancre = $type.GetField('_initialY', $drapeaux)
+        $ancre.SetValue($singleton, [int]$ancre.GetValue($singleton) - $Lignes)
+        return $true
+    } catch {
+        return $false
+    }
 }
 
 # Update-JiggerPopup fait vivre le popup : appelé après chaque touche qui modifie la
@@ -218,10 +301,17 @@ function Update-JiggerPopup {
         $largeur = [Console]::WindowWidth
         if ($largeur -lt $script:MinColumns) { Hide-JiggerPopup; return }
 
-        # Où est le curseur ? De sa position dépend le nombre de lignes qu'on peut
-        # occuper sans faire défiler l'écran.
+        # Où est le curseur ? De sa position dépend la place disponible sous la ligne de
+        # commande. 5 lignes de décor : 2 bordures, l'en-tête, la respiration, le pied.
         $sousLeCurseur = [Console]::WindowHeight - ([Console]::CursorTop - [Console]::WindowTop) - 1
-        # 5 lignes de décor : 2 bordures, l'en-tête, la respiration, le pied.
+        $voulu = $script:Rows + 5
+        if ($sousLeCurseur -lt $voulu) {
+            # Pas la place : on la fait. Si le défilement n'est pas possible, on se
+            # contente de ce qu'il reste — et de rien du tout s'il ne reste rien.
+            if (New-JiggerRoom ($voulu - $sousLeCurseur)) {
+                $sousLeCurseur = $voulu
+            }
+        }
         $tiennent = $sousLeCurseur - 5
         if ($tiennent -lt 1) { Hide-JiggerPopup; return }
         $rows = [Math]::Min($script:Rows, $tiennent)
@@ -232,7 +322,7 @@ function Update-JiggerPopup {
             $script:SelLine = $buffer
         }
 
-        $signature = "$buffer|$($script:Sel)|$largeur|$rows"
+        $signature = "$buffer|$($script:Sel)|$($script:Focused)|$largeur|$rows"
         if ($signature -ne $script:Key) {
             $script:Key = $signature
             if (-not (Get-JiggerFrame $buffer $rows $largeur)) {
@@ -258,13 +348,42 @@ function Update-JiggerPopup {
 # Reset-JiggerLine : remise à zéro à chaque nouvelle ligne. ^G ne vaut que pour la ligne
 # où il a été frappé, et l'écran a défilé : il n'y a plus rien à effacer.
 function Reset-JiggerLine {
+    Resume-JiggerPrediction   # filet : la vue de PSReadLine ne doit jamais rester rangée
     $script:Sel = 0
     $script:SelLine = ''
+    $script:Focused = $false
     $script:Dismissed = $false
     $script:Count = 0
     $script:Frame = ''
     $script:Key = ''
     $script:Shown = $false
+}
+
+# Step-JiggerSelection décide de ce que fait une flèche, et rend $true si le popup l'a
+# prise. C'est là que vit le focus, et la règle tient en deux phrases :
+#
+#   • ↓ fait entrer dans la liste (et y descend). Le popup a dès lors le clavier.
+#   • ↑ y remonte, et rend la main dès qu'on est déjà sur le premier candidat.
+#
+# Hors focus, les deux flèches restent l'historique du shell — c'est le point : on ne
+# perd pas l'historique parce qu'un popup est ouvert. Le cadre montre où en est le focus
+# (ligne courante soulignée ou au repos), sans quoi la règle serait invisible.
+#
+# La fonction ne lit pas la ligne elle-même : `$Actif` lui est passé, ce qui la rend
+# vérifiable hors console (cf. tests/smoke.ps1).
+function Step-JiggerSelection([int]$Sens, [bool]$Actif) {
+    if (-not $Actif) { return $false }
+
+    if ($Sens -gt 0) {
+        $script:Focused = $true
+        $script:Sel++
+    } else {
+        if (-not $script:Focused) { return $false }   # popup ouvert, mais pas au clavier
+        if ($script:Sel -gt 0) { $script:Sel-- } else { $script:Focused = $false }
+    }
+    $script:SelLine = Get-JiggerBuffer
+    Update-JiggerPopup
+    return $true
 }
 
 # ── Touches ───────────────────────────────────────────────────────────────────────────
@@ -335,6 +454,26 @@ $script:RelaisTexte = {
     Update-JiggerPopup
 }
 
+# Flèches et ^N/^P : au popup s'il a (ou prend) le clavier, à l'historique sinon.
+$script:RelaisNavigation = @{
+    'DownArrow' = { param($key, $arg)
+        if (-not (Step-JiggerSelection 1 (Test-JiggerActive))) {
+            Invoke-JiggerFallback 'DownArrow' $key $arg 'NextHistory'
+        } }
+    'UpArrow'   = { param($key, $arg)
+        if (-not (Step-JiggerSelection -1 (Test-JiggerActive))) {
+            Invoke-JiggerFallback 'UpArrow' $key $arg 'PreviousHistory'
+        } }
+    'Ctrl+n'    = { param($key, $arg)
+        if (-not (Step-JiggerSelection 1 (Test-JiggerActive))) {
+            Invoke-JiggerFallback 'Ctrl+n' $key $arg 'NextHistory'
+        } }
+    'Ctrl+p'    = { param($key, $arg)
+        if (-not (Step-JiggerSelection -1 (Test-JiggerActive))) {
+            Invoke-JiggerFallback 'Ctrl+p' $key $arg 'PreviousHistory'
+        } }
+}
+
 $script:RelaisEdition = @{
     'Backspace'      = { param($key, $arg) Invoke-JiggerFallback 'Backspace'      $key $arg; Update-JiggerPopup }
     'Delete'         = { param($key, $arg) Invoke-JiggerFallback 'Delete'         $key $arg; Update-JiggerPopup }
@@ -389,34 +528,18 @@ if ($script:Live) {
         Register-JiggerKey $k $script:RelaisEdition[$k] ''
     }
 
-    # ^N / ^P : naviguent si le popup est là, sinon rendent la main à l'historique. Les
-    # flèches ↑↓ ne sont jamais touchées.
-    Set-PSReadLineKeyHandler -Chord 'Ctrl+n' -BriefDescription 'jigger:suivant' `
-        -Description 'Candidat suivant du popup jigger, sinon historique suivant.' -ScriptBlock {
-        if (Test-JiggerActive) {
-            $script:Sel++
-            $script:SelLine = Get-JiggerBuffer
-            Update-JiggerPopup
-        } else {
-            [Microsoft.PowerShell.PSConsoleReadLine]::NextHistory()
-        }
-    }
-    Set-PSReadLineKeyHandler -Chord 'Ctrl+p' -BriefDescription 'jigger:précédent' `
-        -Description 'Candidat précédent du popup jigger, sinon historique précédent.' -ScriptBlock {
-        if (Test-JiggerActive) {
-            if ($script:Sel -gt 0) { $script:Sel-- }
-            $script:SelLine = Get-JiggerBuffer
-            Update-JiggerPopup
-        } else {
-            [Microsoft.PowerShell.PSConsoleReadLine]::PreviousHistory()
-        }
-    }
+    # ↑↓ (et ^N/^P, qui restent) : au popup s'il a le clavier, à l'historique sinon.
+    Register-JiggerKey 'DownArrow' $script:RelaisNavigation['DownArrow'] 'NextHistory'     'jigger:descendre'
+    Register-JiggerKey 'UpArrow'   $script:RelaisNavigation['UpArrow']   'PreviousHistory' 'jigger:monter'
+    Register-JiggerKey 'Ctrl+n'    $script:RelaisNavigation['Ctrl+n']    'NextHistory'     'jigger:suivant'
+    Register-JiggerKey 'Ctrl+p'    $script:RelaisNavigation['Ctrl+p']    'PreviousHistory' 'jigger:précédent'
 
     # ^G : ferme le popup jusqu'à la fin de la ligne.
     Set-PSReadLineKeyHandler -Chord 'Ctrl+g' -BriefDescription 'jigger:fermer' `
         -Description 'Ferme le popup jigger pour la ligne en cours.' -ScriptBlock {
         if (Test-JiggerActive) {
             $script:Dismissed = $true
+            $script:Focused = $false
             $script:Frame = ''
             Hide-JiggerPopup
         }
@@ -455,15 +578,24 @@ Set-PSReadLineKeyHandler -Chord $script:InsertKey -BriefDescription 'jigger:ins�
         return
     }
 
-    # Popup fermé par ^G : ⇥ le rouvre plutôt que d'ouvrir le sélecteur plein écran.
-    if ($script:Live -and $script:Dismissed) {
-        $script:Dismissed = $false
-        $script:Key = ''
-        Update-JiggerPopup
+    if ($script:Live) {
+        # Popup fermé par ^G : ⇥ le rouvre.
+        if ($script:Dismissed) {
+            $script:Dismissed = $false
+            $script:Key = ''
+            Update-JiggerPopup
+            return
+        }
+        # Popup allumé mais sans rien à proposer — aucun candidat, ou pas la place de
+        # l'afficher. ⇥ rend alors la main à la complétion du shell. Surtout pas au
+        # sélecteur plein écran : il dessinerait par-dessus le prompt et attendrait une
+        # touche, ce qui n'a rien à voir avec ce qu'on vient de demander.
+        Invoke-JiggerFallback $script:InsertKey $key $arg 'TabCompleteNext'
         return
     }
 
-    # Sélecteur plein écran : il possède le terminal le temps du choix.
+    # JIGGER_LIVE=0 : le sélecteur plein écran, celui qu'on a explicitement choisi. Il
+    # possède le terminal le temps du choix.
     Hide-JiggerPopup
     $out = & $script:Exe pick $buffer
     $code = $LASTEXITCODE
@@ -558,27 +690,33 @@ function Set-JiggerCounter([string]$Name, [int]$Value) {
 # oh-my-posh peut l'appeler depuis sa propre fonction `prompt`.
 function Update-JiggerPrompt {
     Reset-JiggerLine
-    if (-not $script:Prompt) { return }
 
     $maintenant = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
     $age = $script:PromptTTL   # cache absent → réputé périmé
 
-    # Le cache est connu faux : on le refait avant de lire, pas au prochain TTL. --wait
-    # parce qu'un rafraîchissement paresseux d'un autre onglet a fort bien pu partir
-    # pendant l'upgrade et tenir encore le verrou : sans attendre, on renoncerait
-    # justement dans le cas qu'on cherche à corriger.
+    # Une commande mutante vient de tourner : la liste des paquets installés est fausse.
+    # Sans cela, le paquet qu'on vient d'installer manquerait à la complétion de
+    # `uninstall` jusqu'à la péremption du cache. On la refait donc tout de suite, en
+    # tâche de fond — que le bloc de prompt soit activé ou non, car cela ne le regarde pas.
     if ($script:Dirty) {
         $script:Dirty = $false
-        $script:LastRefresh = $maintenant
-        if ($script:PromptSync) {
-            & $script:Exe prompt --refresh --wait *> $null
-            # Les catalogues aussi ont vieilli : un paquet vient d'être installé.
-            Start-JiggerBackground @('warm', '--installed')
-        } else {
-            Start-JiggerBackground @('prompt', '--refresh', '--wait')
-            Start-JiggerBackground @('warm', '--installed')
+        Start-JiggerBackground @('warm', '--installed')
+
+        # Le compteur du prompt, lui, est connu faux : on le refait avant de lire, pas au
+        # prochain TTL. --wait parce qu'un rafraîchissement paresseux d'un autre onglet a
+        # fort bien pu partir pendant l'upgrade et tenir encore le verrou : sans attendre,
+        # on renoncerait justement dans le cas qu'on cherche à corriger.
+        if ($script:Prompt) {
+            $script:LastRefresh = $maintenant
+            if ($script:PromptSync) {
+                & $script:Exe prompt --refresh --wait *> $null
+            } else {
+                Start-JiggerBackground @('prompt', '--refresh', '--wait')
+            }
         }
     }
+
+    if (-not $script:Prompt) { return }
 
     if ([IO.File]::Exists($script:StatusFile)) {
         try {

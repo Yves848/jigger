@@ -8,7 +8,7 @@ TEST_SHELL := test-shell
 ifeq ($(OS),Windows_NT)
   BINARY := jigger.exe
   GREFFON := Ajoute dans $$PROFILE :  Import-Module $(CURDIR)/shell/jigger.psm1
-  TEST_SHELL := test-shell-ps
+  TEST_SHELL := test-shell-ps test-pty
 endif
 
 build:
@@ -31,9 +31,15 @@ test-shell: build
 test-shell-ps: build
 	pwsh -NoProfile -File tests/smoke.ps1
 
+# Le popup lui-même, dans un vrai pseudo-terminal (cf. tests/pty.ps1). Lent — quelques
+# secondes par cas, le temps qu'un pwsh démarre — mais c'est le seul juge de ce que
+# l'utilisateur voit.
+test-pty: build
+	pwsh -NoProfile -File tests/pty.ps1
+
 test-all: test $(TEST_SHELL)
 
 clean:
-	rm -f jigger jigger.exe
+	rm -f jigger jigger.exe conpty-test.exe
 
-.PHONY: build install test test-shell test-shell-ps test-all clean
+.PHONY: build install test test-shell test-shell-ps test-pty test-all clean

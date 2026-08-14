@@ -6,6 +6,69 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le ve
 [SemVer](https://semver.org/lang/fr/). Les versions antérieures à `v0.1.6` sont antérieures
 à ce journal ; leur détail est dans l'historique git.
 
+## [v0.6.0] — 2026-08-14
+
+### Modifié
+
+- **Les flèches pilotent le popup, mais seulement une fois qu'il a le clavier.** `↓` fait
+  entrer dans la liste, `↑` en ressort dès le premier candidat ; tant que le popup n'a pas
+  le focus, `↑` et `↓` restent l'historique du shell, popup ouvert ou non. Ouvrir une
+  liste de candidats ne coûte donc pas l'accès à la commande précédente — ce qui était
+  toute la raison de ne pas toucher aux flèches jusqu'ici.
+- La ligne courante **montre** l'état du focus : soulignée en accent quand le popup a le
+  clavier, au repos sur le fond des pastilles quand il ne l'a pas. Le pied change avec
+  elle — `↓ parcourir` puis `↑↓ naviguer`. Sans ce signe, la règle serait invisible.
+- `^N`/`^P` suivent exactement la même règle et restent disponibles.
+- Les deux greffons rendent la touche à ce qu'elle faisait avant eux : si les flèches sont
+  déjà tenues par un autre greffon (recherche par préfixe dans l'historique…), c'est lui
+  qui reprend la main hors focus.
+
+### Corrigé
+
+- **L'écran scintillait quand PSReadLine affiche ses prédictions en liste.** `ListView`
+  se dessine exactement là où le popup se dessine : les deux se disputaient les mêmes
+  lignes à chaque frappe. jigger range la vue le temps du cadre — la prédiction repasse
+  en `InlineView`, qui n'occupe aucune ligne à elle — et la rend ensuite.
+- **Une ligne du cadre pouvait déborder, et le terminal la repliait.** Le nom d'un paquet
+  était tronqué à une largeur fixe, sans tenir compte de la place que prenaient à droite
+  la version et le point d'installé — or un identifiant winget hors catalogue suivi d'une
+  version à quatre nombres (`ARP\Machine\X64\{226CEF88…  6.4.0.3079  ●`) dépasse largement.
+  La ligne repliée faisait occuper au popup deux fois les lignes annoncées : le cadre se
+  redessinait plus bas à chaque frappe, et l'écran se remplissait de cadres empilés. Le
+  nom se taille désormais sur ce qui reste vraiment, et aucune ligne ne sort du cadre —
+  un garde-fou la coupe si le calcul se trompe.
+- **Le paquet fraîchement installé manquait à la complétion de `uninstall`.** Le
+  rafraîchissement de la liste des installés était enfermé dans le bloc de prompt : sans
+  `JIGGER_PROMPT=1`, il n'avait jamais lieu, et le cache restait faux jusqu'à sa
+  péremption. Il ne dépend plus de lui.
+- **Le popup ne s'affichait pour ainsi dire jamais sous PowerShell.** Il n'était dessiné
+  que s'il tenait sous la ligne de commande — or dans un terminal en usage, le prompt
+  occupe la dernière ligne de l'écran, et il n'y a rien en dessous. jigger fait désormais
+  la place en poussant l'écran, comme n'importe quel sélecteur en incrustation, et
+  recale l'ancre de PSReadLine du même nombre de lignes : sans cela, la ligne de commande
+  se réaffichait plus bas, précédée d'autant de vide.
+- **⇥ ouvrait le sélecteur plein écran par surprise.** Quand le popup n'avait rien à
+  proposer — aucun candidat, ou pas la place de s'afficher —, ⇥ tombait sur `jigger pick`,
+  qui dessinait par-dessus le prompt et attendait une touche. ⇥ rend maintenant la main à
+  la complétion du shell ; le sélecteur plein écran reste ce qu'on obtient avec
+  `JIGGER_LIVE=0`, c'est-à-dire quand on l'a demandé.
+- **`winget` ou `scoop` seul annonçait « aucun candidat »** au lieu de proposer les
+  sous-commandes : le mot en cours étant le nom de la commande, il était cherché parmi
+  celles-ci — et aucune ne s'appelle « winget ».
+
+### Ajouté
+
+- `jigger render --focus=true|false` : le focus vit côté shell, comme l'index sélectionné,
+  et revient à chaque rendu. `render` reste sans état.
+- Le module PowerShell **vérifie la version du binaire** à l'import. Module et binaire vont
+  par paire : un binaire plus ancien ne connaît pas les options que le module lui passe, il
+  sort en erreur, et le popup ne s'affiche jamais — sans un mot. Il le dit désormais.
+- **Un harnais de pseudo-terminal pour Windows** (`tests/conpty`) et la suite qui va avec
+  (`tests/pty.ps1`, `make test-pty`). Il lance un pwsh dans un ConPTY, tape des touches,
+  et **rend l'écran** tel qu'on le verrait — cadre compris. C'est le pendant de
+  `tests/zpty.zsh`, et il existe pour la même raison : les trois bogues ci-dessus ne se
+  voyaient qu'à l'écran, aucun n'aurait été trouvé autrement.
+
 ## [v0.5.0] — 2026-08-14
 
 ### Ajouté
