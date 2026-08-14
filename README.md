@@ -108,6 +108,16 @@ hook `precmd` relit avec les seuls builtins de zsh — **0,03 ms par prompt, auc
 valeur affichée est celle du dernier calcul ; passé `JIGGER_PROMPT_TTL`, un rafraîchissement
 part détaché et le prompt suivant est à jour.
 
+Ce TTL seul laisserait le compteur mentir une demi-heure après un `brew upgrade`. jigger
+repère donc, en `preexec`, les commandes brew qui changent l'état — `install`, `upgrade`,
+`uninstall`, `update`, `tap`… — et rafraîchit **dans la foulée** : le prompt qui suit
+l'upgrade est déjà juste. C'est la seule fois où le prompt attend quelque chose (moins
+d'une seconde en général, après une commande qui a duré bien plus) ; `JIGGER_PROMPT_SYNC=0`
+rend ce rafraîchissement détaché, au prix d'un compteur juste au prompt d'*après*.
+
+Seul ce que le shell voit passer est détecté : une mise à jour lancée ailleurs — autre
+onglet, application graphique — reste rattrapée par le TTL.
+
 oh-my-posh n'ayant plus de segment `command` depuis la v26, tout passe par deux variables
 d'environnement et un segment `text`.
 
@@ -142,8 +152,13 @@ deuxième prompt, une fois le premier rafraîchissement terminé.
 ```sh
 JIGGER_PROMPT=1        # active le bloc (défaut 0)
 JIGGER_PROMPT_TTL=1800 # âge du cache, en secondes, avant rafraîchissement (défaut 30 min)
+JIGGER_PROMPT_SYNC=1   # après une commande brew mutante, rafraîchir avant d'afficher le
+                       # prompt (défaut) ; 0 = détaché, juste au prompt suivant
 JIGGER_CACHE_DIR=…     # emplacement du cache (défaut ~/Library/Caches/jigger)
 ```
+
+L'ordre des `source` dans `~/.zshrc` n'a pas d'importance : le hook de jigger se place de
+lui-même en tête de `precmd_functions`, avant celui d'oh-my-posh qui calcule le prompt.
 
 ### Variables exposées
 

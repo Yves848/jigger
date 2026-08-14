@@ -44,6 +44,48 @@ $extra
 RC
 }
 
+# rc du bloc oh-my-posh (JIGGER_PROMPT). Trois pièces :
+#   • un cache fabriqué, frais et mensonger (10 formulae, 1 cask) ;
+#   • un faux binaire `jigger` qui journalise ses appels et, sur --refresh, réécrit le
+#     cache à 0/0 — c'est ce qui rend l'invalidation observable. Un vrai fichier
+#     exécutable, pas une fonction : le plugin appelle `command jigger`, qui saute les
+#     fonctions ;
+#   • un PS1 qui affiche le compteur exporté, seul moyen de voir ce que le prompt aurait
+#     montré.
+# Le popup vivant est éteint : il n'a rien à voir ici, et son DSR brouillerait le flux.
+_jigger_prompt_rc() {
+  local rc=$1 dir=$2
+  mkdir -p $dir/bin
+  # printf, pas `print -r` : il faut de vraies tabulations, celles-là mêmes que le hook
+  # cherche.
+  printf '9.9.9\t10\t1\t%s\n' "$(date +%s)" > $dir/status
+  : > $dir/appels   # doit exister même quand rien n'appelle jigger (err_return)
+
+  cat > $dir/bin/jigger <<STUB
+#!/bin/sh
+printf '%s\n' "\$*" >> $dir/appels
+case "\$*" in
+  *--refresh*) printf '9.9.9\t0\t0\t%s\n' "\$(date +%s)" > $dir/status ;;
+esac
+STUB
+  chmod +x $dir/bin/jigger
+
+  cat > $rc <<RC
+setopt prompt_subst
+PS1='jf=\${JIGGER_BREW_FORMULAE:-vide} %% '
+# Le pty hérite de l'environnement de celui qui lance les tests — lequel a fort bien pu
+# ouvrir son terminal avec le bloc activé. Sans ce nettoyage, on lirait ses compteurs à
+# lui et le test passerait sans rien prouver.
+unset JIGGER_BREW_VERSION JIGGER_BREW_FORMULAE JIGGER_BREW_CASKS JIGGER_BREW_OUTDATED
+PATH="$dir/bin:\$PATH"
+brew() { print -r -- "CMD:[\$*]" }
+JIGGER_LIVE=0
+JIGGER_PROMPT=1
+JIGGER_CACHE_DIR=$dir
+source $root/shell/jigger.plugin.zsh
+RC
+}
+
 # _drain lit tout ce que le pty a à dire (non bloquant) et répond aux interrogations du
 # curseur (DSR 6n) : personne n'est derrière ce pseudo-terminal pour le faire, et le
 # widget refuse d'afficher tant qu'il ignore où est le curseur. C'est le seul endroit où
@@ -59,9 +101,13 @@ _drain() {
 }
 
 # jigger_type tape une chaîne (caractère par caractère, comme un humain) et rend le flux.
+# Un rc déjà écrit peut être passé en second argument (cf. _jigger_prompt_rc).
 jigger_type() {
-  local keys=$1 rc=${TMPDIR:-/tmp}/jigger-zpty-rc.zsh
-  _jigger_rc $rc
+  local keys=$1 rc=${2:-}
+  if [[ -z $rc ]]; then
+    rc=${TMPDIR:-/tmp}/jigger-zpty-rc.zsh
+    _jigger_rc $rc
+  fi
 
   zpty -b z zsh -f -i
   sleep 0.6; _drain >/dev/null
@@ -101,6 +147,9 @@ visible() {
 # ---------------------------------------------------------------- suite d'assertions
 
 local -i failed=0
+# Le « haystack » se passe entre guillemets, toujours : une expansion nue et vide est
+# purement élidée par zsh, les arguments glissent d'un cran, et l'assertion se met à
+# comparer n'importe quoi — en passant, de préférence.
 check() {
   local label=$1 haystack=$2 needle=$3 want=${4:-oui}
   local hit=non
@@ -125,33 +174,69 @@ suite() {
 
   print -r -- "→ le popup apparaît en tapant une commande brew"
   out=$(visible "$(jigger_type 'brew inst')")
-  check "cadre affiché"                 $out '╭─'
-  check "en-tête du contexte"           $out '❯ brew'
-  check "candidat install"              $out 'install'
+  check "cadre affiché"                 "$out" '╭─'
+  check "en-tête du contexte"           "$out" '❯ brew'
+  check "candidat install"              "$out" 'install'
 
   print -r -- "→ une ligne qui n'est pas brew n'affiche rien"
   out=$(visible "$(jigger_type 'echo hi')")
-  check "aucun cadre"                   $out '╭─' non
+  check "aucun cadre"                   "$out" '╭─' non
 
   print -r -- "→ ⇥ insère le candidat courant"
   out=$(visible "$(jigger_type $'brew u\t\n')")
-  check "uninstall exécuté"             $out 'CMD:[uninstall]'
+  check "uninstall exécuté"             "$out" 'CMD:[uninstall]'
 
   print -r -- "→ ^N descend d'un candidat avant l'insertion"
   out=$(visible "$(jigger_type $'brew u\x0e\t\n')")
-  check "upgrade exécuté"               $out 'CMD:[upgrade]'
+  check "upgrade exécuté"               "$out" 'CMD:[upgrade]'
 
   print -r -- "→ ^P remonte, et ne dépasse pas le premier"
   out=$(visible "$(jigger_type $'brew u\x0e\x10\x10\t\n')")
-  check "retour sur uninstall"          $out 'CMD:[uninstall]'
+  check "retour sur uninstall"          "$out" 'CMD:[uninstall]'
 
   print -r -- "→ ^G ferme le popup et laisse la ligne intacte"
   out=$(visible "$(jigger_type $'brew u\x07\n')")
-  check "ligne exécutée telle quelle"   $out 'CMD:[u]'
+  check "ligne exécutée telle quelle"   "$out" 'CMD:[u]'
 
   print -r -- "→ ⏎ efface le cadre avant la sortie de la commande"
   out=$(visible "$(jigger_type $'brew u\t\n')")
-  check "aucun cadre après la sortie"   ${out##*CMD:\[uninstall\]} '╭─' non
+  check "aucun cadre après la sortie"   "${out##*CMD:\[uninstall\]}" '╭─' non
+
+  # ── Bloc oh-my-posh ────────────────────────────────────────────────────────────────
+  # Un dossier neuf par cas : le journal des appels au faux jigger ne doit rien traîner
+  # d'un cas à l'autre.
+  local dir rc appels
+
+  print -r -- "→ bloc oh-my-posh : le compteur est exporté depuis le cache"
+  dir=$(mktemp -d); rc=$dir/rc.zsh; _jigger_prompt_rc $rc $dir
+  out=$(visible "$(jigger_type $'echo hi\n' $rc)")
+  appels=$(cat $dir/appels)
+  check "compteur exporté"              "$out" 'jf=10'
+  check "cache frais, aucun appel"      "$appels" 'refresh' non
+
+  print -r -- "→ une sous-commande brew inoffensive ne rafraîchit rien"
+  dir=$(mktemp -d); rc=$dir/rc.zsh; _jigger_prompt_rc $rc $dir
+  out=$(visible "$(jigger_type $'brew list\n' $rc)")
+  appels=$(cat $dir/appels)
+  check "brew list ne force rien"       "$appels" 'refresh' non
+  check "compteur inchangé"             "$out" 'jf=10'
+
+  print -r -- "→ après un brew upgrade, le compteur est juste dès le prompt suivant"
+  dir=$(mktemp -d); rc=$dir/rc.zsh; _jigger_prompt_rc $rc $dir
+  out=$(visible "$(jigger_type $'brew upgrade\n' $rc)")
+  appels=$(cat $dir/appels)
+  check "rafraîchissement forcé"        "$appels" 'prompt --refresh --wait'
+  check "compteur remis à jour"         "${out##*CMD:\[upgrade\]}" 'jf=vide'
+  check "l'ancien compteur a disparu"   "${out##*CMD:\[upgrade\]}" 'jf=10' non
+
+  print -r -- "→ la détection voit brew derrière un préfixe, et pas dans une citation"
+  dir=$(mktemp -d); rc=$dir/rc.zsh; _jigger_prompt_rc $rc $dir
+  out=$(visible "$(jigger_type $'HOMEBREW_NO_AUTO_UPDATE=1 brew install jq\n' $rc)")
+  check "affectation en tête"           "$(cat $dir/appels)" 'prompt --refresh --wait'
+
+  dir=$(mktemp -d); rc=$dir/rc.zsh; _jigger_prompt_rc $rc $dir
+  out=$(visible "$(jigger_type $'echo brew upgrade\n' $rc)")
+  check "brew cité ne compte pas"       "$(cat $dir/appels)" 'refresh' non
 
   if (( failed )); then
     print -r -- "\n$failed assertion(s) en échec"

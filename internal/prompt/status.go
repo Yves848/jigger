@@ -33,6 +33,13 @@ var ErrVerrouille = errors.New("rafraîchissement déjà en cours")
 // d'avoir pu le retirer) et n'empêche plus de rafraîchir.
 const peremptionVerrou = 5 * time.Minute
 
+// AttenteVerrou plafonne l'attente du verrou par un rafraîchissement forcé, et
+// intervalleVerrou espace ses tentatives.
+const (
+	AttenteVerrou    = 20 * time.Second
+	intervalleVerrou = 100 * time.Millisecond
+)
+
 // Status est l'état de Homebrew tel qu'il est affiché — et mis en cache.
 type Status struct {
 	Version  string    // version de brew, sans le suffixe de commits : « 6.0.17 »
@@ -127,12 +134,28 @@ func Read(dir string) (Status, bool) {
 }
 
 // Refresh interroge brew et réécrit le cache. C'est le chemin lent (plusieurs
-// secondes) : il n'est jamais appelé que détaché, en arrière-plan.
+// secondes) : il n'est jamais appelé que détaché, en arrière-plan. Verrou déjà pris :
+// il renonce aussitôt — un autre shell fait déjà le travail.
 func Refresh(dir string) (Status, error) { return RefreshWith(dir, brewReel) }
+
+// RefreshWait est Refresh pour le cas où le cache est *connu* faux : le shell vient de
+// voir passer une commande brew qui change l'état. Renoncer serait alors laisser un
+// compteur mensonger jusqu'à la péremption du TTL, y compris dans le cas le plus
+// probable — un rafraîchissement paresseux lancé pendant l'upgrade, et qui poireaute sur
+// le verrou de brew tout du long. Ce chemin attend donc son tour.
+func RefreshWait(dir string) (Status, error) {
+	return RefreshWaitWith(dir, brewReel, AttenteVerrou)
+}
 
 // RefreshWith est Refresh avec un exécuteur injectable (tests).
 func RefreshWith(dir string, run Runner) (Status, error) {
-	libere, ok := lock(dir)
+	return RefreshWaitWith(dir, run, 0)
+}
+
+// RefreshWaitWith est le corps commun : `attente` est le temps qu'on accepte de passer à
+// guetter le verrou (zéro = une seule tentative).
+func RefreshWaitWith(dir string, run Runner, attente time.Duration) (Status, error) {
+	libere, ok := lockWait(dir, attente)
 	if !ok {
 		return Status{}, ErrVerrouille
 	}
@@ -182,6 +205,21 @@ func ecrire(dir string, s Status) error {
 }
 
 func verrou(dir string) string { return File(dir) + ".lock" }
+
+// lockWait est lock qui réessaie jusqu'à `attente`. Une attente nulle donne exactement
+// lock : une tentative, puis on rend la main.
+func lockWait(dir string, attente time.Duration) (func(), bool) {
+	fin := time.Now().Add(attente)
+	for {
+		if libere, ok := lock(dir); ok {
+			return libere, true
+		}
+		if !time.Now().Before(fin) {
+			return nil, false
+		}
+		time.Sleep(intervalleVerrou)
+	}
+}
 
 // lock prend le verrou de rafraîchissement. Il renvoie la fonction de libération et un
 // booléen : faux si un autre rafraîchissement est déjà en cours.
