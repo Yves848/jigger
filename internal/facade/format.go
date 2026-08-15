@@ -67,19 +67,14 @@ func Formater(v pm.Verb, rows []pm.Package, enJSON bool) string {
 	return aligner(table)
 }
 
+// plusieursPM délègue à pm.PlusieursPM : c'est la même règle que la colonne PM du popup
+// (cf. ui.Frame.avecPM), une seule fois — pas deux critères qui finissent par diverger.
 func plusieursPM(rows []pm.Package) bool {
-	vu := ""
-	for _, r := range rows {
-		if r.PM == "" {
-			continue
-		}
-		if vu == "" {
-			vu = r.PM
-		} else if vu != r.PM {
-			return true
-		}
+	pms := make([]string, len(rows))
+	for i, r := range rows {
+		pms[i] = r.PM
 	}
-	return false
+	return pm.PlusieursPM(pms)
 }
 
 // aligner pose les colonnes à largeur fixe, deux espaces de gouttière. Le même principe

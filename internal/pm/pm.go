@@ -33,6 +33,29 @@ type Item struct {
 	PM string
 }
 
+// PlusieursPM dit si au moins deux gestionnaires distincts figurent dans une liste de
+// codes PM (chaînes vides ignorées : elles ne comptent pour aucun gestionnaire — c'est le
+// cas du chemin natif, qui ne remplit jamais PM). La colonne PM des tableaux de sortie
+// (facade.Formater, §4) et celle du popup (ui.Frame, §5) obéissent à la même règle
+// visuelle — « n'apparaît que si plus d'un gestionnaire a contribué » — et l'appliquaient
+// jusqu'ici chacune à sa façon, l'une correcte, l'autre non (elle s'affichait dès qu'UN
+// item portait un PM, même un seul gestionnaire disponible). Elle vit ici, une fois, pour
+// ne pas diverger une troisième fois.
+func PlusieursPM(pms []string) bool {
+	vu := ""
+	for _, p := range pms {
+		if p == "" {
+			continue
+		}
+		if vu == "" {
+			vu = p
+		} else if vu != p {
+			return true
+		}
+	}
+	return false
+}
+
 // Badges. Chaque gestionnaire range ses paquets en deux classes, que le popup distingue
 // par un glyphe et une couleur (cf. internal/ui). Ce qui les sépare varie — nature du
 // paquet, provenance — mais la première est toujours le cas ordinaire.

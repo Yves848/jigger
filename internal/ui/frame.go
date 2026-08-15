@@ -72,16 +72,19 @@ func tronquer(s string, largeur int) string {
 // greffon a réservées sous le prompt.
 func clip(s string, largeur int) string { return xansi.Truncate(s, largeur, "") }
 
-// avecPM dit si la colonne PM doit apparaître : présente dès qu'un item du cadre en
-// porte un, absente sinon. C'est la façade seule qui remplit ce champ (cf. pm.Item.PM) —
-// le chemin natif (`brew install ⇥`) n'a rien à désambiguïser et n'en porte jamais.
+// avecPM dit si la colonne PM doit apparaître : seulement si plus d'un gestionnaire a
+// contribué aux items du cadre — même règle que facade.Formater (§4), via pm.PlusieursPM.
+// C'est la façade seule qui remplit Item.PM (cf. pm.Item.PM) : le chemin natif
+// (`brew install ⇥`) n'a rien à désambiguïser et n'en porte jamais, donc un seul
+// gestionnaire disponible (macOS, brew seul) ne doit pas plus faire apparaître la colonne
+// que le chemin natif ne le ferait — sans quoi `jg render --line "jg install fire"`
+// poserait un « brew » sur chaque ligne, du bruit pur.
 func (f Frame) avecPM() bool {
-	for _, it := range f.Items {
-		if it.PM != "" {
-			return true
-		}
+	pms := make([]string, len(f.Items))
+	for i, it := range f.Items {
+		pms[i] = it.PM
 	}
-	return false
+	return pm.PlusieursPM(pms)
 }
 
 func (f Frame) rows() int {
