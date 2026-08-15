@@ -22,10 +22,8 @@ var verbesNormalises = map[pm.Verb]bool{
 	"list": true, "outdated": true, "search": true, "source": true,
 }
 
-func normalise(v pm.Verb) bool { return verbesNormalises[v] }
-
 // Normalise dit si un verbe rend un tableau plutôt qu'une sortie relayée.
-func Normalise(v pm.Verb) bool { return normalise(v) }
+func Normalise(v pm.Verb) bool { return verbesNormalises[v] }
 
 // lancer est le point d'injection des tests. relais dit si le processus hérite du
 // terminal (verbe relayé) ou si sa sortie est capturée (verbe normalisé).
@@ -59,7 +57,7 @@ func code(err error) int {
 // Lecture et écriture ne traitent pas l'échec de la même façon, et c'est délibéré : la
 // lecture est au mieux, l'écriture ne devine pas.
 func Executer(v pm.Verb, cibles []Cible, o Opts) ([]pm.Package, int) {
-	lecture := normalise(v)
+	lecture := Normalise(v)
 	var rows []pm.Package
 	var reussites, echecs int
 	dernierCode := 0

@@ -90,14 +90,14 @@ func TestBadgeAndCaskDetection(t *testing.T) {
 		t.Fatalf("firefox devrait porter le badge C, obtenu %v", res.Items)
 	}
 	// Un cask pur derrière install : brew exige --cask, jigger l'ajoute.
-	if got := res.Insert("firefox"); got != "--cask firefox" {
+	if got := res.InsertItem(Item{Name: "firefox"}); got != "--cask firefox" {
 		t.Fatalf("insertion de firefox = %q, attendu « --cask firefox »", got)
 	}
-	if got := brewComplete("install git", cat).Insert("git"); got != "git" {
+	if got := brewComplete("install git", cat).InsertItem(Item{Name: "git"}); got != "git" {
 		t.Fatalf("insertion de git = %q, attendu « git »", got)
 	}
 	// Ligne qui tranche déjà : on n'ajoute rien.
-	if got := brewComplete("install --cask fire", cat).Insert("firefox"); got != "firefox" {
+	if got := brewComplete("install --cask fire", cat).InsertItem(Item{Name: "firefox"}); got != "firefox" {
 		t.Fatalf("insertion derrière --cask = %q, attendu « firefox »", got)
 	}
 }
@@ -137,11 +137,11 @@ func scoopCatalog() *pm.Catalog {
 
 func TestScoop_QualifieUnNomAmbigu(t *testing.T) {
 	res := complete("scoop install fl", scoop.New(), scoopCatalog())
-	if got := res.Insert("flux"); got != "main/flux" {
+	if got := res.InsertItem(Item{Name: "flux"}); got != "main/flux" {
 		t.Fatalf("insertion = %q, attendu « main/flux »", got)
 	}
 	// Un nom sans ambiguïté s'insère tel quel.
-	if got := res.Insert("winrar"); got != "winrar" {
+	if got := res.InsertItem(Item{Name: "winrar"}); got != "winrar" {
 		t.Fatalf("insertion = %q, attendu « winrar »", got)
 	}
 }
@@ -164,7 +164,7 @@ func TestWinget_SousCommandesEtOptions(t *testing.T) {
 	if got := names(res.Items); len(got) != 1 || got[0] != "Canon IJ Scan Utility" {
 		t.Fatalf("attendu le seul installé, obtenu %v", got)
 	}
-	if got := res.Insert("Canon IJ Scan Utility"); got != `"Canon IJ Scan Utility"` {
+	if got := res.InsertItem(Item{Name: "Canon IJ Scan Utility"}); got != `"Canon IJ Scan Utility"` {
 		t.Fatalf("insertion = %q, attendue entre guillemets", got)
 	}
 }
@@ -265,14 +265,15 @@ func TestFacade_InsertItemAppliqueLaCorrectionDuBonGestionnaire(t *testing.T) {
 	}
 }
 
-// Insert(name) — sans le contexte de l'Item — n'a par construction aucun moyen de savoir
-// quel gestionnaire a proposé un nom sur un résultat façade : il rend le nom brut, tel
-// quel. C'est exactement pour ça qu'InsertItem existe.
-func TestFacade_InsertSeulNeCorrigePasSansContexte(t *testing.T) {
+// Un Item sans PM — construit à la main, hors de ce que CompleteFacade a produit — n'a
+// par construction aucun moyen de savoir quel gestionnaire l'a proposé sur un résultat
+// façade : InsertItem rend le nom brut, tel quel, plutôt que de deviner un gestionnaire
+// par défaut qui n'existe pas.
+func TestFacade_InsertItemSansPMNeCorrigePas(t *testing.T) {
 	cats := map[string]*pm.Catalog{"brew": brew.NewCatalog(nil, []string{"firealpaca"}, nil)}
 
 	res := CompleteFacade("jg install fire", []pm.Manager{brew.New()}, cats)
-	if got := res.Insert("firealpaca"); got != "firealpaca" {
+	if got := res.InsertItem(Item{Name: "firealpaca"}); got != "firealpaca" {
 		t.Fatalf("insertion = %q, attendu « firealpaca » (aucun contexte PM)", got)
 	}
 }

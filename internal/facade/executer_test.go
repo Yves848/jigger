@@ -197,11 +197,11 @@ func TestVerbeNormaliseSansParseNAvalePasLaSortieEnSilence(t *testing.T) {
 }
 
 func TestVerbesNormalisesSontCaptures(t *testing.T) {
-	if !normalise("outdated") || !normalise("list") || !normalise("search") || !normalise("source") {
+	if !Normalise("outdated") || !Normalise("list") || !Normalise("search") || !Normalise("source") {
 		t.Error("les quatre verbes tabulaires doivent être normalisés")
 	}
 	for _, v := range []pm.Verb{"install", "info", "doctor", "source add"} {
-		if normalise(v) {
+		if Normalise(v) {
 			t.Errorf("le verbe %q doit être relayé, pas normalisé", v)
 		}
 	}

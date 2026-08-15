@@ -41,19 +41,12 @@ type Result struct {
 	catsParPM map[string]*pm.Catalog
 }
 
-// Insert rend le texte à insérer pour un nom seul : le nom, éventuellement corrigé par le
-// gestionnaire (`--cask` de brew, qualification par bucket de scoop). C'est l'API
-// historique, qui suffit au chemin natif — un seul gestionnaire, donc aucune ambiguïté sur
-// lequel corrige. Sur un résultat façade, elle n'a pas de quoi savoir quel gestionnaire a
-// proposé ce nom : utiliser InsertItem, qui porte ce contexte.
-func (r Result) Insert(name string) string {
-	return r.InsertItem(Item{Name: name})
-}
-
-// InsertItem rend le texte à insérer pour un candidat précis. Sur un résultat natif,
-// identique à Insert(it.Name) : un seul gestionnaire. Sur un résultat façade, elle résout
-// la correction du gestionnaire qui a proposé CET Item — via it.PM — plutôt que celle d'un
-// gestionnaire par défaut qui n'existe pas.
+// InsertItem rend le texte à insérer pour un candidat précis : le nom, éventuellement
+// corrigé par le gestionnaire (`--cask` de brew, qualification par bucket de scoop). Sur
+// un résultat natif, un seul gestionnaire, donc aucune ambiguïté sur lequel corrige. Sur
+// un résultat façade, elle résout la correction du gestionnaire qui a proposé CET Item —
+// via it.PM — plutôt que celle d'un gestionnaire par défaut qui n'existe pas. Sans PM
+// connu (candidat construit à la main, hors contexte façade), elle rend le nom brut.
 func (r Result) InsertItem(it Item) string {
 	mgr, cat := r.mgr, r.cat
 	if mgr == nil {
