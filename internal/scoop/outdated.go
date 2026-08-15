@@ -16,12 +16,35 @@ func Outdated() (int, error) { return OutdatedIn(Root(), GlobalRoot()) }
 // OutdatedIn est Outdated sur des racines données (tests). `root` fournit les buckets ;
 // les applications sont comptées dans les deux racines.
 func OutdatedIn(root, global string) (int, error) {
+	apps, err := OutdatedAppsIn(root, global)
+	if err != nil {
+		return 0, err
+	}
+	return len(apps), nil
+}
+
+// AppObsolete est une application scoop dont le bucket annonce une autre version que
+// celle installée.
+type AppObsolete struct {
+	Nom        string
+	Installee  string
+	Disponible string
+	Bucket     string
+}
+
+// OutdatedApps rend les applications scoop obsolètes, dans les mêmes conditions que
+// Outdated : lecture du disque, sans démarrer PowerShell ni toucher au réseau.
+func OutdatedApps() ([]AppObsolete, error) { return OutdatedAppsIn(Root(), GlobalRoot()) }
+
+// OutdatedAppsIn est OutdatedApps sur des racines données (tests). `root` fournit les
+// buckets ; les applications sont recensées dans les deux racines.
+func OutdatedAppsIn(root, global string) ([]AppObsolete, error) {
 	if root == "" {
-		return 0, nil
+		return nil, nil
 	}
 	manifests := indexBuckets(root)
 
-	n := 0
+	var obsoletes []AppObsolete
 	for _, racine := range []string{root, global} {
 		if racine == "" {
 			continue
@@ -40,11 +63,16 @@ func OutdatedIn(root, global string) (int, error) {
 				continue // installée depuis une URL, ou bucket retiré depuis : rien à comparer
 			}
 			if v := versionManifeste(path); v != "" && v != version {
-				n++
+				obsoletes = append(obsoletes, AppObsolete{
+					Nom:        nom,
+					Installee:  version,
+					Disponible: v,
+					Bucket:     bucket,
+				})
 			}
 		}
 	}
-	return n, nil
+	return obsoletes, nil
 }
 
 // indexBuckets rend, pour chaque application connue, le manifeste du premier bucket qui

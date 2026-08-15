@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/termenv"
 
@@ -273,6 +274,69 @@ func TestFooterKeysArePills(t *testing.T) {
 		if !strings.Contains(shown, key) {
 			t.Errorf("touche %q non rendue en pastille (espaces de remplissage absents)", key)
 		}
+	}
+}
+
+// Le sélecteur de désambiguïsation de la façade (main.trancher) réutilise ce Model avec
+// un autre titre et d'autres touches de pied — « ↵ choisir / ^G annuler », comme le
+// documentent la spec §3 et le README, à la place de « ⇥ insérer / ↩ exécuter / ↑↓
+// naviguer / esc annuler » du sélecteur ordinaire. Sans un moyen de les fournir, le
+// sélecteur de désambiguïsation ne pouvait afficher que le pied du sélecteur ordinaire —
+// trompeur, puisque ⇥/↩ n'y ont pas de sens particulier et qu'esc, pas ^G, l'annulait.
+func TestFooterEstPersonnalisable(t *testing.T) {
+	lipgloss.SetColorProfile(termenv.TrueColor)
+
+	m := New("git : 2 gestionnaires", complete.Result{
+		Executable: true,
+		Items:      []complete.Item{{Name: "winget", Badge: "W"}},
+	})
+	m.Keys = []Key{{"↵", "choisir"}, {"^G", "annuler"}}
+
+	shown := visible(m.View())
+	if !strings.Contains(shown, "↵") || !strings.Contains(shown, "choisir") {
+		t.Errorf("touche personnalisée ↵ choisir absente du rendu :\n%s", shown)
+	}
+	if !strings.Contains(shown, "^G") || !strings.Contains(shown, "annuler") {
+		t.Errorf("touche personnalisée ^G annuler absente du rendu :\n%s", shown)
+	}
+	if strings.Contains(shown, "insérer") || strings.Contains(shown, "exécuter") {
+		t.Errorf("le pied par défaut ne doit plus apparaître une fois Keys fourni :\n%s", shown)
+	}
+}
+
+// Sans Keys, le sélecteur ordinaire (jigger pick) rend exactement comme avant : le pied
+// par défaut ne doit pas bouger d'un caractère (v0.7.0).
+func TestFooterParDefautInchangeSansKeys(t *testing.T) {
+	lipgloss.SetColorProfile(termenv.TrueColor)
+
+	out := New("brew install", complete.Result{
+		Executable: true,
+		Items:      []complete.Item{{Name: "wget", Badge: "F"}},
+	}).View()
+
+	shown := visible(out)
+	for _, key := range []string{" ⇥ ", " ↩ ", " esc "} {
+		if !strings.Contains(shown, key) {
+			t.Errorf("touche %q absente du pied par défaut :\n%s", key, shown)
+		}
+	}
+}
+
+// ^G annule le sélecteur au même titre qu'esc et ctrl+c : c'est la touche que la
+// désambiguïsation façade documente (spec §3, README), il faut donc qu'elle fasse
+// réellement quelque chose, pas seulement qu'elle s'affiche au pied.
+func TestCtrlGAnnule(t *testing.T) {
+	m := New("git : 2 gestionnaires", complete.Result{
+		Executable: true,
+		Items:      []complete.Item{{Name: "winget", Badge: "W"}},
+	})
+	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyCtrlG})
+	mm := updated.(Model)
+	if mm.Chosen != nil {
+		t.Error("^G doit annuler : Chosen doit rester nil")
+	}
+	if cmd == nil {
+		t.Error("^G doit quitter le programme (tea.Quit)")
 	}
 }
 

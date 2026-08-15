@@ -151,12 +151,43 @@ mécanisme les accepte (une ligne de table chacun) ; **aucun n'entre dans la pha
 **Décompte.** Douze verbes de premier niveau — ceux que `jg ⇥` propose — pour **quatorze
 clés de table**, `source` en comptant trois (`source`, `source add`, `source rm`).
 
-### La table est à vérifier avant d'être figée
+### État de vérification de la table
 
-Les options exactes ci-dessus — `winget pin add`, `scoop checkup`, la syntaxe de
-`scoop update *` — sont écrites de mémoire. **La première tâche du plan d'implémentation
-est de les vérifier contre les CLI réellement installées**, sur le Mac comme sous Windows,
-et de corriger la table avant d'écrire le moteur.
+La colonne **brew** ci-dessus a été vérifiée le 15 août 2026 contre `brew 6.0.17-73-gc68efb6`
+(macOS) : `brew help`, `brew commands` et `brew <verbe> --help` pour chacun des douze verbes
+(`install`, `uninstall`, `upgrade`, `list`, `outdated`, `search`, `info`, `tap`, `untap`,
+`pin`, `unpin`, `cleanup`, `doctor`). Tous les verbes et toutes les options citées existent
+tels quels ; aucun écart avec ce qui était écrit de mémoire. Le détail des sorties observées
+est dans le rapport de la tâche 1.
+
+> **Colonnes winget et scoop : non vérifiées.** Cette machine est un Mac ; `winget` et
+> `scoop` sont des binaires Windows absents de cet environnement. Les valeurs des colonnes
+> **winget** et **scoop** ci-dessus restent donc **écrites de mémoire, non confirmées** —
+> en particulier les trois points les plus incertains :
+>
+> - `winget pin add` / `winget pin remove` (existent-ils sous cette forme ?)
+> - `winget source list` / `source add` / `source remove`
+> - `scoop checkup`, `scoop hold` / `unhold`, `scoop cleanup`, et la portée réelle de
+>   `scoop update *`
+>
+> **Vérification différée à une tâche 1b**, à exécuter depuis Windows :
+>
+> ```powershell
+> winget pin --help
+> winget source --help
+> scoop help
+> scoop update --help
+> ```
+>
+> et à capturer :
+>
+> ```powershell
+> scoop status                 > internal/scoop/testdata/status.txt
+> winget source list           > internal/winget/testdata/source-list-fr.txt
+> ```
+>
+> Aucun moteur ne doit être écrit contre ces deux colonnes tant que la tâche 1b n'a pas
+> confirmé (ou corrigé) les valeurs ci-dessus.
 
 ## §3 — Résolution et routage
 
@@ -482,6 +513,19 @@ Ce que la phase 1 ne fait pas, et pourquoi :
   suites PTY, qui vérifient `jg install ⇥` dans un vrai terminal : `tests/zpty.zsh` côté
   zsh, `tests/conpty` côté PowerShell.
 - **Latence** — banc d'essai sur le chemin `jg install g`, trois catalogues chargés.
+
+  Mesures du 15 août 2026 (MacBook Pro M4 Max, macOS 14.7) :
+
+  ```text
+  BenchmarkComplete-16        2431    526887 ns/op   2558115 B/op     19 allocs/op
+  BenchmarkCompleteFacade-16   338   3564154 ns/op   9674496 B/op    172 allocs/op
+  ```
+
+  **Rapport 6.77×**, terme non linéaire O(n log n) : le chemin natif marche dans `cat.Names` (déjà trié) et accumule les survivants en ordre — coût O(n), pas de tri. Le chemin façade fusionne les survivants de trois catalogues, puis appelle `sort.Slice` sur le résultat fusionné — coût O(n log n). Une fusion k-voies (k=3) réduirait ce terme à O(n log k).
+
+  **Budget** : 3.56 ms contre ~8 ms, soit 45 % du budget. À l'intérieur du seuil d'acceptabilité, pas d'optimisation maintenant. Levier connu pour une régression future : passer de `sort.Slice` à une fusion k-voies ordonnée.
+
+  **Fixture adversariale** : le préfixe `g` correspond à *tous* les 25 401 noms. L'usage réel ne ressemble pas à ça — `jg install fire` sur cette machine ne trouve que 18 candidats. C'est un cas pire, non une mesure typique.
 
 ## Décisions liées
 

@@ -156,6 +156,54 @@ func TestFrameMessageQuandAucunItem(t *testing.T) {
 	}
 }
 
+// La colonne PM apparaît selon les données, pas selon un drapeau — même règle que les
+// tableaux de sortie.
+func TestFrameColonnePMSelonLesDonnees(t *testing.T) {
+	avec := Frame{
+		Title: "jigger install",
+		Items: []pm.Item{
+			{Name: "Git.Git", Badge: pm.BadgeWinget, PM: "winget"},
+			{Name: "git", Badge: pm.BadgeScoop, PM: "scoop"},
+		},
+		Rows: 8,
+	}.Render()
+	if !strings.Contains(avec, "winget") || !strings.Contains(avec, "scoop") {
+		t.Errorf("les deux gestionnaires doivent apparaître dans le cadre :\n%s", avec)
+	}
+
+	sans := Frame{
+		Title: "brew install",
+		Items: []pm.Item{{Name: "git", Badge: pm.BadgeFormula}},
+		Rows:  8,
+	}.Render()
+	if strings.Contains(sans, "brew") && !strings.Contains(sans, "brew install") {
+		t.Errorf("aucun PM sur les items : rien ne doit s'ajouter :\n%s", sans)
+	}
+}
+
+// Un seul gestionnaire disponible (macOS, brew seul) : CompleteFacade marque tout de même
+// Item.PM sur chaque candidat (cf. internal/complete.CompleteFacade), puisque c'est ce
+// champ qui permet à InsertItem de retrouver la correction du bon gestionnaire — mais un
+// seul gestionnaire a contribué, la colonne serait du bruit. avecPM doit suivre la même
+// règle que facade.plusieursPM (§4) : au moins deux gestionnaires DISTINCTS, pas « au
+// moins un item porte un PM ». Avant la correction, `jg render --line "jg install fire"`
+// sur cette machine posait une colonne « brew » sur chaque ligne.
+func TestFrameColonnePMPasAvecUnSeulGestionnaireQuiContribue(t *testing.T) {
+	lipgloss.SetColorProfile(termenv.TrueColor)
+
+	out := visible(Frame{
+		Title: "jigger install",
+		Items: []pm.Item{
+			{Name: "fd", Badge: pm.BadgeFormula, PM: "brew"},
+			{Name: "fzf", Badge: pm.BadgeFormula, PM: "brew"},
+		},
+		Rows: 8,
+	}.Render())
+	if strings.Contains(out, "brew") {
+		t.Errorf("un seul gestionnaire a contribué (brew partout) : aucune colonne PM attendue :\n%s", out)
+	}
+}
+
 // ScrollOffset remplace la mémoire de défilement du sélecteur : le seul état conservé
 // entre deux frappes est l'index, il faut donc recalculer la fenêtre à chaque rendu.
 func TestScrollOffset(t *testing.T) {

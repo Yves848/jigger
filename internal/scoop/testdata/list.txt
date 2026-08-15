@@ -1,0 +1,11 @@
+# NON VÉRIFIÉ contre un vrai scoop — jeu d'essai écrit à la main d'après la documentation
+# (cf. tâche 1b, internal/scoop/parse.go). À remplacer dès qu'une vraie sortie est
+# disponible.
+Installed apps:
+
+Name    Version           Source  Updated              Info
+----    -------           ------  -------              ----
+7zip    23.01             main    2024-01-02 10:00:00
+fd      9.0.0              main    2024-03-01 12:00:00
+git     2.43.0.windows.1  main    2024-02-10 08:30:00
+flux    9.9.9              extras  2024-03-05 09:15:00

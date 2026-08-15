@@ -90,14 +90,14 @@ func TestBadgeAndCaskDetection(t *testing.T) {
 		t.Fatalf("firefox devrait porter le badge C, obtenu %v", res.Items)
 	}
 	// Un cask pur derrière install : brew exige --cask, jigger l'ajoute.
-	if got := res.Insert("firefox"); got != "--cask firefox" {
+	if got := res.InsertItem(Item{Name: "firefox"}); got != "--cask firefox" {
 		t.Fatalf("insertion de firefox = %q, attendu « --cask firefox »", got)
 	}
-	if got := brewComplete("install git", cat).Insert("git"); got != "git" {
+	if got := brewComplete("install git", cat).InsertItem(Item{Name: "git"}); got != "git" {
 		t.Fatalf("insertion de git = %q, attendu « git »", got)
 	}
 	// Ligne qui tranche déjà : on n'ajoute rien.
-	if got := brewComplete("install --cask fire", cat).Insert("firefox"); got != "firefox" {
+	if got := brewComplete("install --cask fire", cat).InsertItem(Item{Name: "firefox"}); got != "firefox" {
 		t.Fatalf("insertion derrière --cask = %q, attendu « firefox »", got)
 	}
 }
@@ -137,11 +137,11 @@ func scoopCatalog() *pm.Catalog {
 
 func TestScoop_QualifieUnNomAmbigu(t *testing.T) {
 	res := complete("scoop install fl", scoop.New(), scoopCatalog())
-	if got := res.Insert("flux"); got != "main/flux" {
+	if got := res.InsertItem(Item{Name: "flux"}); got != "main/flux" {
 		t.Fatalf("insertion = %q, attendu « main/flux »", got)
 	}
 	// Un nom sans ambiguïté s'insère tel quel.
-	if got := res.Insert("winrar"); got != "winrar" {
+	if got := res.InsertItem(Item{Name: "winrar"}); got != "winrar" {
 		t.Fatalf("insertion = %q, attendu « winrar »", got)
 	}
 }
@@ -164,8 +164,142 @@ func TestWinget_SousCommandesEtOptions(t *testing.T) {
 	if got := names(res.Items); len(got) != 1 || got[0] != "Canon IJ Scan Utility" {
 		t.Fatalf("attendu le seul installé, obtenu %v", got)
 	}
-	if got := res.Insert("Canon IJ Scan Utility"); got != `"Canon IJ Scan Utility"` {
+	if got := res.InsertItem(Item{Name: "Canon IJ Scan Utility"}); got != `"Canon IJ Scan Utility"` {
 		t.Fatalf("insertion = %q, attendue entre guillemets", got)
+	}
+}
+
+// « jg ⇥ » complète le vocabulaire de la façade, pas les sous-commandes d'un
+// gestionnaire : les clés des tables SONT le vocabulaire.
+func TestFacade_CompleteLesVerbes(t *testing.T) {
+	res := Complete("jg ")
+	got := names(res.Items)
+	if len(got) == 0 {
+		t.Fatal("aucun verbe proposé")
+	}
+	attendus := map[string]bool{"install": false, "outdated": false, "search": false}
+	for _, n := range got {
+		if _, veut := attendus[n]; veut {
+			attendus[n] = true
+		}
+	}
+	for v, vu := range attendus {
+		if !vu {
+			t.Errorf("verbe %q absent de %v", v, got)
+		}
+	}
+}
+
+func TestFacade_CompleteLeSousVerbe(t *testing.T) {
+	res := Complete("jg source ")
+	got := names(res.Items)
+	var add, rm bool
+	for _, n := range got {
+		switch n {
+		case "add":
+			add = true
+		case "rm":
+			rm = true
+		}
+	}
+	if !add || !rm {
+		t.Fatalf("« source » doit proposer add et rm, obtenu %v", got)
+	}
+}
+
+// Le titre du cadre dit jigger, pas le nom d'un gestionnaire.
+func TestFacade_Titre(t *testing.T) {
+	if got := Complete("jg install ").Title(); got != "jigger install" {
+		t.Fatalf("titre = %q, attendu « jigger install »", got)
+	}
+}
+
+// « jigger » en toutes lettres marche comme « jg ».
+func TestFacade_NomComplet(t *testing.T) {
+	if len(Complete("jigger ").Items) == 0 {
+		t.Fatal("« jigger » doit déclencher la façade comme « jg »")
+	}
+}
+
+// Un candidat de la façade porte son gestionnaire : le badge ne suffit pas, BadgeOther
+// étant partagé par winget et scoop.
+func TestFacade_ItemPorteSonPM(t *testing.T) {
+	cats := map[string]*pm.Catalog{}
+	w := pm.NewCatalog()
+	w.Add("Git.Git", pm.BadgeWinget)
+	w.Sort()
+	cats["winget"] = w
+
+	res := CompleteFacade("jg install Git", []pm.Manager{winget.New()}, cats)
+	if len(res.Items) != 1 {
+		t.Fatalf("items = %v, attendu 1", names(res.Items))
+	}
+	if res.Items[0].PM != "winget" {
+		t.Fatalf("PM = %q, attendu « winget »", res.Items[0].PM)
+	}
+}
+
+// Le chemin natif ne change pas : « brew install ⇥ » ne porte aucun PM.
+func TestNatif_PasDePM(t *testing.T) {
+	res := brewComplete("install fire", testCatalog())
+	for _, it := range res.Items {
+		if it.PM != "" {
+			t.Errorf("le chemin natif ne doit pas remplir PM : %+v", it)
+		}
+	}
+}
+
+// C'est le popup de la note ¹ : « jg install fire » doit produire la même correction que
+// « brew install fire » — --cask, pas le nom brut. Un résultat façade mélange les
+// gestionnaires d'un Item à l'autre (cf. TestFacade_ItemPorteSonPM), donc la correction se
+// résout par Item, via son champ PM, et non plus une fois pour tout le Result.
+func TestFacade_InsertItemAppliqueLaCorrectionDuBonGestionnaire(t *testing.T) {
+	cats := map[string]*pm.Catalog{"brew": brew.NewCatalog(nil, []string{"firealpaca"}, nil)}
+
+	res := CompleteFacade("jg install fire", []pm.Manager{brew.New()}, cats)
+	if len(res.Items) != 1 {
+		t.Fatalf("items = %v, attendu 1", names(res.Items))
+	}
+	if got := res.InsertItem(res.Items[0]); got != "--cask firealpaca" {
+		t.Fatalf("insertion = %q, attendu « --cask firealpaca »", got)
+	}
+}
+
+// Un Item sans PM — construit à la main, hors de ce que CompleteFacade a produit — n'a
+// par construction aucun moyen de savoir quel gestionnaire l'a proposé sur un résultat
+// façade : InsertItem rend le nom brut, tel quel, plutôt que de deviner un gestionnaire
+// par défaut qui n'existe pas.
+func TestFacade_InsertItemSansPMNeCorrigePas(t *testing.T) {
+	cats := map[string]*pm.Catalog{"brew": brew.NewCatalog(nil, []string{"firealpaca"}, nil)}
+
+	res := CompleteFacade("jg install fire", []pm.Manager{brew.New()}, cats)
+	if got := res.InsertItem(Item{Name: "firealpaca"}); got != "firealpaca" {
+		t.Fatalf("insertion = %q, attendu « firealpaca » (aucun contexte PM)", got)
+	}
+}
+
+// Un résultat façade avec plusieurs gestionnaires : chaque Item se corrige avec le sien,
+// pas avec celui d'un autre.
+func TestFacade_InsertItemMelangeDeuxGestionnaires(t *testing.T) {
+	cats := map[string]*pm.Catalog{
+		"brew": brew.NewCatalog(nil, []string{"firealpaca"}, nil),
+	}
+	s := pm.NewCatalog()
+	s.Add("flux", pm.BadgeScoop)
+	s.Qualified["flux"] = "main/flux"
+	s.Sort()
+	cats["scoop"] = s
+
+	res := CompleteFacade("jg install f", []pm.Manager{brew.New(), scoop.New()}, cats)
+	got := map[string]string{}
+	for _, it := range res.Items {
+		got[it.Name] = res.InsertItem(it)
+	}
+	if got["firealpaca"] != "--cask firealpaca" {
+		t.Fatalf("firealpaca = %q, attendu « --cask firealpaca »", got["firealpaca"])
+	}
+	if got["flux"] != "main/flux" {
+		t.Fatalf("flux = %q, attendu « main/flux »", got["flux"])
 	}
 }
 
@@ -186,5 +320,34 @@ func BenchmarkComplete(b *testing.B) {
 	b.ResetTimer()
 	for b.Loop() {
 		brewComplete("brew install form", cat)
+	}
+}
+
+// BenchmarkCompleteFacade garde un œil sur le chemin le plus coûteux du popup : « jg
+// install g » doit filtrer TROIS catalogues à chaque frappe, là où le chemin natif n'en
+// filtre qu'un. Sous Windows, celui de winget compte à lui seul 14 401 noms.
+//
+// Budget indicatif : du même ordre que BenchmarkComplete. S'il s'en écarte d'un facteur,
+// c'est que le filtrage est reparti dans le mauvais sens — réunir puis balayer, au lieu
+// de filtrer chez chaque gestionnaire puis réunir (cf. spec §5).
+func BenchmarkCompleteFacade(b *testing.B) {
+	gros := func(prefixe string, n int) *pm.Catalog {
+		cat := pm.NewCatalog()
+		for i := range n {
+			cat.Add(fmt.Sprintf("%s-%05d", prefixe, i), pm.BadgeWinget)
+		}
+		cat.Sort()
+		return cat
+	}
+	cats := map[string]*pm.Catalog{
+		"winget": gros("gadget", 14401),
+		"scoop":  gros("gizmo", 3000),
+		"brew":   gros("gubbins", 8000),
+	}
+	dispo := []pm.Manager{brew.New(), winget.New(), scoop.New()}
+
+	b.ResetTimer()
+	for b.Loop() {
+		CompleteFacade("jg install g", dispo, cats)
 	}
 }

@@ -52,6 +52,10 @@ if [[ -n $_jigger_v ]] && ! is-at-least $JIGGER_VERSION_REQUISE $_jigger_v; then
 fi
 unset _jigger_v
 
+# jg : l'alias court de la façade. Ajouté à la liste des commandes qui arment le popup —
+# sans quoi le widget ne se déclencherait que sur « jigger » en toutes lettres.
+alias jg=jigger
+
 autoload -Uz add-zle-hook-widget
 
 typeset -g _jigger_sel=0        # candidat courant
@@ -67,7 +71,19 @@ typeset -gi _jigger_dsr_misses=0 # DSR restés sans réponse d'affilée
 typeset -gi _jigger_focused=0   # le popup a-t-il le clavier ? (cf. _jigger_step)
 typeset -g _jigger_up_widget='' _jigger_down_widget='' # ce que les flèches faisaient
 
-_jigger_is_brew() { [[ $LBUFFER == 'brew' || $LBUFFER == 'brew '* ]] }
+# Commandes qui arment le popup vivant. « jigger » et son alias « jg » (posé plus haut)
+# s'ajoutent à « brew » : l'expansion d'alias n'a pas encore eu lieu tant que la ligne
+# n'est pas exécutée, $LBUFFER contient donc « jg » tel quel — c'est lui qu'il faut
+# reconnaître, pas « jigger ».
+typeset -ga _jigger_commands=( brew jigger jg )
+
+_jigger_is_watched() {
+  local c
+  for c in $_jigger_commands; do
+    [[ $LBUFFER == $c || $LBUFFER == "$c "* ]] && return 0
+  done
+  return 1
+}
 
 # Le profil couleur ne peut pas être deviné par jigger : sa sortie est capturée. C'est
 # donc le shell, qui connaît $COLORTERM et $TERM, qui tranche.
@@ -193,7 +209,7 @@ _jigger_erase() {
 _jigger_active() {
   (( JIGGER_LIVE )) || return 1
   (( _jigger_dismissed )) && return 1
-  _jigger_is_brew || return 1
+  _jigger_is_watched || return 1
   (( _jigger_count > 0 ))
 }
 
@@ -203,7 +219,7 @@ _jigger_active() {
 # rendu.
 _jigger_redisplay() {
   (( JIGGER_LIVE )) || return
-  if (( _jigger_dismissed )) || ! _jigger_is_brew || (( COLUMNS < JIGGER_MIN_COLUMNS )); then
+  if (( _jigger_dismissed )) || ! _jigger_is_watched || (( COLUMNS < JIGGER_MIN_COLUMNS )); then
     _jigger_erase
     return
   fi
@@ -309,7 +325,7 @@ _jigger_widget() {
     return
   fi
 
-  if ! _jigger_is_brew; then
+  if ! _jigger_is_watched; then
     zle expand-or-complete
     return
   fi

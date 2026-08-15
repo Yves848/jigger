@@ -207,6 +207,13 @@ suite() {
   out=$(visible "$(jigger_type 'echo hi')")
   check "aucun cadre"                   "$out" '╭─' non
 
+  print -r -- "→ jg, l'alias court de la façade, arme le popup comme jigger"
+  # $LBUFFER porte « jg » tel quel — l'expansion d'alias n'a pas eu lieu tant que la
+  # ligne n'est pas exécutée. C'est ce nom-là que le widget doit reconnaître.
+  out=$(visible "$(jigger_type 'jg inst')")
+  check "cadre affiché"                 "$out" '╭─'
+  check "candidat install"              "$out" 'install'
+
   print -r -- "→ ⇥ insère le candidat courant"
   out=$(visible "$(jigger_type $'brew u\t\n')")
   check "uninstall exécuté"             "$out" 'CMD:[uninstall]'

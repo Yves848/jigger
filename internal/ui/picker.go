@@ -108,6 +108,13 @@ type Model struct {
 
 	Chosen  *complete.Item // sélection (nil si annulé)
 	Execute bool           // ↩ : la commande est à exécuter
+
+	// Keys personnalise le pied du cadre : nil (le cas ordinaire, jigger pick) garde le
+	// pied historique (⇥ insérer / ↩ exécuter / ↑↓ naviguer / esc annuler). Le sélecteur
+	// de désambiguïsation de la façade (main.trancher) le renseigne pour dire
+	// « ↵ choisir / ^G annuler » — ⇥ et ↩ n'ont pas de sens propre là où on choisit un
+	// gestionnaire, pas un texte à insérer (spec §3, README).
+	Keys []Key
 }
 
 // New crée le sélecteur pour un résultat de complétion.
@@ -161,7 +168,11 @@ func (m *Model) clampOffset() {
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if key, ok := msg.(tea.KeyMsg); ok {
 		switch key.String() {
-		case "esc", "ctrl+c":
+		case "esc", "ctrl+c", "ctrl+g":
+			// ctrl+g : c'est la touche que la désambiguïsation façade documente
+			// (« ^G annuler », spec §3, README). Elle annule au même titre qu'esc et
+			// ctrl+c partout ailleurs — un alias de plus, rien qui change esc pour le
+			// sélecteur ordinaire.
 			m.Chosen = nil
 			m.quitting = true
 			return m, tea.Quit
@@ -210,11 +221,14 @@ func (m Model) View() string {
 		return ""
 	}
 
-	keys := []Key{{"⇥", "insérer"}}
-	if m.executable {
-		keys = append(keys, Key{"↩", "exécuter"})
+	keys := m.Keys
+	if keys == nil {
+		keys = []Key{{"⇥", "insérer"}}
+		if m.executable {
+			keys = append(keys, Key{"↩", "exécuter"})
+		}
+		keys = append(keys, Key{"↑↓", "naviguer"}, Key{"esc", "annuler"})
 	}
-	keys = append(keys, Key{"↑↓", "naviguer"}, Key{"esc", "annuler"})
 
 	return Frame{
 		Title:      m.title,

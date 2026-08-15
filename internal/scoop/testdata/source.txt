@@ -1,0 +1,7 @@
+# NON VÉRIFIÉ contre un vrai scoop — jeu d'essai écrit à la main d'après la documentation
+# (cf. tâche 1b, internal/scoop/parse.go). À remplacer dès qu'une vraie sortie est
+# disponible.
+Name      Source                                          Updated
+----      ------                                          -------
+main      https://github.com/ScoopInstaller/Main           2024-01-01 09:00:00
+extras    https://github.com/ScoopInstaller/Extras         2024-01-01 09:00:00

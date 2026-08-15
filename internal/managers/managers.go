@@ -10,6 +10,7 @@ package managers
 import (
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 
 	"gitlab.yg-devworks.com/yves/jigger/internal/brew"
@@ -74,4 +75,37 @@ func mot(s string) string {
 	s = filepath.Base(filepath.FromSlash(s))
 	s = strings.TrimSuffix(strings.ToLower(s), ".exe")
 	return s
+}
+
+// Tables rend, pour chaque verbe, les gestionnaires qui savent le rendre. C'est le modèle
+// de capacités vu depuis le verbe : la clé existe si au moins un gestionnaire la déclare.
+func Tables(mgrs []pm.Manager) map[pm.Verb][]pm.Manager {
+	out := map[pm.Verb][]pm.Manager{}
+	for _, m := range mgrs {
+		b, ok := m.(pm.Bindings)
+		if !ok {
+			continue // on sait le compléter sans savoir le piloter
+		}
+		for v := range b.Verbs() {
+			out[v] = append(out[v], m)
+		}
+	}
+	return out
+}
+
+// Vocabulaire rend les verbes de premier niveau proposés par les gestionnaires donnés,
+// triés et dédupliqués. « source add » y figure comme « source » : le popup complète le
+// premier mot, puis le second.
+func Vocabulaire(mgrs []pm.Manager) []string {
+	vu := map[string]bool{}
+	for v := range Tables(mgrs) {
+		premier, _, _ := strings.Cut(string(v), " ")
+		vu[premier] = true
+	}
+	out := make([]string, 0, len(vu))
+	for v := range vu {
+		out = append(out, v)
+	}
+	sort.Strings(out)
+	return out
 }

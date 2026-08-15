@@ -36,6 +36,7 @@ import (
 	"github.com/muesli/termenv"
 
 	"gitlab.yg-devworks.com/yves/jigger/internal/complete"
+	"gitlab.yg-devworks.com/yves/jigger/internal/facade"
 	"gitlab.yg-devworks.com/yves/jigger/internal/managers"
 	"gitlab.yg-devworks.com/yves/jigger/internal/pm"
 	"gitlab.yg-devworks.com/yves/jigger/internal/prompt"
@@ -44,12 +45,36 @@ import (
 
 var version = "0.7.0"
 
+// motsReserves sont les sous-commandes internes de jigger. Tout autre premier mot est un
+// verbe de façade.
+//
+// Contrainte permanente : aucune sous-commande interne future ne peut porter le nom d'un
+// verbe canonique. Si « jigger list » devait un jour désigner un usage interne, c'est le
+// mot interne qui change — pas le verbe.
+var motsReserves = map[string]bool{
+	"pick": true, "render": true, "complete": true,
+	"prompt": true, "warm": true, "demo": true,
+}
+
 func main() {
 	ui.Version = version // affichée dans l'en-tête du sélecteur (repère du binaire lancé)
 
 	if len(os.Args) < 2 {
 		usage()
 		os.Exit(2)
+	}
+
+	switch os.Args[1] {
+	case "--version", "-v", "version":
+		fmt.Println("jigger", version)
+		return
+	case "--help", "-h", "help":
+		usage()
+		return
+	}
+
+	if !motsReserves[os.Args[1]] {
+		os.Exit(runFacade(os.Args[1:]))
 	}
 
 	switch os.Args[1] {
@@ -65,11 +90,6 @@ func main() {
 		os.Exit(runWarm(os.Args[2:]))
 	case "demo":
 		runDemo()
-	case "--version", "-v", "version":
-		fmt.Println("jigger", version)
-	default:
-		usage()
-		os.Exit(2)
 	}
 }
 
@@ -81,7 +101,141 @@ func arg(i int) string {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: jigger pick|complete \"<ligne>\" | jigger render --line \"<ligne>\" | jigger prompt [--refresh [--wait]|--path] | jigger warm [--all|--installed]")
+	fmt.Fprintln(os.Stderr, "usage: jigger <verbe> [--pm <gestionnaire>] [--json] [--yes] [arguments…]")
+	fmt.Fprintln(os.Stderr, "       jigger pick|complete \"<ligne>\" | jigger render --line \"<ligne>\"")
+	fmt.Fprintln(os.Stderr, "       jigger prompt [--refresh [--wait]|--path] | jigger warm [--all|--installed]")
+}
+
+// optsCLI rassemble les drapeaux que jigger interprète lui-même. Tous les autres mots en
+// « -- » sont passés au gestionnaire : `jg install --cask firefox` doit marcher.
+type optsCLI struct {
+	PM   string
+	JSON bool
+	Yes  bool
+}
+
+func separerDrapeaux(argv []string) (verbe string, args []string, o optsCLI, err error) {
+	if len(argv) == 0 {
+		return "", nil, o, fmt.Errorf("aucun verbe")
+	}
+	verbe = argv[0]
+	for i := 1; i < len(argv); i++ {
+		switch argv[i] {
+		case "--pm":
+			if i+1 >= len(argv) {
+				return "", nil, o, fmt.Errorf("jigger : --pm attend un nom de gestionnaire")
+			}
+			i++
+			o.PM = argv[i]
+		case "--json":
+			o.JSON = true
+		case "--yes":
+			o.Yes = true
+		default:
+			args = append(args, argv[i])
+		}
+	}
+	return verbe, args, o, nil
+}
+
+// runFacade déroule le pipeline de la spec §3 : résoudre le verbe, résoudre la cible,
+// exécuter, formater.
+func runFacade(argv []string) int {
+	premier, reste, o, err := separerDrapeaux(argv)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 2
+	}
+
+	ligne := append([]string{premier}, reste...)
+	verbe, args, capables, err := facade.ResoudreVerbe(ligne)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 2
+	}
+
+	cats := map[string]*pm.Catalog{}
+	for _, m := range capables {
+		cats[m.Cmd()] = m.Load()
+	}
+
+	// resolu accumule les désambiguïsations obtenues au fil des noms : chaque nom ambigu
+	// tranché par l'utilisateur ne lie que lui, jamais les autres noms de la même ligne
+	// (spec §3 — `jg install git fd` route fd vers scoop sans qu'on ait à le dire, même
+	// si git, ambigu, vient d'être tranché pour winget). --pm (o.PM), lui, continue de
+	// s'appliquer à toute la ligne : c'est le rôle qu'il a toujours eu.
+	resolu := map[string]string{}
+	var cibles []facade.Cible
+	for {
+		var amb *facade.Ambiguite
+		cibles, amb, err = facade.Router(verbe, args, o.PM, resolu, capables, cats)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return 2
+		}
+		if amb == nil {
+			break
+		}
+		choisi, ok := trancher(amb)
+		if !ok {
+			return 2
+		}
+		resolu[amb.Nom] = choisi
+	}
+
+	rows, code := facade.Executer(verbe, cibles, facade.Opts{JSON: o.JSON, Yes: o.Yes})
+	if len(rows) > 0 || facade.Normalise(verbe) {
+		fmt.Print(facade.Formater(verbe, rows, o.JSON))
+	}
+	return code
+}
+
+// trancher ouvre le sélecteur sur les candidats d'un nom ambigu. Ce n'est pas un nouvel
+// écran : c'est le popup, avec un autre titre et d'autres touches de pied.
+//
+// Hors terminal — pipe, script, CI — il n'y a personne pour choisir : on échoue en
+// listant les candidats et en rappelant --pm. Jamais de choix automatique.
+func trancher(amb *facade.Ambiguite) (string, bool) {
+	items := make([]complete.Item, 0, len(amb.Candidats))
+	for _, c := range amb.Candidats {
+		items = append(items, complete.Item{
+			Name:  c.Mgr.Cmd(),
+			Badge: c.Badge,
+			PM:    c.Mgr.Cmd(),
+		})
+	}
+
+	tty, err := openTTY()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "jigger : « %s » — connu de plusieurs gestionnaires :\n", amb.Nom)
+		for _, c := range amb.Candidats {
+			fmt.Fprintf(os.Stderr, "        %s\n", c.Mgr.Cmd())
+		}
+		fmt.Fprintln(os.Stderr, "        Choisis avec --pm <gestionnaire>")
+		return "", false
+	}
+	defer tty.Close()
+
+	lipgloss.SetColorProfile(termenv.NewOutput(tty.Out).Profile)
+	titre := fmt.Sprintf("%s : %d gestionnaires", amb.Nom, len(amb.Candidats))
+	model := ui.New(titre, complete.Result{Executable: true, Items: items})
+	// Pied propre à la désambiguïsation : on choisit un gestionnaire, on n'insère ni
+	// n'exécute une commande — ⇥/↩ n'y ont pas de sens (spec §3, README).
+	model.Keys = []ui.Key{{Key: "↵", Label: "choisir"}, {Key: "^G", Label: "annuler"}}
+
+	fmt.Fprint(tty.Out, "\r\n")
+	prog := tea.NewProgram(model, tea.WithInput(tty.In), tea.WithOutput(tty.Out))
+	final, err := prog.Run()
+	fmt.Fprint(tty.Out, "\x1b[1A\r")
+	if err != nil {
+		return "", false
+	}
+
+	m := final.(ui.Model)
+	if m.Chosen == nil {
+		return "", false // annulé
+	}
+	return m.Chosen.Name, true
 }
 
 // runWarm reconstitue les catalogues mis en cache. C'est le chemin lent — plusieurs
@@ -242,7 +396,7 @@ func runRender(args []string) int {
 	if len(frame.Items) > 0 {
 		frame.Sel = min(max(*sel, 0), len(frame.Items)-1)
 		frame.Offset = ui.ScrollOffset(frame.Sel, len(frame.Items), *rows)
-		left = res.Prefix + res.Insert(frame.Items[frame.Sel].Name)
+		left = res.Prefix + res.InsertItem(frame.Items[frame.Sel])
 	} else {
 		frame.Sel = -1
 	}
@@ -291,7 +445,7 @@ func runPick(line string) int {
 	// popup (ni même le TTY) — comme le fait la complétion zsh sur une correspondance
 	// unique.
 	if len(res.Items) == 1 {
-		fmt.Print(res.Prefix + res.Insert(res.Items[0].Name))
+		fmt.Print(res.Prefix + res.InsertItem(res.Items[0]))
 		return 0
 	}
 
@@ -326,7 +480,7 @@ func runPick(line string) int {
 		return 2 // annulé
 	}
 
-	fmt.Print(res.Prefix + res.Insert(m.Chosen.Name))
+	fmt.Print(res.Prefix + res.InsertItem(*m.Chosen))
 	if m.Execute {
 		return 10 // ↩ : commande à exécuter
 	}
