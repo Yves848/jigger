@@ -220,3 +220,66 @@ func TestRoutagePoolAucunLaisseFilerLesDrapeaux(t *testing.T) {
 		t.Fatalf("cibles = %v, attendu [--versions] intact", cibles)
 	}
 }
+
+// C'est le cœur de la note ¹ de la spec : le --cask de brew.Manager.Insert doit se
+// rebrancher sur l'exécution façade, pas seulement sur la complétion native. Sans ça,
+// `jg install <cask pur>` lance `brew install <cask>`, que brew refuse.
+func TestRoutageAppliqueLeCaskDeBrew(t *testing.T) {
+	cats := map[string]*pm.Catalog{"brew": brew.NewCatalog(nil, []string{"firealpaca"}, nil)}
+	cibles, amb, err := Router("install", []string{"firealpaca"}, "", []pm.Manager{brew.New()}, cats)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if amb != nil {
+		t.Fatalf("ambiguïté inattendue : %v", amb)
+	}
+	if len(cibles) != 1 {
+		t.Fatalf("%d cibles, attendu 1", len(cibles))
+	}
+	if len(cibles[0].Args) != 2 || cibles[0].Args[0] != "--cask" || cibles[0].Args[1] != "firealpaca" {
+		t.Fatalf("args = %v, attendu [--cask firealpaca]", cibles[0].Args)
+	}
+}
+
+// La qualification par bucket de scoop (« main/flux ») doit, elle aussi, atteindre argv —
+// en un seul élément, puisque « main/flux » est un identifiant unique pour scoop, pas deux
+// arguments.
+func TestRoutageAppliqueLaQualificationDeScoop(t *testing.T) {
+	s := pm.NewCatalog()
+	s.Add("flux", pm.BadgeScoop)
+	s.Qualified["flux"] = "main/flux"
+	s.Sort()
+	cats := map[string]*pm.Catalog{"scoop": s}
+
+	cibles, amb, err := Router("install", []string{"flux"}, "", []pm.Manager{scoop.New()}, cats)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if amb != nil {
+		t.Fatalf("ambiguïté inattendue : %v", amb)
+	}
+	if len(cibles) != 1 || len(cibles[0].Args) != 1 || cibles[0].Args[0] != "main/flux" {
+		t.Fatalf("args = %v, attendu [main/flux]", cibles[0].Args)
+	}
+}
+
+// Les guillemets que winget pose autour d'un identifiant à espace protègent la commande
+// shell — mais l'exécution façade passe par exec.Command, pas par un shell : ils
+// doivent donc être retirés, et l'identifiant tenir en un seul élément d'argv.
+func TestRoutageProtegeIdentifiantWingetAvecEspace(t *testing.T) {
+	w := pm.NewCatalog()
+	w.MarkInstalled("Canon IJ Scan Utility", "2.2.0.5", pm.BadgeOther)
+	w.Sort()
+	cats := map[string]*pm.Catalog{"winget": w}
+
+	cibles, amb, err := Router("uninstall", []string{"Canon IJ Scan Utility"}, "", []pm.Manager{winget.New()}, cats)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if amb != nil {
+		t.Fatalf("ambiguïté inattendue : %v", amb)
+	}
+	if len(cibles) != 1 || len(cibles[0].Args) != 1 || cibles[0].Args[0] != "Canon IJ Scan Utility" {
+		t.Fatalf("args = %v, attendu [\"Canon IJ Scan Utility\"] en un seul élément, sans guillemets", cibles[0].Args)
+	}
+}

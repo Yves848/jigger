@@ -77,6 +77,11 @@ func Router(v pm.Verb, args []string, forcePM string, mgrs []pm.Manager, cats ma
 		}
 	}
 
+	// Les drapeaux déjà tapés servent de préfixe à Insert : c'est ce qui permet à brew de
+	// voir qu'un --cask est déjà là et de ne pas le doubler (cf. note ¹ de la spec — « la
+	// ligne tranche déjà », le même garde-fou que la complétion native).
+	prefixeDrapeaux := strings.Join(drapeaux, " ")
+
 	cibles := make([]Cible, 0, len(ordre))
 	for _, m := range ordre {
 		// Les drapeaux en tête : `brew install --cask firefox`, pas
@@ -84,7 +89,17 @@ func Router(v pm.Verb, args []string, forcePM string, mgrs []pm.Manager, cats ma
 		// pointilleux.
 		argv := make([]string, 0, len(drapeaux)+len(parPM[m.Cmd()]))
 		argv = append(argv, drapeaux...)
-		argv = append(argv, parPM[m.Cmd()]...)
+
+		cat := cats[m.Cmd()]
+		for _, nom := range parPM[m.Cmd()] {
+			// Insert porte les petites corrections qui évitent une commande fautive —
+			// --cask de brew, qualification par bucket de scoop, guillemets de winget.
+			// La correction accompagne son nom, elle n'est pas hoistée en tête : c'est
+			// bien « brew install --cask firealpaca », jamais « brew install --cask
+			// firealpaca --cask » ni « --cask » livré à part des autres noms.
+			inséré := m.Insert(cat, string(v), prefixeDrapeaux, nom)
+			argv = append(argv, splitInsert(inséré)...)
+		}
 		cibles = append(cibles, Cible{Mgr: m, Args: argv})
 	}
 	return cibles, nil, nil
