@@ -21,7 +21,7 @@ func (Manager) Verbs() map[pm.Verb]pm.Binding {
 		// c'était le paquet visé, et refuserait de chercher un mot qui n'est
 		// justement pas encore un nom connu (cf. tâche « recherche »).
 		"search": {Native: []string{"search", pm.MarqueurTous}, Pool: pm.PoolAucun, Parse: parseSearch},
-		"info":      {Native: []string{"info", pm.MarqueurTous}, Pool: pm.PoolCatalogue},
+		"info":   {Native: []string{"info", pm.MarqueurTous}, Pool: pm.PoolCatalogue},
 
 		// Convergents
 		"source":     {Native: []string{"tap"}, Pool: pm.PoolAucun, Parse: parseSource},

@@ -20,7 +20,7 @@ func (Manager) Verbs() map[pm.Verb]pm.Binding {
 		// search prend une requête, pas un nom de paquet à résoudre au catalogue (cf.
 		// internal/brew/verbs.go pour le détail du raisonnement).
 		"search": {Native: []string{"search", pm.MarqueurTous}, Pool: pm.PoolAucun, Parse: parseSearch},
-		"info":      {Native: []string{"show", "--id", pm.MarqueurUn}, Pool: pm.PoolCatalogue},
+		"info":   {Native: []string{"show", "--id", pm.MarqueurUn}, Pool: pm.PoolCatalogue},
 
 		"source":     {Native: []string{"source", "list"}, Pool: pm.PoolAucun, Parse: parseSource},
 		"source add": {Native: []string{"source", "add", pm.MarqueurTous}, Pool: pm.PoolAucun},
