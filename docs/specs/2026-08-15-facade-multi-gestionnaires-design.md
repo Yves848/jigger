@@ -178,8 +178,13 @@ jg install fd
    └─4─ GROUPER et exécuter    un appel par gestionnaire retenu, en séquence
 ```
 
-`Pool` n'est pas une notion nouvelle : c'est `Manager.InstalledOnly()`, promu de booléen à
-énumération à trois valeurs pour couvrir « ce verbe ne prend pas de paquet du tout ».
+`Pool` reprend la notion que porte déjà `Manager.InstalledOnly()`, en l'élargissant d'un
+booléen à trois valeurs pour couvrir « ce verbe ne prend pas de paquet du tout ».
+
+**`Manager.InstalledOnly()` n'est pas modifié pour autant** : il continue de servir le
+chemin de complétion natif (`brew uninstall ⇥`). `Pool` est un type neuf, porté par
+`Binding`, qui ne concerne que le chemin de la façade. Les deux coexistent, conformément à
+[ADR-0002](../adr/0002-facade-table-declarative.md) qui laisse `pm.Manager` intact.
 
 Seuls les gestionnaires rendus par `managers.Available()` participent.
 

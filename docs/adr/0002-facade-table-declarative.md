@@ -81,7 +81,9 @@ ne vaut pas ça.
 - `Direct` existe parce que **scoop sait déjà répondre sans lancer scoop** :
   `internal/scoop/outdated.go` compare les manifestes sur le disque. Passer par un
   sous-processus pour redemander ce que jigger sait déjà serait absurde.
-- `InstalledOnly() bool` est promu en `Pool` à trois valeurs, pour couvrir « ce verbe ne
-  prend pas de paquet du tout ».
+- `Pool` reprend la notion de `Manager.InstalledOnly()` en l'élargissant à trois valeurs
+  (« ce verbe ne prend pas de paquet du tout »). C'est un **type neuf porté par
+  `Binding`** : `InstalledOnly()` reste en place et continue de servir la complétion
+  native. Les deux coexistent.
 - La conception complète qui découle de cet ADR est dans
   [la spec du 15 août 2026](../specs/2026-08-15-facade-multi-gestionnaires-design.md).
