@@ -17,7 +17,9 @@ func (Manager) Verbs() map[pm.Verb]pm.Binding {
 		"upgrade":   {Native: []string{"upgrade", "--id", pm.MarqueurUn}, Pool: pm.PoolInstalles},
 		"list":      {Native: []string{"list"}, Pool: pm.PoolAucun, Parse: parseList},
 		"outdated":  {Native: []string{"list", "--upgrade-available"}, Pool: pm.PoolAucun, Parse: parseOutdated},
-		"search":    {Native: []string{"search", pm.MarqueurTous}, Pool: pm.PoolCatalogue, Parse: parseSearch},
+		// search prend une requête, pas un nom de paquet à résoudre au catalogue (cf.
+		// internal/brew/verbs.go pour le détail du raisonnement).
+		"search": {Native: []string{"search", pm.MarqueurTous}, Pool: pm.PoolAucun, Parse: parseSearch},
 		"info":      {Native: []string{"show", "--id", pm.MarqueurUn}, Pool: pm.PoolCatalogue},
 
 		"source":     {Native: []string{"source", "list"}, Pool: pm.PoolAucun, Parse: parseSource},

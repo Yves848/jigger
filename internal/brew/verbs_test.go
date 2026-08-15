@@ -61,8 +61,10 @@ func TestArgvBrewSource(t *testing.T) {
 
 func TestPoolBrew(t *testing.T) {
 	cas := map[pm.Verb]pm.Pool{
-		"install":   pm.PoolCatalogue,
-		"search":    pm.PoolCatalogue,
+		"install": pm.PoolCatalogue,
+		// search prend une requête, pas un nom à résoudre au catalogue (cf. verbs.go) :
+		// PoolAucun, comme les verbes qui ne prennent aucun nom de paquet.
+		"search":    pm.PoolAucun,
 		"uninstall": pm.PoolInstalles,
 		"upgrade":   pm.PoolInstalles,
 		"pin":       pm.PoolInstalles,

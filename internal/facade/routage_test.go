@@ -179,6 +179,28 @@ func TestRoutageCatalogueEnConstruction(t *testing.T) {
 	}
 }
 
+// search prend une requête, pas un nom de paquet à résoudre au catalogue : une requête
+// qui ne correspond à aucun paquet connu doit tout de même atteindre les gestionnaires
+// capables — c'est à eux de chercher, pas à Router de refuser une recherche au prétexte
+// que la requête n'est pas déjà un nom exact du catalogue.
+func TestRoutageSearchAtteintLesGestionnairesMemeSansCorrespondanceExacte(t *testing.T) {
+	cibles, amb, err := Router("search", []string{"fire"}, "", deuxGestionnaires(), catalogues())
+	if err != nil {
+		t.Fatalf("« fire » ne correspond à aucun paquet exact des catalogues de test, mais search doit tout de même router : %v", err)
+	}
+	if amb != nil {
+		t.Fatalf("ambiguïté inattendue : %v", amb)
+	}
+	if len(cibles) != 2 {
+		t.Fatalf("%d cibles, attendu 2 (tous les gestionnaires capables) : %v", len(cibles), cibles)
+	}
+	for _, c := range cibles {
+		if len(c.Args) != 1 || c.Args[0] != "fire" {
+			t.Errorf("cible %s : args = %v, attendu [fire] (la requête, intacte)", c.Mgr.Cmd(), c.Args)
+		}
+	}
+}
+
 func TestRoutageForcePMInconnu(t *testing.T) {
 	_, _, err := Router("install", []string{"fd"}, "apt", deuxGestionnaires(), catalogues())
 	if err == nil {

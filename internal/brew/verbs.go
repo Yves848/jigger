@@ -16,7 +16,11 @@ func (Manager) Verbs() map[pm.Verb]pm.Binding {
 		"upgrade":   {Native: []string{"upgrade", pm.MarqueurTous}, Pool: pm.PoolInstalles},
 		"list":      {Native: []string{"list", "--versions"}, Pool: pm.PoolAucun, Parse: parseList},
 		"outdated":  {Native: []string{"outdated", "--json=v2"}, Pool: pm.PoolAucun, Parse: parseOutdated},
-		"search":    {Native: []string{"search", pm.MarqueurTous}, Pool: pm.PoolCatalogue, Parse: parseSearch},
+		// search prend une requête, pas un nom de paquet à résoudre au catalogue : la
+		// router en PoolCatalogue ferait chercher la requête elle-même comme si
+		// c'était le paquet visé, et refuserait de chercher un mot qui n'est
+		// justement pas encore un nom connu (cf. tâche « recherche »).
+		"search": {Native: []string{"search", pm.MarqueurTous}, Pool: pm.PoolAucun, Parse: parseSearch},
 		"info":      {Native: []string{"info", pm.MarqueurTous}, Pool: pm.PoolCatalogue},
 
 		// Convergents
