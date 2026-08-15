@@ -47,6 +47,9 @@ il ne requiert que le gestionnaire lui-même.
 
 ## Installation
 
+De bout en bout, pas à pas : **[Premiers pas](docs/getting-started.md)** — installer,
+brancher dans le shell, régler, dépanner. Ce qui suit en est le résumé.
+
 ```sh
 # le binaire (Go ≥ 1.24)
 go install gitlab.yg-devworks.com/yves/jigger@latest   # → $GOBIN/jigger
@@ -57,9 +60,17 @@ Le binaire `jigger` doit être dans le `PATH`.
 
 ### zsh (Homebrew)
 
+Par le tap, qui compile le binaire, installe le greffon et pose `brew jigger` :
+
+```sh
+brew tap yves/cocktails https://gitlab.yg-devworks.com/yves/homebrew-cocktails.git
+brew install jigger
+```
+
 ```sh
 # dans ~/.zshrc
-source /chemin/vers/jigger/shell/jigger.plugin.zsh
+source "$(brew --prefix jigger)/share/jigger/jigger.plugin.zsh"
+#   depuis les sources :  source /chemin/vers/jigger/shell/jigger.plugin.zsh
 ```
 
 Recharge ton shell (`exec zsh`).
