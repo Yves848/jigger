@@ -156,6 +156,31 @@ func TestFrameMessageQuandAucunItem(t *testing.T) {
 	}
 }
 
+// La colonne PM apparaît selon les données, pas selon un drapeau — même règle que les
+// tableaux de sortie.
+func TestFrameColonnePMSelonLesDonnees(t *testing.T) {
+	avec := Frame{
+		Title: "jigger install",
+		Items: []pm.Item{
+			{Name: "Git.Git", Badge: pm.BadgeWinget, PM: "winget"},
+			{Name: "git", Badge: pm.BadgeScoop, PM: "scoop"},
+		},
+		Rows: 8,
+	}.Render()
+	if !strings.Contains(avec, "winget") || !strings.Contains(avec, "scoop") {
+		t.Errorf("les deux gestionnaires doivent apparaître dans le cadre :\n%s", avec)
+	}
+
+	sans := Frame{
+		Title: "brew install",
+		Items: []pm.Item{{Name: "git", Badge: pm.BadgeFormula}},
+		Rows:  8,
+	}.Render()
+	if strings.Contains(sans, "brew") && !strings.Contains(sans, "brew install") {
+		t.Errorf("aucun PM sur les items : rien ne doit s'ajouter :\n%s", sans)
+	}
+}
+
 // ScrollOffset remplace la mémoire de défilement du sélecteur : le seul état conservé
 // entre deux frappes est l'index, il faut donc recalculer la fenêtre à chaque rendu.
 func TestScrollOffset(t *testing.T) {

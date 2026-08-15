@@ -165,7 +165,7 @@ func runFacade(argv []string) int {
 		return 2
 	}
 	if amb != nil {
-		choisi, ok := trancher(amb) // branché en tâche 13
+		choisi, ok := trancher(amb)
 		if !ok {
 			return 2
 		}
@@ -183,16 +183,49 @@ func runFacade(argv []string) int {
 	return code
 }
 
-// trancher demande à l'utilisateur quel gestionnaire retenir. Le sélecteur arrive en
-// tâche 13 ; d'ici là, on échoue en listant les candidats — ce qui est de toute façon le
-// comportement attendu hors terminal.
+// trancher ouvre le sélecteur sur les candidats d'un nom ambigu. Ce n'est pas un nouvel
+// écran : c'est le popup, avec un autre titre et d'autres touches de pied.
+//
+// Hors terminal — pipe, script, CI — il n'y a personne pour choisir : on échoue en
+// listant les candidats et en rappelant --pm. Jamais de choix automatique.
 func trancher(amb *facade.Ambiguite) (string, bool) {
-	fmt.Fprintf(os.Stderr, "jigger : « %s » — connu de plusieurs gestionnaires :\n", amb.Nom)
+	items := make([]complete.Item, 0, len(amb.Candidats))
 	for _, c := range amb.Candidats {
-		fmt.Fprintf(os.Stderr, "        %s\n", c.Mgr.Cmd())
+		items = append(items, complete.Item{
+			Name:  c.Mgr.Cmd(),
+			Badge: c.Badge,
+			PM:    c.Mgr.Cmd(),
+		})
 	}
-	fmt.Fprintf(os.Stderr, "        Choisis avec --pm <gestionnaire>\n")
-	return "", false
+
+	tty, err := openTTY()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "jigger : « %s » — connu de plusieurs gestionnaires :\n", amb.Nom)
+		for _, c := range amb.Candidats {
+			fmt.Fprintf(os.Stderr, "        %s\n", c.Mgr.Cmd())
+		}
+		fmt.Fprintln(os.Stderr, "        Choisis avec --pm <gestionnaire>")
+		return "", false
+	}
+	defer tty.Close()
+
+	lipgloss.SetColorProfile(termenv.NewOutput(tty.Out).Profile)
+	titre := fmt.Sprintf("%s : %d gestionnaires", amb.Nom, len(amb.Candidats))
+	model := ui.New(titre, complete.Result{Executable: true, Items: items})
+
+	fmt.Fprint(tty.Out, "\r\n")
+	prog := tea.NewProgram(model, tea.WithInput(tty.In), tea.WithOutput(tty.Out))
+	final, err := prog.Run()
+	fmt.Fprint(tty.Out, "\x1b[1A\r")
+	if err != nil {
+		return "", false
+	}
+
+	m := final.(ui.Model)
+	if m.Chosen == nil {
+		return "", false // annulé
+	}
+	return m.Chosen.Name, true
 }
 
 // runWarm reconstitue les catalogues mis en cache. C'est le chemin lent — plusieurs

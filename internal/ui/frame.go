@@ -72,6 +72,18 @@ func tronquer(s string, largeur int) string {
 // greffon a réservées sous le prompt.
 func clip(s string, largeur int) string { return xansi.Truncate(s, largeur, "") }
 
+// avecPM dit si la colonne PM doit apparaître : présente dès qu'un item du cadre en
+// porte un, absente sinon. C'est la façade seule qui remplit ce champ (cf. pm.Item.PM) —
+// le chemin natif (`brew install ⇥`) n'a rien à désambiguïser et n'en porte jamais.
+func (f Frame) avecPM() bool {
+	for _, it := range f.Items {
+		if it.PM != "" {
+			return true
+		}
+	}
+	return false
+}
+
 func (f Frame) rows() int {
 	if f.Rows <= 0 {
 		return visibleRows
@@ -107,10 +119,16 @@ func (f Frame) Render() string {
 	// Lignes jointives : la ligne courante se signale par sa couleur et son soulignement,
 	// il n'y a plus d'interligne à intercaler. Toutes les lignes faisant une ligne de haut,
 	// la hauteur du popup ne dépend pas de la position du curseur.
+	// La colonne PM ne s'ajoute que si au moins un item la porte — comme les tableaux de
+	// sortie (cf. facade.Formater) : une colonne toujours vide n'apprend rien, et
+	// `brew install ⇥`, où aucun item n'a de PM, doit rendre au pixel près comme avant
+	// cette colonne.
+	avecPM := f.avecPM()
+
 	offset := min(max(f.Offset, 0), len(f.Items)-1)
 	end := min(offset+f.rows(), len(f.Items))
 	for i := offset; i < end; i++ {
-		b.WriteString(clip(f.renderRow(f.Items[i], i == f.Sel), f.boxWidth()) + "\n")
+		b.WriteString(clip(f.renderRow(f.Items[i], i == f.Sel, avecPM), f.boxWidth()) + "\n")
 	}
 	b.WriteString("\n") // respiration avant le pied
 	b.WriteString(clip(f.footer(), f.boxWidth()))
@@ -140,11 +158,12 @@ func pad(n int) string {
 	return base.Render(strings.Repeat(" ", n))
 }
 
-func (f Frame) renderRow(it complete.Item, selected bool) string {
+func (f Frame) renderRow(it complete.Item, selected bool, avecPM bool) string {
 	glyph := glyphe(it.Badge)
 
-	// Partie droite (alignée au bord) : version installée puis point « installé ».
-	// On la compose d'abord en texte nu pour calculer le remplissage.
+	// Partie droite (alignée au bord) : version installée, point « installé », puis PM
+	// (façade seulement, cf. avecPM). On la compose d'abord en texte nu pour calculer le
+	// remplissage.
 	rightPlain := ""
 	if it.Version != "" {
 		rightPlain = it.Version
@@ -154,6 +173,12 @@ func (f Frame) renderRow(it complete.Item, selected bool) string {
 			rightPlain += "  "
 		}
 		rightPlain += "●"
+	}
+	if avecPM {
+		if rightPlain != "" {
+			rightPlain += "  "
+		}
+		rightPlain += it.PM
 	}
 
 	// Ce qui reste au nom : la ligne moins l'indentation, le glyphe, ses deux espaces, la
@@ -192,6 +217,15 @@ func (f Frame) renderRow(it complete.Item, selected bool) string {
 			right += pad(2)
 		}
 		right += dotStyle.Render("●")
+	}
+	if avecPM {
+		if right != "" {
+			right += pad(2)
+		}
+		// Même identité visuelle que le glyphe de la ligne : c'est la seule palette de
+		// badges du popup, partagée avec les tableaux de sortie et le bloc oh-my-posh
+		// (spec §5).
+		right += couleur(it.Badge).Render(it.PM)
 	}
 	return left + pad(gap) + right
 }
