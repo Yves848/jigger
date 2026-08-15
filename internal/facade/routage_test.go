@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"gitlab.yg-devworks.com/yves/jigger/internal/brew"
 	"gitlab.yg-devworks.com/yves/jigger/internal/pm"
 	"gitlab.yg-devworks.com/yves/jigger/internal/scoop"
 	"gitlab.yg-devworks.com/yves/jigger/internal/winget"
@@ -182,5 +183,40 @@ func TestRoutageForcePMInconnu(t *testing.T) {
 	_, _, err := Router("install", []string{"fd"}, "apt", deuxGestionnaires(), catalogues())
 	if err == nil {
 		t.Fatal("attendu une erreur : « apt » n'est pas un gestionnaire disponible")
+	}
+}
+
+// Un drapeau natif (« --cask ») ne doit pas être avalé comme s'il était un nom de paquet à
+// résoudre : il doit ressortir intact dans les arguments de la cible, et en tête — c'est
+// « brew install --cask firefox », pas « brew install firefox --cask ».
+func TestRoutageDrapeauxNatifsAccompagnentLesNoms(t *testing.T) {
+	cats := map[string]*pm.Catalog{"brew": brew.NewCatalog(nil, []string{"firefox"}, nil)}
+	cibles, amb, err := Router("install", []string{"--cask", "firefox"}, "", []pm.Manager{brew.New()}, cats)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if amb != nil {
+		t.Fatalf("ambiguïté inattendue : %v", amb)
+	}
+	if len(cibles) != 1 {
+		t.Fatalf("%d cibles, attendu 1", len(cibles))
+	}
+	if len(cibles[0].Args) != 2 || cibles[0].Args[0] != "--cask" || cibles[0].Args[1] != "firefox" {
+		t.Fatalf("args = %v, attendu [--cask firefox] (drapeau en tête)", cibles[0].Args)
+	}
+}
+
+// PoolAucun (list, outdated…) ne résout aucun nom : les drapeaux doivent lui parvenir
+// intacts, sans passer par le partitionnement drapeaux/noms.
+func TestRoutagePoolAucunLaisseFilerLesDrapeaux(t *testing.T) {
+	cibles, amb, err := Router("list", []string{"--versions"}, "", []pm.Manager{brew.New()}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if amb != nil {
+		t.Fatal("un verbe sans nom ne peut pas être ambigu")
+	}
+	if len(cibles) != 1 || len(cibles[0].Args) != 1 || cibles[0].Args[0] != "--versions" {
+		t.Fatalf("cibles = %v, attendu [--versions] intact", cibles)
 	}
 }

@@ -57,9 +57,11 @@ func Router(v pm.Verb, args []string, forcePM string, mgrs []pm.Manager, cats ma
 		return cibles, nil, nil
 	}
 
+	drapeaux, noms := partitionner(args)
+
 	parPM := map[string][]string{}
 	ordre := []pm.Manager{}
-	for _, nom := range args {
+	for _, nom := range noms {
 		proprios := connaissent(nom, pool, capables, cats)
 		switch len(proprios) {
 		case 0:
@@ -77,9 +79,29 @@ func Router(v pm.Verb, args []string, forcePM string, mgrs []pm.Manager, cats ma
 
 	cibles := make([]Cible, 0, len(ordre))
 	for _, m := range ordre {
-		cibles = append(cibles, Cible{Mgr: m, Args: parPM[m.Cmd()]})
+		// Les drapeaux en tête : `brew install --cask firefox`, pas
+		// `brew install firefox --cask` — plus lisible, et certains gestionnaires y sont
+		// pointilleux.
+		argv := make([]string, 0, len(drapeaux)+len(parPM[m.Cmd()]))
+		argv = append(argv, drapeaux...)
+		argv = append(argv, parPM[m.Cmd()]...)
+		cibles = append(cibles, Cible{Mgr: m, Args: argv})
 	}
 	return cibles, nil, nil
+}
+
+// partitionner sépare les drapeaux natifs (« --cask », « -1 »…) des noms à résoudre :
+// Router ne doit chercher au catalogue que les seconds. Aucun nom de paquet, chez aucun
+// gestionnaire, ne commence par « - », donc ce partitionnement est sans ambiguïté.
+func partitionner(args []string) (drapeaux, noms []string) {
+	for _, a := range args {
+		if strings.HasPrefix(a, "-") {
+			drapeaux = append(drapeaux, a)
+		} else {
+			noms = append(noms, a)
+		}
+	}
+	return drapeaux, noms
 }
 
 // filtrerParPM applique --pm. Un nom de gestionnaire absent des capables est une erreur :
