@@ -151,12 +151,43 @@ mécanisme les accepte (une ligne de table chacun) ; **aucun n'entre dans la pha
 **Décompte.** Douze verbes de premier niveau — ceux que `jg ⇥` propose — pour **quatorze
 clés de table**, `source` en comptant trois (`source`, `source add`, `source rm`).
 
-### La table est à vérifier avant d'être figée
+### État de vérification de la table
 
-Les options exactes ci-dessus — `winget pin add`, `scoop checkup`, la syntaxe de
-`scoop update *` — sont écrites de mémoire. **La première tâche du plan d'implémentation
-est de les vérifier contre les CLI réellement installées**, sur le Mac comme sous Windows,
-et de corriger la table avant d'écrire le moteur.
+La colonne **brew** ci-dessus a été vérifiée le 15 août 2026 contre `brew 6.0.17-73-gc68efb6`
+(macOS) : `brew help`, `brew commands` et `brew <verbe> --help` pour chacun des douze verbes
+(`install`, `uninstall`, `upgrade`, `list`, `outdated`, `search`, `info`, `tap`, `untap`,
+`pin`, `unpin`, `cleanup`, `doctor`). Tous les verbes et toutes les options citées existent
+tels quels ; aucun écart avec ce qui était écrit de mémoire. Le détail des sorties observées
+est dans le rapport de la tâche 1.
+
+> **Colonnes winget et scoop : non vérifiées.** Cette machine est un Mac ; `winget` et
+> `scoop` sont des binaires Windows absents de cet environnement. Les valeurs des colonnes
+> **winget** et **scoop** ci-dessus restent donc **écrites de mémoire, non confirmées** —
+> en particulier les trois points les plus incertains :
+>
+> - `winget pin add` / `winget pin remove` (existent-ils sous cette forme ?)
+> - `winget source list` / `source add` / `source remove`
+> - `scoop checkup`, `scoop hold` / `unhold`, `scoop cleanup`, et la portée réelle de
+>   `scoop update *`
+>
+> **Vérification différée à une tâche 1b**, à exécuter depuis Windows :
+>
+> ```powershell
+> winget pin --help
+> winget source --help
+> scoop help
+> scoop update --help
+> ```
+>
+> et à capturer :
+>
+> ```powershell
+> scoop status                 > internal/scoop/testdata/status.txt
+> winget source list           > internal/winget/testdata/source-list-fr.txt
+> ```
+>
+> Aucun moteur ne doit être écrit contre ces deux colonnes tant que la tâche 1b n'a pas
+> confirmé (ou corrigé) les valeurs ci-dessus.
 
 ## §3 — Résolution et routage
 

@@ -1,0 +1,60 @@
+{
+  "formulae": [
+    {
+      "name": "boost",
+      "installed_versions": [
+        "1.90.0_1"
+      ],
+      "current_version": "1.92.0",
+      "pinned": false,
+      "pinned_version": null
+    },
+    {
+      "name": "pipx",
+      "installed_versions": [
+        "1.16.6"
+      ],
+      "current_version": "1.16.7",
+      "pinned": false,
+      "pinned_version": null
+    },
+    {
+      "name": "uv",
+      "installed_versions": [
+        "0.12.4"
+      ],
+      "current_version": "0.12.5",
+      "pinned": false,
+      "pinned_version": null
+    },
+    {
+      "name": "vtk",
+      "installed_versions": [
+        "9.6.2"
+      ],
+      "current_version": "9.6.2_1",
+      "pinned": false,
+      "pinned_version": null
+    }
+  ],
+  "casks": [
+    {
+      "name": "1password-cli",
+      "installed_versions": [
+        "2.38.1"
+      ],
+      "current_version": "2.39.0",
+      "pinned": false,
+      "pinned_version": null
+    },
+    {
+      "name": "claude-code",
+      "installed_versions": [
+        "2.1.223"
+      ],
+      "current_version": "2.1.224",
+      "pinned": false,
+      "pinned_version": null
+    }
+  ]
+}
