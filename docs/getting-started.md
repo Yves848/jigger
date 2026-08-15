@@ -103,8 +103,8 @@ Import-Module C:\chemin\vers\jigger\shell\jigger.psm1
 
 Puis recharge : `. $PROFILE`, ou ouvre un nouvel onglet.
 
-Une seule contrainte d'ordre, celle-ci réelle : si tu utilises oh-my-posh, importe jigger
-**après** lui (cf. § 8).
+Une seule contrainte d'ordre, celle-ci réelle : si tu utilises oh-my-posh ou starship,
+importe jigger **après** lui (cf. § 8).
 
 ## 4. Vérifier que ça marche
 
