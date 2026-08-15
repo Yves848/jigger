@@ -31,8 +31,17 @@ type Ambiguite struct {
 }
 
 // Router résout chaque nom et rend les cibles. Il rend une Ambiguite — et aucune cible —
-// dès qu'un nom est connu de plusieurs gestionnaires et que forcePM ne tranche pas.
-func Router(v pm.Verb, args []string, forcePM string, mgrs []pm.Manager, cats map[string]*pm.Catalog) ([]Cible, *Ambiguite, error) {
+// dès qu'un nom est connu de plusieurs gestionnaires, que forcePM ne tranche pas, et que
+// resolu ne le connaît pas déjà.
+//
+// resolu porte les désambiguïsations déjà obtenues, nom par nom (typiquement : l'appelant
+// a ouvert le sélecteur sur une Ambiguite précédente et rappelle Router avec le choix de
+// l'utilisateur). Elle ne lie QUE le nom pour lequel elle a été faite : contrairement à
+// forcePM — qui restreint tous les gestionnaires capables pour toute la ligne, et sert
+// --pm —, choisir un gestionnaire pour « git » ne doit pas empêcher « fd » de se résoudre
+// tout seul sur la même ligne (`jg install git fd`, spec §3 : « chaque nom résolu
+// indépendamment »). nil est la valeur normale d'un premier appel, sans rien à rejouer.
+func Router(v pm.Verb, args []string, forcePM string, resolu map[string]string, mgrs []pm.Manager, cats map[string]*pm.Catalog) ([]Cible, *Ambiguite, error) {
 	capables, err := filtrerParPM(mgrs, forcePM)
 	if err != nil {
 		return nil, nil, err
@@ -62,7 +71,17 @@ func Router(v pm.Verb, args []string, forcePM string, mgrs []pm.Manager, cats ma
 	parPM := map[string][]string{}
 	ordre := []pm.Manager{}
 	for _, nom := range noms {
-		proprios := connaissent(nom, pool, capables, cats)
+		var proprios []pm.Manager
+		if choisi, ok := resolu[nom]; ok {
+			// Ce nom précis a déjà été tranché (cf. la doc de resolu ci-dessus) : on ne
+			// repasse pas par connaissent, qui rouvrirait la même Ambiguite.
+			if m := trouverCmd(capables, choisi); m != nil {
+				proprios = []pm.Manager{m}
+			}
+		}
+		if proprios == nil {
+			proprios = connaissent(nom, pool, capables, cats)
+		}
 		switch len(proprios) {
 		case 0:
 			return nil, nil, nomInconnu(nom, pool, capables, cats)
@@ -136,6 +155,18 @@ func filtrerParPM(mgrs []pm.Manager, forcePM string) ([]pm.Manager, error) {
 	}
 	return nil, fmt.Errorf("jigger : --pm %s — gestionnaire indisponible pour ce verbe. Disponibles : %s",
 		forcePM, strings.Join(noms, ", "))
+}
+
+// trouverCmd rend, parmi les gestionnaires capables, celui dont Cmd() correspond — ou nil
+// si aucun (une résolution obtenue avant que --pm ne réduise ensuite les capables, par
+// exemple).
+func trouverCmd(mgrs []pm.Manager, cmd string) pm.Manager {
+	for _, m := range mgrs {
+		if m.Cmd() == cmd {
+			return m
+		}
+	}
+	return nil
 }
 
 // connaissent rend les gestionnaires dont le vivier contient ce nom exactement.

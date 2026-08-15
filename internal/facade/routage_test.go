@@ -34,7 +34,7 @@ func deuxGestionnaires() []pm.Manager {
 }
 
 func TestRoutageUnSeulGestionnaireConnaitLeNom(t *testing.T) {
-	cibles, amb, err := Router("install", []string{"fd"}, "", deuxGestionnaires(), catalogues())
+	cibles, amb, err := Router("install", []string{"fd"}, "", nil, deuxGestionnaires(), catalogues())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -47,7 +47,7 @@ func TestRoutageUnSeulGestionnaireConnaitLeNom(t *testing.T) {
 }
 
 func TestRoutageAmbiguite(t *testing.T) {
-	_, amb, err := Router("install", []string{"git"}, "", deuxGestionnaires(), catalogues())
+	_, amb, err := Router("install", []string{"git"}, "", nil, deuxGestionnaires(), catalogues())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,7 +61,7 @@ func TestRoutageAmbiguite(t *testing.T) {
 
 // --pm tranche sans ouvrir le sélecteur.
 func TestRoutageForcePM(t *testing.T) {
-	cibles, amb, err := Router("install", []string{"git"}, "scoop", deuxGestionnaires(), catalogues())
+	cibles, amb, err := Router("install", []string{"git"}, "scoop", nil, deuxGestionnaires(), catalogues())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -75,7 +75,7 @@ func TestRoutageForcePM(t *testing.T) {
 
 // Chaque nom est résolu indépendamment : une ligne peut viser deux gestionnaires.
 func TestRoutageDeuxNomsDeuxGestionnaires(t *testing.T) {
-	cibles, amb, err := Router("install", []string{"fd", "Git.Git"}, "", deuxGestionnaires(), catalogues())
+	cibles, amb, err := Router("install", []string{"fd", "Git.Git"}, "", nil, deuxGestionnaires(), catalogues())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -100,7 +100,7 @@ func TestRoutageDeuxNomsDeuxGestionnaires(t *testing.T) {
 // PoolInstalles ne fouille que les installés : « git » est au catalogue de scoop mais
 // n'y est pas installé, donc uninstall ne doit pas le proposer.
 func TestRoutagePoolInstalles(t *testing.T) {
-	cibles, amb, err := Router("uninstall", []string{"git"}, "", deuxGestionnaires(), catalogues())
+	cibles, amb, err := Router("uninstall", []string{"git"}, "", nil, deuxGestionnaires(), catalogues())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,7 +114,7 @@ func TestRoutagePoolInstalles(t *testing.T) {
 
 // PoolAucun : pas de nom à résoudre, tous les gestionnaires capables agissent.
 func TestRoutagePoolAucun(t *testing.T) {
-	cibles, amb, err := Router("outdated", nil, "", deuxGestionnaires(), catalogues())
+	cibles, amb, err := Router("outdated", nil, "", nil, deuxGestionnaires(), catalogues())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -127,7 +127,7 @@ func TestRoutagePoolAucun(t *testing.T) {
 }
 
 func TestRoutageNomInconnu(t *testing.T) {
-	_, _, err := Router("install", []string{"fdfind"}, "", deuxGestionnaires(), catalogues())
+	_, _, err := Router("install", []string{"fdfind"}, "", nil, deuxGestionnaires(), catalogues())
 	if err == nil {
 		t.Fatal("attendu une erreur pour un nom inconnu de tous")
 	}
@@ -147,7 +147,7 @@ func TestRoutageNomInconnu(t *testing.T) {
 // « nom inconnu ». Seul winget a « git » installé : c'est lui, et lui seul, qui doit
 // apparaître dans la suggestion.
 func TestRoutageNomInconnuRespectePoolInstalles(t *testing.T) {
-	_, _, err := Router("uninstall", []string{"gitt"}, "", deuxGestionnaires(), catalogues())
+	_, _, err := Router("uninstall", []string{"gitt"}, "", nil, deuxGestionnaires(), catalogues())
 	if err == nil {
 		t.Fatal("attendu une erreur pour un nom inconnu de tous")
 	}
@@ -170,7 +170,7 @@ func TestRoutageCatalogueEnConstruction(t *testing.T) {
 	vide.Note = "catalogue winget en cours de constitution"
 	cats["winget"] = vide
 
-	_, _, err := Router("install", []string{"Git.Git"}, "", deuxGestionnaires(), cats)
+	_, _, err := Router("install", []string{"Git.Git"}, "", nil, deuxGestionnaires(), cats)
 	if err == nil {
 		t.Fatal("attendu une erreur")
 	}
@@ -184,7 +184,7 @@ func TestRoutageCatalogueEnConstruction(t *testing.T) {
 // capables — c'est à eux de chercher, pas à Router de refuser une recherche au prétexte
 // que la requête n'est pas déjà un nom exact du catalogue.
 func TestRoutageSearchAtteintLesGestionnairesMemeSansCorrespondanceExacte(t *testing.T) {
-	cibles, amb, err := Router("search", []string{"fire"}, "", deuxGestionnaires(), catalogues())
+	cibles, amb, err := Router("search", []string{"fire"}, "", nil, deuxGestionnaires(), catalogues())
 	if err != nil {
 		t.Fatalf("« fire » ne correspond à aucun paquet exact des catalogues de test, mais search doit tout de même router : %v", err)
 	}
@@ -202,7 +202,7 @@ func TestRoutageSearchAtteintLesGestionnairesMemeSansCorrespondanceExacte(t *tes
 }
 
 func TestRoutageForcePMInconnu(t *testing.T) {
-	_, _, err := Router("install", []string{"fd"}, "apt", deuxGestionnaires(), catalogues())
+	_, _, err := Router("install", []string{"fd"}, "apt", nil, deuxGestionnaires(), catalogues())
 	if err == nil {
 		t.Fatal("attendu une erreur : « apt » n'est pas un gestionnaire disponible")
 	}
@@ -213,7 +213,7 @@ func TestRoutageForcePMInconnu(t *testing.T) {
 // « brew install --cask firefox », pas « brew install firefox --cask ».
 func TestRoutageDrapeauxNatifsAccompagnentLesNoms(t *testing.T) {
 	cats := map[string]*pm.Catalog{"brew": brew.NewCatalog(nil, []string{"firefox"}, nil)}
-	cibles, amb, err := Router("install", []string{"--cask", "firefox"}, "", []pm.Manager{brew.New()}, cats)
+	cibles, amb, err := Router("install", []string{"--cask", "firefox"}, "", nil, []pm.Manager{brew.New()}, cats)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -231,7 +231,7 @@ func TestRoutageDrapeauxNatifsAccompagnentLesNoms(t *testing.T) {
 // PoolAucun (list, outdated…) ne résout aucun nom : les drapeaux doivent lui parvenir
 // intacts, sans passer par le partitionnement drapeaux/noms.
 func TestRoutagePoolAucunLaisseFilerLesDrapeaux(t *testing.T) {
-	cibles, amb, err := Router("list", []string{"--versions"}, "", []pm.Manager{brew.New()}, nil)
+	cibles, amb, err := Router("list", []string{"--versions"}, "", nil, []pm.Manager{brew.New()}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -248,7 +248,7 @@ func TestRoutagePoolAucunLaisseFilerLesDrapeaux(t *testing.T) {
 // `jg install <cask pur>` lance `brew install <cask>`, que brew refuse.
 func TestRoutageAppliqueLeCaskDeBrew(t *testing.T) {
 	cats := map[string]*pm.Catalog{"brew": brew.NewCatalog(nil, []string{"firealpaca"}, nil)}
-	cibles, amb, err := Router("install", []string{"firealpaca"}, "", []pm.Manager{brew.New()}, cats)
+	cibles, amb, err := Router("install", []string{"firealpaca"}, "", nil, []pm.Manager{brew.New()}, cats)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -273,7 +273,7 @@ func TestRoutageAppliqueLaQualificationDeScoop(t *testing.T) {
 	s.Sort()
 	cats := map[string]*pm.Catalog{"scoop": s}
 
-	cibles, amb, err := Router("install", []string{"flux"}, "", []pm.Manager{scoop.New()}, cats)
+	cibles, amb, err := Router("install", []string{"flux"}, "", nil, []pm.Manager{scoop.New()}, cats)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -282,6 +282,35 @@ func TestRoutageAppliqueLaQualificationDeScoop(t *testing.T) {
 	}
 	if len(cibles) != 1 || len(cibles[0].Args) != 1 || cibles[0].Args[0] != "main/flux" {
 		t.Fatalf("args = %v, attendu [main/flux]", cibles[0].Args)
+	}
+}
+
+// Une désambiguïsation ne doit lier que le nom pour lequel elle a été faite : `jg install
+// git fd`, avec « git » ambigu (winget et scoop) et « fd » scoop seul, doit laisser « fd »
+// se résoudre tout seul une fois « git » tranché — pas forcer winget sur toute la ligne
+// (cf. tâche « installation mixte »). C'est ce que `resolu` porte : une résolution par nom,
+// distincte de --pm qui, lui, s'applique à toute la ligne.
+func TestRoutageResolutionDUnNomNeForcePasLesAutres(t *testing.T) {
+	resolu := map[string]string{"git": "winget"}
+	cibles, amb, err := Router("install", []string{"git", "fd"}, "", resolu, deuxGestionnaires(), catalogues())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if amb != nil {
+		t.Fatalf("ambiguïté inattendue : %v — « git » est déjà résolu par `resolu`", amb)
+	}
+	if len(cibles) != 2 {
+		t.Fatalf("%d cibles, attendu 2 : %v", len(cibles), cibles)
+	}
+	vu := map[string][]string{}
+	for _, c := range cibles {
+		vu[c.Mgr.Cmd()] = c.Args
+	}
+	if len(vu["winget"]) != 1 || vu["winget"][0] != "git" {
+		t.Errorf("winget = %v, attendu [git] (résolu par `resolu`)", vu["winget"])
+	}
+	if len(vu["scoop"]) != 1 || vu["scoop"][0] != "fd" {
+		t.Errorf("scoop = %v, attendu [fd] (résolu tout seul, sans que le choix sur git ne le force)", vu["scoop"])
 	}
 }
 
@@ -294,7 +323,7 @@ func TestRoutageProtegeIdentifiantWingetAvecEspace(t *testing.T) {
 	w.Sort()
 	cats := map[string]*pm.Catalog{"winget": w}
 
-	cibles, amb, err := Router("uninstall", []string{"Canon IJ Scan Utility"}, "", []pm.Manager{winget.New()}, cats)
+	cibles, amb, err := Router("uninstall", []string{"Canon IJ Scan Utility"}, "", nil, []pm.Manager{winget.New()}, cats)
 	if err != nil {
 		t.Fatal(err)
 	}

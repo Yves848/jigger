@@ -159,21 +159,28 @@ func runFacade(argv []string) int {
 		cats[m.Cmd()] = m.Load()
 	}
 
-	cibles, amb, err := facade.Router(verbe, args, o.PM, capables, cats)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return 2
-	}
-	if amb != nil {
-		choisi, ok := trancher(amb)
-		if !ok {
-			return 2
-		}
-		cibles, amb, err = facade.Router(verbe, args, choisi, capables, cats)
+	// resolu accumule les désambiguïsations obtenues au fil des noms : chaque nom ambigu
+	// tranché par l'utilisateur ne lie que lui, jamais les autres noms de la même ligne
+	// (spec §3 — `jg install git fd` route fd vers scoop sans qu'on ait à le dire, même
+	// si git, ambigu, vient d'être tranché pour winget). --pm (o.PM), lui, continue de
+	// s'appliquer à toute la ligne : c'est le rôle qu'il a toujours eu.
+	resolu := map[string]string{}
+	var cibles []facade.Cible
+	for {
+		var amb *facade.Ambiguite
+		cibles, amb, err = facade.Router(verbe, args, o.PM, resolu, capables, cats)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return 2
 		}
+		if amb == nil {
+			break
+		}
+		choisi, ok := trancher(amb)
+		if !ok {
+			return 2
+		}
+		resolu[amb.Nom] = choisi
 	}
 
 	rows, code := facade.Executer(verbe, cibles, facade.Opts{JSON: o.JSON, Yes: o.Yes})
