@@ -6,6 +6,66 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le ve
 [SemVer](https://semver.org/lang/fr/). Les versions antérieures à `v0.1.6` sont antérieures
 à ce journal ; leur détail est dans l'historique git.
 
+## [v0.8.0] — 2026-08-15
+
+Jusqu'ici, jigger aidait à écrire la commande de chaque gestionnaire. Il sait maintenant en
+parler une seule pour les trois : `jg install fd` s'adresse à celui qui connaît `fd`, sans
+qu'on ait à savoir lequel. La façade **s'ajoute** au popup natif, elle ne remplace rien.
+
+### Ajouté
+
+- **Une syntaxe unique au-dessus de Homebrew, winget et scoop.** Douze verbes, les mêmes
+  partout : `install`, `uninstall`, `upgrade`, `list`, `outdated`, `search`, `info`,
+  `source`, `pin`, `unpin`, `cleanup`, `doctor`. Chaque gestionnaire **déclare** ce qu'il
+  sait faire dans une table verbe → liaison ; un verbe absent de sa table est un verbe
+  qu'il ne sait pas rendre, et le dire est un message de capacité, pas une erreur muette.
+- **Le gestionnaire est trouvé par le nom du paquet.** jigger cherche dans tous les
+  catalogues disponibles : un seul connaît le nom, il gagne ; plusieurs le connaissent, le
+  sélecteur tranche. **Jamais de choix automatique**, et aucun réglage n'en introduit — deux
+  paquets qui portent le même nom ne sont pas forcément le même logiciel. `--pm` force la
+  main quand il le faut (script, CI, paquet trop récent pour le catalogue, verbe sans nom).
+- **Une sortie uniforme pour ce qui est tabulaire.** `list`, `outdated`, `search` et
+  `source` rendent un tableau à colonnes adaptatives, ou du JSON avec `--json`. La colonne
+  indiquant le gestionnaire n'apparaît que si plusieurs ont répondu.
+- **Tout le reste est relayé tel quel** : les invites de winget, ses barres de progression
+  et son élévation UAC fonctionnent comme si la commande avait été tapée directement,
+  précisément parce que jigger ne s'interpose pas. `--yes` accepte les accords de licence
+  de winget, et n'est jamais implicite.
+- **Le popup connaît la nouvelle syntaxe.** `jg ⇥` propose les verbes, `jg source ⇥`
+  propose `add` et `rm`, `jg install g` complète sur tous les catalogues à la fois, et
+  chaque candidat dit de quel gestionnaire il vient.
+- **L'alias `jg`**, posé par le greffon zsh, qui arme le popup dessus.
+- **Un guide de premiers pas** — [`docs/getting-started.md`](docs/getting-started.md) : de
+  l'installation à la première complétion, avec deux chapitres qui n'existaient nulle part,
+  « vérifier que ça marche » et un tableau de dépannage. L'installation par le **tap
+  Homebrew** y est documentée, et dans le README avec elle.
+- **La suite `tests/smoke.ps1` tourne sur le pwsh de macOS et de Linux**, sans
+  contournement : le module PowerShell se développe désormais dans la même boucle que le
+  reste, sans démarrer une machine Windows.
+
+### Corrigé
+
+- **Le greffon PowerShell ne se chargeait pas hors Windows.** Son répertoire de cache par
+  défaut valait `Join-Path $env:LOCALAPPDATA 'jigger'`, évalué **avant** que
+  `JIGGER_CACHE_DIR` ne soit seulement consulté : sur macOS et Linux la variable est nulle,
+  et l'`Import-Module` s'arrêtait là. Le défaut suit maintenant `os.UserCacheDir()` de Go
+  sur les trois plateformes, ce qui est la seule règle qui compte — le module doit lire
+  exactement le fichier que le binaire écrit.
+- **Le contrôle de version greffon/binaire ne protégeait plus de rien.** Le greffon pose
+  l'alias `jg` et demande les verbes de la façade, mais n'exigeait toujours que la 0.7.0 :
+  un binaire 0.7.0 passait le contrôle puis ignorait ces verbes — exactement la panne
+  muette que ce contrôle existe pour éviter. Les deux passent en 0.8.0.
+
+### Ce qui n'est pas encore là
+
+- **Le greffon PowerShell n'a pas l'alias `jg`** : seul le greffon zsh arme la façade.
+- **Les tables de verbes de winget et de scoop n'ont pas été vérifiées contre les vraies
+  CLI** — le développement s'est fait sur macOS, et seule la colonne brew a tourné pour de
+  vrai. Les deux fichiers portent l'avertissement en en-tête, et les parsers `search` et
+  `source` de scoop visent un format de sortie qui a changé : ils rendront probablement
+  zéro ligne sur une vraie machine Windows, sans planter. C'est le premier chantier de la
+  passe Windows.
+
 ## [v0.7.0] — 2026-08-15
 
 Le portage Windows des deux versions précédentes avait corrigé, chemin faisant, des
