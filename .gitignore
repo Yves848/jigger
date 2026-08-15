@@ -3,3 +3,7 @@
 dist/
 /jigger.exe
 /conpty-test.exe
+
+# Espaces de travail isolés (worktrees) et scratch des sessions d'agent.
+/.claude/worktrees/
+/.superpowers/
