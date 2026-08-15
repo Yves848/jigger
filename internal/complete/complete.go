@@ -8,6 +8,7 @@
 package complete
 
 import (
+	"sort"
 	"strings"
 
 	"gitlab.yg-devworks.com/yves/jigger/internal/managers"
@@ -49,11 +50,127 @@ func (r Result) Title() string {
 	return r.Cmd + " " + r.Sub
 }
 
+// estFacade dit si le premier mot d'une ligne désigne jigger lui-même — « jigger » ou son
+// alias « jg » — plutôt qu'un gestionnaire.
+func estFacade(mot string) bool {
+	m := motCommande(mot)
+	return m == "jigger" || m == "jg"
+}
+
 // Complete calcule le contexte et les candidats pour la ligne donnée, en interrogeant
 // le gestionnaire qu'elle nomme.
 func Complete(line string) Result {
+	premier, _, _ := strings.Cut(strings.TrimSpace(line), " ")
+	if estFacade(premier) {
+		dispo := managers.Available()
+		cats := map[string]*pm.Catalog{}
+		for _, m := range dispo {
+			cats[m.Cmd()] = m.Load()
+		}
+		return CompleteFacade(line, dispo, cats)
+	}
 	m := managers.Detect(line)
 	return CompleteWith(line, m, m.Load())
+}
+
+// CompleteFacade complète la syntaxe unique : « jg ⇥ » propose les verbes, « jg source ⇥ »
+// les sous-verbes, « jg install g » les paquets de tous les gestionnaires disponibles.
+//
+// Les catalogues sont filtrés CHEZ CHAQUE GESTIONNAIRE avant d'être réunis. L'ordre
+// compte : concaténer trois catalogues — 14 401 noms rien que pour winget — puis balayer
+// coûterait le budget de la frappe (cf. spec §5).
+func CompleteFacade(line string, dispo []pm.Manager, cats map[string]*pm.Catalog) Result {
+	var prefix, word string
+	if i := strings.LastIndex(line, " "); i < 0 {
+		word = line
+	} else {
+		prefix, word = line[:i+1], line[i+1:]
+	}
+
+	champs := strings.Fields(strings.TrimSpace(prefix))
+	if len(champs) > 0 && estFacade(champs[0]) {
+		champs = champs[1:]
+	}
+
+	res := Result{Prefix: prefix, Word: word, Cmd: "jigger"}
+	lw := strings.ToLower(word)
+	tables := managers.Tables(dispo)
+
+	// Premier mot : les verbes.
+	if len(champs) == 0 {
+		for _, v := range managers.Vocabulaire(dispo) {
+			if strings.HasPrefix(v, lw) {
+				res.Items = append(res.Items, Item{Name: v})
+			}
+		}
+		return res
+	}
+
+	res.Sub = strings.ToLower(champs[0])
+
+	// Deuxième mot d'un verbe composé : « source ⇥ » → add, rm.
+	if len(champs) == 1 {
+		var sous []string
+		for v := range tables {
+			tete, queue, compose := strings.Cut(string(v), " ")
+			if compose && tete == res.Sub && strings.HasPrefix(queue, lw) {
+				sous = append(sous, queue)
+			}
+		}
+		if len(sous) > 0 {
+			sort.Strings(sous)
+			for _, s := range sous {
+				res.Items = append(res.Items, Item{Name: s})
+			}
+			return res
+		}
+	}
+
+	// Sinon : des paquets. Le Pool du verbe dit lequel des deux viviers fouiller.
+	verbe := pm.Verb(res.Sub)
+	if len(champs) >= 2 {
+		if _, ok := tables[pm.Verb(res.Sub+" "+strings.ToLower(champs[1]))]; ok {
+			verbe = pm.Verb(res.Sub + " " + strings.ToLower(champs[1]))
+			res.Sub = string(verbe)
+		}
+	}
+
+	res.Executable = true
+	for _, m := range dispo {
+		b, ok := m.(pm.Bindings)
+		if !ok {
+			continue
+		}
+		liaison, ok := b.Verbs()[verbe]
+		if !ok || liaison.Pool == pm.PoolAucun {
+			continue
+		}
+		cat := cats[m.Cmd()]
+		if cat == nil {
+			continue
+		}
+		vivier := cat.Names
+		if liaison.Pool == pm.PoolInstalles {
+			vivier = cat.InstalledNames()
+		}
+		// Filtrer ici, chez le gestionnaire : c'est ce qui tient le budget.
+		for _, n := range vivier {
+			if !strings.HasPrefix(strings.ToLower(n), lw) {
+				continue
+			}
+			res.Items = append(res.Items, Item{
+				Name:      n,
+				Badge:     cat.Badge(n),
+				Installed: cat.Installed[n],
+				Version:   cat.Version(n),
+				PM:        m.Cmd(),
+			})
+		}
+	}
+	sort.Slice(res.Items, func(i, j int) bool {
+		return pm.LessFold(res.Items[i].Name, res.Items[j].Name)
+	})
+	return res
 }
 
 // CompleteWith est Complete sur un gestionnaire et un catalogue donnés (tests, et tout

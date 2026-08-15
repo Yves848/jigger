@@ -169,6 +169,86 @@ func TestWinget_SousCommandesEtOptions(t *testing.T) {
 	}
 }
 
+// « jg ⇥ » complète le vocabulaire de la façade, pas les sous-commandes d'un
+// gestionnaire : les clés des tables SONT le vocabulaire.
+func TestFacade_CompleteLesVerbes(t *testing.T) {
+	res := Complete("jg ")
+	got := names(res.Items)
+	if len(got) == 0 {
+		t.Fatal("aucun verbe proposé")
+	}
+	attendus := map[string]bool{"install": false, "outdated": false, "search": false}
+	for _, n := range got {
+		if _, veut := attendus[n]; veut {
+			attendus[n] = true
+		}
+	}
+	for v, vu := range attendus {
+		if !vu {
+			t.Errorf("verbe %q absent de %v", v, got)
+		}
+	}
+}
+
+func TestFacade_CompleteLeSousVerbe(t *testing.T) {
+	res := Complete("jg source ")
+	got := names(res.Items)
+	var add, rm bool
+	for _, n := range got {
+		switch n {
+		case "add":
+			add = true
+		case "rm":
+			rm = true
+		}
+	}
+	if !add || !rm {
+		t.Fatalf("« source » doit proposer add et rm, obtenu %v", got)
+	}
+}
+
+// Le titre du cadre dit jigger, pas le nom d'un gestionnaire.
+func TestFacade_Titre(t *testing.T) {
+	if got := Complete("jg install ").Title(); got != "jigger install" {
+		t.Fatalf("titre = %q, attendu « jigger install »", got)
+	}
+}
+
+// « jigger » en toutes lettres marche comme « jg ».
+func TestFacade_NomComplet(t *testing.T) {
+	if len(Complete("jigger ").Items) == 0 {
+		t.Fatal("« jigger » doit déclencher la façade comme « jg »")
+	}
+}
+
+// Un candidat de la façade porte son gestionnaire : le badge ne suffit pas, BadgeOther
+// étant partagé par winget et scoop.
+func TestFacade_ItemPorteSonPM(t *testing.T) {
+	cats := map[string]*pm.Catalog{}
+	w := pm.NewCatalog()
+	w.Add("Git.Git", pm.BadgeWinget)
+	w.Sort()
+	cats["winget"] = w
+
+	res := CompleteFacade("jg install Git", []pm.Manager{winget.New()}, cats)
+	if len(res.Items) != 1 {
+		t.Fatalf("items = %v, attendu 1", names(res.Items))
+	}
+	if res.Items[0].PM != "winget" {
+		t.Fatalf("PM = %q, attendu « winget »", res.Items[0].PM)
+	}
+}
+
+// Le chemin natif ne change pas : « brew install ⇥ » ne porte aucun PM.
+func TestNatif_PasDePM(t *testing.T) {
+	res := brewComplete("install fire", testCatalog())
+	for _, it := range res.Items {
+		if it.PM != "" {
+			t.Errorf("le chemin natif ne doit pas remplir PM : %+v", it)
+		}
+	}
+}
+
 // BenchmarkComplete garde un œil sur le filtrage : le popup vivant appelle Complete à
 // chaque frappe, sur un catalogue de plusieurs milliers de noms. Budget indicatif :
 // quelques ms au plus (le reste du budget part dans le démarrage du binaire).

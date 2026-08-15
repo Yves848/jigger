@@ -27,6 +27,10 @@ type Item struct {
 	Badge     string // classe du paquet ; "" pour une sous-commande ou une option
 	Installed bool
 	Version   string // version installée (vide si non installé/inconnue)
+	// PM nomme le gestionnaire d'où vient le candidat, et n'est rempli que par la
+	// façade : sur `brew install ⇥`, il n'y a rien à désambiguïser. Le badge ne
+	// suffirait pas — BadgeOther est partagé par winget et scoop.
+	PM string
 }
 
 // Badges. Chaque gestionnaire range ses paquets en deux classes, que le popup distingue
