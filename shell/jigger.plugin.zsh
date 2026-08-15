@@ -42,7 +42,11 @@ fi
 # qu'un binaire plus ancien ne connaît pas (`--focus`, entre autres). Celui-ci sortirait en
 # erreur, et le popup ne s'afficherait jamais — sans un mot, ce qui est la pire façon de
 # tomber en panne. Un appel au source (quelques millisecondes) suffit à le dire.
-typeset -g JIGGER_VERSION_REQUISE=0.7.0
+#
+# À relever **avec** la version du binaire, à chaque fois que le greffon se met à demander
+# quelque chose de neuf : 0.8.0 pour l'alias `jg` et les verbes de la façade, qu'un binaire
+# 0.7.0 ne connaît pas.
+typeset -g JIGGER_VERSION_REQUISE=0.8.0
 autoload -Uz is-at-least
 typeset -g _jigger_v=${${(z)"$(command jigger --version 2>/dev/null)"}[2]}
 if [[ -n $_jigger_v ]] && ! is-at-least $JIGGER_VERSION_REQUISE $_jigger_v; then

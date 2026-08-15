@@ -10,7 +10,7 @@ gestionnaire de paquets, un cadre s'affiche sous le prompt et suit ta frappe.
 ```
 ❯ brew install fire
 ╭──────────────────────────────────────────────────────╮
-│❯ brew install                            jigger 0.7.0│
+│❯ brew install                            jigger 0.8.0│
 │  ▣  firealpaca                                       │
 │  ▣  firebase-admin                                   │
 │  ◆  firebase-cli                                     │
@@ -106,7 +106,7 @@ Une seule contrainte d'ordre, celle-ci réelle : si tu utilises oh-my-posh, impo
 ## 4. Vérifier que ça marche
 
 ```sh
-jigger --version        # → jigger 0.7.0 (ou plus récent)
+jigger --version        # → jigger 0.8.0, ou plus récent
 ```
 
 Ouvre un shell neuf et tape `brew ins` (ou `winget ins`) **sans valider**. Le cadre doit

@@ -43,7 +43,7 @@ import (
 	"gitlab.yg-devworks.com/yves/jigger/internal/ui"
 )
 
-var version = "0.7.0"
+var version = "0.8.0"
 
 // motsReserves sont les sous-commandes internes de jigger. Tout autre premier mot est un
 // verbe de façade.
