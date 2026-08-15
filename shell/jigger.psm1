@@ -51,9 +51,28 @@ $script:Prompt     = (Get-JiggerSetting 'JIGGER_PROMPT' '0') -ne '0'
 $script:PromptTTL  = [int](Get-JiggerSetting 'JIGGER_PROMPT_TTL' 1800)
 $script:PromptSync = (Get-JiggerSetting 'JIGGER_PROMPT_SYNC' '1') -ne '0'
 
-# Même règle que os.UserCacheDir() côté Go : %LOCALAPPDATA% sous Windows. `jigger prompt
-# --path` donne le chemin exact — mais l'interroger coûterait un processus par prompt.
-$script:CacheDir   = Get-JiggerSetting 'JIGGER_CACHE_DIR' (Join-Path $env:LOCALAPPDATA 'jigger')
+# Même règle que os.UserCacheDir() côté Go, pour que le module lise exactement le fichier
+# que le binaire écrit. `jigger prompt --path` donne le chemin exact — mais l'interroger
+# coûterait un processus par prompt.
+#
+# PowerShell 7 tourne aussi sur macOS et Linux, où %LOCALAPPDATA% n'existe pas : le
+# `Join-Path` sur une valeur nulle faisait alors échouer l'Import-Module lui-même, avant
+# la moindre ligne utile. Les trois plateformes sont donc traitées, comme le fait Go.
+function Get-JiggerCacheDefaut {
+    # `-or` court-circuite : sous Windows PowerShell 5.1, $IsWindows n'existe pas et le
+    # mode strict refuserait de l'évaluer.
+    if ($PSVersionTable.PSVersion.Major -lt 6 -or $IsWindows) {
+        return Join-Path ([Environment]::GetEnvironmentVariable('LOCALAPPDATA')) 'jigger'
+    }
+    if ($IsMacOS) {
+        return Join-Path $HOME 'Library/Caches/jigger'
+    }
+    $xdg = [Environment]::GetEnvironmentVariable('XDG_CACHE_HOME')
+    if ([string]::IsNullOrEmpty($xdg)) { $xdg = Join-Path $HOME '.cache' }
+    return Join-Path $xdg 'jigger'
+}
+
+$script:CacheDir   = Get-JiggerSetting 'JIGGER_CACHE_DIR' (Get-JiggerCacheDefaut)
 $script:StatusFile = Join-Path $script:CacheDir 'status'
 
 # Touches supplémentaires à relayer, en plus des ASCII imprimables : sur un clavier
