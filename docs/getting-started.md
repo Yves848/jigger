@@ -313,12 +313,14 @@ source "$(brew --prefix jigger)/share/jigger/jigger.plugin.zsh"
 ```
 
 ```powershell
-$env:JIGGER_PROMPT = '1'                           # $PROFILE, APRÈS oh-my-posh
+$env:JIGGER_PROMPT = '1'                           # $PROFILE, APRÈS oh-my-posh/starship
 Import-Module C:\chemin\vers\jigger\shell\jigger.psm1
 ```
 
-**Ajouter le segment** à ton thème oh-my-posh — travaille sur une copie, les thèmes livrés
-sont écrasés à chaque mise à jour :
+**Ajouter le segment** — un fichier prêt à coller par prompt et par plateforme.
+
+*oh-my-posh* : travaille sur une copie, les thèmes livrés sont écrasés à chaque mise à
+jour :
 
 ```sh
 mkdir -p ~/.config/oh-my-posh
@@ -334,11 +336,21 @@ tableau `segments` du bloc voulu, puis fais pointer ton profil sur ta copie :
 eval "$(oh-my-posh init zsh --config ~/.config/oh-my-posh/mon-theme.omp.json)"
 ```
 
+*starship* : rien à copier au préalable, il n'y a qu'un fichier de configuration —
+ajoute-lui [`shell/starship/brew.toml`](../shell/starship/brew.toml), ou
+[`windows.toml`](../shell/starship/windows.toml) :
+
+```sh
+cat /chemin/vers/jigger/shell/starship/brew.toml >> ~/.config/starship.toml
+```
+
+Ce sont des modules `env_var`, que le format par défaut de starship affiche déjà : il n'y
+a rien d'autre à faire.
+
 Le bloc n'apparaît qu'au **deuxième prompt** : rien ne s'affiche tant que le premier
 comptage n'est pas terminé. Les réglages associés (`JIGGER_PROMPT_TTL`,
 `JIGGER_PROMPT_SYNC`) et les variables exposées sont décrits dans le
-[README](../README.md#bloc-oh-my-posh) ; elles servent aussi bien à starship ou à un
-prompt maison.
+[README](../README.md#bloc-de-prompt) ; elles servent aussi bien à un prompt maison.
 
 ## 9. Quand ça ne marche pas
 
