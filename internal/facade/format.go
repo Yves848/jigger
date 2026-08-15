@@ -28,9 +28,13 @@ func Formater(v pm.Verb, rows []pm.Package, enJSON bool) string {
 	}
 
 	avecPM := plusieursPM(rows)
+	avecActuel := false
 	avecDispo := false
 	avecSource := false
 	for _, r := range rows {
+		if r.Version != "" {
+			avecActuel = true
+		}
 		if r.Available != "" {
 			avecDispo = true
 		}
@@ -39,7 +43,13 @@ func Formater(v pm.Verb, rows []pm.Package, enJSON bool) string {
 		}
 	}
 
-	entete := []string{"PAQUET", "ACTUEL"}
+	// ACTUEL suit la même règle adaptative que DISPO, SOURCE et PM : une colonne
+	// toujours vide n'apprend rien — c'est le cas de list/outdated (Version renseigné),
+	// mais pas de search/source, qui n'ont aucune version à montrer.
+	entete := []string{"PAQUET"}
+	if avecActuel {
+		entete = append(entete, "ACTUEL")
+	}
 	if avecDispo {
 		entete = append(entete, "DISPO")
 	}
@@ -52,7 +62,10 @@ func Formater(v pm.Verb, rows []pm.Package, enJSON bool) string {
 
 	table := [][]string{entete}
 	for _, r := range rows {
-		ligne := []string{r.Name, r.Version}
+		ligne := []string{r.Name}
+		if avecActuel {
+			ligne = append(ligne, r.Version)
+		}
 		if avecDispo {
 			ligne = append(ligne, r.Available)
 		}

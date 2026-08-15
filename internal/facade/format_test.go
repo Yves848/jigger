@@ -66,6 +66,24 @@ func TestListNAPasDeColonneDispo(t *testing.T) {
 	}
 }
 
+// jg source et jg search n'ont pas de version installée : ACTUEL n'a rien de plus à faire
+// là que DISPO ou SOURCE quand personne ne le porte — la même règle adaptative doit
+// s'appliquer aux quatre colonnes, pas à trois sur quatre. Avant la correction, ACTUEL
+// était systématique : chaque ligne finissait par les espaces de remplissage de PAQUET,
+// puisque la colonne ACTUEL restait là, vide, en bout de ligne.
+func TestSourceNAPasDeColonneActuelNiEspacesResiduels(t *testing.T) {
+	rows := []pm.Package{{Name: "homebrew/cask-fonts", PM: "brew"}}
+	out := Formater("source", rows, false)
+	if strings.Contains(out, "ACTUEL") {
+		t.Errorf("colonne ACTUEL inattendue pour source (aucune ligne n'a de version) :\n%q", out)
+	}
+	for _, ligne := range strings.Split(out, "\n") {
+		if ligne != strings.TrimRight(ligne, " ") {
+			t.Errorf("ligne avec espaces résiduels en fin : %q", ligne)
+		}
+	}
+}
+
 func TestAucuneLigne(t *testing.T) {
 	if out := Formater("outdated", nil, false); strings.TrimSpace(out) == "" {
 		t.Error("une liste vide doit dire quelque chose, pas rien")
