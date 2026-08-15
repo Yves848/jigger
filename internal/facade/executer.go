@@ -24,6 +24,9 @@ var verbesNormalises = map[pm.Verb]bool{
 
 func normalise(v pm.Verb) bool { return verbesNormalises[v] }
 
+// Normalise dit si un verbe rend un tableau plutôt qu'une sortie relayée.
+func Normalise(v pm.Verb) bool { return normalise(v) }
+
 // lancer est le point d'injection des tests. relais dit si le processus hérite du
 // terminal (verbe relayé) ou si sa sortie est capturée (verbe normalisé).
 var lancer = lancerReel
