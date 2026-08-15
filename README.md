@@ -42,8 +42,9 @@ il ne requiert que le gestionnaire lui-même.
   l'y fait entrer, `↑` en ressort dès le premier candidat — et tant qu'il n'a pas le
   clavier, `↑`/`↓` restent l'historique du shell. La ligne courante le montre : soulignée
   quand le popup a le clavier, au repos quand il ne l'a pas.
-- **Bloc oh-my-posh** (optionnel) : version du gestionnaire et mises à jour en attente
-  dans le prompt, comptées séparément — sans jamais le ralentir.
+- **Bloc de prompt** (optionnel) : version du gestionnaire et mises à jour en attente
+  dans le prompt, comptées séparément — sans jamais le ralentir. Segments prêts à coller
+  pour **oh-my-posh** et **starship**.
 
 ## Installation
 
@@ -345,10 +346,12 @@ elle ne remplace rien. `jg`/`jigger` est un chemin de plus, pas un chemin oblig�
 - Les colonnes winget et scoop de la table ci-dessus restent **non vérifiées en pratique**
   (cf. l'avertissement plus haut) — seule brew a tourné pour de vrai.
 
-## Bloc oh-my-posh
+## Bloc de prompt
 
 Un bloc dans le prompt : la **version du gestionnaire**, et les **mises à jour en
-attente**, comptées séparément.
+attente**, comptées séparément. Prêt à coller pour **oh-my-posh** et pour **starship** ;
+tout passe par des variables d'environnement, donc n'importe quel autre prompt sait les
+lire.
 
 ```
  yves@MacBook  ~/git/jigger   main  🍺 6.0.17  🧪 7  📦 2 ❯      ← macOS
@@ -368,9 +371,10 @@ partout. Si tu préfères des glyphes **Nerd Font** monochromes — qui prennent
 segment, là où un émoji impose la sienne —, chaque fichier de segment indique les
 codes correspondants.
 
-Dans les deux cas, écris-les en **échappements JSON** plutôt qu'en clair : c'est la seule
-forme qui traverse sans dommage les éditeurs, les copier-coller et les outils qui
-normalisent l'Unicode. Les thèmes livrés par oh-my-posh font de même.
+Dans les deux cas, écris-les en **échappements** (`\u21E1`, `\U0001F37A`) plutôt qu'en
+clair : c'est la seule forme qui traverse sans dommage les éditeurs, les copier-coller et
+les outils qui normalisent l'Unicode. JSON et TOML l'acceptent tous deux, et les thèmes
+livrés par oh-my-posh font de même.
 
 Compter les mises à jour coûte de une à cinq secondes — `brew outdated` comme
 `winget list --upgrade-available` : c'est donc **exclu du chemin du prompt**. jigger le
@@ -390,8 +394,10 @@ prompt d'*après*.
 Seul ce que le shell voit passer est détecté : une mise à jour lancée ailleurs — autre
 onglet, application graphique — reste rattrapée par le TTL.
 
-oh-my-posh n'ayant plus de segment `command` depuis la v26, tout passe par des variables
-d'environnement et un segment `text`.
+Tout passe par des **variables d'environnement** : oh-my-posh n'a plus de segment
+`command` depuis la v26, et faire lancer un processus à starship à chaque prompt irait
+contre la règle ci-dessus. Le hook exporte, le prompt lit — un segment `text` côté
+oh-my-posh, des modules `env_var` côté starship.
 
 **1. Activer le hook** — *avant* le chargement du greffon :
 
@@ -406,12 +412,13 @@ Import-Module C:\chemin\vers\jigger\shell\jigger.psm1
 ```
 
 Sous PowerShell, `prompt` est le seul « precmd » disponible : jigger **enveloppe** celui
-qui est en place. Importe donc jigger **après** oh-my-posh, sans quoi le bloc aurait
-toujours un coup de retard. (Sous zsh, l'ordre des `source` n'a pas d'importance : le
-hook se place de lui-même en tête de `precmd_functions`.)
+qui est en place. Importe donc jigger **après** oh-my-posh ou starship, sans quoi le bloc
+aurait toujours un coup de retard. (Sous zsh, l'ordre des `source` n'a pas d'importance :
+le hook se place de lui-même en tête de `precmd_functions`, donc avant que le prompt ne
+soit rendu.)
 
-**2. Ajouter le segment** — les thèmes livrés avec oh-my-posh sont écrasés à chaque mise
-à jour : travaille sur une copie.
+**2a. Le segment oh-my-posh** — les thèmes livrés avec oh-my-posh sont écrasés à chaque
+mise à jour : travaille sur une copie.
 
 ```sh
 mkdir -p ~/.config/oh-my-posh
@@ -427,8 +434,26 @@ Colle le contenu de [`shell/oh-my-posh/brew.segment.json`](shell/oh-my-posh/brew
 eval "$(oh-my-posh init zsh --config ~/.config/oh-my-posh/mon-theme.omp.json)"
 ```
 
-Le segment n'affiche **rien** tant que le cache n'existe pas — le bloc apparaît au
-deuxième prompt, une fois le premier rafraîchissement terminé.
+**2b. Le segment starship** — rien à copier au préalable : starship n'a qu'un fichier de
+configuration, le tien. Ajoute à la fin de `~/.config/starship.toml` le contenu de
+[`shell/starship/brew.toml`](shell/starship/brew.toml) — ou de
+[`windows.toml`](shell/starship/windows.toml) :
+
+```sh
+cat /chemin/vers/jigger/shell/starship/brew.toml >> ~/.config/starship.toml
+```
+
+Ce sont trois modules [`env_var`](https://starship.rs/config/#environment-variable), un
+par variable. Le `format` par défaut de starship (`$all`) contient déjà `$env_var` : le
+bloc apparaît sans rien de plus. Pour le placer ailleurs, écris un `format` explicite et
+pose-y `${env_var}` — ou, module par module, `${env_var.JIGGER_BREW_VERSION}`.
+
+Là où le segment oh-my-posh suspend tout le bloc à la version du gestionnaire, les trois
+modules starship sont indépendants : sur une machine qui n'a que scoop, `🥄 1` s'affiche
+seul plutôt que rien.
+
+Le bloc n'affiche **rien** tant que le cache n'existe pas — il apparaît au deuxième
+prompt, une fois le premier rafraîchissement terminé.
 
 ### Réglages
 
@@ -454,18 +479,30 @@ JIGGER_CACHE_DIR=…     # emplacement du cache (défaut ~/Library/Caches/jigger
 | `JIGGER_SCOOP_OUTDATED` | applications scoop à mettre à niveau |
 | `JIGGER_OUTDATED` | total des deux |
 
-Un compteur **n'est pas défini** quand il vaut zéro. Le template se réduit ainsi à un
-`{{ if .Env.JIGGER_WINGET_OUTDATED }}`, sans comparaison de chaînes — et le bloc s'efface
-tout seul quand il n'y a rien à dire. Pour n'afficher qu'un chiffre plutôt que le détail
-par gestionnaire, remplace les deux blocs du template par :
+Un compteur **n'est pas défini** quand il vaut zéro. Côté oh-my-posh, le template se
+réduit ainsi à un `{{ if .Env.JIGGER_WINGET_OUTDATED }}`, sans comparaison de chaînes ;
+côté starship, un module `env_var` sans variable ne s'affiche pas, et il n'y a aucune
+condition à écrire. Des deux côtés, le bloc s'efface tout seul quand il n'y a rien à dire.
+
+Pour n'afficher qu'un chiffre plutôt que le détail par gestionnaire, remplace les deux
+blocs du template oh-my-posh par :
 
 ```
 {{ if .Env.JIGGER_OUTDATED }} <#F9E2AF>\u21e1{{ .Env.JIGGER_OUTDATED }}</>{{ end }}
 ```
 
-Rien n'interdit de se servir de ces variables ailleurs que dans oh-my-posh (starship, un
-prompt maison…). Sous PowerShell, `Update-JiggerPrompt` est exportée exprès : appelle-la
-depuis ta propre fonction `prompt`.
+… ou les deux derniers modules starship par :
+
+```toml
+[env_var.JIGGER_OUTDATED]
+symbol = "\u21E1 "
+style  = "#F9E2AF"
+format = "[$symbol$env_value]($style) "
+```
+
+Rien n'interdit de se servir de ces variables ailleurs que dans ces deux prompts (un
+prompt maison, un `PS1` bricolé…). Sous PowerShell, `Update-JiggerPrompt` est exportée
+exprès : appelle-la depuis ta propre fonction `prompt`.
 
 ## Sous le capot (CLI)
 
