@@ -41,8 +41,8 @@ const (
 // Binding lie un verbe de jigger à ce qu'il faut faire chez un gestionnaire. Une liaison
 // agit d'**une seule** des trois façons ci-dessous.
 type Binding struct {
-	Native []string                          // gabarit d'argv — le cas ordinaire
-	Build  func(args []string) []string      // argv calculé — le cas rétif
+	Native []string                               // gabarit d'argv — le cas ordinaire
+	Build  func(args []string) []string           // argv calculé — le cas rétif
 	Direct func(args []string) ([]Package, error) // sans sous-processus du tout
 
 	Pool  Pool   // où chercher les candidats
