@@ -160,7 +160,9 @@ func nomInconnu(nom string, pool pm.Pool, mgrs []pm.Manager, cats map[string]*pm
 
 // voisins cherche les noms qui partagent un préfixe avec le nom demandé — de la longueur
 // du nom moins deux caractères, ce qui rattrape une faute de frappe en fin de mot sans
-// noyer le message.
+// noyer le message. Il respecte le pool du verbe : sous PoolInstalles, un voisin qui
+// n'est que catalogué et pas installé ne serait pas une cible valide, donc on ne le
+// propose pas.
 func voisins(nom string, pool pm.Pool, mgrs []pm.Manager, cats map[string]*pm.Catalog) []string {
 	n := len(nom) - 2
 	if n < 2 {
@@ -174,8 +176,11 @@ func voisins(nom string, pool pm.Pool, mgrs []pm.Manager, cats map[string]*pm.Ca
 		if cat == nil {
 			continue
 		}
-		pool := cat.Names
-		for _, candidat := range pool {
+		vivier := cat.Names
+		if pool == pm.PoolInstalles {
+			vivier = cat.InstalledNames()
+		}
+		for _, candidat := range vivier {
 			if !strings.HasPrefix(strings.ToLower(candidat), prefixe) {
 				continue
 			}

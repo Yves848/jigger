@@ -140,6 +140,28 @@ func TestRoutageNomInconnu(t *testing.T) {
 	}
 }
 
+// Sous PoolInstalles, le voisin proposé doit lui-même être installé : uninstall ne peut
+// viser qu'un paquet installé, donc suggérer un paquet simplement catalogué (« git » chez
+// scoop, qui l'a au catalogue mais ne l'a pas installé) mènerait droit à un second
+// « nom inconnu ». Seul winget a « git » installé : c'est lui, et lui seul, qui doit
+// apparaître dans la suggestion.
+func TestRoutageNomInconnuRespectePoolInstalles(t *testing.T) {
+	_, _, err := Router("uninstall", []string{"gitt"}, "", deuxGestionnaires(), catalogues())
+	if err == nil {
+		t.Fatal("attendu une erreur pour un nom inconnu de tous")
+	}
+	msg := err.Error()
+	if !strings.Contains(msg, "gitt") {
+		t.Errorf("le message doit nommer le paquet : %s", msg)
+	}
+	if !strings.Contains(msg, "git (winget)") {
+		t.Errorf("le message doit proposer « git » installé chez winget : %s", msg)
+	}
+	if strings.Contains(msg, "(scoop)") {
+		t.Errorf("scoop n'a « git » qu'au catalogue, pas installé : il ne doit pas être suggéré : %s", msg)
+	}
+}
+
 // Un catalogue vide et en cours de constitution ne doit pas produire « paquet inconnu ».
 func TestRoutageCatalogueEnConstruction(t *testing.T) {
 	cats := catalogues()
