@@ -228,6 +228,30 @@ func TestRoutageDrapeauxNatifsAccompagnentLesNoms(t *testing.T) {
 	}
 }
 
+// jg install --cask (des drapeaux, aucun nom) ne doit pas produire zéro cible en silence
+// — un verbe mutant qui « réussit » sans avoir rien fait. Router doit laisser les
+// drapeaux filer au gestionnaire, qui refusera lui-même (vérifié : `brew install --cask`
+// sort en erreur, « This command requires at least 1 formula or cask argument ») —
+// exactement le chemin qu'emprunte déjà `jg install` sans le moindre argument, qu'accepte
+// ce code depuis toujours (len(args) == 0). Les deux cas — aucun argument du tout, des
+// arguments qui ne sont que des drapeaux — doivent s'accorder.
+func TestRoutageDrapeauxSeulsSansNomNeDonnePasZeroCibleEnSilence(t *testing.T) {
+	cats := map[string]*pm.Catalog{"brew": brew.NewCatalog(nil, []string{"firefox"}, nil)}
+	cibles, amb, err := Router("install", []string{"--cask"}, "", nil, []pm.Manager{brew.New()}, cats)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if amb != nil {
+		t.Fatalf("ambiguïté inattendue : %v", amb)
+	}
+	if len(cibles) != 1 || cibles[0].Mgr.Cmd() != "brew" {
+		t.Fatalf("cibles = %v, attendu brew seul (le --cask lui parvient, il refusera lui-même)", cibles)
+	}
+	if len(cibles[0].Args) != 1 || cibles[0].Args[0] != "--cask" {
+		t.Fatalf("args = %v, attendu [--cask] intact", cibles[0].Args)
+	}
+}
+
 // PoolAucun (list, outdated…) ne résout aucun nom : les drapeaux doivent lui parvenir
 // intacts, sans passer par le partitionnement drapeaux/noms.
 func TestRoutagePoolAucunLaisseFilerLesDrapeaux(t *testing.T) {

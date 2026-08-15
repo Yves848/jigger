@@ -57,16 +57,23 @@ func Router(v pm.Verb, args []string, forcePM string, resolu map[string]string, 
 		}
 	}
 
-	// Pas de nom à résoudre : tous les gestionnaires capables agissent.
-	if pool == pm.PoolAucun || len(args) == 0 {
+	drapeaux, noms := partitionner(args)
+
+	// Pas de nom à résoudre : tous les gestionnaires capables agissent, avec les
+	// arguments (drapeaux compris) tels quels. C'est délibérément la même branche pour
+	// « aucun argument du tout » (len(args) == 0) et « des arguments qui ne sont que des
+	// drapeaux » (jg install --cask, len(noms) == 0) : dans les deux cas, jigger n'a rien
+	// à résoudre lui-même, et laisse le gestionnaire recevoir la ligne telle quelle — qui
+	// refusera lui-même s'il exige un nom (`brew install --cask` : « This command
+	// requires at least 1 formula or cask argument »). Construire zéro cible ici rendrait
+	// un verbe mutant silencieusement no-op (tâche « install --cask »).
+	if pool == pm.PoolAucun || len(noms) == 0 {
 		cibles := make([]Cible, 0, len(capables))
 		for _, m := range capables {
 			cibles = append(cibles, Cible{Mgr: m, Args: args})
 		}
 		return cibles, nil, nil
 	}
-
-	drapeaux, noms := partitionner(args)
 
 	parPM := map[string][]string{}
 	ordre := []pm.Manager{}
