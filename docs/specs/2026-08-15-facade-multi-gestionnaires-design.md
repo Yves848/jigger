@@ -521,7 +521,11 @@ Ce que la phase 1 ne fait pas, et pourquoi :
   BenchmarkCompleteFacade-16   338   3564154 ns/op   9674496 B/op    172 allocs/op
   ```
 
-  Le chemin façade est ~6.77 fois plus coûteux en temps. Le chemin natif filtre ~10 000 noms (8 000 formulae brew + 2 000 casks) ; le chemin façade en filtre ~25 401 (14 401 winget + 3 000 scoop + 8 000 brew). Le ratio de volume est 2.54 ; le ratio observé est 6.77. Cela suggère un surcoût non linéaire. À investiguer : la fusion et le tri final des trois résultats contribuent-ils à plus que le filtrage initial ?
+  **Rapport 6.77×**, terme non linéaire O(n log n) : le chemin natif marche dans `cat.Names` (déjà trié) et accumule les survivants en ordre — coût O(n), pas de tri. Le chemin façade fusionne les survivants de trois catalogues, puis appelle `sort.Slice` sur le résultat fusionné — coût O(n log n). Une fusion k-voies (k=3) réduirait ce terme à O(n log k).
+
+  **Budget** : 3.56 ms contre ~8 ms, soit 45 % du budget. À l'intérieur du seuil d'acceptabilité, pas d'optimisation maintenant. Levier connu pour une régression future : passer de `sort.Slice` à une fusion k-voies ordonnée.
+
+  **Fixture adversariale** : le préfixe `g` correspond à *tous* les 25 401 noms. L'usage réel ne ressemble pas à ça — `jg install fire` sur cette machine ne trouve que 18 candidats. C'est un cas pire, non une mesure typique.
 
 ## Décisions liées
 
