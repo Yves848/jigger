@@ -1,3 +1,8 @@
 # Les jeux d'essai winget sont des sorties réellement capturées : leurs fins de ligne
 # CRLF font partie de ce qu'on teste. Aucune normalisation, sur aucune plateforme.
 internal/winget/testdata/* -text
+
+# Même règle pour les captures de scoop, prises sur une vraie machine Windows : ce qui est
+# commité doit être exactement ce que le gestionnaire a écrit.
+internal/scoop/testdata/* -text
+tests/captures/* -text
