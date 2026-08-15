@@ -355,6 +355,18 @@ reprises, l'analyse de la sortie de `render`, les séquences d'affichage et d'ef
 la détection des commandes mutantes, et l'export des variables du prompt depuis un cache
 fabriqué.
 
+Cette suite-là tourne **aussi sur le pwsh de macOS ou de Linux** :
+
+```sh
+go build -o jigger . && pwsh -NoProfile -File tests/smoke.ps1
+```
+
+Le module PowerShell se développe donc dans la même boucle que le reste, sans démarrer une
+machine Windows — laquelle reste indispensable pour le popup à l'écran (`tests/conpty`) et
+pour tout ce qui passe par les vraies CLI winget et scoop. `GOOS=windows go build` et
+`GOOS=windows go vet ./...` vérifient au passage, depuis n'importe quelle plateforme, que
+le code Windows compile.
+
 ## Feuille de route
 
 - Complétion **fish** et **bash**.

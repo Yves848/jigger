@@ -8,19 +8,24 @@
 # l'export des variables du prompt depuis un cache fabriqué.
 #
 # Ce qu'elle ne couvre pas : le popup à l'écran. PSReadLine ne se pilote pas sans
-# console — c'est justement ce que fait tests/zpty.zsh côté zsh, faute d'équivalent sous
-# Windows. Après une modification du module, il reste donc à ouvrir un terminal et à
-# taper « winget install fire » pour voir le cadre vivre.
+# console — c'est ce que font tests/zpty.zsh côté zsh et tests/conpty côté Windows.
+#
+# Elle tourne aussi sur le pwsh de macOS ou de Linux, et c'est voulu : le module se
+# développe alors dans la même boucle que le reste, sans démarrer une machine Windows.
+# Seul le popup à l'écran, et ce qui touche aux vraies CLI winget et scoop, exige Windows.
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $racine = Split-Path -Parent $PSScriptRoot
 $module = Join-Path $racine 'shell/jigger.psm1'
+
+# Le binaire porte le nom de sa plateforme : `jigger.exe` sous Windows, `jigger` ailleurs.
 $binaire = Join-Path $racine 'jigger.exe'
+if (-not (Test-Path $binaire)) { $binaire = Join-Path $racine 'jigger' }
 
 if (-not (Test-Path $binaire)) {
-    Write-Error "compile d'abord : go build -o jigger.exe ."
+    Write-Error "compile d'abord : make build (ou go build -o jigger .)"
     exit 1
 }
 $env:JIGGER_BIN = $binaire
@@ -50,6 +55,15 @@ $env:JIGGER_CACHE_DIR = $cache
 $env:JIGGER_PROMPT = '1'
 $env:JIGGER_PROMPT_SYNC = '0'   # aucun test ne doit attendre après winget
 
+# Ce que PSReadLine liait *avant* nous : c'est exactement ce que le module doit avoir
+# mémorisé comme repli. On le relève au lieu de l'écrire en dur, parce que les valeurs
+# dépendent de la plateforme — ⇥ vaut `TabCompleteNext` sous Windows et `Complete`
+# ailleurs, Échap vaut `RevertLine` sous Windows et n'est lié nulle part ailleurs. Table
+# ordinale, pour la même raison que côté module : `Ctrl+C` et `Ctrl+c` sont deux liaisons.
+Import-Module PSReadLine
+$avant = [System.Collections.Hashtable]::new([System.StringComparer]::Ordinal)
+foreach ($h in Get-PSReadLineKeyHandler -Bound) { $avant[$h.Key] = $h.Function }
+
 Import-Module $module -Force
 $jigger = Get-Module jigger
 
@@ -68,9 +82,9 @@ check 'Ctrl+c est repris'     (($handlers | Where-Object { $_.Key -ceq 'Ctrl+c' 
 # Le repli d'une touche doit être **une** fonction PSReadLine, pas deux collées : `Ctrl+C`
 # (copier) et `Ctrl+c` (abandonner la ligne) sont deux liaisons distinctes, et le `-eq` de
 # PowerShell ignore la casse.
-check 'repli de Ctrl+c'       $global:JiggerFallbacks['Ctrl+c'] 'CopyOrCancelLine'
-check 'repli d''Échap'        $global:JiggerFallbacks['Escape'] 'RevertLine'
-check 'repli de ⇥'            $global:JiggerFallbacks['Tab'] 'TabCompleteNext'
+check 'repli de Ctrl+c'       $global:JiggerFallbacks['Ctrl+c'] $avant['Ctrl+c']
+check 'repli d''Échap'        $global:JiggerFallbacks['Escape'] $avant['Escape']
+check 'repli de ⇥'            $global:JiggerFallbacks['Tab'] $avant['Tab']
 
 # Un relais doit être un bloc de script rattaché au **module** : `.GetNewClosure()` et
 # `[scriptblock]::Create()` le rattachent à un module dynamique, d'où Update-JiggerPopup
