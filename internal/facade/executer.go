@@ -116,6 +116,20 @@ func Executer(v pm.Verb, cibles []Cible, o Opts) ([]pm.Package, int) {
 					parsed[i].PM = cible.Mgr.Cmd()
 				}
 				rows = append(rows, parsed...)
+			} else if lecture {
+				// Un verbe normalisé (sortie capturée, pas relayée) sans Parse ni Direct
+				// jetterait `out` en silence : reussites++ , code 0, et le contenu
+				// disparaîtrait sans qu'on l'ait dit. C'est le bug qu'avait scoop avant
+				// que sa table gagne ses parsers (list, search, source) — cette garde
+				// protège toute table future qui prendrait la même forme mal remplie.
+				// Un verbe relayé (lecture == false) n'entre jamais ici : `out` y est
+				// toujours nil, rien à perdre.
+				fmt.Fprintf(os.Stderr,
+					"jigger (%s) : verbe %q normalisé sans analyseur déclaré — sortie ignorée par sécurité\n",
+					cible.Mgr.Cmd(), v)
+				echoue = true
+				dernierCode = 1
+				break
 			}
 		}
 		if echoue {

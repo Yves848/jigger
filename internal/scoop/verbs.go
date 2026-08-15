@@ -5,7 +5,8 @@ import "gitlab.yg-devworks.com/yves/jigger/internal/pm"
 // Verbs déclare ce que scoop sait faire.
 //
 // Les valeurs ci-dessous proviennent du cahier des charges et ne sont pas encore
-// vérifiées contre une vraie installation de scoop (cf. tâche 1b).
+// vérifiées contre une vraie installation de scoop (cf. tâche 1b). Les parsers de list,
+// search et source (cf. parse.go) portent le même avertissement.
 //
 // outdated est le seul verbe en Direct de tout jigger : scoop range ses applications dans
 // une arborescence qui ressemble au Cellar de Homebrew, et la comparaison des manifestes
@@ -26,14 +27,14 @@ func (Manager) Verbs() map[pm.Verb]pm.Binding {
 			},
 			Pool: pm.PoolInstalles,
 		},
-		"list":     {Native: []string{"list"}, Pool: pm.PoolAucun},
+		"list":     {Native: []string{"list"}, Pool: pm.PoolAucun, Parse: parseList},
 		"outdated": {Direct: outdatedDirect, Pool: pm.PoolAucun},
 		// search prend une requête, pas un nom de paquet à résoudre au catalogue (cf.
 		// internal/brew/verbs.go pour le détail du raisonnement).
-		"search": {Native: []string{"search", pm.MarqueurTous}, Pool: pm.PoolAucun},
+		"search": {Native: []string{"search", pm.MarqueurTous}, Pool: pm.PoolAucun, Parse: parseSearch},
 		"info":   {Native: []string{"info", pm.MarqueurTous}, Pool: pm.PoolCatalogue},
 
-		"source":     {Native: []string{"bucket", "list"}, Pool: pm.PoolAucun},
+		"source":     {Native: []string{"bucket", "list"}, Pool: pm.PoolAucun, Parse: parseSource},
 		"source add": {Native: []string{"bucket", "add", pm.MarqueurTous}, Pool: pm.PoolAucun},
 		"source rm":  {Native: []string{"bucket", "rm", pm.MarqueurTous}, Pool: pm.PoolAucun},
 		"pin":        {Native: []string{"hold", pm.MarqueurTous}, Pool: pm.PoolInstalles},

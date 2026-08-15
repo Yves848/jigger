@@ -158,6 +158,44 @@ func TestDirectNeLancePersonne(t *testing.T) {
 	}
 }
 
+// jouetSansParse est un gestionnaire fictif dont la table déclare un verbe normalisé
+// (Pool: Aucun, comme list/outdated/search/source) sans Parse ni Direct — exactement la
+// forme que scoop avait avant la tâche 9 (list, search, source en Native sans parser).
+// Elle sert à prouver que la garde de Executer protège N'IMPORTE QUELLE table dans cette
+// forme, pas seulement scoop une fois corrigé.
+type jouetSansParse struct{}
+
+func (jouetSansParse) Cmd() string                                       { return "jouet" }
+func (jouetSansParse) Subcommands() []string                             { return nil }
+func (jouetSansParse) Options(string) []string                           { return nil }
+func (jouetSansParse) InstalledOnly(string) bool                         { return false }
+func (jouetSansParse) Available() bool                                   { return true }
+func (jouetSansParse) Load() *pm.Catalog                                 { return pm.NewCatalog() }
+func (jouetSansParse) Insert(*pm.Catalog, string, string, string) string { return "" }
+func (jouetSansParse) Warm(pm.Scope) error                               { return nil }
+func (jouetSansParse) Verbs() map[pm.Verb]pm.Binding {
+	return map[pm.Verb]pm.Binding{
+		"list": {Native: []string{"list"}, Pool: pm.PoolAucun}, // pas de Parse
+	}
+}
+
+// Un verbe normalisé (sortie capturée) sans Parse ni Direct ne doit jamais rendre un
+// succès silencieux : la sortie captée serait perdue sans que rien ne le dise. C'est
+// exactement le bug de scoop avant la tâche 9 — list, search et source y étaient Native
+// sans parser, donc `jg list` sous Windows omettait purement et simplement scoop en
+// sortant 0.
+func TestVerbeNormaliseSansParseNAvalePasLaSortieEnSilence(t *testing.T) {
+	simuler(t, []byte("des données que personne ne lira\n"), nil)
+
+	rows, code := Executer("list", []Cible{{Mgr: jouetSansParse{}, Args: nil}}, Opts{})
+	if code == 0 {
+		t.Fatal("code = 0 : un verbe normalisé sans analyseur déclaré ne doit pas réussir silencieusement")
+	}
+	if len(rows) != 0 {
+		t.Fatalf("rows = %v, attendu aucune ligne : rien n'a été analysé", rows)
+	}
+}
+
 func TestVerbesNormalisesSontCaptures(t *testing.T) {
 	if !normalise("outdated") || !normalise("list") || !normalise("search") || !normalise("source") {
 		t.Error("les quatre verbes tabulaires doivent être normalisés")
