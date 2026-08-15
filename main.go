@@ -219,6 +219,9 @@ func trancher(amb *facade.Ambiguite) (string, bool) {
 	lipgloss.SetColorProfile(termenv.NewOutput(tty.Out).Profile)
 	titre := fmt.Sprintf("%s : %d gestionnaires", amb.Nom, len(amb.Candidats))
 	model := ui.New(titre, complete.Result{Executable: true, Items: items})
+	// Pied propre à la désambiguïsation : on choisit un gestionnaire, on n'insère ni
+	// n'exécute une commande — ⇥/↩ n'y ont pas de sens (spec §3, README).
+	model.Keys = []ui.Key{{Key: "↵", Label: "choisir"}, {Key: "^G", Label: "annuler"}}
 
 	fmt.Fprint(tty.Out, "\r\n")
 	prog := tea.NewProgram(model, tea.WithInput(tty.In), tea.WithOutput(tty.Out))
