@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 
+	"gitlab.yg-devworks.com/yves/jigger/internal/managers"
 	"gitlab.yg-devworks.com/yves/jigger/internal/pm"
 )
 
@@ -160,8 +161,32 @@ func filtrerParPM(mgrs []pm.Manager, forcePM string) ([]pm.Manager, error) {
 	for _, m := range mgrs {
 		noms = append(noms, m.Cmd())
 	}
+
+	// Deux causes bien distinctes derrière la même absence de mgrs : --pm nomme un mot
+	// que jigger ne connaît sous aucune forme (faute de frappe, autre gestionnaire —
+	// apt, dnf…), ou nomme un gestionnaire que jigger connaît très bien mais qui ne
+	// figure pas parmi les capables de CE verbe (pas installé, ou son concept n'existe
+	// pas chez lui — winget --pm pour doctor). Confondre les deux sous « indisponible
+	// pour ce verbe » ferait croire à l'utilisateur qu'apt est un gestionnaire que
+	// jigger pourrait faire agir sur d'autres verbes.
+	if _, connu := managers.For(forcePM); !connu {
+		return nil, fmt.Errorf("jigger : --pm %s — gestionnaire inconnu de jigger. Connus : %s",
+			forcePM, strings.Join(nomsConnus(), ", "))
+	}
 	return nil, fmt.Errorf("jigger : --pm %s — gestionnaire indisponible pour ce verbe. Disponibles : %s",
 		forcePM, strings.Join(noms, ", "))
+}
+
+// nomsConnus rend les mots de commande de tous les gestionnaires que jigger sait
+// reconnaître, qu'ils soient installés ou non — c'est le référentiel dont --pm doit
+// piocher un nom, pas la liste (potentiellement restreinte) des capables de ce verbe.
+func nomsConnus() []string {
+	tous := managers.All()
+	noms := make([]string, 0, len(tous))
+	for _, m := range tous {
+		noms = append(noms, m.Cmd())
+	}
+	return noms
 }
 
 // trouverCmd rend, parmi les gestionnaires capables, celui dont Cmd() correspond — ou nil

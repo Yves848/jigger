@@ -201,10 +201,38 @@ func TestRoutageSearchAtteintLesGestionnairesMemeSansCorrespondanceExacte(t *tes
 	}
 }
 
-func TestRoutageForcePMInconnu(t *testing.T) {
+// « apt » n'est un gestionnaire connu de jigger en aucun cas : « indisponible pour ce
+// verbe » suggérerait à tort qu'il existe mais ne sait pas rendre ce verbe précis, alors
+// que jigger ne sait tout simplement pas ce qu'est apt.
+func TestRoutageForcePMInconnuDeJigger(t *testing.T) {
 	_, _, err := Router("install", []string{"fd"}, "apt", nil, deuxGestionnaires(), catalogues())
 	if err == nil {
-		t.Fatal("attendu une erreur : « apt » n'est pas un gestionnaire disponible")
+		t.Fatal("attendu une erreur : « apt » n'est pas un gestionnaire de jigger")
+	}
+	msg := err.Error()
+	if !strings.Contains(msg, "inconnu") {
+		t.Errorf("« apt » n'existe pas du tout chez jigger, le message doit le dire : %s", msg)
+	}
+	if strings.Contains(msg, "indisponible pour ce verbe") {
+		t.Errorf("« apt » ne doit pas être dit « indisponible pour ce verbe » (il n'existe pas, point) : %s", msg)
+	}
+}
+
+// « winget » est un gestionnaire que jigger connaît bien — mais ici il est absent des
+// capables (par exemple : doctor, que winget ne sait pas rendre). Le message doit rester
+// « indisponible pour ce verbe », pas « inconnu » : jigger sait très bien ce qu'est
+// winget.
+func TestRoutageForcePMConnuMaisIndisponiblePourCeVerbe(t *testing.T) {
+	_, _, err := Router("doctor", nil, "winget", nil, []pm.Manager{scoop.New()}, catalogues())
+	if err == nil {
+		t.Fatal("attendu une erreur : winget n'est pas dans les capables pour doctor")
+	}
+	msg := err.Error()
+	if !strings.Contains(msg, "indisponible pour ce verbe") {
+		t.Errorf("« winget » est connu de jigger, seulement absent des capables pour ce verbe : %s", msg)
+	}
+	if strings.Contains(msg, "inconnu") {
+		t.Errorf("« winget » ne doit pas être dit inconnu de jigger : %s", msg)
 	}
 }
 
