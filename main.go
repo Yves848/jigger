@@ -353,7 +353,7 @@ func runRender(args []string) int {
 	if len(frame.Items) > 0 {
 		frame.Sel = min(max(*sel, 0), len(frame.Items)-1)
 		frame.Offset = ui.ScrollOffset(frame.Sel, len(frame.Items), *rows)
-		left = res.Prefix + res.Insert(frame.Items[frame.Sel].Name)
+		left = res.Prefix + res.InsertItem(frame.Items[frame.Sel])
 	} else {
 		frame.Sel = -1
 	}
@@ -402,7 +402,7 @@ func runPick(line string) int {
 	// popup (ni même le TTY) — comme le fait la complétion zsh sur une correspondance
 	// unique.
 	if len(res.Items) == 1 {
-		fmt.Print(res.Prefix + res.Insert(res.Items[0].Name))
+		fmt.Print(res.Prefix + res.InsertItem(res.Items[0]))
 		return 0
 	}
 
@@ -437,7 +437,7 @@ func runPick(line string) int {
 		return 2 // annulé
 	}
 
-	fmt.Print(res.Prefix + res.Insert(m.Chosen.Name))
+	fmt.Print(res.Prefix + res.InsertItem(*m.Chosen))
 	if m.Execute {
 		return 10 // ↩ : commande à exécuter
 	}

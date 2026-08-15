@@ -249,6 +249,59 @@ func TestNatif_PasDePM(t *testing.T) {
 	}
 }
 
+// C'est le popup de la note ¹ : « jg install fire » doit produire la même correction que
+// « brew install fire » — --cask, pas le nom brut. Un résultat façade mélange les
+// gestionnaires d'un Item à l'autre (cf. TestFacade_ItemPorteSonPM), donc la correction se
+// résout par Item, via son champ PM, et non plus une fois pour tout le Result.
+func TestFacade_InsertItemAppliqueLaCorrectionDuBonGestionnaire(t *testing.T) {
+	cats := map[string]*pm.Catalog{"brew": brew.NewCatalog(nil, []string{"firealpaca"}, nil)}
+
+	res := CompleteFacade("jg install fire", []pm.Manager{brew.New()}, cats)
+	if len(res.Items) != 1 {
+		t.Fatalf("items = %v, attendu 1", names(res.Items))
+	}
+	if got := res.InsertItem(res.Items[0]); got != "--cask firealpaca" {
+		t.Fatalf("insertion = %q, attendu « --cask firealpaca »", got)
+	}
+}
+
+// Insert(name) — sans le contexte de l'Item — n'a par construction aucun moyen de savoir
+// quel gestionnaire a proposé un nom sur un résultat façade : il rend le nom brut, tel
+// quel. C'est exactement pour ça qu'InsertItem existe.
+func TestFacade_InsertSeulNeCorrigePasSansContexte(t *testing.T) {
+	cats := map[string]*pm.Catalog{"brew": brew.NewCatalog(nil, []string{"firealpaca"}, nil)}
+
+	res := CompleteFacade("jg install fire", []pm.Manager{brew.New()}, cats)
+	if got := res.Insert("firealpaca"); got != "firealpaca" {
+		t.Fatalf("insertion = %q, attendu « firealpaca » (aucun contexte PM)", got)
+	}
+}
+
+// Un résultat façade avec plusieurs gestionnaires : chaque Item se corrige avec le sien,
+// pas avec celui d'un autre.
+func TestFacade_InsertItemMelangeDeuxGestionnaires(t *testing.T) {
+	cats := map[string]*pm.Catalog{
+		"brew": brew.NewCatalog(nil, []string{"firealpaca"}, nil),
+	}
+	s := pm.NewCatalog()
+	s.Add("flux", pm.BadgeScoop)
+	s.Qualified["flux"] = "main/flux"
+	s.Sort()
+	cats["scoop"] = s
+
+	res := CompleteFacade("jg install f", []pm.Manager{brew.New(), scoop.New()}, cats)
+	got := map[string]string{}
+	for _, it := range res.Items {
+		got[it.Name] = res.InsertItem(it)
+	}
+	if got["firealpaca"] != "--cask firealpaca" {
+		t.Fatalf("firealpaca = %q, attendu « --cask firealpaca »", got["firealpaca"])
+	}
+	if got["flux"] != "main/flux" {
+		t.Fatalf("flux = %q, attendu « main/flux »", got["flux"])
+	}
+}
+
 // BenchmarkComplete garde un œil sur le filtrage : le popup vivant appelle Complete à
 // chaque frappe, sur un catalogue de plusieurs milliers de noms. Budget indicatif :
 // quelques ms au plus (le reste du budget part dans le démarrage du binaire).

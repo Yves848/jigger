@@ -31,15 +31,38 @@ type Result struct {
 
 	mgr pm.Manager
 	cat *pm.Catalog
+
+	// mgrsParPM et catsParPM ne sont peuplés que par CompleteFacade. Un résultat natif a
+	// un seul gestionnaire (mgr/cat ci-dessus) ; un résultat façade en mélange
+	// plusieurs — Item.PM dit lequel a proposé chaque candidat (cf.
+	// TestFacade_ItemPorteSonPM) — donc la correction ne peut se résoudre qu'Item par
+	// Item, pas une fois pour tout le Result.
+	mgrsParPM map[string]pm.Manager
+	catsParPM map[string]*pm.Catalog
 }
 
-// Insert rend le texte à insérer pour un candidat : le nom, éventuellement corrigé par
-// le gestionnaire (`--cask` de brew, qualification par bucket de scoop).
+// Insert rend le texte à insérer pour un nom seul : le nom, éventuellement corrigé par le
+// gestionnaire (`--cask` de brew, qualification par bucket de scoop). C'est l'API
+// historique, qui suffit au chemin natif — un seul gestionnaire, donc aucune ambiguïté sur
+// lequel corrige. Sur un résultat façade, elle n'a pas de quoi savoir quel gestionnaire a
+// proposé ce nom : utiliser InsertItem, qui porte ce contexte.
 func (r Result) Insert(name string) string {
-	if r.mgr == nil || r.cat == nil {
-		return name
+	return r.InsertItem(Item{Name: name})
+}
+
+// InsertItem rend le texte à insérer pour un candidat précis. Sur un résultat natif,
+// identique à Insert(it.Name) : un seul gestionnaire. Sur un résultat façade, elle résout
+// la correction du gestionnaire qui a proposé CET Item — via it.PM — plutôt que celle d'un
+// gestionnaire par défaut qui n'existe pas.
+func (r Result) InsertItem(it Item) string {
+	mgr, cat := r.mgr, r.cat
+	if mgr == nil {
+		mgr, cat = r.mgrsParPM[it.PM], r.catsParPM[it.PM]
 	}
-	return r.mgr.Insert(r.cat, r.Sub, r.Prefix, name)
+	if mgr == nil || cat == nil {
+		return it.Name
+	}
+	return mgr.Insert(cat, r.Sub, r.Prefix, it.Name)
 }
 
 // Title résume le contexte, en tête du popup : « winget install ».
@@ -92,7 +115,10 @@ func CompleteFacade(line string, dispo []pm.Manager, cats map[string]*pm.Catalog
 		champs = champs[1:]
 	}
 
-	res := Result{Prefix: prefix, Word: word, Cmd: "jigger"}
+	res := Result{
+		Prefix: prefix, Word: word, Cmd: "jigger",
+		mgrsParPM: indexParPM(dispo), catsParPM: cats,
+	}
 	lw := strings.ToLower(word)
 	tables := managers.Tables(dispo)
 
@@ -171,6 +197,16 @@ func CompleteFacade(line string, dispo []pm.Manager, cats map[string]*pm.Catalog
 		return pm.LessFold(res.Items[i].Name, res.Items[j].Name)
 	})
 	return res
+}
+
+// indexParPM range les gestionnaires disponibles par Cmd(), pour qu'InsertItem retrouve
+// celui qui a proposé un Item façade à partir de son seul champ PM.
+func indexParPM(dispo []pm.Manager) map[string]pm.Manager {
+	idx := make(map[string]pm.Manager, len(dispo))
+	for _, m := range dispo {
+		idx[m.Cmd()] = m
+	}
+	return idx
 }
 
 // CompleteWith est Complete sur un gestionnaire et un catalogue donnés (tests, et tout
