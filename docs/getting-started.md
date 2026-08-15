@@ -21,6 +21,9 @@ gestionnaire de paquets, un cadre s'affiche sous le prompt et suit ta frappe.
 ╰──────────────────────────────────────────────────────╯
 ```
 
+Et, par-dessus les trois gestionnaires, **une seule syntaxe** : `jg install fd` s'adresse à
+celui qui connaît `fd`, sans que tu aies à savoir lequel (§ 6).
+
 | Plateforme | Shell | Gestionnaires |
 |---|---|---|
 | macOS, Linux | zsh | [Homebrew](https://brew.sh) |
@@ -101,7 +104,7 @@ Import-Module C:\chemin\vers\jigger\shell\jigger.psm1
 Puis recharge : `. $PROFILE`, ou ouvre un nouvel onglet.
 
 Une seule contrainte d'ordre, celle-ci réelle : si tu utilises oh-my-posh, importe jigger
-**après** lui (cf. § 7).
+**après** lui (cf. § 8).
 
 ## 4. Vérifier que ça marche
 
@@ -116,7 +119,7 @@ Rien ne s'affiche ? Le greffon le dit quand il refuse de se charger : un message
 démarrage du shell, signale que le binaire est introuvable dans le `PATH` — ou qu'il est
 trop ancien pour ce greffon. Les deux vont par paire : un binaire en retard ne comprend pas
 les options que le greffon lui passe, et le popup ne s'afficherait jamais, sans un mot. Si
-aucun message n'apparaît, va au § 8.
+aucun message n'apparaît, va au § 9.
 
 **À la toute première utilisation**, le cadre peut annoncer « catalogue en préparation… » :
 jigger ne fait jamais attendre une frappe après le gestionnaire de paquets, il constitue
@@ -156,7 +159,102 @@ Les badges devant les noms distinguent les deux natures de paquets : ◆ pour le
 ordinaire (formula, catalogue winget, bucket `main`), ▣ pour l'autre (cask, application
 hors catalogue, bucket tiers).
 
-## 6. Configurer
+## 6. Une seule syntaxe : `jg`
+
+Tout ce qui précède parle la langue de chaque gestionnaire. `jg` en parle une seule pour
+les trois :
+
+```sh
+jg install fd            # brew, winget ou scoop — celui qui connaît « fd »
+jg outdated              # ce qui est à mettre à jour, partout
+jg search ripgrep
+jg info fd
+```
+
+`jg` est un alias de `jigger`, posé par le greffon zsh ; les deux s'écrivent
+indifféremment. **La façade s'ajoute, elle ne remplace rien** : `brew install fd` continue
+de marcher exactement comme avant, popup compris.
+
+### Les douze verbes
+
+`jg ⇥` te les rappelle, et le popup les propose comme il propose les paquets :
+
+```
+❯ jg
+╭──────────────────────────────────────────────────────╮
+│❯ jigger                                  jigger 0.8.0│
+│  •  cleanup                                          │
+│  •  doctor                                           │
+│  •  info                                             │
+│  •  install                                          │
+│                                                      │
+│   ⇥  insérer   ↓  parcourir   ^G  fermer             │
+╰──────────────────────────────────────────────────────╯
+```
+
+`install`, `uninstall`, `upgrade`, `list`, `outdated`, `search`, `info` — les sept que les
+trois gestionnaires savent tous faire. Puis `source` (le `tap` de brew, le `bucket` de
+scoop), `pin`, `unpin`, `cleanup` et `doctor`, qui n'existent pas partout. Demander à
+winget un verbe qu'il n'a pas — `cleanup`, `doctor` — échoue proprement, en disant qui
+saurait le faire.
+
+`source` prend trois formes : `jg source` liste, `jg source add <dépôt>` ajoute,
+`jg source rm <dépôt>` retire.
+
+### Comment le gestionnaire est choisi
+
+jigger cherche le nom dans le catalogue de chacun des gestionnaires présents :
+
+- **un seul le connaît** → il gagne, sans rien demander ;
+- **plusieurs le connaissent** → le sélecteur s'ouvre et tu tranches ;
+- **aucun ne le connaît** → erreur, avec les voisins les plus proches.
+
+Il n'y a **jamais de choix automatique** entre deux gestionnaires, et aucun réglage n'en
+introduit : deux paquets qui portent le même nom ne sont pas forcément le même logiciel.
+
+`--pm <gestionnaire>` est l'échappatoire — pour trancher hors terminal (script, CI, pipe),
+atteindre un paquet trop récent pour le catalogue en cache, ou viser un verbe sans nom :
+
+```sh
+jg install git --pm scoop
+jg doctor --pm brew
+```
+
+### Des tableaux, et `--json`
+
+Les quatre verbes qui rendent une liste — `list`, `outdated`, `search`, `source` — sortent
+un tableau aligné, et le même contenu en JSON avec `--json` :
+
+```
+$ jg list
+PAQUET                    ACTUEL
+alembic                   1.8.12
+aom                       3.14.1
+assimp                    6.0.5
+```
+
+`jg outdated` y ajoute une colonne `DISPO`, la version qui t'attend — et répond
+« rien à signaler » quand tout est à jour.
+
+Une colonne `PM` s'ajoute quand **plusieurs** gestionnaires ont répondu — inutile de la
+montrer quand elle serait partout la même.
+
+Tout le reste (`install`, `info`…) **relaie la sortie du gestionnaire telle quelle** :
+invites, barres de progression et élévation UAC fonctionnent comme si tu avais tapé la
+commande native, précisément parce que jigger ne s'interpose pas. Sous winget, `--yes`
+accepte les accords de licence ; il n'est jamais implicite.
+
+### Ce qui n'est pas encore là
+
+- **PowerShell n'a pas l'alias `jg`.** Seul le greffon zsh arme la façade ; sous Windows,
+  `jigger install …` reste utilisable en tapant le nom complet, mais le popup ne le suit
+  pas encore.
+- **Les traductions winget et scoop n'ont pas été vérifiées contre les vraies CLI** — le
+  développement s'est fait sur Mac. Seule la colonne brew a tourné pour de vrai. La table
+  complète, avec cet avertissement, est dans le
+  [README](../README.md#une-seule-syntaxe).
+
+## 7. Configurer
 
 Les réglages sont des **variables d'environnement**, à poser **avant** le `source` ou
 l'`Import-Module` — c'est au chargement que le greffon lit ses touches et pose ses hooks.
@@ -193,7 +291,7 @@ frappe, jigger réenregistre donc une à une les touches qui modifient la ligne.
 clavier AZERTY, la rangée des chiffres non pressée donne « éèçàù » — d'où cette valeur par
 défaut, et le réglage pour les dispositions qu'elle ne couvre pas.
 
-## 7. Le bloc de prompt (optionnel)
+## 8. Le bloc de prompt (optionnel)
 
 jigger sait aussi afficher dans ton prompt la **version du gestionnaire** et les **mises à
 jour en attente** :
@@ -242,7 +340,7 @@ comptage n'est pas terminé. Les réglages associés (`JIGGER_PROMPT_TTL`,
 [README](../README.md#bloc-oh-my-posh) ; elles servent aussi bien à starship ou à un
 prompt maison.
 
-## 8. Quand ça ne marche pas
+## 9. Quand ça ne marche pas
 
 | Symptôme | Cause probable |
 |---|---|
@@ -253,6 +351,9 @@ prompt maison.
 | affichage qui se bat avec la prédiction PSReadLine | jigger range `PredictionViewStyle = ListView` le temps du cadre et le rend ensuite ; s'il reste en `InlineView`, un shell neuf remet tout d'aplomb |
 | « catalogue en préparation… » qui dure | lance `jigger warm --all` à la main pour voir ce que dit le gestionnaire |
 | le compteur du prompt est faux | il ne voit que ce qui passe par ce shell ; une mise à jour lancée ailleurs est rattrapée à l'expiration du TTL (30 min par défaut) |
+| `jg` : « verbe inconnu » | ce n'est pas un des douze — `jg ⇥` les liste. La commande native, elle, s'écrit toujours en entier : `brew tap`, pas `jg tap` |
+| `jg` : « inconnu de brew » sur un paquet qui existe | le catalogue en cache est plus vieux que le paquet. `jg … --pm brew <nom>` passe outre, `jigger warm --all` remet le cache à jour |
+| `jg` : « gestionnaire indisponible pour ce verbe » | le `--pm` demandé n'est pas installé, ou ne sait pas faire ce verbe ; le message dit lesquels le savent |
 
 Pour isoler un conflit avec un autre greffon de ligne d'édition, `JIGGER_LIVE=0` éteint
 tout ce qui touche à la frappe : seul ⇥ reste, et ouvre le sélecteur plein écran.
@@ -261,19 +362,24 @@ tout ce qui touche à la frappe : seul ⇥ reste, et ouvre le sélecteur plein �
 `brew uninstall jigger` — ou supprime le binaire. Le cache se jette avec
 `rm -rf "$(dirname "$(jigger prompt --path)")"`.
 
-## 9. Aller plus loin
+## 10. Aller plus loin
 
 Le greffon n'est qu'un client : les sous-commandes s'utilisent seules, et c'est le meilleur
 moyen de comprendre ce qui se passe.
 
 ```sh
 jigger complete "brew install fire" # les candidats, un par ligne
+jigger complete "jg "               # … et les verbes de la façade
 jigger render --line "brew ins" --cols 80   # une frame du popup, métadonnées comprises
 jigger pick "brew uninstall 7z"     # le sélecteur plein écran
 jigger demo                         # aperçu statique coloré
 jigger prompt                       # l'état en cache, tel que le lit le hook
 jigger warm --all                   # reconstitue les catalogues (lent)
 ```
+
+Les verbes de la façade s'appellent de la même façon sans le greffon — `jg` n'étant qu'un
+alias, `jigger outdated --json` marche partout, y compris dans un script ou une CI où
+aucun shell interactif n'est chargé.
 
 - [README](../README.md) — ce que fait jigger, et pourquoi chaque choix a été fait ainsi.
 - [CHANGELOG](../CHANGELOG.md) — ce qui a changé d'une version à l'autre.
