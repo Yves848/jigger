@@ -514,6 +514,15 @@ Ce que la phase 1 ne fait pas, et pourquoi :
   zsh, `tests/conpty` côté PowerShell.
 - **Latence** — banc d'essai sur le chemin `jg install g`, trois catalogues chargés.
 
+  Mesures du 15 août 2026 (MacBook Pro M4 Max, macOS 14.7) :
+
+  ```text
+  BenchmarkComplete-16        2431    526887 ns/op   2558115 B/op     19 allocs/op
+  BenchmarkCompleteFacade-16   338   3564154 ns/op   9674496 B/op    172 allocs/op
+  ```
+
+  Le chemin façade est ~6.77 fois plus coûteux en temps. Le chemin natif filtre ~10 000 noms (8 000 formulae brew + 2 000 casks) ; le chemin façade en filtre ~25 401 (14 401 winget + 3 000 scoop + 8 000 brew). Le ratio de volume est 2.54 ; le ratio observé est 6.77. Cela suggère un surcoût non linéaire. À investiguer : la fusion et le tri final des trois résultats contribuent-ils à plus que le filtrage initial ?
+
 ## Décisions liées
 
 - [ADR-0001 — Go confirmé](../adr/0001-go-confirme.md)

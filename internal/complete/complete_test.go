@@ -321,3 +321,32 @@ func BenchmarkComplete(b *testing.B) {
 		brewComplete("brew install form", cat)
 	}
 }
+
+// BenchmarkCompleteFacade garde un œil sur le chemin le plus coûteux du popup : « jg
+// install g » doit filtrer TROIS catalogues à chaque frappe, là où le chemin natif n'en
+// filtre qu'un. Sous Windows, celui de winget compte à lui seul 14 401 noms.
+//
+// Budget indicatif : du même ordre que BenchmarkComplete. S'il s'en écarte d'un facteur,
+// c'est que le filtrage est reparti dans le mauvais sens — réunir puis balayer, au lieu
+// de filtrer chez chaque gestionnaire puis réunir (cf. spec §5).
+func BenchmarkCompleteFacade(b *testing.B) {
+	gros := func(prefixe string, n int) *pm.Catalog {
+		cat := pm.NewCatalog()
+		for i := range n {
+			cat.Add(fmt.Sprintf("%s-%05d", prefixe, i), pm.BadgeWinget)
+		}
+		cat.Sort()
+		return cat
+	}
+	cats := map[string]*pm.Catalog{
+		"winget": gros("gadget", 14401),
+		"scoop":  gros("gizmo", 3000),
+		"brew":   gros("gubbins", 8000),
+	}
+	dispo := []pm.Manager{brew.New(), winget.New(), scoop.New()}
+
+	b.ResetTimer()
+	for b.Loop() {
+		CompleteFacade("jg install g", dispo, cats)
+	}
+}
