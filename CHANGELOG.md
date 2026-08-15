@@ -6,6 +6,30 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le ve
 [SemVer](https://semver.org/lang/fr/). Les versions antérieures à `v0.1.6` sont antérieures
 à ce journal ; leur détail est dans l'historique git.
 
+## [Non publié]
+
+### Ajouté
+
+- **Un segment starship**, à côté de celui d'oh-my-posh :
+  [`shell/starship/brew.toml`](shell/starship/brew.toml) et
+  [`windows.toml`](shell/starship/windows.toml). Trois modules `env_var` par plateforme,
+  sur les mêmes variables, les mêmes émojis et les mêmes couleurs que les segments
+  existants. Rien à ajouter au `format` : le `$all` par défaut de starship contient déjà
+  `$env_var`. Le bloc ne passait que par oh-my-posh alors que tout ce qu'il expose est déjà
+  dans l'environnement — n'importe quel prompt sait le lire.
+- Deux propriétés tombent d'elles-mêmes là où oh-my-posh demandait un gabarit : un module
+  dont la variable n'est pas définie **ne s'affiche pas**, sans condition à écrire (la
+  règle « un compteur à zéro n'est pas exporté » suffit) ; et les trois modules étant
+  indépendants, une machine qui n'a **que scoop** montre sa cuillère seule, là où le
+  segment oh-my-posh — qui suspend tout à la version de winget — ne montrerait rien.
+
+### Modifié
+
+- Le § « Bloc oh-my-posh » du README devient **« Bloc de prompt »** et couvre les deux
+  prompts (étapes 2a/2b) ; l'ancre est corrigée dans le guide, et la contrainte d'ordre
+  sous PowerShell — importer jigger **après** le prompt qu'il enveloppe — nomme désormais
+  starship autant qu'oh-my-posh.
+
 ## [v0.8.0] — 2026-08-15
 
 Jusqu'ici, jigger aidait à écrire la commande de chaque gestionnaire. Il sait maintenant en
