@@ -9,6 +9,7 @@ import (
 	"github.com/muesli/termenv"
 
 	"gitlab.yg-devworks.com/yves/jigger/internal/complete"
+	"gitlab.yg-devworks.com/yves/jigger/internal/pm"
 )
 
 func items(n int) []complete.Item {
@@ -26,14 +27,82 @@ func TestFrameRespecteLaLargeurDemandee(t *testing.T) {
 	lipgloss.SetColorProfile(termenv.TrueColor)
 
 	for _, w := range []int{30, 40, 58, 80} {
-		f := Frame{Title: "brew install", Items: items(3), Width: w, Rows: 3,
-			Keys: []Key{{"⇥", "insérer"}}}
-		for i, line := range strings.Split(f.Render(), "\n") {
-			// +2 : les deux colonnes de bordure du cadre.
-			if got := lipgloss.Width(line); got != w+2 {
-				t.Errorf("largeur %d : ligne %d fait %d colonnes (attendu %d)", w, i, got, w+2)
+		for _, focus := range []bool{false, true} {
+			f := Frame{Title: "brew install", Items: items(3), Width: w, Rows: 3,
+				Focused: focus, Keys: []Key{{"⇥", "insérer"}}}
+			for i, line := range strings.Split(f.Render(), "\n") {
+				// +2 : les deux colonnes de bordure du cadre.
+				if got := lipgloss.Width(line); got != w+2 {
+					t.Errorf("largeur %d (focus=%v) : ligne %d fait %d colonnes (attendu %d)",
+						w, focus, i, got, w+2)
+				}
 			}
 		}
+	}
+}
+
+// Une ligne qui déborde est le pire défaut possible : le terminal la replie, le popup
+// occupe alors deux fois les lignes annoncées, et tout l'affichage du shell se décale.
+// Le cas réel qui l'a révélé : les identifiants des applications détectées hors
+// catalogue winget, longs, suivis d'une version à quatre nombres et du point d'installé.
+func TestFrameNeDeborderJamais(t *testing.T) {
+	lipgloss.SetColorProfile(termenv.TrueColor)
+
+	longs := []complete.Item{
+		{Name: `ARP\Machine\X64\{226CEF88-E174-49A6-865C-874AB2C5F6D1}`,
+			Badge: pm.BadgeOther, Installed: true, Version: "6.4.0.3079"},
+		{Name: "AgileBits.1Password", Badge: pm.BadgeWinget, Installed: true, Version: "8.12.32.33"},
+		{Name: "court", Badge: pm.BadgeWinget},
+	}
+	touches := []Key{{"⇥", "insérer"}, {"↑↓", "naviguer"}, {"^G", "fermer"}}
+
+	for _, w := range []int{24, 30, 40, 58, 80} {
+		for _, sel := range []int{-1, 0, 1} {
+			f := Frame{Title: "winget uninstall", Items: longs, Width: w, Rows: 3,
+				Sel: sel, Focused: sel == 1, Keys: touches}
+			for i, line := range strings.Split(f.Render(), "\n") {
+				if got := lipgloss.Width(line); got != w+2 {
+					t.Errorf("largeur %d (sel=%d) : ligne %d fait %d colonnes (attendu %d)",
+						w, sel, i, got, w+2)
+				}
+			}
+		}
+	}
+}
+
+// Le focus dit où ira la prochaine flèche — au popup ou à l'historique du shell. Il n'y
+// a aucun autre moyen de le savoir que de le voir : la ligne courante est soulignée
+// quand le popup a le clavier, au repos quand il ne l'a pas.
+func TestFrameFocusChangeLaLigneCourante(t *testing.T) {
+	lipgloss.SetColorProfile(termenv.TrueColor)
+
+	souligne := func(f Frame) bool {
+		for _, line := range strings.Split(f.Render(), "\n") {
+			for _, on := range underlinedColumns(line) {
+				if on {
+					return true
+				}
+			}
+		}
+		return false
+	}
+
+	repos := Frame{Title: "winget install", Items: items(3), Sel: 1, Keys: []Key{{"⇥", "insérer"}}}
+	actif := repos
+	actif.Focused = true
+
+	if !souligne(actif) {
+		t.Error("avec le focus, la ligne courante doit être soulignée")
+	}
+	if souligne(repos) {
+		t.Error("sans le focus, aucune ligne ne doit être soulignée")
+	}
+
+	// Elle reste tout de même désignée : c'est elle que ⇥ insère.
+	aucune := repos
+	aucune.Sel = -1
+	if repos.Render() == aucune.Render() {
+		t.Error("sans le focus, la ligne courante doit rester distinguée des autres")
 	}
 }
 

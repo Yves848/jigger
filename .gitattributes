@@ -1,0 +1,3 @@
+# Les jeux d'essai winget sont des sorties réellement capturées : leurs fins de ligne
+# CRLF font partie de ce qu'on teste. Aucune normalisation, sur aucune plateforme.
+internal/winget/testdata/* -text

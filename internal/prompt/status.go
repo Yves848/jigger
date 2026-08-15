@@ -1,14 +1,15 @@
-// Package prompt produit l'état de Homebrew affiché dans le prompt : la version de
-// brew et le nombre de paquets obsolètes.
+// Package prompt produit l'état du gestionnaire de paquets affiché dans le prompt : sa
+// version et le nombre de paquets obsolètes.
 //
-// Tout est bâti autour d'une contrainte : `brew outdated` coûte de une à cinq
-// secondes, ce qui est inconcevable dans le chemin d'un prompt. L'état est donc
-// calculé en arrière-plan et déposé dans un fichier de cache d'une seule ligne, que
-// le hook zsh relit sans forker le moindre processus.
+// Tout est bâti autour d'une contrainte : compter les paquets obsolètes coûte de une à
+// cinq secondes — `brew outdated` comme `winget list --upgrade-available` —, ce qui est
+// inconcevable dans le chemin d'un prompt. L'état est donc calculé en arrière-plan et
+// déposé dans un fichier de cache d'une seule ligne, que le hook du shell relit sans
+// lancer le moindre processus.
 //
 // Les fonctions d'analyse (ParseVersion, ParseOutdated, ParseLine) sont pures et
-// exportées : elles se testent sur des sorties `brew` réellement capturées, sans
-// lancer de processus.
+// exportées : elles se testent sur des sorties réellement capturées, sans lancer de
+// processus.
 package prompt
 
 import (
@@ -16,13 +17,16 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
 
 	"gitlab.yg-devworks.com/yves/jigger/internal/brew"
+	"gitlab.yg-devworks.com/yves/jigger/internal/pm"
+	"gitlab.yg-devworks.com/yves/jigger/internal/scoop"
+	"gitlab.yg-devworks.com/yves/jigger/internal/winget"
 )
 
 // ErrVerrouille signale qu'un autre rafraîchissement est déjà en cours. Ce n'est pas
@@ -31,7 +35,7 @@ var ErrVerrouille = errors.New("rafraîchissement déjà en cours")
 
 // peremptionVerrou : au-delà, un verrou est réputé abandonné (processus tué avant
 // d'avoir pu le retirer) et n'empêche plus de rafraîchir.
-const peremptionVerrou = 5 * time.Minute
+const peremptionVerrou = pm.PeremptionVerrou
 
 // AttenteVerrou plafonne l'attente du verrou par un rafraîchissement forcé, et
 // intervalleVerrou espace ses tentatives.
@@ -40,26 +44,34 @@ const (
 	intervalleVerrou = 100 * time.Millisecond
 )
 
-// Status est l'état de Homebrew tel qu'il est affiché — et mis en cache.
+// Status est l'état affiché — et mis en cache. Les deux compteurs sont ceux du prompt ;
+// ce qui les sépare dépend de la plateforme : formulae et casks obsolètes pour
+// Homebrew, paquets winget et scoop obsolètes sous Windows. Le format du cache, lui, ne
+// change pas : le hook du shell découpe la même ligne des deux côtés.
 type Status struct {
-	Version  string    // version de brew, sans le suffixe de commits : « 6.0.17 »
-	Formulae int       // formulae obsolètes
-	Casks    int       // casks obsolètes
-	At       time.Time // instant du calcul, pour la péremption du cache
+	Version   string    // version du gestionnaire, sans suffixe : « 6.0.17 », « 1.29.280 »
+	Primary   int       // obsolètes du premier compteur (formulae / winget)
+	Secondary int       // obsolètes du second (casks / scoop)
+	At        time.Time // instant du calcul, pour la péremption du cache
 }
 
 // Outdated est le total affiché par le prompt.
-func (s Status) Outdated() int { return s.Formulae + s.Casks }
+func (s Status) Outdated() int { return s.Primary + s.Secondary }
 
 // Runner exécute `brew <args>` et renvoie sa sortie standard. Les tests en fournissent
 // un factice ; la production utilise brewReel.
 type Runner func(args ...string) ([]byte, error)
 
+// Sonde interroge le ou les gestionnaires de la machine et rend l'état à afficher.
+// C'est le seul endroit qui change d'une plateforme à l'autre : le verrou, l'écriture
+// atomique et la péremption sont communs.
+type Sonde func() (Status, error)
+
 // File renvoie le chemin du fichier de cache dans le dossier donné.
 func File(dir string) string { return filepath.Join(dir, "status") }
 
-// Dir renvoie le dossier de cache utilisé en production (partagé avec le catalogue).
-func Dir() string { return brew.CacheDir() }
+// Dir renvoie le dossier de cache utilisé en production (partagé avec les catalogues).
+func Dir() string { return pm.CacheDir() }
 
 // ParseVersion extrait « 6.0.17 » de la sortie de `brew --version`, qui prend deux
 // formes selon qu'on est pile sur un tag (« Homebrew 4.5.4 ») ou quelques commits plus
@@ -94,9 +106,9 @@ func ParseOutdated(data []byte) (formulae, casks int, err error) {
 
 // Line sérialise l'état en une ligne de champs séparés par des tabulations. Ce format
 // est choisi pour le consommateur : le hook zsh le découpe avec ${(s.\t.)line}, sans
-// lancer ni `cut` ni `awk`.
+// lancer ni `cut` ni `awk` ; PowerShell fait de même avec `-split "\t"`.
 func (s Status) Line() string {
-	return fmt.Sprintf("%s\t%d\t%d\t%d", s.Version, s.Formulae, s.Casks, s.At.Unix())
+	return fmt.Sprintf("%s\t%d\t%d\t%d", s.Version, s.Primary, s.Secondary, s.At.Unix())
 }
 
 // ParseLine relit une ligne produite par Line. Le second retour est faux dès que la
@@ -119,7 +131,7 @@ func ParseLine(line string) (Status, bool) {
 	if err != nil {
 		return Status{}, false
 	}
-	return Status{Version: champs[0], Formulae: f, Casks: c, At: time.Unix(at, 0)}, true
+	return Status{Version: champs[0], Primary: f, Secondary: c, At: time.Unix(at, 0)}, true
 }
 
 // Read relit l'état en cache. Cache absent, illisible ou corrompu : ok vaut faux, et
@@ -133,52 +145,105 @@ func Read(dir string) (Status, bool) {
 	return ParseLine(premiere)
 }
 
-// Refresh interroge brew et réécrit le cache. C'est le chemin lent (plusieurs
-// secondes) : il n'est jamais appelé que détaché, en arrière-plan. Verrou déjà pris :
-// il renonce aussitôt — un autre shell fait déjà le travail.
-func Refresh(dir string) (Status, error) { return RefreshWith(dir, brewReel) }
+// Refresh interroge le gestionnaire et réécrit le cache. C'est le chemin lent
+// (plusieurs secondes) : il n'est jamais appelé que détaché, en arrière-plan. Verrou
+// déjà pris : il renonce aussitôt — un autre shell fait déjà le travail.
+func Refresh(dir string) (Status, error) { return refresh(dir, SondePlateforme(), 0) }
 
 // RefreshWait est Refresh pour le cas où le cache est *connu* faux : le shell vient de
-// voir passer une commande brew qui change l'état. Renoncer serait alors laisser un
+// voir passer une commande qui change l'état. Renoncer serait alors laisser un
 // compteur mensonger jusqu'à la péremption du TTL, y compris dans le cas le plus
 // probable — un rafraîchissement paresseux lancé pendant l'upgrade, et qui poireaute sur
-// le verrou de brew tout du long. Ce chemin attend donc son tour.
+// le verrou tout du long. Ce chemin attend donc son tour.
 func RefreshWait(dir string) (Status, error) {
-	return RefreshWaitWith(dir, brewReel, AttenteVerrou)
+	return refresh(dir, SondePlateforme(), AttenteVerrou)
 }
 
-// RefreshWith est Refresh avec un exécuteur injectable (tests).
+// RefreshWith est Refresh sur Homebrew avec un exécuteur injectable (tests).
 func RefreshWith(dir string, run Runner) (Status, error) {
-	return RefreshWaitWith(dir, run, 0)
+	return refresh(dir, SondeBrew(run), 0)
 }
 
-// RefreshWaitWith est le corps commun : `attente` est le temps qu'on accepte de passer à
-// guetter le verrou (zéro = une seule tentative).
+// RefreshWaitWith est RefreshWith avec une attente du verrou (tests).
 func RefreshWaitWith(dir string, run Runner, attente time.Duration) (Status, error) {
+	return refresh(dir, SondeBrew(run), attente)
+}
+
+// refresh est le corps commun : `attente` est le temps qu'on accepte de passer à
+// guetter le verrou (zéro = une seule tentative). La sonde échoue ? On renonce sans
+// avoir touché au cache, qui garde sa dernière valeur connue.
+func refresh(dir string, sonde Sonde, attente time.Duration) (Status, error) {
 	libere, ok := lockWait(dir, attente)
 	if !ok {
 		return Status{}, ErrVerrouille
 	}
 	defer libere()
 
-	// La version d'abord : si brew est injoignable, on renonce avant d'avoir touché
-	// au cache, qui garde sa dernière valeur connue.
-	brut, err := run("--version")
+	s, err := sonde()
 	if err != nil {
-		return Status{}, err
-	}
-	s := Status{Version: ParseVersion(string(brut))}
-
-	brut, err = run("outdated", "--json=v2")
-	if err != nil {
-		return Status{}, err
-	}
-	if s.Formulae, s.Casks, err = ParseOutdated(brut); err != nil {
 		return Status{}, err
 	}
 	s.At = time.Now()
 
 	return s, ecrire(dir, s)
+}
+
+// SondePlateforme rend la sonde de la machine : Homebrew là où il règne, winget et
+// scoop sous Windows.
+func SondePlateforme() Sonde {
+	if runtime.GOOS == "windows" {
+		return SondeWindows
+	}
+	return SondeBrew(brewReel)
+}
+
+// SondeBrew interroge Homebrew : sa version, puis ses obsolètes répartis en formulae et
+// casks.
+func SondeBrew(run Runner) Sonde {
+	return func() (Status, error) {
+		// La version d'abord : si brew est injoignable, on renonce tout de suite.
+		brut, err := run("--version")
+		if err != nil {
+			return Status{}, err
+		}
+		s := Status{Version: ParseVersion(string(brut))}
+
+		brut, err = run("outdated", "--json=v2")
+		if err != nil {
+			return Status{}, err
+		}
+		if s.Primary, s.Secondary, err = ParseOutdated(brut); err != nil {
+			return Status{}, err
+		}
+		return s, nil
+	}
+}
+
+// SondeWindows interroge winget et scoop. Les deux sont facultatifs : sur une machine
+// qui n'a que scoop, le compteur winget reste à zéro et la version manque — le prompt
+// masque alors ce qu'il ne sait pas, plutôt que de disparaître entièrement. On ne
+// renonce que si aucun des deux n'est là.
+func SondeWindows() (Status, error) {
+	var s Status
+
+	// La version de winget est la seule question rapide de tout ce fichier (~100 ms) ;
+	// son échec ne dit rien de plus que celui du compteur, qui suit.
+	s.Version, _ = winget.Version()
+
+	obsoletes, errWinget := winget.Outdated()
+	if errWinget == nil {
+		s.Primary = obsoletes
+	}
+
+	if scoop.Present() {
+		if n, err := scoop.Outdated(); err == nil {
+			s.Secondary = n
+		}
+	} else if errWinget != nil {
+		return Status{}, fmt.Errorf("ni winget ni scoop : %w", errWinget)
+	}
+
+	return s, nil
 }
 
 // ecrire dépose la ligne de façon atomique : un prompt concurrent lit soit l'ancienne
@@ -223,31 +288,10 @@ func lockWait(dir string, attente time.Duration) (func(), bool) {
 
 // lock prend le verrou de rafraîchissement. Il renvoie la fonction de libération et un
 // booléen : faux si un autre rafraîchissement est déjà en cours.
-func lock(dir string) (func(), bool) {
-	chemin := verrou(dir)
-
-	f, err := os.OpenFile(chemin, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
-	if err != nil {
-		// Verrou déjà pris — sauf s'il traîne depuis assez longtemps pour que son
-		// propriétaire soit certainement mort.
-		info, serr := os.Stat(chemin)
-		if serr != nil || time.Since(info.ModTime()) < peremptionVerrou {
-			return nil, false
-		}
-		if err := os.Remove(chemin); err != nil {
-			return nil, false
-		}
-		if f, err = os.OpenFile(chemin, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600); err != nil {
-			return nil, false
-		}
-	}
-	f.Close()
-
-	return func() { os.Remove(chemin) }, true
-}
+func lock(dir string) (func(), bool) { return pm.Lock(verrou(dir)) }
 
 // brewReel exécute le vrai brew. Sa sortie d'erreur est ignorée : `brew outdated`
 // bavarde volontiers (téléchargement du catalogue) sans que ce soit une panne.
 func brewReel(args ...string) ([]byte, error) {
-	return exec.Command(brew.Path(), args...).Output()
+	return pm.Run(brew.Path(), args...)
 }

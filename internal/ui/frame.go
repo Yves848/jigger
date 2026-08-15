@@ -4,8 +4,11 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	// Alias : le paquet de tests du même dossier a déjà un `ansi` à lui.
+	xansi "github.com/charmbracelet/x/ansi"
 
 	"gitlab.yg-devworks.com/yves/jigger/internal/complete"
+	"gitlab.yg-devworks.com/yves/jigger/internal/pm"
 )
 
 // Key est un rappel de touche affiché en pastille au pied du popup.
@@ -26,6 +29,11 @@ type Frame struct {
 	FilterView string // ligne de filtre déjà rendue (mode pick) ; "" = pas de ligne
 	Empty      string // message affiché quand il n'y a aucun candidat
 	Keys       []Key  // rappels de touches du pied
+	// Focused dit si le popup a le clavier — c'est-à-dire si les flèches lui reviennent
+	// plutôt qu'à l'historique du shell. Sans focus, la ligne courante reste marquée (⇥
+	// l'insère toujours) mais d'une teinte au repos : c'est le seul indice qui dit à
+	// l'utilisateur où ira sa prochaine flèche.
+	Focused bool
 }
 
 // Largeur minimale en dessous de laquelle le cadre n'a plus de sens (le pied et les
@@ -40,8 +48,29 @@ func (f Frame) boxWidth() int {
 	return max(w, minWidth)
 }
 
-func (f Frame) rowWidth() int  { return f.boxWidth() - 2 }
-func (f Frame) nameWidth() int { return f.boxWidth() - 12 }
+func (f Frame) rowWidth() int { return f.boxWidth() - 2 }
+
+// tronquer ramène un texte à `largeur` colonnes, ellipse comprise. Le compte est fait en
+// colonnes d'affichage, pas en octets : un nom accentué n'occupe pas la place que sa
+// longueur laisse croire.
+func tronquer(s string, largeur int) string {
+	if largeur < 1 {
+		return ""
+	}
+	if lipgloss.Width(s) <= largeur {
+		return s
+	}
+	runes := []rune(s)
+	for len(runes) > 0 && lipgloss.Width(string(runes))+1 > largeur {
+		runes = runes[:len(runes)-1]
+	}
+	return string(runes) + "…"
+}
+
+// clip est le garde-fou : aucune ligne ne doit dépasser la largeur du cadre. Au-delà, le
+// terminal la replierait — et le popup occuperait plus de lignes que celles que le
+// greffon a réservées sous le prompt.
+func clip(s string, largeur int) string { return xansi.Truncate(s, largeur, "") }
 
 func (f Frame) rows() int {
 	if f.Rows <= 0 {
@@ -55,23 +84,23 @@ func (f Frame) Render() string {
 	var b strings.Builder
 
 	// Version poussée à droite (repère du binaire lancé), sur la même ligne que le titre.
-	head := promptStyle.Render("❯") + pad(1) + titleStyle.Render(f.Title)
+	// Elle passe à la trappe si le titre occupe déjà toute la largeur : c'est un repère,
+	// pas une information.
+	head := promptStyle.Render("❯") + pad(1) + titleStyle.Render(tronquer(f.Title, f.rowWidth()))
 	if Version != "" {
 		ver := verStyle.Render("jigger " + Version)
-		gap := f.boxWidth() - lipgloss.Width(head) - lipgloss.Width(ver)
-		if gap < 1 {
-			gap = 1
+		if gap := f.boxWidth() - lipgloss.Width(head) - lipgloss.Width(ver); gap >= 1 {
+			head += pad(gap) + ver
 		}
-		head += pad(gap) + ver
 	}
-	b.WriteString(head + "\n")
+	b.WriteString(clip(head, f.boxWidth()) + "\n")
 	if f.FilterView != "" {
-		b.WriteString(f.FilterView + "\n")
+		b.WriteString(clip(f.FilterView, f.boxWidth()) + "\n")
 	}
 
 	box := boxStyle.Width(f.boxWidth())
 	if len(f.Items) == 0 {
-		b.WriteString(pad(2) + emptyStyle.Render(f.Empty))
+		b.WriteString(clip(pad(2)+emptyStyle.Render(f.Empty), f.boxWidth()))
 		return box.Render(b.String())
 	}
 
@@ -81,10 +110,10 @@ func (f Frame) Render() string {
 	offset := min(max(f.Offset, 0), len(f.Items)-1)
 	end := min(offset+f.rows(), len(f.Items))
 	for i := offset; i < end; i++ {
-		b.WriteString(f.renderRow(f.Items[i], i == f.Sel) + "\n")
+		b.WriteString(clip(f.renderRow(f.Items[i], i == f.Sel), f.boxWidth()) + "\n")
 	}
 	b.WriteString("\n") // respiration avant le pied
-	b.WriteString(f.footer())
+	b.WriteString(clip(f.footer(), f.boxWidth()))
 	return box.Render(b.String())
 }
 
@@ -112,18 +141,7 @@ func pad(n int) string {
 }
 
 func (f Frame) renderRow(it complete.Item, selected bool) string {
-	name := it.Name
-	if nameMax := f.nameWidth(); len(name) > nameMax {
-		name = name[:nameMax-1] + "…"
-	}
-
-	glyph := "•"
-	switch it.Badge {
-	case "F":
-		glyph = "◆"
-	case "C":
-		glyph = "▣"
-	}
+	glyph := glyphe(it.Badge)
 
 	// Partie droite (alignée au bord) : version installée puis point « installé ».
 	// On la compose d'abord en texte nu pour calculer le remplissage.
@@ -138,6 +156,14 @@ func (f Frame) renderRow(it complete.Item, selected bool) string {
 		rightPlain += "●"
 	}
 
+	// Ce qui reste au nom : la ligne moins l'indentation, le glyphe, ses deux espaces, la
+	// partie droite et l'écart minimal. Le calculer d'après la partie droite *réelle* est
+	// tout l'enjeu : un identifiant long suivi d'une version longue
+	// (« ARP\Machine\X64\{226CEF88…  6.4.0.3079  ● ») débordait la ligne, le terminal la
+	// repliait, et le popup occupait deux fois les lignes annoncées — de quoi décaler
+	// tout l'affichage du shell.
+	name := tronquer(it.Name, f.rowWidth()-5-lipgloss.Width(rightPlain)-1)
+
 	// Géométrie commune aux deux états : 2 colonnes d'indentation à gauche, gouttière de
 	// 2 colonnes à droite. On calcule le remplissage sur le texte nu, avant tout style.
 	leftPlain := "  " + glyph + "  " + name
@@ -149,17 +175,14 @@ func (f Frame) renderRow(it complete.Item, selected bool) string {
 	// Ligne courante : rendue d'un seul tenant en texte nu, sans les couleurs par segment
 	// (leurs séquences de reset interrompraient le soulignement au milieu de la ligne).
 	if selected {
-		return selStyle.Width(f.rowWidth()).Render(leftPlain + strings.Repeat(" ", gap) + rightPlain)
+		style := selIdleStyle
+		if f.Focused {
+			style = selStyle
+		}
+		return style.Width(f.rowWidth()).Render(leftPlain + strings.Repeat(" ", gap) + rightPlain)
 	}
 
-	color := bulletStyle
-	switch it.Badge {
-	case "F":
-		color = formulaStyle
-	case "C":
-		color = caskStyle
-	}
-	left := pad(2) + color.Render(glyph) + pad(2) + nameStyle.Render(name)
+	left := pad(2) + couleur(it.Badge).Render(glyph) + pad(2) + nameStyle.Render(name)
 	right := ""
 	if it.Version != "" {
 		right = verStylePkg.Render(it.Version)
@@ -171,6 +194,30 @@ func (f Frame) renderRow(it complete.Item, selected bool) string {
 		right += dotStyle.Render("●")
 	}
 	return left + pad(gap) + right
+}
+
+// Chaque gestionnaire range ses paquets en deux classes (cf. pm) : la classe ordinaire
+// — formula, paquet du catalogue winget, bucket main — porte le losange ambré, l'autre
+// le carré violet. Une sous-commande ou une option, qui n'appartient à aucune, garde la
+// puce discrète.
+func glyphe(badge string) string {
+	switch badge {
+	case pm.BadgeFormula, pm.BadgeWinget, pm.BadgeScoop:
+		return "◆"
+	case pm.BadgeCask, pm.BadgeOther:
+		return "▣"
+	}
+	return "•"
+}
+
+func couleur(badge string) lipgloss.Style {
+	switch badge {
+	case pm.BadgeFormula, pm.BadgeWinget, pm.BadgeScoop:
+		return formulaStyle
+	case pm.BadgeCask, pm.BadgeOther:
+		return caskStyle
+	}
+	return bulletStyle
 }
 
 func (f Frame) footer() string {

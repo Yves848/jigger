@@ -94,7 +94,7 @@ func TestParseOutdatedJSONInvalide(t *testing.T) {
 }
 
 func TestLigneAllerRetour(t *testing.T) {
-	s := Status{Version: "6.0.17", Formulae: 7, Casks: 2, At: time.Unix(1755100000, 0)}
+	s := Status{Version: "6.0.17", Primary: 7, Secondary: 2, At: time.Unix(1755100000, 0)}
 
 	line := s.Line()
 	if want := "6.0.17\t7\t2\t1755100000"; line != want {
@@ -105,7 +105,7 @@ func TestLigneAllerRetour(t *testing.T) {
 	if !ok {
 		t.Fatal("ParseLine refuse une ligne qu'on vient d'écrire")
 	}
-	if got.Version != s.Version || got.Formulae != s.Formulae || got.Casks != s.Casks {
+	if got.Version != s.Version || got.Primary != s.Primary || got.Secondary != s.Secondary {
 		t.Errorf("aller-retour altéré : %+v", got)
 	}
 	if !got.At.Equal(s.At) {
@@ -131,7 +131,7 @@ func TestParseLigneRejetteLesMalformees(t *testing.T) {
 }
 
 func TestOutdatedEstLaSomme(t *testing.T) {
-	if got := (Status{Formulae: 7, Casks: 2}).Outdated(); got != 9 {
+	if got := (Status{Primary: 7, Secondary: 2}).Outdated(); got != 9 {
 		t.Errorf("Outdated() = %d, attendu 9", got)
 	}
 }
@@ -172,7 +172,7 @@ func TestRefreshEcritLeCacheEtLeRelit(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RefreshWith : %v", err)
 	}
-	if s.Version != "6.0.17" || s.Formulae != 2 || s.Casks != 1 {
+	if s.Version != "6.0.17" || s.Primary != 2 || s.Secondary != 1 {
 		t.Fatalf("état inattendu : %+v", s)
 	}
 	if time.Since(s.At) > time.Minute {
@@ -257,7 +257,7 @@ func TestRefreshWaitAttendQueLeVerrouSeLibere(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RefreshWaitWith : %v", err)
 	}
-	if s.Formulae != 2 || s.Casks != 1 {
+	if s.Primary != 2 || s.Secondary != 1 {
 		t.Errorf("état inattendu : %+v", s)
 	}
 	if _, ok := Read(dir); !ok {

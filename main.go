@@ -1,5 +1,10 @@
-// jigger — assistance Homebrew pour le terminal : complétion contextuelle et
-// sélecteur interactif (Bubble Tea), pensés pour être branchés dans zsh.
+// jigger — assistance aux gestionnaires de paquets dans le terminal : complétion
+// contextuelle et sélecteur interactif (Bubble Tea), pensés pour être branchés dans zsh
+// (Homebrew) ou PowerShell (winget, scoop).
+//
+// C'est le premier mot de la ligne qui désigne le gestionnaire : `brew`, `winget` ou
+// `scoop`. Toutes les sous-commandes ci-dessous s'emploient de la même façon quel que
+// soit celui-ci.
 //
 // Sous-commandes :
 //
@@ -7,13 +12,16 @@
 //	                           Code de sortie : 0 = insérer (⇥), 10 = exécuter (↩),
 //	                           2 = annulé (rien imprimé).
 //	jigger render --line "…"   popup sans état ni clavier : une ligne de métadonnées
-//	                           puis le cadre. C'est ce que le widget zsh appelle à
+//	                           puis le cadre. C'est ce que le widget du shell appelle à
 //	                           chaque frappe pour le popup vivant.
 //	jigger complete "<ligne>"  candidats (un par ligne) pour une complétion classique.
-//	jigger prompt              état de Homebrew en cache, pour le bloc oh-my-posh.
-//	                           --refresh interroge brew et réécrit le cache (lent, à
+//	jigger prompt              état du gestionnaire en cache, pour le bloc oh-my-posh.
+//	                           --refresh l'interroge et réécrit le cache (lent, à
 //	                           lancer détaché), --wait lui fait attendre le verrou
 //	                           plutôt que renoncer ; --path imprime le fichier de cache.
+//	jigger warm                reconstitue les catalogues périmés (lent, à lancer
+//	                           détaché) ; --all refait tout, --installed les seules
+//	                           listes de paquets installés (après une installation).
 //	jigger --version           version.
 package main
 
@@ -21,19 +29,20 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"strings"
+	"runtime"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/termenv"
 
-	"gitlab.yg-devworks.com/yves/jigger/internal/brew"
 	"gitlab.yg-devworks.com/yves/jigger/internal/complete"
+	"gitlab.yg-devworks.com/yves/jigger/internal/managers"
+	"gitlab.yg-devworks.com/yves/jigger/internal/pm"
 	"gitlab.yg-devworks.com/yves/jigger/internal/prompt"
 	"gitlab.yg-devworks.com/yves/jigger/internal/ui"
 )
 
-var version = "0.4.3"
+var version = "0.7.0"
 
 func main() {
 	ui.Version = version // affichée dans l'en-tête du sélecteur (repère du binaire lancé)
@@ -52,6 +61,8 @@ func main() {
 		runComplete(arg(2))
 	case "prompt":
 		os.Exit(runPrompt(os.Args[2:]))
+	case "warm":
+		os.Exit(runWarm(os.Args[2:]))
 	case "demo":
 		runDemo()
 	case "--version", "-v", "version":
@@ -70,7 +81,45 @@ func arg(i int) string {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: jigger pick|complete \"<ligne brew>\" | jigger render --line \"<ligne brew>\" | jigger prompt [--refresh [--wait]|--path]")
+	fmt.Fprintln(os.Stderr, "usage: jigger pick|complete \"<ligne>\" | jigger render --line \"<ligne>\" | jigger prompt [--refresh [--wait]|--path] | jigger warm [--all|--installed]")
+}
+
+// runWarm reconstitue les catalogues mis en cache. C'est le chemin lent — plusieurs
+// secondes pour winget —, lancé détaché : ni le rendu du popup ni le prompt n'attendent
+// jamais après lui, ils se contentent du cache précédent jusqu'à ce qu'il soit refait.
+//
+// Un verrou évite qu'une rafale de frappes — ou dix onglets ouverts d'un coup — ne lance
+// dix réchauffements concurrents.
+func runWarm(args []string) int {
+	fs := flag.NewFlagSet("warm", flag.ContinueOnError)
+	tout := fs.Bool("all", false, "refait tout, même ce qui est encore frais")
+	installes := fs.Bool("installed", false, "refait les seules listes de paquets installés")
+	if err := fs.Parse(args); err != nil {
+		return 2
+	}
+
+	scope := pm.ScopeStale
+	switch {
+	case *tout:
+		scope = pm.ScopeAll
+	case *installes:
+		scope = pm.ScopeInstalled
+	}
+
+	libere, ok := pm.Lock(pm.WarmLock())
+	if !ok {
+		return 0 // un autre réchauffement est en cours : il fait déjà le travail
+	}
+	defer libere()
+
+	code := 0
+	for _, m := range managers.Available() {
+		if err := m.Warm(scope); err != nil {
+			fmt.Fprintf(os.Stderr, "jigger warm (%s) : %v\n", m.Cmd(), err)
+			code = 1
+		}
+	}
+	return code
 }
 
 // runPrompt imprime l'état de Homebrew en cache — « version<TAB>formulae<TAB>casks<TAB>epoch » —
@@ -120,8 +169,7 @@ func runPrompt(args []string) int {
 
 // runComplete imprime les candidats (complétion non interactive).
 func runComplete(line string) {
-	res := complete.Complete(line, brew.Load())
-	for _, it := range res.Items {
+	for _, it := range complete.Complete(line).Items {
 		fmt.Println(it.Name)
 	}
 }
@@ -146,21 +194,30 @@ func runRender(args []string) int {
 	cols := fs.Int("cols", 0, "largeur du terminal")
 	rows := fs.Int("rows", 8, "nombre de candidats affichés")
 	color := fs.String("color", "auto", "profil couleur : auto|never|16|256|truecolor")
+	focus := fs.Bool("focus", false, "le popup a le clavier : les flèches lui reviennent")
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
 
 	lipgloss.SetColorProfile(colorProfile(*color))
 
-	res := complete.Complete(*line, brew.Load())
+	res := complete.Complete(*line)
+
+	// Le pied dit où ira la prochaine flèche : sans le focus, ↓ sert à entrer dans la
+	// liste (↑ reste l'historique) ; avec, les deux parcourent les candidats.
+	navigation := ui.Key{Key: "↓", Label: "parcourir"}
+	if *focus {
+		navigation = ui.Key{Key: "↑↓", Label: "naviguer"}
+	}
 
 	frame := ui.Frame{
-		Title: title(res),
-		Items: res.Items,
-		Rows:  *rows,
+		Title:   res.Title(),
+		Items:   res.Items,
+		Rows:    *rows,
+		Focused: *focus,
 		Keys: []ui.Key{
 			{Key: "⇥", Label: "insérer"},
-			{Key: "^N ^P", Label: "naviguer"},
+			navigation,
 			{Key: "^G", Label: "fermer"},
 		},
 	}
@@ -173,14 +230,19 @@ func runRender(args []string) int {
 		frame.Items = nil
 		frame.Empty = fmt.Sprintf("tapez pour filtrer… (%d paquets)", len(res.Items))
 	} else if len(res.Items) == 0 {
+		// Le gestionnaire a parfois mieux à dire qu'« aucun candidat » — un catalogue
+		// winget encore en cours de constitution, par exemple.
 		frame.Empty = "aucun candidat"
+		if res.Note != "" {
+			frame.Empty = res.Note
+		}
 	}
 
 	left := *line
 	if len(frame.Items) > 0 {
 		frame.Sel = min(max(*sel, 0), len(frame.Items)-1)
 		frame.Offset = ui.ScrollOffset(frame.Sel, len(frame.Items), *rows)
-		left = res.Prefix + insertText(res, frame.Items[frame.Sel].Name)
+		left = res.Prefix + res.Insert(frame.Items[frame.Sel].Name)
 	} else {
 		frame.Sel = -1
 	}
@@ -217,10 +279,10 @@ func boolField(b bool) string {
 	return "0"
 }
 
-// runPick lance le sélecteur et imprime la nouvelle ligne. Le TUI dessine sur /dev/tty
-// pour laisser stdout au résultat (comme fzf).
+// runPick lance le sélecteur et imprime la nouvelle ligne. Le TUI dessine sur le
+// terminal (/dev/tty, CONOUT$ sous Windows) pour laisser stdout au résultat (comme fzf).
 func runPick(line string) int {
-	res := complete.Complete(line, brew.Load())
+	res := complete.Complete(line)
 	if len(res.Items) == 0 {
 		return 1
 	}
@@ -229,11 +291,11 @@ func runPick(line string) int {
 	// popup (ni même le TTY) — comme le fait la complétion zsh sur une correspondance
 	// unique.
 	if len(res.Items) == 1 {
-		fmt.Print(res.Prefix + insertText(res, res.Items[0].Name))
+		fmt.Print(res.Prefix + res.Insert(res.Items[0].Name))
 		return 0
 	}
 
-	tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0)
+	tty, err := openTTY()
 	if err != nil {
 		return 1
 	}
@@ -241,9 +303,9 @@ func runPick(line string) int {
 
 	// stdout est capturé par le widget → lipgloss croirait à un pipe sans couleur.
 	// On fixe le profil couleur d'après le vrai terminal (le TTY).
-	lipgloss.SetColorProfile(termenv.NewOutput(tty).Profile)
+	lipgloss.SetColorProfile(termenv.NewOutput(tty.Out).Profile)
 
-	model := ui.New(title(res), res)
+	model := ui.New(res.Title(), res)
 	// Popup « classique » : rendu inline, SOUS la ligne de commande — qui reste
 	// visible. On descend d'une ligne (\r\n) pour que le cadre se dessine dessous (pas
 	// d'écran alterné). Bubble Tea gère ensuite son cadre en mouvements *relatifs*
@@ -251,10 +313,10 @@ func runPick(line string) int {
 	// vue vide quand `quitting` (cf. picker.View) → EraseScreenBelow. On remonte enfin
 	// d'une ligne pour reposer le curseur sur la ligne de commande ; le widget zsh la
 	// redessine (reset-prompt).
-	fmt.Fprint(tty, "\r\n")
-	prog := tea.NewProgram(model, tea.WithInput(tty), tea.WithOutput(tty))
+	fmt.Fprint(tty.Out, "\r\n")
+	prog := tea.NewProgram(model, tea.WithInput(tty.In), tea.WithOutput(tty.Out))
 	final, err := prog.Run()
-	fmt.Fprint(tty, "\x1b[1A\r") // curseur → début de la ligne de commande
+	fmt.Fprint(tty.Out, "\x1b[1A\r") // curseur → début de la ligne de commande
 	if err != nil {
 		return 1
 	}
@@ -264,51 +326,39 @@ func runPick(line string) int {
 		return 2 // annulé
 	}
 
-	fmt.Print(res.Prefix + insertText(res, m.Chosen.Name))
+	fmt.Print(res.Prefix + res.Insert(m.Chosen.Name))
 	if m.Execute {
 		return 10 // ↩ : commande à exécuter
 	}
 	return 0 // ⇥ : insérée
 }
 
-// insertText renvoie le texte à insérer, avec --cask automatique pour un cask pur
-// installé/réinstallé (sauf si --cask/--formula déjà présents).
-func insertText(res complete.Result, name string) string {
-	needCask := (res.Sub == "install" || res.Sub == "reinstall") &&
-		!strings.Contains(res.Prefix, "--cask") && !strings.Contains(res.Prefix, "--formula")
-	// NeedsCask est recalculé via le badge : un cask pur porte le badge "C".
-	if needCask {
-		for _, it := range res.Items {
-			if it.Name == name && it.Badge == "C" {
-				return "--cask " + name
-			}
-		}
-	}
-	return name
-}
-
 // runDemo imprime un aperçu statique du sélecteur (pour prévisualiser le rendu sans
-// installer le widget). stdout est ici un vrai terminal → couleurs détectées.
+// installer le widget), avec le gestionnaire de la plateforme. stdout est ici un vrai
+// terminal → couleurs détectées.
 func runDemo() {
 	lipgloss.SetColorProfile(termenv.TrueColor) // aperçu toujours coloré
-	res := complete.Result{
-		Executable: true,
-		Items: []complete.Item{
-			{Name: "git", Badge: "F", Installed: true, Version: "2.55.0"},
-			{Name: "gitui", Badge: "F"},
-			{Name: "gh", Badge: "F", Installed: true, Version: "2.62.0"},
-			{Name: "git-delta", Badge: "F"},
-			{Name: "google-chrome", Badge: "C"},
-			{Name: "firefox", Badge: "C"},
-		},
-	}
-	fmt.Println(ui.New("brew install", res).View())
-}
 
-// title résume le contexte affiché en tête du sélecteur.
-func title(res complete.Result) string {
-	if res.Sub == "" {
-		return "brew"
+	titre := "brew install"
+	items := []complete.Item{
+		{Name: "git", Badge: pm.BadgeFormula, Installed: true, Version: "2.55.0"},
+		{Name: "gitui", Badge: pm.BadgeFormula},
+		{Name: "gh", Badge: pm.BadgeFormula, Installed: true, Version: "2.62.0"},
+		{Name: "git-delta", Badge: pm.BadgeFormula},
+		{Name: "google-chrome", Badge: pm.BadgeCask},
+		{Name: "firefox", Badge: pm.BadgeCask},
 	}
-	return "brew " + res.Sub
+	if runtime.GOOS == "windows" {
+		titre = "winget install"
+		items = []complete.Item{
+			{Name: "Git.Git", Badge: pm.BadgeWinget, Installed: true, Version: "2.55.0"},
+			{Name: "GitHub.cli", Badge: pm.BadgeWinget, Installed: true, Version: "2.62.0"},
+			{Name: "GitHub.GitHubDesktop", Badge: pm.BadgeWinget},
+			{Name: "dandavison.delta", Badge: pm.BadgeWinget},
+			{Name: "Google.Chrome", Badge: pm.BadgeWinget},
+			{Name: "Canon.PrinterDriver", Badge: pm.BadgeOther, Installed: true, Version: "1.02"},
+		}
+	}
+
+	fmt.Println(ui.New(titre, complete.Result{Executable: true, Items: items}).View())
 }

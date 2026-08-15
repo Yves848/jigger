@@ -3,8 +3,9 @@
 # Deux modes, complémentaires :
 #
 #   • popup vivant — dès que la ligne courante est une commande brew, le sélecteur
-#     s'affiche sous le prompt et suit la frappe, sans rien demander. ^N/^P naviguent,
-#     ⇥ insère le candidat courant, ^G ferme le popup pour la ligne en cours.
+#     s'affiche sous le prompt et suit la frappe, sans rien demander. ↓ (ou ^N) fait
+#     entrer dans la liste, ↑ (ou ^P) en ressort et rend l'historique, ⇥ insère le
+#     candidat courant, ^G ferme le popup pour la ligne en cours.
 #   • Tab classique — quand le popup vivant est éteint (JIGGER_LIVE=0), ⇥ ouvre le
 #     sélecteur interactif plein écran (`jigger pick`, avec son filtre en sous-chaîne).
 #
@@ -30,6 +31,27 @@
 # En dessous de cette largeur de terminal, le cadre n'a plus de sens : on n'affiche rien.
 : "${JIGGER_MIN_COLUMNS:=30}"
 
+# ── Vérifications d'installation ──────────────────────────────────────────────────────
+
+if ! command -v jigger >/dev/null 2>&1; then
+  print -u2 "jigger : binaire introuvable dans le PATH. Greffon inactif."
+  return 0
+fi
+
+# Le greffon et le binaire vont par paire : le greffon passe à `jigger render` des options
+# qu'un binaire plus ancien ne connaît pas (`--focus`, entre autres). Celui-ci sortirait en
+# erreur, et le popup ne s'afficherait jamais — sans un mot, ce qui est la pire façon de
+# tomber en panne. Un appel au source (quelques millisecondes) suffit à le dire.
+typeset -g JIGGER_VERSION_REQUISE=0.7.0
+autoload -Uz is-at-least
+typeset -g _jigger_v=${${(z)"$(command jigger --version 2>/dev/null)"}[2]}
+if [[ -n $_jigger_v ]] && ! is-at-least $JIGGER_VERSION_REQUISE $_jigger_v; then
+  print -u2 "jigger : le binaire $(command -v jigger) est en $_jigger_v, or ce greffon en demande $JIGGER_VERSION_REQUISE. Recompile-le (« make install ») ou remplace celui du PATH. Greffon inactif."
+  unset _jigger_v
+  return 0
+fi
+unset _jigger_v
+
 autoload -Uz add-zle-hook-widget
 
 typeset -g _jigger_sel=0        # candidat courant
@@ -42,6 +64,8 @@ typeset -g _jigger_key=''       # signature du dernier rendu
 typeset -g _jigger_shown=0      # un cadre est-il actuellement à l'écran ?
 typeset -g _jigger_row_value='' # ligne écran du curseur (réponse au DSR)
 typeset -gi _jigger_dsr_misses=0 # DSR restés sans réponse d'affilée
+typeset -gi _jigger_focused=0   # le popup a-t-il le clavier ? (cf. _jigger_step)
+typeset -g _jigger_up_widget='' _jigger_down_widget='' # ce que les flèches faisaient
 
 _jigger_is_brew() { [[ $LBUFFER == 'brew' || $LBUFFER == 'brew '* ]] }
 
@@ -61,9 +85,10 @@ _jigger_color() {
 # _jigger_fetch appelle le binaire et met à jour l'état. Renvoie non-zéro s'il n'y a rien
 # à afficher.
 _jigger_fetch() {
-  local rows=${1:-$JIGGER_ROWS} out
+  local rows=${1:-$JIGGER_ROWS} out focus=false
+  (( _jigger_focused )) && focus=true
   out=$(command jigger render --line "$LBUFFER" --sel "$_jigger_sel" --cols "$COLUMNS" \
-        --rows "$rows" --color "$(_jigger_color)" 2>/dev/null) || return 1
+        --rows "$rows" --color "$(_jigger_color)" --focus=$focus 2>/dev/null) || return 1
 
   local -a lines
   lines=("${(@f)out}")
@@ -128,6 +153,35 @@ _jigger_draw() {
   _jigger_shown=1
 }
 
+# _jigger_room fait la place sous la ligne de commande en poussant l'écran de <n> lignes,
+# et rend 0 si la place est faite.
+#
+# Sans cela, le popup ne s'afficherait pour ainsi dire jamais : dans un terminal en usage,
+# le prompt occupe la dernière ligne de l'écran, et il n'y a rien en dessous. On fait donc
+# ce que fait n'importe quel sélecteur en incrustation (fzf --height, entre autres) : on
+# défile.
+#
+# Le curseur, lui, doit rester sur la ligne de commande — laquelle a monté de <n>. D'où le
+# `\e[nA` final : `\e8` (DECRC) ramène à la position *absolue* mémorisée, que le
+# défilement a laissée <n> lignes trop bas. Rien de tout cela ne trouble zle, qui se
+# déplace en relatif à partir de là où il a laissé le curseur.
+_jigger_room() {
+  local -i n=$1
+  (( n > 0 )) || return 0
+  # On ne pousse jamais la ligne de commande hors de l'écran : le prompt, qui peut tenir
+  # sur plusieurs lignes, doit rester lisible — et c'est là que zle redessine.
+  (( n > _jigger_row_value - 1 )) && n=$(( _jigger_row_value - 1 ))
+  (( n > 0 )) || return 1
+  { print -n $'\e7\e['$LINES';1H'
+    repeat $n print -n $'\n'
+    print -n $'\e8\e['$n'A'
+  } >/dev/tty
+  # La ligne de commande a monté, et le cadre déjà dessiné avec elle : il est toujours
+  # juste en dessous, donc toujours à effacer le moment venu (_jigger_shown ne bouge pas).
+  _jigger_row_value=$(( _jigger_row_value - n ))
+  return 0
+}
+
 # _jigger_erase efface tout ce qui est sous la ligne de commande.
 _jigger_erase() {
   (( _jigger_shown )) || return
@@ -159,6 +213,12 @@ _jigger_redisplay() {
   _jigger_row || return
   # 5 lignes de décor : 2 bordures, l'en-tête, la respiration, le pied.
   local -i fits=$(( LINES - _jigger_row_value - 5 ))
+  # Pas la place : on la fait, en poussant l'écran. Si le défilement échoue, on se
+  # contente de ce qu'il reste — et de rien du tout s'il ne reste rien.
+  if (( fits < JIGGER_ROWS )); then
+    _jigger_room $(( JIGGER_ROWS - fits ))
+    fits=$(( LINES - _jigger_row_value - 5 ))
+  fi
   if (( fits < 1 )); then
     _jigger_erase
     return
@@ -171,7 +231,7 @@ _jigger_redisplay() {
     _jigger_selline=$LBUFFER
   fi
 
-  local key="$LBUFFER|$_jigger_sel|$COLUMNS|$rows"
+  local key="$LBUFFER|$_jigger_sel|$_jigger_focused|$COLUMNS|$rows"
   if [[ $key != $_jigger_key ]]; then
     _jigger_key=$key
     _jigger_fetch $rows || { _jigger_frame=''; _jigger_count=0; _jigger_erase; return }
@@ -179,29 +239,58 @@ _jigger_redisplay() {
   [[ -n $_jigger_frame ]] && _jigger_draw "$_jigger_frame"
 }
 
-# ^N / ^P : naviguent si le popup est là, sinon rendent la main au widget d'origine
-# (historique). Les flèches ↑↓ ne sont jamais touchées.
-_jigger_next() {
-  if _jigger_active; then
+# _jigger_step décide de ce que fait une flèche, et rend 0 si le popup l'a prise. C'est
+# là que vit le focus, et la règle tient en deux phrases :
+#
+#   • ↓ fait entrer dans la liste (et y descend). Le popup a dès lors le clavier.
+#   • ↑ y remonte, et rend la main dès qu'on est déjà sur le premier candidat.
+#
+# Hors focus, les deux flèches restent l'historique — c'est le point : on ne perd pas
+# l'historique parce qu'un popup est ouvert. Le cadre montre où en est le focus (ligne
+# courante soulignée ou au repos), sans quoi la règle serait invisible.
+_jigger_step() {
+  _jigger_active || return 1
+  if (( $1 > 0 )); then
+    _jigger_focused=1
     (( _jigger_sel++ ))
-    _jigger_selline=$LBUFFER
   else
-    zle .down-line-or-history
+    (( _jigger_focused )) || return 1   # popup ouvert, mais pas au clavier
+    if (( _jigger_sel > 0 )); then
+      (( _jigger_sel-- ))
+    else
+      _jigger_focused=0
+    fi
   fi
+  _jigger_selline=$LBUFFER
+  return 0
 }
-_jigger_prev() {
-  if _jigger_active; then
-    (( _jigger_sel > 0 )) && (( _jigger_sel-- ))
-    _jigger_selline=$LBUFFER
-  else
-    zle .up-line-or-history
-  fi
+
+# ↑↓ : au popup s'il a (ou prend) le clavier, sinon au widget qui les tenait avant nous —
+# celui de l'historique, ou celui qu'un autre plugin y a mis.
+_jigger_down() { _jigger_step 1  || zle ${_jigger_down_widget:-.down-line-or-history} }
+_jigger_up()   { _jigger_step -1 || zle ${_jigger_up_widget:-.up-line-or-history} }
+
+# ^N / ^P : les mêmes, pour qui les préfère aux flèches.
+_jigger_next() { _jigger_step 1  || zle .down-line-or-history }
+_jigger_prev() { _jigger_step -1 || zle .up-line-or-history }
+
+# _jigger_bound_widget rend le widget déjà lié à une séquence, pour le lui rendre quand
+# le popup n'a pas le focus. Échoue si la touche est libre — ou si elle est déjà à nous,
+# ce qui arriverait en re-sourçant le plugin : on s'appellerait en boucle.
+_jigger_bound_widget() {
+  local -a champs
+  champs=( ${(z)"$(bindkey -- "$1" 2>/dev/null)"} )
+  (( ${#champs} >= 2 )) || return 1
+  local w=${(Q)champs[2]}
+  [[ -z $w || $w == undefined-key || $w == _jigger_* ]] && return 1
+  print -r -- $w
 }
 
 # ^G : ferme le popup jusqu'à la fin de la ligne. Sans popup, c'est l'abandon habituel.
 _jigger_dismiss() {
   if _jigger_active; then
     _jigger_dismissed=1
+    _jigger_focused=0
     _jigger_frame=''
     _jigger_erase
   else
@@ -225,13 +314,23 @@ _jigger_widget() {
     return
   fi
 
-  # Popup fermé par ^G : ⇥ le rouvre plutôt que d'ouvrir le sélecteur plein écran.
-  if (( JIGGER_LIVE )) && (( _jigger_dismissed )); then
-    _jigger_dismissed=0
-    _jigger_key=''
+  if (( JIGGER_LIVE )); then
+    # Popup fermé par ^G : ⇥ le rouvre.
+    if (( _jigger_dismissed )); then
+      _jigger_dismissed=0
+      _jigger_key=''
+      return
+    fi
+    # Popup allumé mais sans rien à proposer — aucun candidat, ou pas la place de
+    # l'afficher. ⇥ rend alors la main à la complétion du shell. Surtout pas au sélecteur
+    # plein écran : il dessinerait par-dessus le prompt et attendrait une touche, ce qui
+    # n'a rien à voir avec ce qu'on vient de demander.
+    zle expand-or-complete
     return
   fi
 
+  # JIGGER_LIVE=0 : le sélecteur plein écran, celui qu'on a explicitement choisi. Il
+  # possède le terminal le temps du choix.
   local out ret
   out="$(command jigger pick "$LBUFFER")"
   ret=$?
@@ -258,6 +357,7 @@ _jigger_line_init() {
   _jigger_shown=0   # nouvelle ligne : l'écran a défilé, il n'y a plus rien à effacer
   _jigger_sel=0
   _jigger_selline=''
+  _jigger_focused=0
   _jigger_dismissed=0
   _jigger_count=0
   _jigger_frame=''
@@ -267,6 +367,8 @@ _jigger_line_init() {
 zle -N _jigger_widget
 zle -N _jigger_next
 zle -N _jigger_prev
+zle -N _jigger_up
+zle -N _jigger_down
 zle -N _jigger_dismiss
 
 bindkey "$JIGGER_KEY" _jigger_widget
@@ -274,10 +376,119 @@ if (( JIGGER_LIVE )); then
   bindkey '^N' _jigger_next
   bindkey '^P' _jigger_prev
   bindkey '^G' _jigger_dismiss
+
+  # Les flèches : on relève d'abord ce qu'elles faisaient, puis on les prend. Les deux
+  # formes des séquences (mode normal et mode application) sont couvertes, plus celle
+  # que déclare le terminfo — c'est ce que fait zsh lui-même.
+  typeset -ga _jigger_up_keys=( '^[[A' '^[OA' )
+  typeset -ga _jigger_down_keys=( '^[[B' '^[OB' )
+  if zmodload -i zsh/terminfo 2>/dev/null; then
+    [[ -n ${terminfo[kcuu1]-} ]] && _jigger_up_keys+=( ${terminfo[kcuu1]} )
+    [[ -n ${terminfo[kcud1]-} ]] && _jigger_down_keys+=( ${terminfo[kcud1]} )
+  fi
+  for _jigger_k in $_jigger_up_keys;   do _jigger_up_widget=$(_jigger_bound_widget $_jigger_k)   && break; done
+  for _jigger_k in $_jigger_down_keys; do _jigger_down_widget=$(_jigger_bound_widget $_jigger_k) && break; done
+  for _jigger_k in $_jigger_up_keys;   do bindkey $_jigger_k _jigger_up;   done
+  for _jigger_k in $_jigger_down_keys; do bindkey $_jigger_k _jigger_down; done
+  unset _jigger_k
   add-zle-hook-widget line-pre-redraw _jigger_redisplay
   add-zle-hook-widget line-init _jigger_line_init
   add-zle-hook-widget line-finish _jigger_line_finish
 fi
+
+# ── Après une commande brew qui change l'état ─────────────────────────────────────────
+#
+# Deux choses vieillissent quand une commande brew passe, et une seule des deux regarde
+# le bloc de prompt :
+#
+#   • le **catalogue** — `brew tap`, `untap` et `update` changent la liste des noms
+#     connus. Sans rafraîchissement, une formule fraîchement tapée manquerait à la
+#     complétion jusqu'à la péremption du cache (24 h) ;
+#   • le **compteur du prompt**, faux dès qu'on installe ou qu'on met à niveau.
+#
+# La détection est donc ici, hors du bloc oh-my-posh : le catalogue doit être à jour même
+# sans JIGGER_PROMPT (c'est le pendant du `warm --installed` du module PowerShell).
+
+: "${JIGGER_PROMPT:=0}"
+# Âge du cache (secondes) au-delà duquel on relance un rafraîchissement détaché.
+: "${JIGGER_PROMPT_TTL:=1800}"
+# Le TTL seul laisserait le compteur mentir une demi-heure après un `brew upgrade`. On
+# repère donc les commandes brew qui changent l'état, et on rafraîchit dans la foulée —
+# en avant-plan, pour que le prompt qui suit immédiatement l'upgrade soit déjà juste.
+# C'est le seul endroit où le plugin fait attendre le prompt (quelques dixièmes de
+# seconde, après une commande qui a duré bien plus). JIGGER_PROMPT_SYNC=0 rend ce
+# rafraîchissement détaché : plus rien n'attend, mais le compteur ne se corrige qu'au
+# prompt suivant.
+: "${JIGGER_PROMPT_SYNC:=1}"
+
+zmodload -i zsh/datetime          # $EPOCHSECONDS, pour ne pas forker `date`
+autoload -Uz add-zsh-hook
+
+typeset -gi _jigger_prompt_dirty=0    # le compteur du prompt est connu faux
+typeset -gi _jigger_catalog_dirty=0   # la liste des noms connus est connue fausse
+
+# Sous-commandes qui changent ce que `brew outdated` répondra. `update` en fait partie :
+# il ne touche à rien d'installé, mais renouvelle le catalogue, donc la liste des
+# obsolètes. `cleanup` et `doctor`, eux, n'y changent rien.
+typeset -ga _jigger_brew_mutants=(
+  install reinstall uninstall remove rm upgrade update tap untap pin unpin
+  bundle autoremove
+)
+# Celles qui changent la liste des *noms* connus. `install` n'en est pas : elle installe
+# un paquet que le catalogue connaissait déjà — et les installés, eux, se lisent dans
+# Cellar et Caskroom, donc sans cache à refaire.
+typeset -ga _jigger_brew_catalog_mutants=( update tap untap )
+# Mots qui précèdent une commande sans en être une : la commande brew reste à venir.
+typeset -ga _jigger_prefixes=(
+  ';' '&' '&&' '||' '|' '|&' '(' ')' '{' '}' '!' then do else elif
+  sudo command env exec nohup time arch
+)
+
+# _jigger_preexec repère `brew <mutant>` dans la ligne sur le point de s'exécuter. On ne
+# lit que des mots — rien n'est évalué — et on n'accepte `brew` qu'en tête de commande :
+# « git commit -m 'brew upgrade' » ne déclenche donc rien.
+_jigger_preexec() {
+  local mot
+  local -i debut=1 brew=0
+  # ${(z)…} découpe comme le ferait le shell, sans rien exécuter.
+  for mot in ${(z)${3:-$1}}; do
+    if (( brew )); then
+      [[ $mot == -* ]] && continue   # « brew --quiet upgrade » compte pour un upgrade
+      (( ${_jigger_brew_mutants[(Ie)$mot]} ))         && _jigger_prompt_dirty=1
+      (( ${_jigger_brew_catalog_mutants[(Ie)$mot]} )) && _jigger_catalog_dirty=1
+      # Le premier mot nu est la sous-commande : ce qui suit ne nous apprend plus rien.
+      brew=0 debut=0
+      continue
+    fi
+    if (( ${_jigger_prefixes[(Ie)$mot]} )); then
+      debut=1
+      continue
+    fi
+    # Options d'un préfixe (`arch -arm64 brew …`) et affectations en tête
+    # (`HOMEBREW_NO_AUTO_UPDATE=1 brew …`) : la commande n'a toujours pas commencé.
+    if (( debut )) && [[ $mot == -* || $mot == *=* ]]; then
+      continue
+    fi
+    if (( debut )) && [[ ${mot:t} == brew ]]; then
+      brew=1
+      continue
+    fi
+    debut=0
+  done
+}
+
+# _jigger_precmd tourne avant chaque prompt, que le bloc oh-my-posh soit activé ou non :
+# le catalogue, lui, sert à la complétion.
+_jigger_precmd() {
+  if (( _jigger_catalog_dirty )); then
+    _jigger_catalog_dirty=0
+    # Détaché : personne n'attend après un catalogue. Le rendu qui suit se contentera de
+    # l'ancien s'il n'est pas encore prêt — c'est toute la règle du réchauffement.
+    { command jigger warm --all >/dev/null 2>&1 &! } 2>/dev/null
+  fi
+  (( JIGGER_PROMPT )) && _jigger_prompt_precmd
+  return 0
+}
 
 # ── Bloc Homebrew pour oh-my-posh ─────────────────────────────────────────────────────
 #
@@ -296,22 +507,8 @@ fi
 # Unique exception, assumée : le prompt qui suit une commande brew mutante. Là, le cache
 # est *connu* faux, et l'attendre coûte moins cher que d'afficher un mensonge (cf.
 # JIGGER_PROMPT_SYNC).
-: "${JIGGER_PROMPT:=0}"
-# Âge du cache (secondes) au-delà duquel on relance un rafraîchissement détaché.
-: "${JIGGER_PROMPT_TTL:=1800}"
-# Le TTL seul laisserait le compteur mentir une demi-heure après un `brew upgrade`. On
-# repère donc les commandes brew qui changent l'état, et on rafraîchit dans la foulée —
-# en avant-plan, pour que le prompt qui suit immédiatement l'upgrade soit déjà juste.
-# C'est le seul endroit où le plugin fait attendre le prompt (quelques dixièmes de
-# seconde, après une commande qui a duré bien plus). JIGGER_PROMPT_SYNC=0 rend ce
-# rafraîchissement détaché : plus rien n'attend, mais le compteur ne se corrige qu'au
-# prompt suivant.
-: "${JIGGER_PROMPT_SYNC:=1}"
 
 if (( JIGGER_PROMPT )); then
-  zmodload -i zsh/datetime          # $EPOCHSECONDS, pour ne pas forker `date`
-  autoload -Uz add-zsh-hook
-
   # Même règle que os.UserCacheDir() côté Go, qui sur macOS ignore XDG_CACHE_HOME.
   # `jigger prompt --path` donne le chemin exact — mais l'interroger coûterait un fork.
   if [[ -z $JIGGER_CACHE_DIR ]]; then
@@ -323,55 +520,6 @@ if (( JIGGER_PROMPT )); then
   fi
   typeset -g _jigger_status_file="$JIGGER_CACHE_DIR/status"
   typeset -gi _jigger_last_refresh=0
-  typeset -gi _jigger_prompt_dirty=0   # une commande brew mutante vient de tourner
-
-  # Sous-commandes qui changent ce que `brew outdated` répondra. `update` en fait partie :
-  # il ne touche à rien d'installé, mais renouvelle le catalogue, donc la liste des
-  # obsolètes. `cleanup` et `doctor`, eux, n'y changent rien.
-  typeset -ga _jigger_brew_mutants=(
-    install reinstall uninstall remove rm upgrade update tap untap pin unpin
-    bundle autoremove
-  )
-  # Mots qui précèdent une commande sans en être une : la commande brew reste à venir.
-  typeset -ga _jigger_prefixes=(
-    ';' '&' '&&' '||' '|' '|&' '(' ')' '{' '}' '!' then do else elif
-    sudo command env exec nohup time arch
-  )
-
-  # _jigger_prompt_preexec repère `brew <mutant>` dans la ligne sur le point de s'exécuter.
-  # On ne lit que des mots — rien n'est évalué — et on n'accepte `brew` qu'en tête de
-  # commande : « git commit -m 'brew upgrade' » ne déclenche donc rien.
-  _jigger_prompt_preexec() {
-    (( _jigger_prompt_dirty )) && return
-    local mot
-    local -i debut=1 brew=0
-    # ${(z)…} découpe comme le ferait le shell, sans rien exécuter.
-    for mot in ${(z)${3:-$1}}; do
-      if (( brew )); then
-        [[ $mot == -* ]] && continue   # « brew --quiet upgrade » compte pour un upgrade
-        if (( ${_jigger_brew_mutants[(Ie)$mot]} )); then
-          _jigger_prompt_dirty=1
-          return
-        fi
-        brew=0 debut=0
-        continue
-      fi
-      if (( ${_jigger_prefixes[(Ie)$mot]} )); then
-        debut=1
-        continue
-      fi
-      # Options d'un préfixe (`arch -arm64 brew …`) et affectations en tête
-      # (`HOMEBREW_NO_AUTO_UPDATE=1 brew …`) : la commande n'a toujours pas commencé.
-      if (( debut )) && [[ $mot == -* || $mot == *=* ]]; then
-        continue
-      fi
-      if (( debut )) && [[ ${mot:t} == brew ]]; then
-        brew=1
-        continue
-      fi
-      debut=0
-    done
-  }
 
   # Exporte <nom>=<valeur>, ou le retire de l'environnement si la valeur est nulle. C'est
   # ce qui permet aux templates de tester la simple présence de la variable.
@@ -430,13 +578,19 @@ if (( JIGGER_PROMPT )); then
     fi
   }
 
-  add-zsh-hook preexec _jigger_prompt_preexec
-  add-zsh-hook precmd _jigger_prompt_precmd
-
-  # oh-my-posh calcule tout son prompt dans son propre precmd, à partir de
-  # l'environnement tel qu'il le trouve. Si le nôtre passait après, il exporterait des
-  # compteurs qui ne seraient affichés qu'au prompt d'après — le bloc aurait toujours un
-  # coup de retard, exactement le symptôme qu'on corrige. On se place donc en tête, quel
-  # que soit l'ordre des `source` dans ~/.zshrc.
-  precmd_functions=( _jigger_prompt_precmd ${precmd_functions:#_jigger_prompt_precmd} )
 fi
+
+add-zsh-hook preexec _jigger_preexec
+add-zsh-hook precmd _jigger_precmd
+
+# oh-my-posh calcule tout son prompt dans son propre precmd, à partir de l'environnement
+# tel qu'il le trouve. Si le nôtre passait après, il exporterait des compteurs qui ne
+# seraient affichés qu'au prompt d'après — le bloc aurait toujours un coup de retard,
+# exactement le symptôme qu'on corrige. On se place donc en tête, quel que soit l'ordre
+# des `source` dans ~/.zshrc.
+precmd_functions=( _jigger_precmd ${precmd_functions:#_jigger_precmd} )
+
+# Au premier prompt, le catalogue peut être vieux d'un jour — ou absent, à la première
+# installation. On lance le réchauffement tout de suite, détaché : le binaire décide
+# lui-même s'il y a quelque chose à faire, et une frappe n'attend jamais après brew.
+{ command jigger warm >/dev/null 2>&1 &! } 2>/dev/null

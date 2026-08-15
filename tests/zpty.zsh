@@ -36,6 +36,11 @@ _jigger_rc() {
 PS1='%% '
 PATH="$root:\$PATH"
 COLORTERM=truecolor
+# Les flèches arrivent en trois octets (ESC [ A), et le harnais tape caractère par
+# caractère avec des pauses entre eux : sans allonger le délai, zsh conclurait à un
+# simple Échap avant d'avoir vu le reste. C'est un artefact du pseudo-terminal, pas du
+# plugin — un humain tape ses flèches d'un coup.
+KEYTIMEOUT=100
 # Stub : la ligne réellement exécutée est la seule chose observable de façon fiable
 # (zsh réécrit la ligne en incrémental, le texte complet n'apparaît jamais dans le flux).
 brew() { print -r -- "CMD:[\$*]" }
@@ -91,11 +96,22 @@ RC
 # widget refuse d'afficher tant qu'il ignore où est le curseur. C'est le seul endroit où
 # le harnais doit imiter un vrai terminal.
 : ${JIGGER_TEST_ROW:=3}
+typeset -gi _jigger_test_row=$JIGGER_TEST_ROW   # ligne du curseur, telle qu'elle évolue
 _drain() {
+  setopt local_options extendedglob
   local chunk all=''
   while zpty -r -t z chunk 2>/dev/null; do
     all+=$chunk
-    [[ $chunk == *$'\e[6n'* ]] && zpty -w -n z $'\e['$JIGGER_TEST_ROW';1R'
+    [[ $chunk == *$'\e[6n'* ]] && zpty -w -n z $'\e['$_jigger_test_row';1R'
+    # Le greffon a poussé l'écran pour faire la place au cadre (cf. _jigger_room). Dans un
+    # vrai terminal, tout monte d'autant et la ligne du curseur diminue : le harnais doit
+    # le simuler, sans quoi il répondrait éternellement la même ligne et le greffon
+    # redemanderait la place à chaque frappe. La séquence est reconnaissable — un DECRC
+    # suivi d'une remontée de N lignes, que rien d'autre n'émet.
+    if [[ $chunk == (#b)*$'\e8\e['([0-9]##)'A'* ]]; then
+      (( _jigger_test_row -= match[1] ))
+      (( _jigger_test_row < 1 )) && _jigger_test_row=1
+    fi
   done
   print -rn -- $all
 }
@@ -109,6 +125,7 @@ jigger_type() {
     _jigger_rc $rc
   fi
 
+  _jigger_test_row=$JIGGER_TEST_ROW
   zpty -b z zsh -f -i
   sleep 0.6; _drain >/dev/null
   zpty -w z "source $rc"
@@ -178,6 +195,14 @@ suite() {
   check "en-tête du contexte"           "$out" '❯ brew'
   check "candidat install"              "$out" 'install'
 
+  print -r -- "→ le popup s'affiche même quand le prompt est en bas de l'écran"
+  # Le cas ordinaire d'un terminal en usage : il n'y a rien sous le prompt. Tant que le
+  # greffon refusait de faire la place, le cadre ne s'affichait alors jamais — et le
+  # harnais ne pouvait pas le voir, puisqu'il répondait invariablement « ligne 3 ».
+  out=$(visible "$(JIGGER_TEST_ROW=22 jigger_type 'brew inst')")
+  check "cadre affiché malgré tout"     "$out" '╭─'
+  check "candidat install"              "$out" 'install'
+
   print -r -- "→ une ligne qui n'est pas brew n'affiche rien"
   out=$(visible "$(jigger_type 'echo hi')")
   check "aucun cadre"                   "$out" '╭─' non
@@ -186,6 +211,15 @@ suite() {
   out=$(visible "$(jigger_type $'brew u\t\n')")
   check "uninstall exécuté"             "$out" 'CMD:[uninstall]'
 
+  print -r -- "→ ⇥ sans candidat rend la main à la complétion du shell"
+  # Aucun paquet ne s'appelle « zzzzqq » : il n'y a rien à insérer. ⇥ ne doit surtout pas
+  # ouvrir le sélecteur plein écran — il dessinerait par-dessus le prompt et attendrait
+  # une touche, ce qui n'a rien à voir avec ce qu'on vient de demander. Son pied le
+  # trahirait : « esc annuler » n'existe que là, le popup vivant proposant « ^G fermer ».
+  out=$(visible "$(jigger_type $'brew install zzzzqq\t\n')")
+  check "ligne exécutée telle quelle"   "$out" 'CMD:[install zzzzqq]'
+  check "aucun sélecteur plein écran"   "$out" 'annuler' non
+
   print -r -- "→ ^N descend d'un candidat avant l'insertion"
   out=$(visible "$(jigger_type $'brew u\x0e\t\n')")
   check "upgrade exécuté"               "$out" 'CMD:[upgrade]'
@@ -193,6 +227,24 @@ suite() {
   print -r -- "→ ^P remonte, et ne dépasse pas le premier"
   out=$(visible "$(jigger_type $'brew u\x0e\x10\x10\t\n')")
   check "retour sur uninstall"          "$out" 'CMD:[uninstall]'
+
+  print -r -- "→ ↓ fait entrer dans la liste, ↑ en ressort"
+  out=$(visible "$(jigger_type $'brew u\e[B\t\n')")
+  check "↓ descend d'un candidat"       "$out" 'CMD:[upgrade]'
+  out=$(visible "$(jigger_type $'brew u\e[B\e[A\e[A\t\n')")
+  check "↑ remonte, puis rend le clavier" "$out" 'CMD:[uninstall]'
+
+  print -r -- "→ tant que le popup n'a pas le clavier, ↑ reste l'historique"
+  # La commande précédente doit revenir dans la ligne, popup ouvert ou non : c'est toute
+  # la raison d'être du focus.
+  out=$(visible "$(jigger_type $'brew leaves\nbrew u\e[A\n')")
+  check "commande précédente rappelée"  "${out#*CMD:\[leaves\]}" 'CMD:[leaves]'
+
+  print -r -- "→ le pied dit où ira la prochaine flèche"
+  out=$(visible "$(jigger_type 'brew u')")
+  check "invite à entrer dans la liste" "$out" '↓  parcourir'
+  out=$(visible "$(jigger_type $'brew u\e[B')")
+  check "puis à naviguer"               "$out" '↑↓  naviguer'
 
   print -r -- "→ ^G ferme le popup et laisse la ligne intacte"
   out=$(visible "$(jigger_type $'brew u\x07\n')")
@@ -228,6 +280,22 @@ suite() {
   check "rafraîchissement forcé"        "$appels" 'prompt --refresh --wait'
   check "compteur remis à jour"         "${out##*CMD:\[upgrade\]}" 'jf=vide'
   check "l'ancien compteur a disparu"   "${out##*CMD:\[upgrade\]}" 'jf=10' non
+
+  print -r -- "→ le catalogue est réchauffé au chargement, et après un brew tap"
+  # Le réchauffement ne regarde pas le bloc de prompt : le catalogue sert à la
+  # complétion. On l'observe ici parce que le faux jigger journalise ses appels.
+  dir=$(mktemp -d); rc=$dir/rc.zsh; _jigger_prompt_rc $rc $dir
+  out=$(visible "$(jigger_type $'brew tap foo/bar\n' $rc)")
+  appels=$(cat $dir/appels)
+  check "réchauffement au chargement"   "$appels" 'warm'
+  check "puis après le tap"             "$appels" 'warm --all'
+
+  print -r -- "→ un brew install ne réchauffe pas le catalogue"
+  # Il installe un paquet que le catalogue connaissait déjà — et les installés se lisent
+  # dans Cellar et Caskroom, sans cache à refaire.
+  dir=$(mktemp -d); rc=$dir/rc.zsh; _jigger_prompt_rc $rc $dir
+  out=$(visible "$(jigger_type $'brew install jq\n' $rc)")
+  check "aucun réchauffement inutile"   "$(cat $dir/appels)" 'warm --all' non
 
   print -r -- "→ la détection voit brew derrière un préfixe, et pas dans une citation"
   dir=$(mktemp -d); rc=$dir/rc.zsh; _jigger_prompt_rc $rc $dir
