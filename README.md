@@ -150,6 +150,190 @@ frappe. jigger réenregistre donc, une à une, les touches qui modifient la lign
 ASCII imprimables, plus celles de cette liste. Sur un clavier AZERTY, la rangée des
 chiffres non pressée donne « éèçàù » : d'où le réglage, et sa valeur par défaut.
 
+## Une seule syntaxe
+
+Au-dessus des trois popups natifs, `jg <verbe> [paquet…]` — alias de `jigger <verbe>…`,
+posé par le greffon zsh — parle un seul vocabulaire aux trois gestionnaires. `jg install fd`
+fait exactement ce que ferait `brew install fd` (ou `scoop install fd`, ou
+`winget install --id fd --exact`) : la façade se contente de trouver, pour `fd`, quel
+gestionnaire le connaît et comment le lui demander.
+
+### Douze verbes, trois traductions
+
+**Universels** — les trois gestionnaires savent faire :
+
+| Verbe `jg` | brew | winget | scoop |
+|---|---|---|---|
+| `install {pkgs}` | `install {pkgs}` | `install --id {pkg} --exact` | `install {pkgs}` |
+| `uninstall {pkgs}` | `uninstall {pkgs}` | `uninstall --id {pkg} --exact` | `uninstall {pkgs}` |
+| `upgrade [pkgs]` | `upgrade [pkgs]` | `upgrade --id {pkg}` | `update {pkgs}` / `update *` |
+| `list` | `list --versions` | `list` | `list` |
+| `outdated` | `outdated --json=v2` | `list --upgrade-available` | lu sur le disque, sans sous-processus |
+| `search {q}` | `search {q}` | `search {q}` | `search {q}` |
+| `info {pkg}` | `info {pkg}` | `show --id {pkg}` | `info {pkg}` |
+
+`{pkgs}` chez brew et scoop : une seule invocation, tous les noms dessus — `{pkg}` chez
+winget : un `--id` par appel, un appel par nom. winget ne prend qu'un identifiant à la
+fois ; jigger appelle donc autant de fois qu'il y a de noms qui lui reviennent, en séquence.
+
+**Convergents** — un même concept, un nom différent chez chacun (ou chez deux sur trois) :
+
+| Verbe `jg` | brew | winget | scoop |
+|---|---|---|---|
+| `source` | `tap` | `source list` | `bucket list` |
+| `source add {arg}` | `tap {arg}` | `source add {arg}` | `bucket add {arg}` |
+| `source rm {arg}` | `untap {arg}` | `source remove {arg}` | `bucket rm {arg}` |
+| `pin {pkg}` | `pin {pkg}` | `pin add --id {pkg}` | `hold {pkg}` |
+| `unpin {pkg}` | `unpin {pkg}` | `pin remove --id {pkg}` | `unhold {pkg}` |
+| `cleanup` | `cleanup` | _(pas ce concept)_ | `cleanup *` |
+| `doctor` | `doctor` | _(pas ce concept)_ | `checkup` |
+
+`cleanup` et `doctor` n'existent pas chez winget : les demander avec winget pour seul
+gestionnaire disponible échoue proprement, en disant qui saurait faire ça et pourquoi ce
+n'est pas lui — c'est le modèle de capacités qui parle, pas une erreur muette.
+
+> **Colonnes winget et scoop : à prendre avec précaution.** Elles viennent du cahier des
+> charges et n'ont, à ce jour, jamais été vérifiées contre une vraie installation — cette
+> machine est un Mac. Seule la colonne brew a tourné pour de vrai (`brew <verbe> --help`,
+> une à une). `internal/winget/verbs.go` et `internal/scoop/verbs.go` portent le même
+> avertissement en commentaire ; une passe Windows le lèvera.
+
+### Le routage : jamais de choix automatique
+
+jigger cherche le nom demandé dans le catalogue de chaque gestionnaire disponible :
+
+- **un seul le connaît** → il gagne, sans qu'on ait à le dire ;
+- **plusieurs le connaissent** → le sélecteur s'ouvre, badges à l'appui — le même popup
+  qu'à la complétion, avec un autre titre à son cadre ;
+- **aucun ne le connaît** → erreur, avec les voisins les plus proches quand le catalogue
+  en propose.
+
+Il n'y a pas de quatrième cas : aucun réglage (pas de `JIGGER_PM_ORDER`) ne tranche à la
+place de l'utilisateur. Deux paquets qui portent le même nom ne sont pas forcément le même
+logiciel, et un arbitrage silencieux entre les deux est précisément ce qui rendrait une
+façade impossible à croire.
+
+Deux erreurs capturées pour de vrai (brew, seul gestionnaire présent sur cette machine) :
+
+```
+$ jg frobnicate
+jigger : « frobnicate » — verbe inconnu. « jg ⇥ » liste ce que jigger sait faire
+
+$ jg info zzznonexistentpkgzzz
+jigger : « zzznonexistentpkgzzz » — inconnu de brew
+        Si le paquet est trop récent pour le catalogue : jg … --pm brew zzznonexistentpkgzzz
+```
+
+`--pm <gestionnaire>` est l'échappatoire — pour trancher une ambiguïté hors terminal (pipe,
+script, CI), atteindre un paquet trop récent pour le catalogue en cache, ou cibler un verbe
+sans nom (`jg doctor --pm scoop`). Capturé pour de vrai, sur une machine qui n'a que
+brew — d'où l'échec, celui d'un gestionnaire absent plutôt que celui d'une ambiguïté :
+
+```
+$ jg list --pm scoop
+jigger : --pm scoop — gestionnaire indisponible pour ce verbe. Disponibles : brew
+```
+
+Sous Windows, avec winget et scoop tous deux présents, une vraie ambiguïté ouvrirait le
+sélecteur (exemple illustratif, faute de machine Windows sous la main) :
+
+```
+$ jg install git
+┌─ git : 2 gestionnaires ──────────┐
+│ ◆ Git.Git            winget      │
+│ ▣ git                scoop/main  │
+└─ ↵ choisir   ^G annuler ─────────┘
+```
+
+### `--json`, `--yes`
+
+Les quatre verbes qui rendent un **tableau** — `list`, `outdated`, `search`, `source` —
+acceptent `--json` pour la même donnée en machine-readable. Tout le reste (`install`,
+`uninstall`, `info`…) relaie la sortie du gestionnaire **telle quelle** : invites, barres
+de progression et élévation UAC fonctionnent sans une ligne de code de plus, précisément
+parce que jigger ne s'interpose pas.
+
+Capturé pour de vrai (`brew`, macOS) :
+
+```
+$ jg outdated
+PAQUET         ACTUEL    DISPO
+boost          1.90.0_1  1.92.0
+pipx           1.16.6    1.16.7
+uv             0.12.4    0.12.5
+vtk            9.6.2     9.6.2_1
+1password-cli  2.38.1    2.39.0
+claude-code    2.1.223   2.1.224
+
+$ jg outdated --json
+[
+  {
+    "name": "boost",
+    "version": "1.90.0_1",
+    "available": "1.92.0",
+    "kind": "F",
+    "source": "",
+    "pm": "brew"
+  },
+  …
+]
+```
+
+Et un exemple de relais brut, sur `info` (jamais normalisé) — tronqué ici, mais chaque
+ligne ci-dessous est celle qu'imprime réellement `brew info fd` :
+
+```
+$ jg info fd
+==> fd: stable 10.4.2 (bottled), HEAD
+Simple, fast and user-friendly alternative to find
+https://github.com/sharkdp/fd
+Conflicts with:
+  fdclone (because both install `fd` binaries)
+Not installed
+…
+```
+
+`--yes` accepte les **accords de licence de winget**
+(`--accept-package-agreements --accept-source-agreements`) sur `install`/`uninstall`/
+`upgrade`. Il n'est **jamais implicite** : sans lui, l'invite de winget s'affiche
+normalement — la sortie étant relayée, rien n'empêche d'y répondre à la main. Chez brew et
+scoop, qui n'ont pas cette notion, `--yes` ne fait rien.
+
+### La colonne PM
+
+```
+$ jg source
+PAQUET                     ACTUEL
+asmvik/formulae
+felixkratz/formulae
+jandedobbeleer/oh-my-posh
+koekeishiya/formulae
+nikitabobko/tap
+yves/cocktails
+```
+
+(capturé pour de vrai — les taps réellement configurés sur cette machine ; `list` ci-dessus
+et `outdated` plus haut sont dans le même cas.) La colonne `PM` ne s'affiche que si
+**plusieurs** gestionnaires ont contribué à un tableau — une colonne toujours identique
+n'apprend rien. Sur cette machine, brew seul répond : pas de colonne PM. Avec winget et
+scoop tous deux présents, `jg outdated` afficherait une troisième colonne distinguant les
+deux origines.
+
+### Ce que la façade ne change pas
+
+Les commandes natives — `brew install fd`, `winget search Git`, `scoop info 7zip` —
+continuent de marcher exactement comme avant, popup vivant compris : la façade **s'ajoute**,
+elle ne remplace rien. `jg`/`jigger` est un chemin de plus, pas un chemin obligé.
+
+**Ce qui n'est pas encore là :**
+
+- **PowerShell n'a pas encore l'alias `jg`.** Seul le greffon zsh
+  (`shell/jigger.plugin.zsh`) reconnaît `jigger`/`jg` en plus de `brew` ; `shell/jigger.psm1`
+  garde `JIGGER_COMMANDS` à `winget,scoop` par défaut, sans façade. Une passe Windows la
+  posera.
+- Les colonnes winget et scoop de la table ci-dessus restent **non vérifiées en pratique**
+  (cf. l'avertissement plus haut) — seule brew a tourné pour de vrai.
+
 ## Bloc oh-my-posh
 
 Un bloc dans le prompt : la **version du gestionnaire**, et les **mises à jour en
@@ -277,6 +461,10 @@ depuis ta propre fonction `prompt`.
 Le greffon s'appuie sur ces sous-commandes ; utilisables seules :
 
 ```sh
+jigger <verbe> [--pm <gestionnaire>] [--json] [--yes] [arguments…]
+                                 # la façade, cf. § Une seule syntaxe — install, uninstall,
+                                 # upgrade, list, outdated, search, info, source[ add|rm],
+                                 # pin, unpin, cleanup, doctor
 jigger render --line "winget install Git." --sel 0 --cols 80   # une frame du popup vivant
                                  # 1re ligne : count=… sel=… exec=… left=<ligne complétée>
                                  # --focus=true : le popup a le clavier (cf. § Usage)
@@ -291,6 +479,12 @@ jigger warm                      # reconstitue les catalogues périmés (lent, d
 jigger warm --installed          # les seules listes de paquets installés
 jigger warm --all                # tout, périmé ou non
 ```
+
+`render`, `complete`, `pick`, `prompt`, `warm` et `demo` sont des **mots réservés** : le
+premier mot de la ligne est un verbe de façade dès qu'il n'en fait pas partie. Contrainte
+permanente pour la suite — aucun futur usage interne ne pourra reprendre le nom d'un verbe
+canonique ; s'il fallait un jour un « jigger list » interne, c'est lui qui changerait de
+nom, pas le verbe.
 
 `render` est **sans état** : l'index sélectionné vit côté shell et lui revient par
 `--sel`. C'est ce qui permet au greffon de rester maître du clavier — le shell garde sa
@@ -346,12 +540,32 @@ fabriqué.
 
 ## Feuille de route
 
+- **L'alias `jg` sous PowerShell.** Posé côté zsh seulement (§ Une seule syntaxe) ;
+  `shell/jigger.psm1` attend encore d'ajouter `jigger`/`jg` à `JIGGER_COMMANDS`.
+- **Vérifier les colonnes winget et scoop** de la table de verbes contre les vraies CLI
+  (`internal/winget/verbs.go`, `internal/scoop/verbs.go`) — écrites de mémoire, jamais
+  confrontées à une machine Windows.
 - Complétion **fish** et **bash**.
 - Wrapper de commande : proposer d'**enchaîner** sur les commandes suggérées par le
   gestionnaire (« To install …, run: … »).
-- Aperçu (`brew desc`, `winget show`) dans le sélecteur.
+- Volet d'aperçu (`brew desc`, `winget show`) dans le sélecteur **et** dans `jg search` /
+  `jg info`.
 - Distribution comme **commande externe brew** (`brew jigger`) via un tap, et paquet
   **scoop** / **winget**.
+
+Non-buts assumés de la phase 1 de la façade — écartés en connaissance de cause, pas
+oubliés :
+
+- **Les verbes singuliers** (`brew services`, `winget export`, `scoop reset`…) — une ligne
+  de table chacun, le jour où l'un vient à manquer.
+- **Le départage automatique** (un `JIGGER_PM_ORDER` qui choisirait pour toi entre deux
+  gestionnaires qui connaissent le même nom) — un arbitrage silencieux entre deux `git` qui
+  ne sont pas le même logiciel romprait la confiance dans la façade. `--pm` reste la seule
+  échappatoire.
+- **Les gestionnaires tiers par sous-processus** (apt, pacman… branchés sans recompiler) —
+  mérite son propre ADR.
+- **De nouveaux gestionnaires** eux-mêmes — la phase 1 prouve le mécanisme sur trois, pas
+  sur cinq.
 
 ## Licence
 
