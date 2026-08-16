@@ -35,9 +35,10 @@ func TestClesDeLaFacade(t *testing.T) {
 	for _, cle := range []string{
 		"facade.no_verb", "facade.unknown_verb", "facade.nobody_can",
 		"facade.unknown_pm", "facade.pm_unavailable", "facade.unknown_name",
-		"facade.near", "facade.too_recent", "facade.ambiguous", "facade.choose_pm",
-		"facade.failed", "facade.unreadable", "facade.no_parser", "facade.nothing",
-		"table.package", "table.current", "table.available", "table.source", "table.pm",
+		"facade.near", "facade.too_recent", "facade.ambiguous", "facade.ambiguous_title",
+		"facade.choose_pm", "facade.failed", "facade.unreadable", "facade.no_parser",
+		"facade.nothing", "table.package", "table.current", "table.available",
+		"table.source", "table.pm",
 	} {
 		trad, ok := catalogue[cle]
 		if !ok {
@@ -46,6 +47,22 @@ func TestClesDeLaFacade(t *testing.T) {
 		}
 		if trad[FR] == "" {
 			t.Errorf("%s : le français est vide", cle)
+		}
+	}
+}
+
+// Les clés de la ligne de commande (usage, drapeaux, derniers messages de main.go)
+// existent dans le catalogue.
+func TestClesDuCli(t *testing.T) {
+	for _, cle := range []string{
+		"cli.usage1", "cli.usage2", "cli.usage3",
+		"cli.flag_all", "cli.flag_installed", "cli.flag_refresh", "cli.flag_wait",
+		"cli.flag_path", "cli.flag_line", "cli.flag_sel", "cli.flag_cols",
+		"cli.flag_rows", "cli.flag_color", "cli.flag_focus", "cli.warm_failed",
+		"cli.prompt_failed",
+	} {
+		if _, ok := catalogue[cle]; !ok {
+			t.Errorf("%s : absente du catalogue", cle)
 		}
 	}
 }

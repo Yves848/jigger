@@ -102,9 +102,9 @@ func arg(i int) string {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: jigger <verbe> [--pm <gestionnaire>] [--json] [--yes] [arguments…]")
-	fmt.Fprintln(os.Stderr, "       jigger pick|complete \"<ligne>\" | jigger render --line \"<ligne>\"")
-	fmt.Fprintln(os.Stderr, "       jigger prompt [--refresh [--wait]|--path] | jigger warm [--all|--installed]")
+	fmt.Fprintln(os.Stderr, i18n.T("cli.usage1"))
+	fmt.Fprintln(os.Stderr, i18n.T("cli.usage2"))
+	fmt.Fprintln(os.Stderr, i18n.T("cli.usage3"))
 }
 
 // optsCLI rassemble les drapeaux que jigger interprète lui-même. Tous les autres mots en
@@ -208,17 +208,17 @@ func trancher(amb *facade.Ambiguite) (string, bool) {
 
 	tty, err := openTTY()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "jigger : « %s » — connu de plusieurs gestionnaires :\n", amb.Nom)
+		fmt.Fprintf(os.Stderr, i18n.T("facade.ambiguous"), amb.Nom)
 		for _, c := range amb.Candidats {
 			fmt.Fprintf(os.Stderr, "        %s\n", c.Mgr.Cmd())
 		}
-		fmt.Fprintln(os.Stderr, "        Choisis avec --pm <gestionnaire>")
+		fmt.Fprintln(os.Stderr, i18n.T("facade.choose_pm"))
 		return "", false
 	}
 	defer tty.Close()
 
 	lipgloss.SetColorProfile(termenv.NewOutput(tty.Out).Profile)
-	titre := fmt.Sprintf("%s : %d gestionnaires", amb.Nom, len(amb.Candidats))
+	titre := i18n.Tf("facade.ambiguous_title", amb.Nom, len(amb.Candidats))
 	model := ui.New(titre, complete.Result{Executable: true, Items: items})
 	// Pied propre à la désambiguïsation : on choisit un gestionnaire, on n'insère ni
 	// n'exécute une commande — ⇥/↩ n'y ont pas de sens (spec §3, README).
@@ -247,8 +247,8 @@ func trancher(amb *facade.Ambiguite) (string, bool) {
 // dix réchauffements concurrents.
 func runWarm(args []string) int {
 	fs := flag.NewFlagSet("warm", flag.ContinueOnError)
-	tout := fs.Bool("all", false, "refait tout, même ce qui est encore frais")
-	installes := fs.Bool("installed", false, "refait les seules listes de paquets installés")
+	tout := fs.Bool("all", false, i18n.T("cli.flag_all"))
+	installes := fs.Bool("installed", false, i18n.T("cli.flag_installed"))
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
@@ -270,7 +270,7 @@ func runWarm(args []string) int {
 	code := 0
 	for _, m := range managers.Available() {
 		if err := m.Warm(scope); err != nil {
-			fmt.Fprintf(os.Stderr, "jigger warm (%s) : %v\n", m.Cmd(), err)
+			fmt.Fprint(os.Stderr, i18n.Tf("cli.warm_failed", m.Cmd(), err))
 			code = 1
 		}
 	}
@@ -285,9 +285,9 @@ func runWarm(args []string) int {
 // détaché, remonte ses échecs (utile en débogage).
 func runPrompt(args []string) int {
 	fs := flag.NewFlagSet("prompt", flag.ContinueOnError)
-	refresh := fs.Bool("refresh", false, "interroge brew et réécrit le cache (lent)")
-	wait := fs.Bool("wait", false, "avec --refresh : attend le verrou au lieu de renoncer")
-	path := fs.Bool("path", false, "imprime le chemin du fichier de cache")
+	refresh := fs.Bool("refresh", false, i18n.T("cli.flag_refresh"))
+	wait := fs.Bool("wait", false, i18n.T("cli.flag_wait"))
+	path := fs.Bool("path", false, i18n.T("cli.flag_path"))
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
@@ -309,7 +309,7 @@ func runPrompt(args []string) int {
 		if err != nil {
 			// Verrou pris par un autre shell, ou brew injoignable : le cache précédent
 			// reste en place et sera réessayé au prochain prompt périmé.
-			fmt.Fprintln(os.Stderr, "jigger prompt --refresh :", err)
+			fmt.Fprintln(os.Stderr, i18n.T("cli.prompt_failed"), err)
 			return 1
 		}
 		fmt.Println(s.Line())
@@ -344,12 +344,12 @@ const tropDeCandidats = 300
 // shell le récupère donc comme « tout ce qui suit ».
 func runRender(args []string) int {
 	fs := flag.NewFlagSet("render", flag.ContinueOnError)
-	line := fs.String("line", "", "ligne à compléter (jusqu'au curseur)")
-	sel := fs.Int("sel", 0, "index du candidat courant")
-	cols := fs.Int("cols", 0, "largeur du terminal")
-	rows := fs.Int("rows", 8, "nombre de candidats affichés")
-	color := fs.String("color", "auto", "profil couleur : auto|never|16|256|truecolor")
-	focus := fs.Bool("focus", false, "le popup a le clavier : les flèches lui reviennent")
+	line := fs.String("line", "", i18n.T("cli.flag_line"))
+	sel := fs.Int("sel", 0, i18n.T("cli.flag_sel"))
+	cols := fs.Int("cols", 0, i18n.T("cli.flag_cols"))
+	rows := fs.Int("rows", 8, i18n.T("cli.flag_rows"))
+	color := fs.String("color", "auto", i18n.T("cli.flag_color"))
+	focus := fs.Bool("focus", false, i18n.T("cli.flag_focus"))
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}

@@ -73,6 +73,11 @@ var catalogue = map[string][nbLangues]string{
 	"facade.manager_error":  {"jigger (%s): %v\n", "jigger (%s) : %v\n"},
 	"facade.list_separator": {"; ", " ; "},
 
+	// Titre du popup de désambiguïsation ouvert par trancher() (main.go) : fuite
+	// assemblée trouvée hors des lignes citées par le brief — un fmt.Sprintf qui
+	// fabriquait ce titre en français, y compris à JIGGER_LANG=en.
+	"facade.ambiguous_title": {"%s: %d managers", "%s : %d gestionnaires"},
+
 	// ── En-têtes de tableaux ──────────────────────────────────────────────────────────
 	// Traduits sans risque : --json sert ceux qui analysent.
 	"table.package":   {"PACKAGE", "PAQUET"},
@@ -80,4 +85,31 @@ var catalogue = map[string][nbLangues]string{
 	"table.available": {"AVAILABLE", "DISPO"},
 	"table.source":    {"SOURCE", "SOURCE"},
 	"table.pm":        {"PM", "PM"},
+
+	// ── Ligne de commande ─────────────────────────────────────────────────────────────
+	"cli.usage1": {
+		"usage: jigger <verb> [--pm <manager>] [--json] [--yes] [arguments…]",
+		"usage: jigger <verbe> [--pm <gestionnaire>] [--json] [--yes] [arguments…]",
+	},
+	"cli.usage2": {
+		"       jigger pick|complete \"<line>\" | jigger render --line \"<line>\"",
+		"       jigger pick|complete \"<ligne>\" | jigger render --line \"<ligne>\"",
+	},
+	"cli.usage3": {
+		"       jigger prompt [--refresh [--wait]|--path] | jigger warm [--all|--installed]",
+		"       jigger prompt [--refresh [--wait]|--path] | jigger warm [--all|--installed]",
+	},
+	"cli.flag_all":       {"rebuild everything, even what is still fresh", "refait tout, même ce qui est encore frais"},
+	"cli.flag_installed": {"rebuild only the installed-package lists", "refait les seules listes de paquets installés"},
+	"cli.flag_refresh":   {"query the manager and rewrite the cache (slow)", "interroge brew et réécrit le cache (lent)"},
+	"cli.flag_wait":      {"with --refresh: wait for the lock instead of giving up", "avec --refresh : attend le verrou au lieu de renoncer"},
+	"cli.flag_path":      {"print the cache file path", "imprime le chemin du fichier de cache"},
+	"cli.flag_line":      {"line to complete (up to the cursor)", "ligne à compléter (jusqu'au curseur)"},
+	"cli.flag_sel":       {"index of the current candidate", "index du candidat courant"},
+	"cli.flag_cols":      {"terminal width", "largeur du terminal"},
+	"cli.flag_rows":      {"number of candidates shown", "nombre de candidats affichés"},
+	"cli.flag_color":     {"color profile: auto|never|16|256|truecolor", "profil couleur : auto|never|16|256|truecolor"},
+	"cli.flag_focus":     {"the popup owns the keyboard: arrows go to it", "le popup a le clavier : les flèches lui reviennent"},
+	"cli.warm_failed":    {"jigger warm (%s): %v\n", "jigger warm (%s) : %v\n"},
+	"cli.prompt_failed":  {"jigger prompt --refresh:", "jigger prompt --refresh :"},
 }
