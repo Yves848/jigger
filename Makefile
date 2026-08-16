@@ -3,7 +3,7 @@ PREFIX ?= $(HOME)/.local
 # Le shell dépend de la plateforme, et avec lui le greffon à installer et la suite à
 # lancer : zsh + Homebrew d'un côté, PowerShell + winget/scoop de l'autre.
 GREFFON := Ajoute dans ~/.zshrc :  source $(CURDIR)/shell/jigger.plugin.zsh
-TEST_SHELL := test-shell
+TEST_SHELL := test-shell test-golden
 
 ifeq ($(OS),Windows_NT)
   BINARY := jigger.exe
@@ -27,6 +27,10 @@ test:
 test-shell: build
 	./tests/zpty.zsh --suite
 
+# Le popup ne doit pas bouger d'un octet en français (cf. docs/plans/2026-08-16-i18n.md).
+test-golden: build
+	./tests/render-golden.sh --verifier
+
 # Le module PowerShell : tout ce qui se teste sans console (cf. tests/smoke.ps1).
 test-shell-ps: build
 	pwsh -NoProfile -File tests/smoke.ps1
@@ -42,4 +46,4 @@ test-all: test $(TEST_SHELL)
 clean:
 	rm -f jigger jigger.exe conpty-test.exe
 
-.PHONY: build install test test-shell test-shell-ps test-pty test-all clean
+.PHONY: build install test test-shell test-golden test-shell-ps test-pty test-all clean
