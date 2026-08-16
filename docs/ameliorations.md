@@ -317,6 +317,42 @@ chose. La question à trancher n'est pas « peut-on écrire la table ? » mais �
 de la façade décrit-il encore la réalité ? ». Si la réponse est non, le dire est un résultat
 d'étude parfaitement valable — et probablement plus utile qu'une intégration bancale.
 
+### A-17 — Un mode « à blanc » pour toutes les commandes mutantes
+
+**Priorité :** à déterminer · **Provenance :** demande du 16 août
+
+Pouvoir demander à jigger ce qu'il ferait, sans qu'il le fasse — sur `install`, `uninstall`,
+`upgrade`, `pin`, `unpin`, `cleanup`, `source add` et `source rm`.
+
+**Deux significations, très différentes, et c'est le premier arbitrage :**
+
+- **Montrer l'argv que jigger lancerait.** Uniforme, disponible partout, et sans dépendance
+  aux gestionnaires. C'est aussi ce qui répond au risque propre à la façade : `jg install
+  fd` devient `brew install fd`, `scoop install fd` ou `winget install --id fd --exact`
+  selon qui connaît le nom — une traduction que l'utilisateur ne peut pas prévoir, et
+  qu'aucune autre commande ne lui montre. Peu coûteux, immédiatement utile.
+- **Demander au gestionnaire ce qu'il ferait.** C'est la vraie question — « qu'est-ce qui va
+  changer sur ma machine ? » — mais elle dépend d'eux. brew a `--dry-run` sur `install`,
+  `upgrade` et `cleanup` ; la table des options le déclare déjà. scoop et winget n'ont pas
+  d'équivalent général. Le modèle de capacités s'applique tel quel : un gestionnaire qui ne
+  sait pas répondre le dit, comme il dit aujourd'hui qu'il ne sait pas faire `cleanup`.
+
+Les deux se complètent : le premier montre la traduction, le second la conséquence. Le
+premier peut être livré seul et servir tout de suite.
+
+Trois points à ne pas manquer :
+
+- **La résolution doit rester complète.** Un « à blanc » utile fait tout le travail sauf
+  l'exécution : il résout le nom, choisit le gestionnaire — et ouvre le sélecteur si le nom
+  est ambigu, sinon il ne montrera pas la commande qui aurait vraiment tourné.
+- **`--yes` n'a rien à y faire.** Il accepte les accords de licence de winget ; à blanc, on
+  n'accepte rien du tout.
+- **Le nom du drapeau.** `--dry-run` est ce que brew et l'usage général emploient, et jigger
+  relaie déjà les drapeaux natifs sans les interpréter : un `jg install --dry-run fd` part
+  aujourd'hui tel quel vers brew. Introduire un `--dry-run` **à jigger** change ce
+  comportement pour ce mot précis. À trancher : soit jigger l'intercepte et le traduit pour
+  chaque gestionnaire, soit il en prend un autre pour lui.
+
 ---
 
 ## En cours
