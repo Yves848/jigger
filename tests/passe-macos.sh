@@ -43,15 +43,27 @@ n=0
 
 # etape lance une commande, montre sa sortie et retient son code. Rien ne s'arrête sur un
 # échec : on veut la passe complète, pas la première mauvaise nouvelle.
+#
+# La sortie est **diffusée** pendant que l'étape tourne, et capturée en même temps. La
+# première version l'écrivait dans un fichier puis l'affichait à la fin : une étape lente
+# donnait un silence complet, impossible à distinguer d'un script figé. `tee` fait les
+# deux ; le code de retour de la commande, lui, transite par un fichier, sh n'ayant pas
+# l'équivalent de PIPESTATUS.
 etape() {
   nom=$1
   shift
   n=$((n + 1))
   printf '\n→ %s\n' "$nom"
-  if "$@" > "$travail/sortie-$n" 2>&1; then code=0; else code=$?; fi
-  cat "$travail/sortie-$n"
-  if [ "$code" -eq 0 ]; then printf '  ok\n'; else printf '  ÉCHEC (code %s)\n' "$code"; fi
-  printf '%s\t%s\t%s\n' "$n" "$code" "$nom" >> "$travail/etapes"
+  debut=$(date +%s)
+  { "$@" 2>&1; echo $? > "$travail/code-$n"; } | tee "$travail/sortie-$n"
+  code=$(cat "$travail/code-$n")
+  duree=$(( $(date +%s) - debut ))
+  if [ "$code" -eq 0 ]; then
+    printf '  ok — %s s\n' "$duree"
+  else
+    printf '  ÉCHEC (code %s) — %s s\n' "$code" "$duree"
+  fi
+  printf '%s\t%s\t%s\t%s\n' "$n" "$code" "$nom" "$duree" >> "$travail/etapes"
 }
 
 printf '→ mise à jour depuis origin\n'
@@ -92,13 +104,13 @@ rapport=tests/captures/derniers-tests-macos.md
   printf '# Passe macOS — derniers résultats\n\n'
   printf '*Engendré par `tests/passe-macos.sh`. Ne pas modifier à la main.*\n\n'
   printf '**Verdict : %s.**\n\n' "$verdict"
-  printf '| Étape | Code |\n|---|---|\n'
-  while IFS="$(printf '\t')" read -r i code nom; do
-    if [ "$code" -eq 0 ]; then printf '| %s | ok |\n' "$nom"; else printf '| %s | ÉCHEC (%s) |\n' "$nom" "$code"; fi
+  printf '| Étape | Code | Durée |\n|---|---|---|\n'
+  while IFS="$(printf '\t')" read -r i code nom duree; do
+    if [ "$code" -eq 0 ]; then printf '| %s | ok | %s s |\n' "$nom" "$duree"; else printf '| %s | ÉCHEC (%s) | %s s |\n' "$nom" "$code" "$duree"; fi
   done < "$travail/etapes"
   printf '\n## Contexte\n\n```\ndate    : %s\n%s\ncommit  : %s\n```\n' \
     "$(date '+%Y-%m-%d %H:%M:%S')" "$contexte" "$commit"
-  while IFS="$(printf '\t')" read -r i code nom; do
+  while IFS="$(printf '\t')" read -r i code nom duree; do
     printf '\n## %s\n\n```\n' "$nom"
     # Une sortie verte est longue et sans intérêt : on n'en garde que la fin. Une sortie
     # en échec est gardée entière — c'est elle qu'on vient lire.
@@ -116,7 +128,8 @@ if [ -f "$journal" ] && grep -qF "$marqueur" "$journal"; then
     printf '%s\n\n' "$contexte"
     verts=$(awk -F'\t' '$2 == 0 {printf "%s · ", $3}' "$travail/etapes" | sed 's/ · $//')
     [ -n "$verts" ] && printf -- '- **ok** — %s\n' "$verts"
-    while IFS="$(printf '\t')" read -r i code nom; do
+    printf -- '- durée totale : %s s\n' "$(awk -F'\t' '{t += $4} END {print t}' "$travail/etapes")"
+    while IFS="$(printf '\t')" read -r i code nom duree; do
       [ "$code" -eq 0 ] && continue
       printf -- '- **échec — %s** (code %s)\n' "$nom" "$code"
       # Les lignes que les harnais impriment pour dire ce qui a lâché — c'est ce qu'un

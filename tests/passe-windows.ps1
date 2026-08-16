@@ -8,7 +8,8 @@
 #
 # ── Ce qu'il publie, et pourquoi ──────────────────────────────────────────────────────
 #
-# Le rapport `tests/captures/derniers-tests.md` est commité **avec** les captures. C'est
+# Le rapport `tests/captures/derniers-tests-windows.md` est commité **avec** les captures,
+# et une entrée s'ajoute à `docs/tests/journal.md`, qui garde la trace des passes. C'est
 # le point : une fois poussé, la session qui travaille sur le Mac lit les résultats
 # directement dans le dépôt, sans que personne ait à recopier une sortie de terminal —
 # et sans qu'une erreur de copier-coller vienne s'ajouter à celles qu'on cherche.
@@ -46,15 +47,25 @@ $etapes = [System.Collections.Generic.List[object]]::new()
 # terminal depuis lequel tu l'as lancé.
 function Etape([string]$Nom, [string]$Exe, [string[]]$Argv) {
     Write-Host "`n→ $Nom" -ForegroundColor Cyan
-    $sortie = & $Exe @Argv 2>&1 | Out-String
+    $debut = Get-Date
+
+    # La sortie est **diffusée** au fur et à mesure, et capturée en même temps.
+    #
+    # La première version la mettait entièrement en mémoire avant de l'afficher : rien
+    # n'apparaissait avant la fin de l'étape, et pty.ps1 — qui démarre un pwsh en console
+    # par cas — donnait plusieurs minutes de silence complet, impossible à distinguer d'un
+    # script figé. Tee-Object laisse passer chaque ligne vers l'écran tout en la retenant.
+    $lignes = & $Exe @Argv 2>&1 | Tee-Object -Variable capture | Out-Host
     $code = $LASTEXITCODE
-    Write-Host $sortie.TrimEnd()
+    $sortie = ($capture | Out-String).TrimEnd()
+    $duree = [math]::Round(((Get-Date) - $debut).TotalSeconds)
+
     if ($code -eq 0) {
-        Write-Host "  ok" -ForegroundColor Green
+        Write-Host "  ok — $duree s" -ForegroundColor Green
     } else {
-        Write-Host "  ÉCHEC (code $code)" -ForegroundColor Red
+        Write-Host "  ÉCHEC (code $code) — $duree s" -ForegroundColor Red
     }
-    $etapes.Add([pscustomobject]@{ Nom = $Nom; Code = $code; Sortie = $sortie.TrimEnd() })
+    $etapes.Add([pscustomobject]@{ Nom = $Nom; Code = $code; Sortie = $sortie; Duree = $duree })
     return $code
 }
 
@@ -97,11 +108,11 @@ try {
     $lignes.Add('')
     $lignes.Add("**Verdict : $verdict.**")
     $lignes.Add('')
-    $lignes.Add("| Étape | Code |")
-    $lignes.Add("|---|---|")
+    $lignes.Add("| Étape | Code | Durée |")
+    $lignes.Add("|---|---|---|")
     foreach ($e in $etapes) {
         $etat = if ($e.Code -eq 0) { 'ok' } else { "ÉCHEC ($($e.Code))" }
-        $lignes.Add("| $($e.Nom) | $etat |")
+        $lignes.Add("| $($e.Nom) | $etat | $($e.Duree) s |")
     }
     $lignes.Add('')
     $lignes.Add('## Contexte')
@@ -150,6 +161,8 @@ try {
     $entree.Add('')
     $verts = @($etapes | Where-Object { $_.Code -eq 0 } | ForEach-Object { $_.Nom })
     if ($verts) { $entree.Add("- **ok** — $($verts -join ' · ')") }
+    $total = ($etapes | Measure-Object -Property Duree -Sum).Sum
+    $entree.Add("- durée totale : $total s")
     foreach ($e in $echecs) {
         # On remonte les lignes que les harnais impriment pour dire ce qui a lâché : c'est
         # ce qu'un lecteur veut voir, pas la centaine de lignes vertes qui les entourent.
