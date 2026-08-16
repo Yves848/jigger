@@ -183,6 +183,37 @@ donc son sens **après** A-10, quand ces tableaux s'afficheront dans le sélecte
   que `⇥` insère : trier n'y est pas un confort d'affichage mais un changement de ce que
   fait la touche. En lecture seule (A-10), la question ne se pose pas.
 
+### A-13 — Colorer les versions obsolètes
+
+**Priorité :** à déterminer · **Provenance :** demande du 16 août · **Voisine de :** A-10
+
+Faire ressortir à l'œil ce qui est en retard : la version installée et celle qui l'attend,
+distinguées par la couleur plutôt que laissées à la lecture de deux colonnes alignées.
+
+Le point de départ, vérifié : **les tableaux de la façade ne portent aujourd'hui aucune
+couleur.** `internal/facade/format.go` aligne des colonnes en texte nu. Le popup, lui, est
+coloré via lipgloss, avec une palette déjà posée — c'est d'elle qu'il faudra partir pour ne
+pas inventer un second jeu de teintes.
+
+Trois points à traiter :
+
+- **La couleur ne doit jamais partir dans un tuyau.** Même règle que la pagination (A-10) :
+  elle ne s'arme que si la sortie est un terminal, et `--json` n'en porte jamais. Précédent
+  utile dans le dépôt : jigger ne devine pas son profil couleur pour le popup, c'est le
+  shell qui le lui passe (`--color auto|never|16|256|truecolor`) parce que la sortie est
+  capturée. Les tableaux, eux, sortent directement — ils peuvent décider seuls, mais la
+  décision doit être explicite.
+- **`outdated` l'a gratuitement, `list` non.** `jg outdated` connaît déjà les deux versions,
+  la colonne `AVAILABLE` en témoigne. `jg list` ne les a pas : marquer les obsolètes dans la
+  liste demanderait la comparaison, qui coûte de une à cinq secondes chez brew et winget.
+  Soit on ne colore que là où l'information est déjà là, soit on l'affiche depuis le cache
+  du bloc de prompt — qui existe et peut mentir d'une demi-heure.
+- **La couleur ne doit pas être la seule porteuse d'information.** Un terminal en 16
+  couleurs, un daltonien, une capture collée dans un ticket : ce qui distingue une version
+  obsolète doit rester lisible sans elle. Le projet a déjà tranché ainsi ailleurs — un
+  compteur du prompt qui ne s'affiche jamais à zéro dit « à mettre à jour » par sa seule
+  présence, sans flèche ni couleur.
+
 ---
 
 ## En cours
