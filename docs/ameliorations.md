@@ -289,6 +289,34 @@ conserver, et laisserait sudo faire la mémorisation. Le réglage de durée d'A-
 alors le rafraîchissement, pas la rétention. C'est plus simple à écrire, et il n'y a pas de
 secret en mémoire à protéger, à effacer, ni à ne pas écrire dans un journal.
 
+### A-16 — Étudier l'intégration d'autres gestionnaires
+
+**Priorité :** à déterminer · **Provenance :** demande du 16 août
+
+apt, pacman, npm, et les suivants. **Une étude par gestionnaire**, dans `docs/analyse/`,
+concluant sur la faisabilité et le coût — pas une implémentation.
+
+Pour que les études soient comparables entre elles et calibrées sur ce qu'on sait déjà, la
+même grille pour chacune :
+
+| Question | Pourquoi elle décide du coût |
+|---|---|
+| **Le catalogue** — comment lister tous les noms connus, et en combien de temps ? | C'est le premier poste de dépense. `pacman -Slq` rend des noms nus, instantanément ; `apt-cache pkgnames` aussi. À l'opposé, winget n'a aucune sortie machine et coûte deux secondes par appel — d'où son cache de 24 h et son réchauffement détaché. |
+| **Les installés** — sur le disque, ou par un sous-processus ? | brew et scoop se lisent dans une arborescence, en une milliseconde. Tout ce qui demande un processus doit sortir du chemin d'une frappe. |
+| **Les obsolètes** | Coûteux partout ; jigger les calcule en tâche de fond et les sert depuis un cache. |
+| **Une sortie machine existe-t-elle ?** | La leçon scoop : sans elle, on analyse des tableaux à colonnes, avec leurs largeurs variables, leurs couleurs ANSI et leurs en-têtes traduits. C'est là que le coût explose et que les défauts se cachent. |
+| **La table des douze verbes** | La partie la moins chère, et la seule qu'on sache déjà faire vite. Un verbe absent est un verbe non déclaré : le modèle de capacités s'en accommode. |
+| **Élévation, plateforme, portée** | apt demande root, pacman aussi ; ni l'un ni l'autre n'existe sous macOS ni Windows. jigger n'a encore aucun gestionnaire Linux, alors que son greffon zsh y tourne. |
+| **Le verdict** | Faisable / faisable avec réserves / hors modèle — et une estimation en journées, calibrée sur les précédents : brew fut bon marché, scoop mitigé, winget cher. |
+
+**npm mérite d'être traité à part, et l'étude devra le dire franchement.** Ce n'est pas un
+gestionnaire de paquets système mais un gestionnaire de dépendances **de projet** : il n'y a
+pas d'ensemble « installé sur la machine » qui ait un sens hors d'un répertoire, le
+catalogue est un service en ligne plutôt qu'une liste locale, et `install` y signifie autre
+chose. La question à trancher n'est pas « peut-on écrire la table ? » mais « le vocabulaire
+de la façade décrit-il encore la réalité ? ». Si la réponse est non, le dire est un résultat
+d'étude parfaitement valable — et probablement plus utile qu'une intégration bancale.
+
 ---
 
 ## En cours
