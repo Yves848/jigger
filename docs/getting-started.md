@@ -77,8 +77,8 @@ the cloned repository.
 
 > **Only one binary on the `PATH`.** If you installed through more than one route,
 > `which -a jigger` (or `Get-Command jigger -All`) will tell you. An old binary
-> paired with a recent plugin is the most painful failure to diagnose — hence
-> the check in § 4.
+> shadowing a newer install in the `PATH` is the most painful failure to
+> diagnose — hence the check in § 4.
 
 ## 3. Wire the plugin into the shell
 
