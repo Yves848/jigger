@@ -247,6 +247,48 @@ l'air.
 La partie visible, elle, est la moins coûteuse : Bubble Tea est déjà là, et `internal/ui`
 sait dessiner un cadre, naviguer et filtrer.
 
+### A-15 — Détecter les demandes d'élévation et les servir dans une fenêtre
+
+**Priorité :** à déterminer · **Provenance :** demande du 16 août · **Dépend de :** A-14
+pour le réglage de durée
+
+Repérer, tous gestionnaires confondus, le moment où l'utilisateur doit saisir un mot de
+passe `sudo` (macOS, Linux) ou s'élever en administrateur (Windows), et le lui demander dans
+une fenêtre Bubble Tea — avec mémorisation pendant une durée réglable, comme le fait
+Cocktails.
+
+Quatre choses à savoir avant d'écrire quoi que ce soit. Aucune n'interdit la fonction, mais
+chacune change la manière de la faire.
+
+- **Aujourd'hui, jigger s'efface exprès devant ces invites.** Pour tous les verbes non
+  normalisés, `internal/facade/executer.go` donne au sous-processus les entrées et sorties
+  du terminal (`relais = true`). C'est ce qui fait que les invites de winget, ses barres de
+  progression et son élévation fonctionnent « sans une ligne de code de TTY » — la spec §4
+  en fait un choix explicite. Intercepter suppose de **capturer** ce flux : on renonce alors
+  à la propriété autour de laquelle la façade a été bâtie. À rouvrir en connaissance de
+  cause, probablement par un ADR.
+- **`sudo` n'écrit pas son invite là où on l'attend.** Elle part sur le terminal, pas sur la
+  sortie standard, et le mot de passe se lit sur `/dev/tty`, pas sur l'entrée standard.
+  Analyser stdout ne verra jamais rien : il faudrait allouer un pseudo-terminal au
+  sous-processus. Le dépôt sait le faire dans ses harnais de test (`tests/zpty.zsh`,
+  `tests/conpty`), jamais à l'exécution.
+- **Sous Windows, ce n'est pas une invite console.** L'élévation passe par UAC, une fenêtre
+  du système : rien à détecter dans une sortie, rien à saisir dans un cadre. Il faut
+  relancer le processus élevé (`Start-Process -Verb RunAs`), ce qui ouvre une autre console.
+  Le mot « détecter » ne s'applique donc qu'aux deux plateformes Unix ; Windows demande un
+  autre mécanisme, à traiter comme tel.
+- **Le besoin réel est étroit.** Homebrew refuse de tourner en root et ne demande sudo que
+  marginalement ; scoop installe par utilisateur ; seul winget en a besoin, pour les
+  installations à l'échelle de la machine. L'effort mérite d'être proportionné à ça.
+
+**Une piste qui évite de détenir le secret.** Plutôt que capturer un mot de passe et le
+garder en mémoire, `sudo -v` valide l'autorisation et prolonge l'horodatage de sudo, dont la
+durée de grâce est déjà réglable par le système (`timestamp_timeout`). jigger demanderait le
+mot de passe une fois, dans sa fenêtre, le passerait à `sudo -S -v` sans jamais le
+conserver, et laisserait sudo faire la mémorisation. Le réglage de durée d'A-14 piloterait
+alors le rafraîchissement, pas la rétention. C'est plus simple à écrire, et il n'y a pas de
+secret en mémoire à protéger, à effacer, ni à ne pas écrire dans un journal.
+
 ---
 
 ## En cours
