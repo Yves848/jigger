@@ -638,6 +638,13 @@ oubliés :
 - **De nouveaux gestionnaires** eux-mêmes — la phase 1 prouve le mécanisme sur trois, pas
   sur cinq.
 
+## Contribuer
+
+Les rapports de bogue sont bienvenus sur le miroir GitHub comme sur GitLab ; le code, lui,
+passe par GitLab, seule source de vérité. [CONTRIBUTING.md](CONTRIBUTING.md) explique
+pourquoi, et ce que le code attend. Pour une faille, écrivez à l'adresse de
+[SECURITY.md](SECURITY.md) plutôt que d'ouvrir une issue publique.
+
 ## Licence
 
 Apache-2.0.

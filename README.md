@@ -630,6 +630,13 @@ Deliberate non-goals of facade phase 1 — left out on purpose, not forgotten:
   — deserves its own ADR.
 - **New managers** themselves — phase 1 proves the mechanism on three, not on five.
 
+## Contributing
+
+Bug reports are welcome on either the GitHub mirror or GitLab; code goes through GitLab,
+which is the only source of truth. [CONTRIBUTING.md](CONTRIBUTING.md) explains why, and
+what the code expects. For a vulnerability, see [SECURITY.md](SECURITY.md) rather than a
+public issue.
+
 ## License
 
 Apache-2.0.
