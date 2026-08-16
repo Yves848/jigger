@@ -53,8 +53,14 @@ il ne requiert que le gestionnaire lui-même.
 De bout en bout, pas à pas : **[Premiers pas](docs/fr/getting-started.md)** — installer,
 brancher dans le shell, régler, dépanner. Ce qui suit en est le résumé.
 
+```powershell
+# Windows — précompilé, rien à compiler
+scoop bucket add jigger https://gitlab.yg-devworks.com/yves/scoop-jigger.git
+scoop install jigger
+```
+
 ```sh
-# le binaire (Go ≥ 1.26)
+# ailleurs, ou pour le construire soi-même (Go ≥ 1.26)
 go install gitlab.yg-devworks.com/yves/jigger@latest   # → $GOBIN/jigger
 #   ou :  git clone … && make install         (Windows : install-windows.ps1)
 ```
@@ -621,8 +627,8 @@ le code Windows compile.
   gestionnaire (« To install …, run: … »).
 - Volet d'aperçu (`brew desc`, `winget show`) dans le sélecteur **et** dans `jg search` /
   `jg info`.
-- Distribution comme **commande externe brew** (`brew jigger`) via un tap, et paquet
-  **scoop** / **winget**.
+- Un paquet **winget**. Le tap Homebrew et le bucket scoop existent ; la soumission à
+  winget est une autre affaire, et elle n'est pas commencée.
 
 Non-buts assumés de la phase 1 de la façade — écartés en connaissance de cause, pas
 oubliés :

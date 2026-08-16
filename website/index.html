@@ -48,7 +48,7 @@
         <!-- capture : jigger render --line "brew install fire" --cols 56 -->
         <pre class="frame" aria-label="jigger in a terminal">❯ brew install fire
 ╭──────────────────────────────────────────────────────╮
-│❯ brew install                            jigger 0.9.0│
+│❯ brew install                           jigger 0.10.0│
 │  ▣  firealpaca                                       │
 │  ▣  firebase-admin                                   │
 │  ◆  firebase-cli                                     │
@@ -101,7 +101,7 @@
         <!-- capture : jigger render --line "jg " --cols 56 -->
         <pre class="frame" aria-label="the twelve verbs in the popup">❯ jg
 ╭──────────────────────────────────────────────────────╮
-│❯ jigger                                  jigger 0.9.0│
+│❯ jigger                                 jigger 0.10.0│
 │  •  cleanup                                          │
 │  •  doctor                                           │
 │  •  info                                             │
@@ -199,12 +199,13 @@
         <pre class="cmd"><code data-verifier="install">brew tap yves/cocktails https://gitlab.yg-devworks.com/yves/homebrew-cocktails.git</code></pre>
         <pre class="cmd"><code data-verifier="install">brew install jigger</code></pre>
 
-        <h3 data-i18n="install.win">Windows — from the clone</h3>
-        <pre class="cmd"><code data-verifier="install">pwsh -NoProfile -File install-windows.ps1</code></pre>
+        <h3 data-i18n="install.win">Windows — scoop</h3>
+        <pre class="cmd"><code data-verifier="install">scoop bucket add jigger https://gitlab.yg-devworks.com/yves/scoop-jigger.git</code></pre>
+        <pre class="cmd"><code data-verifier="install">scoop install jigger</code></pre>
         <p class="muted-note" data-i18n="install.winp">
-          It builds, then puts <span class="mono">jigger</span> within reach: a scoop shim
-          when scoop is around, a copy into your user directory otherwise. There is no
-          winget or scoop package for jigger yet.
+          Prebuilt binary, nothing to compile. To build from a clone instead — while
+          developing, or to run something not released yet — the repository ships
+          <span class="mono">install-windows.ps1</span>. There is no winget package.
         </p>
 
         <h3 data-i18n="install.go">Any platform — Go</h3>

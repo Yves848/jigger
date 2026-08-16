@@ -16,6 +16,26 @@ Ce journal-ci, lui, garde la trace.
 
 <!-- nouvelles passes ici -->
 
+### 2026-08-16 — Windows, Dell XPS — installation par scoop (v0.10.0)
+
+Première installation de jigger par un gestionnaire de paquets, sur une vraie machine.
+
+```powershell
+scoop bucket add jigger https://gitlab.yg-devworks.com/yves/scoop-jigger.git
+scoop install jigger
+```
+
+Résultat : **jigger 0.10.0 installé**.
+
+Un accroc, et il est documentaire : `scoop bucket add yves/scoop-jigger` — un seul
+argument — répond `unknown bucket`. scoop cherche alors dans son annuaire de buckets
+connus. La commande prend le nom local **puis** l'URL ; le guide le dit désormais.
+
+Ce que cette passe valide, et qu'aucun contrôle depuis macOS ne pouvait établir : le
+clone anonyme du bucket, le téléchargement de l'archive depuis le registre GitLab sans
+jeton, la vérification du condensat par scoop, et le shim posé sur le `PATH`.
+
+
 ## 2026-08-16 11:18 — macOS — `eba2d59` — tout passe
 
 macOS 26.5.2 · zsh 5.9 · go1.26.6
