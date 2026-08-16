@@ -75,6 +75,17 @@ function Get-JiggerCacheDefaut {
 $script:CacheDir   = Get-JiggerSetting 'JIGGER_CACHE_DIR' (Get-JiggerCacheDefaut)
 $script:StatusFile = Join-Path $script:CacheDir 'status'
 
+# Langue des messages du module. $env:JIGGER_LANG est déjà une variable d'environnement :
+# le binaire la voit sans qu'on ait rien à exporter.
+$script:Lang = if ($env:JIGGER_LANG) { $env:JIGGER_LANG }
+               else { [System.Globalization.CultureInfo]::CurrentUICulture.TwoLetterISOLanguageName }
+if ($script:Lang -ne 'fr') { $script:Lang = 'en' }
+
+function Get-JiggerText([string]$En, [string]$Fr) {
+    if ($script:Lang -eq 'fr') { return $Fr }
+    return $En
+}
+
 # Touches supplémentaires à relayer, en plus des ASCII imprimables : sur un clavier
 # AZERTY, la rangée des chiffres non pressée donne « éèçàù », qui doivent eux aussi
 # rafraîchir le popup.
@@ -103,7 +114,9 @@ $script:Focused   = $false # le popup a-t-il le clavier ? (cf. Step-JiggerSelect
 # ── Vérifications d'installation ──────────────────────────────────────────────────────
 
 if (-not (Get-Command $script:Exe -ErrorAction SilentlyContinue)) {
-    Write-Warning "jigger : binaire « $($script:Exe) » introuvable dans le PATH. Module inactif."
+    Write-Warning (Get-JiggerText `
+        "jigger: binary « $($script:Exe) » not found in PATH. Module inactive." `
+        "jigger : binaire « $($script:Exe) » introuvable dans le PATH. Module inactif.")
     return
 }
 
@@ -119,21 +132,26 @@ try {
 } catch { }
 if ($version -and $version -lt $script:VersionRequise) {
     $chemin = (Get-Command $script:Exe).Source
-    Write-Warning ("jigger : le binaire $chemin est en $version, or ce module en demande " +
-        "$($script:VersionRequise). Recompile-le (« make install ») ou remplace celui du PATH. Module inactif.")
+    Write-Warning (Get-JiggerText `
+        "jigger: the binary at $chemin is $version, but this module requires $($script:VersionRequise). Rebuild it (« make install ») or replace the one in PATH. Module inactive." `
+        "jigger : le binaire $chemin est en $version, or ce module en demande $($script:VersionRequise). Recompile-le (« make install ») ou remplace celui du PATH. Module inactif.")
     return
 }
 if (-not (Get-Module PSReadLine)) {
     Import-Module PSReadLine -ErrorAction SilentlyContinue
 }
 if (-not (Get-Module PSReadLine)) {
-    Write-Warning 'jigger : PSReadLine est absent. Module inactif.'
+    Write-Warning (Get-JiggerText `
+        'jigger: PSReadLine is missing. Module inactive.' `
+        'jigger : PSReadLine est absent. Module inactif.')
     return
 }
 # En mode Vi, les caractères imprimables ne s'insèrent pas toujours : les relayer
 # casserait la navigation en mode commande. On garde alors le seul mode ⇥.
 if ($script:Live -and (Get-PSReadLineOption).EditMode -eq 'Vi') {
-    Write-Warning 'jigger : popup vivant désactivé en mode Vi (⇥ ouvre le sélecteur).'
+    Write-Warning (Get-JiggerText `
+        'jigger: live popup disabled in Vi mode (⇥ opens the picker).' `
+        'jigger : popup vivant désactivé en mode Vi (⇥ ouvre le sélecteur).')
     $script:Live = $false
 }
 # Les cadres sont dessinés en caractères semi-graphiques : sans console en UTF-8, ils

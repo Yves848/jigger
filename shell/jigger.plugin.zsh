@@ -31,10 +31,32 @@
 # En dessous de cette largeur de terminal, le cadre n'a plus de sens : on n'affiche rien.
 : "${JIGGER_MIN_COLUMNS:=30}"
 
+# La langue des messages du greffon. Même ordre que le binaire : JIGGER_LANG, puis les
+# variables POSIX, puis l'anglais.
+#
+# L'export n'est pas décoratif : les réglages de jigger se posent sans lui (JIGGER_ROWS=12
+# avant le source) parce que le greffon les lit lui-même, mais celui-ci doit atteindre le
+# *binaire*, sans quoi le popup parlerait une autre langue que ces messages.
+#
+# Gardes ${VAR-} plutôt que $VAR nu : sous `setopt nounset` (que certains utilisateurs
+# posent), référencer une variable non définie est une erreur. Seule la référence la plus
+# interne (celle de $LANG) a besoin de la garde — les $VAR:-… qui l'entourent gèrent déjà
+# le cas « non définie » sans y toucher ; mais y toucher aussi ne coûte rien et documente
+# l'intention.
+if [[ -n ${JIGGER_LANG-} ]]; then
+  export JIGGER_LANG
+fi
+typeset -g _jigger_lang=${${JIGGER_LANG:-${LC_ALL:-${LC_MESSAGES:-${LANG-}}}}%%[_.]*}
+[[ $_jigger_lang == fr ]] || _jigger_lang=en
+
 # ── Vérifications d'installation ──────────────────────────────────────────────────────
 
 if ! command -v jigger >/dev/null 2>&1; then
-  print -u2 "jigger : binaire introuvable dans le PATH. Greffon inactif."
+  if [[ $_jigger_lang == fr ]]; then
+    print -u2 "jigger : binaire introuvable dans le PATH. Greffon inactif."
+  else
+    print -u2 "jigger: binary not found in PATH. Plugin inactive."
+  fi
   return 0
 fi
 
@@ -50,7 +72,11 @@ typeset -g JIGGER_VERSION_REQUISE=0.8.0
 autoload -Uz is-at-least
 typeset -g _jigger_v=${${(z)"$(command jigger --version 2>/dev/null)"}[2]}
 if [[ -n $_jigger_v ]] && ! is-at-least $JIGGER_VERSION_REQUISE $_jigger_v; then
-  print -u2 "jigger : le binaire $(command -v jigger) est en $_jigger_v, or ce greffon en demande $JIGGER_VERSION_REQUISE. Recompile-le (« make install ») ou remplace celui du PATH. Greffon inactif."
+  if [[ $_jigger_lang == fr ]]; then
+    print -u2 "jigger : le binaire $(command -v jigger) est en $_jigger_v, or ce greffon en demande $JIGGER_VERSION_REQUISE. Recompile-le (« make install ») ou remplace celui du PATH. Greffon inactif."
+  else
+    print -u2 "jigger: the binary at $(command -v jigger) is $_jigger_v, but this plugin requires $JIGGER_VERSION_REQUISE. Rebuild it (« make install ») or replace the one in PATH. Plugin inactive."
+  fi
   unset _jigger_v
   return 0
 fi

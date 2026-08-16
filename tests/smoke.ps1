@@ -29,6 +29,9 @@ if (-not (Test-Path $binaire)) {
     exit 1
 }
 $env:JIGGER_BIN = $binaire
+# Cette suite assère des libellés français en dur : sans l'exporter, le module lirait la
+# langue de la machine qui lance les tests, et les assertions dépendraient de sa locale.
+$env:JIGGER_LANG = 'fr'
 
 $script:Echecs = 0
 $script:Total = 0
