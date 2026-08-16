@@ -55,7 +55,7 @@ Start to finish, step by step: **[Getting started](docs/getting-started.md)** �
 install, wire into the shell, configure, troubleshoot. What follows is the summary.
 
 ```sh
-# the binary (Go ≥ 1.24)
+# the binary (Go ≥ 1.26)
 go install gitlab.yg-devworks.com/yves/jigger@latest   # → $GOBIN/jigger
 #   or:  git clone … && make install          (Windows: install-windows.ps1)
 ```

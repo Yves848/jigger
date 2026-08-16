@@ -54,7 +54,7 @@ De bout en bout, pas à pas : **[Premiers pas](docs/fr/getting-started.md)** —
 brancher dans le shell, régler, dépanner. Ce qui suit en est le résumé.
 
 ```sh
-# le binaire (Go ≥ 1.24)
+# le binaire (Go ≥ 1.26)
 go install gitlab.yg-devworks.com/yves/jigger@latest   # → $GOBIN/jigger
 #   ou :  git clone … && make install         (Windows : install-windows.ps1)
 ```
