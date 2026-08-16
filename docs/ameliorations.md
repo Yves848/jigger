@@ -69,13 +69,6 @@ Homebrew local. Il est sorti de `make test-all` pour cette raison, et reste lan�
 main. Le rendre portable demanderait de neutraliser la bannière **et** de figer un catalogue
 d'essai.
 
-### A-7 — La stratégie de diffusion
-
-**Priorité :** à déterminer · **Provenance :** demande du 15 août
-
-Utilisateurs, contributeurs et vitrine, dans cet ordre. Dépend de A-6 pour la page
-d'atterrissage, et du miroir public pour la mécanique de contribution.
-
 ### A-10 — Mettre en page et paginer les sorties
 
 **Priorité :** à déterminer · **Provenance :** demande du 16 août
@@ -344,7 +337,31 @@ le lien croisé pointe sur quelque chose.
 
 ## En cours
 
-*(vide)*
+### A-7 — La stratégie de diffusion
+
+**Priorité :** en cours · **Provenance :** demande du 15 août
+
+Décisions arrêtées le 16 août, en conception :
+
+- **D'abord trouvable, puis annoncé.** Une annonce ne se rejoue pas : le projet doit
+  encaisser le premier passage avant de le provoquer.
+- **Miroir GitHub** alimenté depuis GitLab, **issues ouvertes, PR fermées**. GitHub ne
+  permet pas de désactiver les PR : on s'en approche par un gabarit et une action qui
+  referme poliment en renvoyant vers GitLab.
+- **Binaires précompilés et bucket scoop**, pour que Windows n'exige plus Go ni clone.
+- **Un exécuteur GitLab** plutôt qu'un script local : la provenance est vérifiable et les
+  releases ne dépendent plus d'une machine.
+- **Canaux :** Hacker News (Show HN) et Reddit (r/commandline, r/zsh, r/PowerShell).
+  Lobsters écarté faute d'invitation. Les textes sont rédigés ici, **publiés par Yves**.
+- **Une seule spec** pour l'ensemble, en trois parties — choix assumé contre l'avis de
+  découper en trois chantiers.
+
+Fait à ce jour : l'exécuteur (`cibuilder-go`, LXC 117) et la chaîne de release
+(`.gitlab-ci.yml`), éprouvée de bout en bout par un tag d'essai — release créée, binaires
+téléchargés, condensats vérifiés, le tout ensuite supprimé.
+
+Reste : le bucket scoop, le miroir GitHub, `CONTRIBUTING.md`, la spec, puis l'annonce.
+
 
 ---
 
