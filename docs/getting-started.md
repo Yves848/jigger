@@ -239,6 +239,34 @@ naming who would know how to do it.
 `source` comes in three forms: `jg source` lists, `jg source add <repo>` adds,
 `jg source rm <repo>` removes.
 
+### Long listings: the paged view
+
+`list`, `outdated`, `search` and `source` can return hundreds of rows. When the output
+is a terminal **and** the rows don't fit on screen, jigger shows them in a navigable
+view instead of scrolling past:
+
+| Key | Effect |
+|---|---|
+| type | filters as you go |
+| `^R` | switches between plain-text and regex matching — the current mode is always shown |
+| `⇥` | selects the row (`Space` can't: the filter field has the keyboard) |
+| `↵` | confirms — prints the selected rows, or the current one if none are selected |
+| `^G`, `esc` | leaves without printing anything |
+| `↑` `↓`, `PgUp` `PgDn` | move |
+
+**Nothing changes when the output isn't a terminal.** `jg list | grep fd` prints the same
+plain table it always has, byte for byte, and `--json` is never paged — it's a machine
+contract.
+
+To pick rows *into* a pipe, ask for it explicitly:
+
+```sh
+jg install $(jg search fd --select)
+```
+
+`--select` draws the view on the terminal and sends only the chosen names — one per line
+— down the pipe. `JIGGER_PAGER=0` disables the automatic view entirely.
+
 ### How the manager gets chosen
 
 jigger looks the name up in the catalog of each manager present:
@@ -318,6 +346,7 @@ Import-Module C:\path\to\jigger\shell\jigger.psm1
 | `JIGGER_KEY` | `^I` (Tab) | insertion key. `'^ '` for Ctrl-Space; under PowerShell, a PSReadLine name (`Ctrl+Spacebar`) |
 | `JIGGER_MIN_COLUMNS` | `30` | below this width, the frame stops making sense: nothing shows up |
 | `JIGGER_CACHE_DIR` | `~/Library/Caches/jigger`, `%LOCALAPPDATA%\jigger` | cache location |
+| `JIGGER_PAGER` | `1` | `0` disables the paged view: listing verbs always print the plain table |
 | `JIGGER_LANG` | your locale's language | messages: `en` or `fr`. Read before `LC_ALL`, `LC_MESSAGES` and `LANG` — and this is how you get French back in an English-speaking shell. Anything jigger can't translate falls back to English |
 
 Two settings exist only under PowerShell, for lack of a useful zsh equivalent:

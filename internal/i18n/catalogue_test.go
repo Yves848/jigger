@@ -22,6 +22,11 @@ func TestCatalogueComplet(t *testing.T) {
 		"cli.usage3":   true,
 		"table.source": true,
 		"table.pm":     true,
+		// « regex » et « page » s'écrivent pareil dans les deux langues : les inscrire
+		// ici est ce qui distingue un mot identique d'une traduction oubliée.
+		"table.regex":     true,
+		"table.moderegex": true,
+		"table.page":      true,
 	}
 
 	for cle, trad := range catalogue {

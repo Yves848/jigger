@@ -33,6 +33,7 @@ import (
 	"runtime"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/x/term"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/termenv"
 
@@ -111,9 +112,10 @@ func usage() {
 // optsCLI rassemble les drapeaux que jigger interprète lui-même. Tous les autres mots en
 // « -- » sont passés au gestionnaire : `jg install --cask firefox` doit marcher.
 type optsCLI struct {
-	PM   string
-	JSON bool
-	Yes  bool
+	PM     string
+	JSON   bool
+	Yes    bool
+	Select bool // --select : ouvrir la vue paginée et imprimer les lignes retenues
 }
 
 func separerDrapeaux(argv []string) (verbe string, args []string, o optsCLI, err error) {
@@ -133,6 +135,8 @@ func separerDrapeaux(argv []string) (verbe string, args []string, o optsCLI, err
 			o.JSON = true
 		case "--yes":
 			o.Yes = true
+		case "--select":
+			o.Select = true
 		default:
 			args = append(args, argv[i])
 		}
@@ -187,9 +191,92 @@ func runFacade(argv []string) int {
 
 	rows, code := facade.Executer(verbe, cibles, facade.Opts{JSON: o.JSON, Yes: o.Yes})
 	if len(rows) > 0 || facade.Normalise(verbe) {
-		fmt.Print(facade.Formater(verbe, rows, o.JSON))
+		if !afficherPagine(verbe, rows, o) {
+			fmt.Print(facade.Formater(verbe, rows, o.JSON))
+		}
 	}
 	return code
+}
+
+
+// afficherPagine ouvre la vue paginée si les conditions sont réunies, et dit si elle
+// s'en est chargée. Un « false » renvoie l'appelant à la table brute — le comportement
+// par défaut, celui dont dépendent les scripts.
+//
+// La vue se dessine sur le terminal (/dev/tty), jamais sur la sortie standard : c'est ce
+// qui rend `jg install $(jg search fd --select)` possible, la sélection partant seule
+// dans le tube.
+func afficherPagine(verbe pm.Verb, rows []pm.Package, o optsCLI) bool {
+	ctx := ui.Contexte{
+		EstTTY:   sortieEstTerminal(),
+		Hauteur:  hauteurEcran(),
+		NbLignes: len(rows),
+		EnJSON:   o.JSON,
+		Force:    o.Select,
+		Pager:    os.Getenv("JIGGER_PAGER"),
+	}
+	if !ui.DoitPaginer(ctx) {
+		// --select sans terminal n'a nulle part où dessiner : le dire, plutôt que de
+		// retomber silencieusement sur la table brute et laisser croire que le drapeau
+		// a été pris en compte.
+		if o.Select && !o.JSON && !ctx.EstTTY {
+			fmt.Fprintln(os.Stderr, i18n.T("cli.select_needs_tty"))
+		}
+		return false
+	}
+
+	tty, err := openTTY()
+	if err != nil {
+		return false
+	}
+	defer tty.Close()
+
+	entete, cellules := facade.Colonnes(rows)
+	lipgloss.SetColorProfile(termenv.NewOutput(tty.Out).Profile)
+
+	modele := ui.NouveauTableau(string(verbe), entete, cellules)
+	prog := tea.NewProgram(modele,
+		tea.WithInput(tty.In), tea.WithOutput(tty.Out), tea.WithAltScreen())
+	final, err := prog.Run()
+	if err != nil {
+		return false
+	}
+
+	// Les noms retenus partent sur la sortie standard, un par ligne : de quoi les
+	// enchaîner avec xargs ou une substitution de commande.
+	if t, ok := final.(ui.Tableau); ok && !t.Annule() {
+		for _, nom := range t.Choisis {
+			fmt.Println(nom)
+		}
+	}
+	return true
+}
+
+// hauteurEcran rend la hauteur du terminal en lignes, ou 0 si elle est inconnue —
+// auquel cas la décision d'armer choisit de paginer plutôt que de deviner.
+func hauteurEcran() int {
+	if _, h, err := term.GetSize(os.Stdout.Fd()); err == nil {
+		return h
+	}
+	// La sortie peut être redirigée alors qu'un terminal existe (`jg list --select | …`) :
+	// on interroge alors le terminal lui-même.
+	if tty, err := openTTY(); err == nil {
+		defer tty.Close()
+		if _, h, err := term.GetSize(tty.Out.Fd()); err == nil {
+			return h
+		}
+	}
+	return 0
+}
+
+// sortieEstTerminal dit si la sortie standard est un terminal, sans dépendance
+// supplémentaire : un périphérique caractère, par opposition à un fichier ou un tube.
+func sortieEstTerminal() bool {
+	fi, err := os.Stdout.Stat()
+	if err != nil {
+		return false
+	}
+	return fi.Mode()&os.ModeCharDevice != 0
 }
 
 // trancher ouvre le sélecteur sur les candidats d'un nom ambigu. Ce n'est pas un nouvel
