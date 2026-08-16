@@ -321,6 +321,34 @@ Trois points à ne pas manquer :
   comportement pour ce mot précis. À trancher : soit jigger l'intercepte et le traduit pour
   chaque gestionnaire, soit il en prend un autre pour lui.
 
+### A-19 — Les raccourcis des listes à sélection multiple
+
+**Priorité :** à déterminer · **Provenance :** demande du 16 août, après A-10
+
+A-10 a livré une sélection multiple avec `⇥` pour cocher, et **rien pour tout cocher**.
+Reste à arrêter le jeu complet de raccourcis — (dé)sélectionner une ligne, tout
+(dé)sélectionner — sur deux critères : la **position sur le clavier** et la **cohérence**
+avec ce que jigger fait déjà ailleurs.
+
+Ce qu'A-10 a appris, et qui contraint la réponse avant même qu'on cherche :
+
+- **Le champ de filtre a le focus en permanence.** `Espace` est donc une lettre, pas un
+  raccourci — c'était le candidat le plus naturel, et il est hors jeu.
+- **`^A`, `^E`, `^K`, `^U`, `^W` appartiennent à l'édition du champ.** Or `^A` est
+  précisément le « tout sélectionner » de tout le monde. C'est le nœud du problème.
+- **Les claviers d'Yves sont AZERTY :** aucun chiffre ni symbole décalé, sous peine d'un
+  raccourci à deux mains.
+- `⇥` coche aujourd'hui, par analogie avec fzf. Le pied du cadre annonce les touches, donc
+  tout changement doit s'y refléter — et se répercuter dans les deux langues du catalogue.
+
+Pistes à peser, sans en privilégier une avant l'étude : un préfixe façon Emacs (`^X` puis
+une lettre), une touche de bascule globale sur une lettre libre, ou l'inversion — `^A`
+rendu au « tout cocher » et l'édition de début de ligne déplacée, si le champ de filtre
+peut se le permettre.
+
+Le résultat doit valoir aussi pour le sélecteur plein écran et pour le popup, sans quoi
+jigger aura deux conventions de sélection.
+
 ---
 
 ## En cours
