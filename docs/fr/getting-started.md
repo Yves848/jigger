@@ -12,7 +12,7 @@ gestionnaire de paquets, un cadre s'affiche sous le prompt et suit ta frappe.
 ```
 ❯ brew install fire
 ╭──────────────────────────────────────────────────────╮
-│❯ brew install                            jigger 0.8.0│
+│❯ brew install                            jigger 0.9.0│
 │  ▣  firealpaca                                       │
 │  ▣  firebase-admin                                   │
 │  ◆  firebase-cli                                     │
@@ -124,7 +124,7 @@ importe jigger **après** lui (cf. § 8).
 ## 4. Vérifier que ça marche
 
 ```sh
-jigger --version        # → jigger 0.8.0, ou plus récent
+jigger --version        # → jigger 0.9.0, ou plus récent
 ```
 
 Ouvre un shell neuf et tape `brew ins` (ou `winget ins`) **sans valider**. Le cadre doit
@@ -197,7 +197,7 @@ de marcher exactement comme avant, popup compris.
 ```
 ❯ jg
 ╭──────────────────────────────────────────────────────╮
-│❯ jigger                                  jigger 0.8.0│
+│❯ jigger                                  jigger 0.9.0│
 │  •  cleanup                                          │
 │  •  doctor                                           │
 │  •  info                                             │

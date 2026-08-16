@@ -101,9 +101,11 @@ fi
 # tomber en panne. Un appel au source (quelques millisecondes) suffit à le dire.
 #
 # À relever **avec** la version du binaire, à chaque fois que le greffon se met à demander
-# quelque chose de neuf : 0.8.0 pour l'alias `jg` et les verbes de la façade, qu'un binaire
-# 0.7.0 ne connaît pas.
-typeset -g JIGGER_VERSION_REQUISE=0.8.0
+# quelque chose de neuf : 0.9.0 pour le bilinguisme. Un binaire 0.8.0 ne parle que français,
+# tandis que ce greffon, lui, sait dire ses messages dans les deux langues : les deux
+# parleraient alors des langues différentes dans la même fenêtre — précisément ce que
+# l'internationalisation existe pour empêcher.
+typeset -g JIGGER_VERSION_REQUISE=0.9.0
 autoload -Uz is-at-least
 typeset -g _jigger_v=${${(z)"$(command jigger --version 2>/dev/null)"}[2]}
 if [[ -n $_jigger_v ]] && ! is-at-least $JIGGER_VERSION_REQUISE $_jigger_v; then

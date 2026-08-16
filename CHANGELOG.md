@@ -9,7 +9,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/1.1.0/) and
 [SemVer](https://semver.org/). Versions before `v0.1.6` predate this log; their detail
 lives in the git history.
 
-## [Unreleased]
+## [v0.9.0] — 2026-08-16
 
 ### Added
 
@@ -55,6 +55,30 @@ lives in the git history.
   prompts (steps 2a/2b); the anchor is fixed in the guide, and the PowerShell ordering
   rule — import jigger **after** the prompt it wraps — now names starship as well as
   oh-my-posh.
+
+### Fixed
+
+- **`jg source` and `jg list` never showed anything from scoop.** Both parsers returned
+  **zero rows without an error** — exit code 0, "nothing to report" — so on a Windows
+  machine where winget and scoop live side by side, half the table went missing in
+  silence. Two causes, and the first was foreseen by nobody: PowerShell colors the header
+  and the dashes line of its tables **even when the output is redirected**, and it is the
+  dashes line that marks the start of the table — wrapped in ANSI escapes, it no longer
+  looked like dashes, so no parser ever entered the table. The second: `Format-Table` pads
+  each column to its widest cell, so the widest row has **a single space** before the next
+  column — splitting on "two spaces or more" read `git-interactive-rebase-tool 2.4.1` as
+  one field, and got it wrong on exactly the row that sets each column's width. Columns
+  are now cut at the positions read from the dashes line, and the test fixtures are real
+  captures from a Windows machine rather than hand-written guesses.
+- **The documentation sent Windows users into a wall.** The guide announced `make install`
+  as "the route to take on Windows"; that target calls `install(1)`, a POSIX tool Windows
+  doesn't have, and `make` isn't shipped there either. `install-windows.ps1` now does the
+  job — build, then a **scoop shim** when scoop is around, or a **copy** into
+  `%USERPROFILE%\bin` added to the user `PATH`. The PowerShell module was giving the same
+  bad advice in its own version warning; it now points at the script.
+- Three of the four caveats published with v0.8.0 are lifted: `winget pin add`/`remove`,
+  `winget source add`/`list`/`remove` and scoop's `update *` are now checked against the
+  real CLIs, on captured help output. `cleanup *` and `bucket rm` remain unproven.
 
 ## [v0.8.0] — 2026-08-15
 

@@ -12,7 +12,7 @@ command, a frame appears under the prompt and tracks your keystrokes.
 ```
 ❯ brew install fire
 ╭──────────────────────────────────────────────────────╮
-│❯ brew install                            jigger 0.8.0│
+│❯ brew install                            jigger 0.9.0│
 │  ▣  firealpaca                                       │
 │  ▣  firebase-admin                                   │
 │  ◆  firebase-cli                                     │
@@ -125,7 +125,7 @@ import jigger **after** it (see § 8).
 ## 4. Check that it works
 
 ```sh
-jigger --version        # → jigger 0.8.0, or newer
+jigger --version        # → jigger 0.9.0, or newer
 ```
 
 Open a fresh shell and type `brew ins` (or `winget ins`) **without pressing Enter**.
@@ -201,7 +201,7 @@ packages:
 ```
 ❯ jg
 ╭──────────────────────────────────────────────────────╮
-│❯ jigger                                  jigger 0.8.0│
+│❯ jigger                                  jigger 0.9.0│
 │  •  cleanup                                          │
 │  •  doctor                                           │
 │  •  info                                             │
