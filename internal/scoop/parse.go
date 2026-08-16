@@ -2,12 +2,21 @@
 // Native — list, search, source (cf. verbs.go ; outdated, lui, est Direct et n'a pas
 // besoin d'un parser).
 //
-// NON VÉRIFIÉ contre un vrai scoop, comme le reste de ce paquet (cf. tâche 1b) : ce Mac
-// n'a ni scoop ni PowerShell à interroger. Les gabarits ci-dessous sont écrits contre la
-// documentation et le code source publics de scoop — Format-Table de PowerShell pour
-// `list`/`bucket list`, la sortie texte de `search` — et les jeux d'essai de testdata/
-// sont composés à la main dans le même esprit, avec le même avertissement. À vérifier et
-// corriger dès qu'une vraie installation de scoop est accessible.
+// Vérifiés contre un vrai scoop 0.5.3 sous Windows 10.0.26200 : les jeux d'essai de
+// testdata/ sont des captures réelles, prises comme jigger les reçoit — derrière un tuyau
+// (cf. tests/captures-scoop.ps1). Deux défauts en sont sortis, et il vaut la peine de les
+// garder écrits :
+//
+//   - **la couleur**. PowerShell colore l'en-tête et la ligne de tirets de ses tableaux
+//     même quand la sortie est redirigée. Les données, elles, sont propres. Or c'est la
+//     ligne de tirets qui marque l'entrée du tableau : entourée d'échappements ANSI, elle
+//     ne ressemblait plus à des tirets, le parser n'entrait jamais dans la table et rendait
+//     zéro ligne — sans erreur, donc sans que rien ne le signale. D'où sansAnsi, appliqué
+//     à chaque ligne avant tout examen ;
+//   - **le format de `search`**. Celui-là était bien écrit contre une sortie obsolète : des
+//     sections « 'main' bucket: » suivies de « nom (version) ». scoop rend aujourd'hui un
+//     tableau, comme pour list et bucket list. (Ce vieux format survit ailleurs : c'est
+//     celui de `scoop --version`, qui liste les commits de chaque bucket.)
 package scoop
 
 import (
@@ -17,21 +26,13 @@ import (
 	"gitlab.yg-devworks.com/yves/jigger/internal/pm"
 )
 
-// colonnes découpe une ligne de tableau scoop (Format-Table de PowerShell) sur au moins
-// deux espaces. Contrairement à winget (cf. internal/winget/table.go), scoop n'aligne pas
-// ses colonnes à une position fixe d'une commande à l'autre — seule la largeur du champ le
-// plus long de chaque colonne compte —, mais l'espacement entre deux colonnes est toujours
-// d'au moins deux espaces, jamais un identifiant ou une version ne s'écrit avec deux
-// espaces internes.
-var colonnes = regexp.MustCompile(`\s{2,}`)
+// ansi reconnaît les séquences SGR (couleur, gras) que PowerShell insère dans ses en-têtes
+// de tableau. On ne retient que cette forme : c'est la seule que scoop émette, et un
+// nettoyeur d'échappements trop large risquerait de manger un caractère légitime d'un nom
+// de paquet.
+var ansi = regexp.MustCompile(`\x1b\[[0-9;]*m`)
 
-func decouper(ligne string) []string {
-	ligne = strings.TrimRight(ligne, " \t")
-	if ligne == "" {
-		return nil
-	}
-	return colonnes.Split(ligne, -1)
-}
+func sansAnsi(ligne string) string { return ansi.ReplaceAllString(ligne, "") }
 
 // estSeparateur reconnaît la ligne de tirets que Format-Table pose entre l'en-tête et les
 // données (« ----  -------  ------ »).
@@ -40,83 +41,126 @@ func estSeparateur(ligne string) bool {
 	return t != "" && strings.Trim(t, "- ") == ""
 }
 
-// commentaire reconnaît les lignes « # … » que portent les jeux d'essai de testdata/ pour
-// se dire non vérifiés : scoop n'émet jamais de ligne commençant par #, ce préfixe est
-// donc sans risque de collision avec une vraie sortie.
-func commentaire(ligne string) bool { return strings.HasPrefix(ligne, "#") }
+// colonnes rend, pour chaque colonne, la position de son premier caractère, lue sur la
+// **ligne de tirets**.
+//
+// C'est elle qui fait autorité, et pas l'en-tête ni l'espacement des données. Format-Table
+// remplit chaque colonne à la largeur de sa cellule la plus longue : la ligne la plus large
+// d'un tableau n'a donc **qu'un seul espace** avant la colonne suivante. Découper sur « au
+// moins deux espaces » — ce que faisait la première version — lisait alors deux champs
+// comme un seul, et systématiquement sur la ligne qui donne sa largeur à la colonne :
+//
+//	git-flow-next               1.1.0     ← deux espaces, découpage correct
+//	git-interactive-rebase-tool 2.4.1     ← un seul, nom et version collés
+//
+// La ligne de tirets, elle, sépare toujours ses groupes, quelle que soit la largeur.
+func colonnes(tirets string) []int {
+	var debuts []int
+	dansGroupe := false
+	for i, r := range []rune(tirets) {
+		switch {
+		case r == '-' && !dansGroupe:
+			debuts = append(debuts, i)
+			dansGroupe = true
+		case r != '-':
+			dansGroupe = false
+		}
+	}
+	return debuts
+}
 
-// parseList lit « scoop list » : un en-tête (Name, Version, Source, Updated, Info), une
-// ligne de tirets, puis une ligne par application installée. Tout ce qui précède la ligne
-// de tirets (le titre « Installed apps: », l'en-tête lui-même) est ignoré : lire les noms
-// de colonnes ne sert à rien tant que scoop les traduit pas (contrairement à winget), donc
-// seule la position compte.
+// decouper tranche une ligne de données aux positions données. Une colonne absente — la
+// ligne s'arrête avant, ce qui arrive quand les dernières cellules sont vides — rend une
+// chaîne vide plutôt qu'un champ manquant : l'indice d'une colonne reste ainsi le même
+// d'une ligne à l'autre.
+func decouper(ligne string, debuts []int) []string {
+	runes := []rune(ligne)
+	champs := make([]string, len(debuts))
+	for i, d := range debuts {
+		if d >= len(runes) {
+			continue
+		}
+		fin := len(runes)
+		if i+1 < len(debuts) && debuts[i+1] < fin {
+			fin = debuts[i+1]
+		}
+		champs[i] = strings.TrimSpace(string(runes[d:fin]))
+	}
+	return champs
+}
+
+// tableau lit un tableau Format-Table et rend une ligne de champs par enregistrement.
+//
+// Les trois verbes normalisés de scoop rendent le même gabarit — un titre, un en-tête, une
+// ligne de tirets, les données —, seule l'interprétation des colonnes les distingue. Tout
+// ce qui précède la ligne de tirets est ignoré : les noms de colonnes ne servent à rien
+// tant que scoop ne les traduit pas (contrairement à winget), seule la position compte.
+//
+// Le découpage des lignes est fait ici plutôt que par pm.SplitLines, qui ôte les blancs de
+// tête : une position de colonne ne survivrait pas à ce raccourcissement.
+func tableau(out []byte) [][]string {
+	var rows [][]string
+	var debuts []int
+	for _, brute := range strings.Split(string(out), "\n") {
+		ligne := sansAnsi(strings.TrimRight(brute, "\r\n"))
+		if debuts == nil {
+			if estSeparateur(ligne) {
+				debuts = colonnes(ligne)
+			}
+			continue
+		}
+		champs := decouper(ligne, debuts)
+		if len(champs) == 0 || champs[0] == "" {
+			continue
+		}
+		rows = append(rows, champs)
+	}
+	return rows
+}
+
+// champ rend la colonne d'indice i, ou la chaîne vide si la ligne n'en a pas tant.
+func champ(champs []string, i int) string {
+	if i < len(champs) {
+		return champs[i]
+	}
+	return ""
+}
+
+// parseList lit « scoop list » : Name, Version, Source, Updated, Info.
 func parseList(out []byte) ([]pm.Package, error) {
 	var rows []pm.Package
-	dansTable := false
-	for _, ligne := range pm.SplitLines(out) {
-		if commentaire(ligne) {
+	for _, champs := range tableau(out) {
+		if champ(champs, 1) == "" {
 			continue
 		}
-		if estSeparateur(ligne) {
-			dansTable = true
-			continue
-		}
-		if !dansTable {
-			continue
-		}
-		champs := decouper(ligne)
-		if len(champs) < 2 {
-			continue
-		}
-		source := ""
-		if len(champs) >= 3 {
-			source = champs[2]
-		}
-		badge := pm.BadgeScoop
-		if source != "" && source != "main" {
-			badge = pm.BadgeOther
-		}
+		source := champ(champs, 2)
 		rows = append(rows, pm.Package{
 			Name:    champs[0],
 			Version: champs[1],
-			Kind:    badge,
+			Kind:    badge(source),
 			Source:  source,
 		})
 	}
 	return rows, nil
 }
 
-// ligneBucket reconnaît l'en-tête de section que `scoop search` imprime avant les
-// résultats d'un bucket : « 'main' bucket: ».
-var ligneBucket = regexp.MustCompile(`^'([^']+)' bucket:$`)
-
-// ligneResultat reconnaît une ligne de résultat : « nom (version) », éventuellement suivie
-// d'un commentaire que scoop ajoute pour un nom trouvé par binaire plutôt que par manifeste
-// (« --> includes … ») — capturé mais ignoré, ce n'est pas une donnée normalisée.
-var ligneResultat = regexp.MustCompile(`^(\S+)\s+\(([^)]+)\)`)
-
-// parseSearch lit « scoop search <requête> » : des sections par bucket, chacune suivie
-// d'une ligne par correspondance.
+// parseSearch lit « scoop search <requête> » : un titre (« Results from local buckets... »),
+// puis le même gabarit de tableau que list — Name, Version, Source, Binaries. La colonne
+// Binaries est souvent vide, et la ligne s'arrête alors après le bucket : c'est pourquoi
+// Source n'est lu que s'il est là.
 func parseSearch(out []byte) ([]pm.Package, error) {
 	var rows []pm.Package
-	bucket := ""
-	for _, ligne := range pm.SplitLines(out) {
-		if commentaire(ligne) {
+	for _, champs := range tableau(out) {
+		if champ(champs, 1) == "" {
 			continue
 		}
-		if m := ligneBucket.FindStringSubmatch(ligne); m != nil {
-			bucket = m[1]
-			continue
-		}
-		m := ligneResultat.FindStringSubmatch(ligne)
-		if m == nil {
-			continue // « Results from local buckets… » et autres phrases d'habillage
-		}
-		badge := pm.BadgeScoop
-		if bucket != "" && bucket != "main" {
-			badge = pm.BadgeOther
-		}
-		rows = append(rows, pm.Package{Name: m[1], Version: m[2], Kind: badge, Source: bucket})
+		source := champ(champs, 2)
+		rows = append(rows, pm.Package{
+			Name:    champs[0],
+			Version: champs[1],
+			Kind:    badge(source),
+			Source:  source,
+		})
 	}
 	return rows, nil
 }
@@ -126,27 +170,8 @@ func parseSearch(out []byte) ([]pm.Package, error) {
 // version à porter.
 func parseSource(out []byte) ([]pm.Package, error) {
 	var rows []pm.Package
-	dansTable := false
-	for _, ligne := range pm.SplitLines(out) {
-		if commentaire(ligne) {
-			continue
-		}
-		if estSeparateur(ligne) {
-			dansTable = true
-			continue
-		}
-		if !dansTable {
-			continue
-		}
-		champs := decouper(ligne)
-		if len(champs) < 1 || champs[0] == "" {
-			continue
-		}
-		source := ""
-		if len(champs) >= 2 {
-			source = champs[1]
-		}
-		rows = append(rows, pm.Package{Name: champs[0], Source: source})
+	for _, champs := range tableau(out) {
+		rows = append(rows, pm.Package{Name: champs[0], Source: champ(champs, 1)})
 	}
 	return rows, nil
 }
