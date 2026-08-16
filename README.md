@@ -240,10 +240,10 @@ Two errors captured for real (brew, the only manager present on this machine):
 
 ```
 $ jg frobnicate
-jigger: « frobnicate » — unknown verb. « jg ⇥ » lists what jigger can do
+jigger: "frobnicate" — unknown verb. "jg ⇥" lists what jigger can do
 
 $ jg info zzznonexistentpkgzzz
-jigger: « zzznonexistentpkgzzz » — unknown to brew
+jigger: "zzznonexistentpkgzzz" — unknown to brew
         If the package is too recent for the catalog: jg … --pm brew zzznonexistentpkgzzz
 ```
 
