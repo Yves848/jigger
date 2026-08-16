@@ -1,0 +1,16 @@
+Captures faites par tests/captures-scoop.ps1
+PowerShell      : 7.6.3
+Système         : Microsoft Windows NT 10.0.26200.0
+scoop           : Current Scoop version:
+b588a06e chore(release): Bump to version 0.5.3 (resync) (#6436)
+
+'main' bucket:
+23594b0e2b wakatime-cli: Update to version 2.15.0
+
+'extras' bucket:
+446f9074ad vifm: Update to version 0.14.4
+
+'nerd-fonts' bucket:
+861a39da LXGWNeoXiHei: Update to version 1.302
+winget          : v1.29.280
+Sortie capturée : derrière un tuyau, comme jigger (jamais la largeur de la console)

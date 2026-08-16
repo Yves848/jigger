@@ -5,8 +5,11 @@ import "gitlab.yg-devworks.com/yves/jigger/internal/pm"
 // Verbs déclare ce que winget sait faire. Ni cleanup ni doctor n'y figurent : winget n'a
 // pas ces concepts, et leur absence est précisément ce que le modèle de capacités lit.
 //
-// Les valeurs ci-dessous proviennent du cahier des charges et ne sont pas encore
-// vérifiées contre une vraie installation de winget (cf. tâche 1b).
+// Vérifiées le 16 août 2026 contre winget v1.29.280 sous Windows 10.0.26200, sur les
+// captures de tests/captures/ : `winget pin --help` donne bien `add` et `remove`,
+// `winget source --help` donne bien `add`, `list` et `remove`. C'étaient les deux
+// liaisons les plus incertaines du cahier des charges ; les autres verbes s'exercent à
+// chaque usage du popup et de la façade sur cette machine.
 //
 // MarqueurUn partout où un identifiant est attendu : winget ne prend qu'un `--id` par
 // appel, là où brew et scoop acceptent une liste.

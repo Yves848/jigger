@@ -1,12 +1,79 @@
-# NON VÉRIFIÉ contre un vrai scoop — jeu d'essai écrit à la main d'après la documentation
-# (cf. tâche 1b, internal/scoop/parse.go). À remplacer dès qu'une vraie sortie est
-# disponible.
 Results from local buckets...
 
-'main' bucket:
-    fd (9.0.0)
-    fdupes (2.2.1)
+[32;1mName                       [0m[32;1m Version     [0m[32;1m Source[0m[32;1m Binaries[0m
+[32;1m----                       [0m [32;1m-------     [0m [32;1m------[0m [32;1m--------[0m
+biodiff                     1.2.1        main   git-biodiff.exe
+cocogitto                   7.0.0        main   
+git-absorb                  0.9.0        main   
+git-ai                      1.5.2        main   
+git-annex                   10.20260525  main   
+git-branchless              0.11.1       main   
+git-bug                     0.10.1       main   
+git-chglog                  0.15.4       main   
+git-cliff                   2.13.1       main   
+git-credential-oauth        0.17.2       main   
+git-crypt                   0.7.0        main   
+git-filter-repo             2.47.0       main   
+git-flow-next               1.1.0        main   
+git-interactive-rebase-tool 2.4.1        main   
+git-istage                  0.3.193      main   
+git-lfs                     3.7.1        main   
+git-machete                 3.41.0       main   
+git-pkgs                    0.16.2       main   
+git-quick-stats             2.11.0       main   
+git-sizer                   1.5.0        main   
+git-tfs                     0.34.0       main   
+git-town                    23.0.1       main   
+git-up                      2.4.0        main   
+git-with-openssh            2.54.0       main   
+git-xargs                   0.1.16       main   
+git-xet                     0.2.1        main   
+git                         2.54.0       main   
+gitea                       1.26.2       main   
+gitignore                   0.2018.07.25 main   
+gitkube                     0.3.0        main   
+gitlab-release-cli          0.24.0       main   
+gitlab-runner               19.0.1       main   
+gitleaks                    8.30.1       main   
+gitomatic                   0.2          main   
+gitoxide                    0.54.0       main   
+gitql                       0.43.0       main   
+gitsign                     0.16.0       main   
+gitui                       0.28.1       main   
+gitversion                  6.6.2        main   
+legit                       1.2.0        main   
+mingit-busybox              2.54.0       main   
+mingit                      2.54.0       main   
+multi-gitter                0.63.1       main   
+psgithub                    0.15.240     main   
+psutils                     0.2023.06.28 main   gitignore.ps1
+stgit                       2.6.0        main   
+worktrunk                   0.55.0       main   git-wt.exe
+deepgit                     4.4          extras 
+digital                     0.31         extras 
+gcloud                      570.0.0      extras git-credential-gcloud.cmd
+git-aliases                 0.3.8        extras 
+git-cola                    4.18.2       extras 
+git-credential-manager      2.8.0        extras 
+git-graph                   0.7.0        extras 
+git-tower                   12.1.557     extras 
+gitahead                    2.7.1        extras 
+gitbutler                   0.19.13      extras 
+gitextensions               6.0.5.18375  extras 
+github                      3.5.11       extras 
+gitify                      6.20.0       extras 
+gitkraken                   12.1.2       extras 
+gitnuro                     1.5.0        extras 
+gittyup                     1.4.0        extras 
+gitu                        0.42.0       extras 
+lazy-posh-git               0.2.0        extras 
+lazygit                     0.62.1       extras 
+logitech-omm                2.6.1749     extras 
+metrogit                    0.4.0        extras 
+mpv-git                     20260531     extras 
+posh-git                    1.1.0        extras 
+smartgit                    26.1.038     extras 
+sourcegit                   2026.11      extras 
+ungit                       1.5.30       extras 
+wslgit                      1.3.1        extras 
 
-'extras' bucket:
-    firefox (123.0.1)
-    firealpaca (1.1.4) --> includes 'firealpaca.json' (extras bucket)

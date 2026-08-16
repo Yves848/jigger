@@ -1,7 +1,7 @@
-# NON VÉRIFIÉ contre un vrai scoop — jeu d'essai écrit à la main d'après la documentation
-# (cf. tâche 1b, internal/scoop/parse.go). À remplacer dès qu'une vraie sortie est
-# disponible.
-Name      Source                                          Updated
-----      ------                                          -------
-main      https://github.com/ScoopInstaller/Main           2024-01-01 09:00:00
-extras    https://github.com/ScoopInstaller/Extras         2024-01-01 09:00:00
+
+[32;1mName      [0m[32;1m Source                                            [0m[32;1m Updated            [0m[32;1m Manifests[0m
+[32;1m----      [0m [32;1m------                                            [0m [32;1m-------            [0m [32;1m---------[0m
+main       https://github.com/ScoopInstaller/Main             31/05/2026 14:51:05      1553
+extras     https://github.com/ScoopInstaller/Extras           31/05/2026 14:51:18      2304
+nerd-fonts https://github.com/matthewjberger/scoop-nerd-fonts 26/05/2026 18:45:45       367
+

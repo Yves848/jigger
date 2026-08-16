@@ -4,9 +4,16 @@ import "gitlab.yg-devworks.com/yves/jigger/internal/pm"
 
 // Verbs déclare ce que scoop sait faire.
 //
-// Les valeurs ci-dessous proviennent du cahier des charges et ne sont pas encore
-// vérifiées contre une vraie installation de scoop (cf. tâche 1b). Les parsers de list,
-// search et source (cf. parse.go) portent le même avertissement.
+// Vérifiées le 16 août 2026 contre scoop 0.5.3 sous Windows 10.0.26200, sur les captures
+// de tests/captures/ (`scoop help`, `scoop update --help`) : les commandes `install`,
+// `uninstall`, `update`, `list`, `search`, `info`, `bucket`, `hold`, `unhold`, `cleanup`
+// et `checkup` existent bien sous ces noms, et `update *` met à jour toutes les
+// applications — c'est écrit noir sur blanc dans l'aide.
+//
+// **Deux liaisons restent non prouvées**, faute d'aide capturée : le `*` de `cleanup *`,
+// et le nom exact du sous-verbe de suppression de bucket (`bucket rm`). Les deux sont
+// d'usage courant, mais l'usage courant est ce qui a déjà produit trois erreurs dans ce
+// fichier — `scoop cleanup --help` et `scoop bucket --help` trancheront.
 //
 // outdated est le seul verbe en Direct de tout jigger : scoop range ses applications dans
 // une arborescence qui ressemble au Cellar de Homebrew, et la comparaison des manifestes
