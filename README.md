@@ -55,7 +55,7 @@ Start to finish, step by step: **[Getting started](docs/getting-started.md)** �
 install, wire into the shell, configure, troubleshoot. What follows is the summary.
 
 ```sh
-# the binary (Go ≥ 1.24)
+# the binary (Go ≥ 1.26)
 go install gitlab.yg-devworks.com/yves/jigger@latest   # → $GOBIN/jigger
 #   or:  git clone … && make install          (Windows: install-windows.ps1)
 ```
@@ -629,6 +629,13 @@ Deliberate non-goals of facade phase 1 — left out on purpose, not forgotten:
 - **Third-party managers via subprocess** (apt, pacman… wired in without recompiling)
   — deserves its own ADR.
 - **New managers** themselves — phase 1 proves the mechanism on three, not on five.
+
+## Contributing
+
+Bug reports are welcome on either the GitHub mirror or GitLab; code goes through GitLab,
+which is the only source of truth. [CONTRIBUTING.md](CONTRIBUTING.md) explains why, and
+what the code expects. For a vulnerability, see [SECURITY.md](SECURITY.md) rather than a
+public issue.
 
 ## License
 

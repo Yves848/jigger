@@ -9,6 +9,31 @@ The format follows [Keep a Changelog](https://keepachangelog.com/1.1.0/) and
 [SemVer](https://semver.org/). Versions before `v0.1.6` predate this log; their detail
 lives in the git history.
 
+## [v0.10.0] — 2026-08-16
+
+### Added
+
+- **Prebuilt binaries with every release.** A tag now builds four targets — macOS on
+  Apple Silicon and Intel, Windows x64, Linux x64 — and attaches them to the GitLab
+  release along with a `SHA256SUMS`. Installing jigger no longer requires having Go
+  (#48). Each archive carries the binary, the Apache-2.0 licence and the README.
+- **A site of its own**, at <https://jigger.yg-devworks.com/> — what the popup does, the
+  twelve verbs of `jg`, and the three ways to install it, in English and French (#47).
+  Its source lives in this repository under `website/`, so the page and the documentation
+  change under the same review.
+- **`CONTRIBUTING.md` and `SECURITY.md`** — where bug reports go, where code goes, what
+  the code expects, and how to report a vulnerability without opening a public issue
+  (#50).
+
+### Fixed
+
+- Three completion tests passed on a machine with Homebrew installed and failed
+  everywhere else: they asked the machine instead of the facade. With no package manager
+  present, jigger proposes no verbs — the behaviour was right, the tests were not (#49).
+  Found by the first CI run, in a container with no package manager at all.
+- The README and the getting-started guide claimed **Go ≥ 1.24**; `go.mod` has required
+  **1.26.5** for a while. The claim now matches the file.
+
 ## [v0.9.0] — 2026-08-16
 
 ### Added

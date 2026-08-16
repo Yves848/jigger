@@ -37,7 +37,7 @@ knows `fd`, without you having to know which (§ 6).
   network calls, and works only with what `brew`, `winget`, or `scoop` already has on
   disk.
 - **zsh** (ships with macOS) or **PowerShell 7** with PSReadLine (ships with Windows).
-- **Go ≥ 1.24**, only to compile — the Homebrew package handles that on its own.
+- **Go ≥ 1.26**, only to compile — the Homebrew package handles that on its own.
 
 ## 2. Install the binary
 

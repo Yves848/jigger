@@ -37,7 +37,7 @@ celui qui connaît `fd`, sans que tu aies à savoir lequel (§ 6).
   parle à aucun réseau, et se contente de ce que `brew`, `winget` ou `scoop` a déjà sur le
   disque.
 - **zsh** (livré avec macOS) ou **PowerShell 7** avec PSReadLine (livré avec Windows).
-- **Go ≥ 1.24**, uniquement pour compiler — le paquet Homebrew s'en charge tout seul.
+- **Go ≥ 1.26**, uniquement pour compiler — le paquet Homebrew s'en charge tout seul.
 
 ## 2. Installer le binaire
 

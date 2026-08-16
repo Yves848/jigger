@@ -54,7 +54,7 @@ De bout en bout, pas à pas : **[Premiers pas](docs/fr/getting-started.md)** —
 brancher dans le shell, régler, dépanner. Ce qui suit en est le résumé.
 
 ```sh
-# le binaire (Go ≥ 1.24)
+# le binaire (Go ≥ 1.26)
 go install gitlab.yg-devworks.com/yves/jigger@latest   # → $GOBIN/jigger
 #   ou :  git clone … && make install         (Windows : install-windows.ps1)
 ```
@@ -637,6 +637,13 @@ oubliés :
   mérite son propre ADR.
 - **De nouveaux gestionnaires** eux-mêmes — la phase 1 prouve le mécanisme sur trois, pas
   sur cinq.
+
+## Contribuer
+
+Les rapports de bogue sont bienvenus sur le miroir GitHub comme sur GitLab ; le code, lui,
+passe par GitLab, seule source de vérité. [CONTRIBUTING.md](CONTRIBUTING.md) explique
+pourquoi, et ce que le code attend. Pour une faille, écrivez à l'adresse de
+[SECURITY.md](SECURITY.md) plutôt que d'ouvrir une issue publique.
 
 ## Licence
 
