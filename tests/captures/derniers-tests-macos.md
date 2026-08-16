@@ -6,17 +6,18 @@
 
 | Étape | Code | Durée |
 |---|---|---|
-| go build | ok | 0 s |
-| go test | ok | 1 s |
-| zpty.zsh (vrai pseudo-terminal) | ok | 131 s |
+| go build | ok | 1 s |
+| go test | ok | 0 s |
+| zpty.zsh (vrai pseudo-terminal) | ok | 142 s |
 | smoke.ps1 | ok | 1 s |
+| banc de rendu (français figé) | ok | 4 s |
 
 ## Contexte
 
 ```
-date    : 2026-08-16 11:15:01
+date    : 2026-08-16 11:18:37
 macOS 26.5.2 · zsh 5.9 · go1.26.6
-commit  : 5a54e20
+commit  : eba2d59
 ```
 
 ## go build
@@ -27,17 +28,17 @@ commit  : 5a54e20
 ## go test
 
 ```
-ok  	gitlab.yg-devworks.com/yves/jigger	(cached)
-ok  	gitlab.yg-devworks.com/yves/jigger/internal/brew	(cached)
-ok  	gitlab.yg-devworks.com/yves/jigger/internal/complete	(cached)
-ok  	gitlab.yg-devworks.com/yves/jigger/internal/facade	(cached)
-ok  	gitlab.yg-devworks.com/yves/jigger/internal/i18n	(cached)
+ok  	gitlab.yg-devworks.com/yves/jigger	0.006s
+ok  	gitlab.yg-devworks.com/yves/jigger/internal/brew	0.008s
+ok  	gitlab.yg-devworks.com/yves/jigger/internal/complete	0.039s
+ok  	gitlab.yg-devworks.com/yves/jigger/internal/facade	0.007s
+ok  	gitlab.yg-devworks.com/yves/jigger/internal/i18n	0.008s
 ?   	gitlab.yg-devworks.com/yves/jigger/internal/managers	[no test files]
 ok  	gitlab.yg-devworks.com/yves/jigger/internal/pm	(cached)
-ok  	gitlab.yg-devworks.com/yves/jigger/internal/prompt	(cached)
-ok  	gitlab.yg-devworks.com/yves/jigger/internal/scoop	(cached)
-ok  	gitlab.yg-devworks.com/yves/jigger/internal/ui	(cached)
-ok  	gitlab.yg-devworks.com/yves/jigger/internal/winget	(cached)
+ok  	gitlab.yg-devworks.com/yves/jigger/internal/prompt	0.524s
+ok  	gitlab.yg-devworks.com/yves/jigger/internal/scoop	0.016s
+ok  	gitlab.yg-devworks.com/yves/jigger/internal/ui	0.014s
+ok  	gitlab.yg-devworks.com/yves/jigger/internal/winget	0.005s
 ?   	gitlab.yg-devworks.com/yves/jigger/tests/conpty	[no test files]
 ```
 
@@ -99,4 +100,10 @@ tout passe
   ok   aucune commande mutante, aucun appel
 
 tout passe (70 assertions)
+```
+
+## banc de rendu (français figé)
+
+```
+aucune différence (480 combinaisons)
 ```

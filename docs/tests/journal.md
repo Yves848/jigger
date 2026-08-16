@@ -16,6 +16,14 @@ Ce journal-ci, lui, garde la trace.
 
 <!-- nouvelles passes ici -->
 
+## 2026-08-16 11:18 — macOS — `eba2d59` — tout passe
+
+macOS 26.5.2 · zsh 5.9 · go1.26.6
+
+- **ok** — go build · go test · zpty.zsh (vrai pseudo-terminal) · smoke.ps1 · banc de rendu (français figé)
+- durée totale : 148 s
+
+
 ## 2026-08-16 11:15 — macOS — `5a54e20` — tout passe
 
 macOS 26.5.2 · zsh 5.9 · go1.26.6
