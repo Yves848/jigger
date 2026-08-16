@@ -101,6 +101,29 @@ scoop et la façade ; les topics sont vides. C'est la première ligne que voit u
 l'internationalisation, l'installation Windows, les analyseurs scoop. La chaîne est connue
 — consignation, CHANGELOG, tag, release, formule du tap, `brew upgrade`.
 
+### A-10 — Mettre en page et paginer les sorties
+
+**Priorité :** à déterminer · **Provenance :** demande du 16 août
+
+`jigger list` — et les trois autres verbes tabulaires, `outdated`, `search`, `source` —
+rendent aujourd'hui un tableau aligné qui défile d'un bloc. Les rendre **navigables** :
+pagination, couleur, filtre au fil de la frappe, et un filtre qui accepte une **expression
+rationnelle** plutôt qu'une simple sous-chaîne.
+
+Trois choses à ne pas perdre de vue le jour où on s'y met :
+
+- **Rien ne doit casser hors terminal.** `jigger list | grep`, un script, une CI : la
+  pagination ne s'arme que si la sortie est un terminal — comme le fait `git`. Et `--json`
+  n'est jamais paginé, c'est un contrat machine.
+- **Le sélecteur existe déjà.** `internal/ui/picker.go` sait afficher une liste en plein
+  écran, la filtrer et la parcourir ; il sert déjà à `jigger pick` et à la désambiguïsation
+  de la façade. Le pager devrait le réemployer plutôt qu'ouvrir un deuxième dispositif
+  d'affichage à maintenir — quitte à lui ajouter un mode « lecture seule ».
+- **Le filtre passe de la sous-chaîne à la regex.** Changement de comportement pour qui
+  utilise déjà `jigger pick` : une frappe comme `c++` cesse d'être un texte pour devenir un
+  motif fautif. À trancher — regex par défaut avec repli en sous-chaîne quand le motif ne
+  compile pas, ou une touche qui bascule entre les deux.
+
 ---
 
 ## En cours
