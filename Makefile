@@ -3,7 +3,9 @@ PREFIX ?= $(HOME)/.local
 # Le shell dépend de la plateforme, et avec lui le greffon à installer et la suite à
 # lancer : zsh + Homebrew d'un côté, PowerShell + winget/scoop de l'autre.
 GREFFON := Ajoute dans ~/.zshrc :  source $(CURDIR)/shell/jigger.plugin.zsh
-TEST_SHELL := test-shell test-golden
+# test-golden n'est pas de la partie : sa référence est celle d'une machine et d'une
+# version (cf. l'en-tête de tests/render-golden.sh). Il se lance à la main.
+TEST_SHELL := test-shell
 
 ifeq ($(OS),Windows_NT)
   BINARY := jigger.exe
@@ -28,6 +30,9 @@ test-shell: build
 	./tests/zpty.zsh --suite
 
 # Le popup ne doit pas bouger d'un octet en français (cf. docs/plans/2026-08-16-i18n.md).
+# Hors de test-all, et à lancer à la main : la référence dépend de la version affichée
+# dans la bannière et du catalogue Homebrew de la machine qui l'a capturée. `--capturer`
+# avant un chantier de rendu, `--verifier` après.
 test-golden: build
 	./tests/render-golden.sh --verifier
 
