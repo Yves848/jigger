@@ -11,6 +11,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 
 	"gitlab.yg-devworks.com/yves/jigger/internal/complete"
+	"gitlab.yg-devworks.com/yves/jigger/internal/i18n"
 )
 
 // Palette (vive, dérivée de Cocktails).
@@ -121,7 +122,7 @@ type Model struct {
 func New(title string, res complete.Result) Model {
 	ti := textinput.New()
 	ti.Prompt = ""
-	ti.Placeholder = "filtrer…"
+	ti.Placeholder = i18n.T("popup.filter")
 	// Même raison que `pad` : sans fond explicite, la saisie s'affiche sur celui du terminal.
 	ti.TextStyle = base.Foreground(ink)
 	ti.PlaceholderStyle = base.Foreground(muted)
@@ -223,11 +224,11 @@ func (m Model) View() string {
 
 	keys := m.Keys
 	if keys == nil {
-		keys = []Key{{"⇥", "insérer"}}
+		keys = []Key{{"⇥", i18n.T("popup.insert")}}
 		if m.executable {
-			keys = append(keys, Key{"↩", "exécuter"})
+			keys = append(keys, Key{"↩", i18n.T("popup.execute")})
 		}
-		keys = append(keys, Key{"↑↓", "naviguer"}, Key{"esc", "annuler"})
+		keys = append(keys, Key{"↑↓", i18n.T("popup.navigate")}, Key{"esc", i18n.T("popup.cancel")})
 	}
 
 	return Frame{
@@ -236,7 +237,7 @@ func (m Model) View() string {
 		Sel:        m.cursor,
 		Offset:     m.offset,
 		FilterView: filterHint.Render("› ") + m.input.View(),
-		Empty:      "aucun candidat",
+		Empty:      i18n.T("popup.empty"),
 		Keys:       keys,
 		Focused:    true, // le sélecteur plein écran possède le clavier, par construction
 	}.Render()

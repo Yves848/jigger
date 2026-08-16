@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"gitlab.yg-devworks.com/yves/jigger/internal/i18n"
 	"gitlab.yg-devworks.com/yves/jigger/internal/pm"
 )
 
@@ -144,7 +145,7 @@ func Load() *pm.Catalog {
 	if len(formulae) == 0 && len(casks) == 0 {
 		// Première utilisation : le réchauffement vient d'être lancé, mais il dure une
 		// seconde ou deux. Mieux vaut le dire que d'annoncer « aucun candidat ».
-		cat.Note = "catalogue Homebrew en préparation…"
+		cat.Note = i18n.T("popup.catalog_brew")
 	}
 	return cat
 }

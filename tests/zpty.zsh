@@ -36,6 +36,9 @@ _jigger_rc() {
 PS1='%% '
 PATH="$root:\$PATH"
 COLORTERM=truecolor
+# Cette suite assère des libellés français en dur (cf. i18n.T) : sans l'exporter, le
+# popup (un sous-processus) parlerait la langue de la machine qui lance les tests.
+export JIGGER_LANG=fr
 # Les flèches arrivent en trois octets (ESC [ A), et le harnais tape caractère par
 # caractère avec des pauses entre eux : sans allonger le délai, zsh conclurait à un
 # simple Échap avant d'avoir vu le reste. C'est un artefact du pseudo-terminal, pas du
@@ -188,6 +191,53 @@ check() {
 # plutôt que sur le catalogue local, qui varie d'une machine à l'autre.
 suite() {
   local out
+
+  print -r -- "→ la langue résolue par le greffon concorde avec celle du binaire"
+  # Trois implémentations de la même règle (binaire, greffon zsh, module PowerShell),
+  # mesurées à la main à la tâche 6 : sans assertion, la prochaine modification les fait
+  # diverger sans bruit — un popup dans une langue, un module dans l'autre. On compare
+  # donc à chaque fois la résolution du greffon à celle du binaire, jamais à une valeur
+  # en dur : c'est la concordance qui est l'exigence, pas la valeur.
+  #
+  # Résolution du greffon : $_jigger_lang est observable sans pseudo-terminal, en
+  # sourçant le greffon dans un zsh jetable (-f : pas de rc, pour ne rien devoir à la
+  # locale de la machine qui lance les tests).
+  #
+  # Résolution du binaire : « jigger » sans argument imprime son usage sur stderr, et
+  # cli.usage1 (internal/i18n/catalogue.go) est la seule chaîne du catalogue qui diffère
+  # par un simple mot entre les deux langues — « <verb> » contre « <verbe> ». C'est le
+  # marqueur le plus direct, sans avoir à exposer i18n.Courante() par une commande dédiée.
+  local val zsh_lang bin_lang
+  for val in fr FR fr-FR fr_FR.UTF-8 ja; do
+    zsh_lang=$(JIGGER_LANG=$val zsh -f -c "source $root/shell/jigger.plugin.zsh; print \$_jigger_lang" 2>/dev/null)
+    bin_lang=en
+    [[ "$(JIGGER_LANG=$val $bin 2>&1)" == *'<verbe>'* ]] && bin_lang=fr
+    check "JIGGER_LANG=$val : greffon ($zsh_lang) d'accord avec le binaire" "$zsh_lang" "$bin_lang"
+  done
+
+  # Le repli d'une langue que jigger ne sait pas traduire, posé explicitement : avec
+  # JIGGER_LANG=ja, la résolution doit descendre jusqu'à LANG et rendre « fr ». Le cas
+  # « ja » du tableau ci-dessus n'exerce ce chemin que si l'hôte est déjà en français —
+  # sur une machine anglaise, il passerait avec un repli cassé. On pose donc LANG nous-
+  # mêmes, et on retire LC_ALL et LC_MESSAGES, qui primeraient sur lui.
+  local -a ja_env=(env -u LC_ALL -u LC_MESSAGES JIGGER_LANG=ja LANG=fr_FR.UTF-8)
+  zsh_lang=$($ja_env zsh -f -c "source $root/shell/jigger.plugin.zsh; print \$_jigger_lang" 2>/dev/null)
+  bin_lang=en
+  [[ "$($ja_env $bin 2>&1)" == *'<verbe>'* ]] && bin_lang=fr
+  check "JIGGER_LANG=ja + LANG=fr_FR.UTF-8 : greffon ($zsh_lang) d'accord avec le binaire" "$zsh_lang" "$bin_lang"
+  check "JIGGER_LANG=ja + LANG=fr_FR.UTF-8 : le repli descend jusqu'à LANG" "$zsh_lang" fr
+
+  # Le cas qui a débusqué la rupture de parité : sans lui, une résolution qui s'arrête à
+  # la première variable *non vide*, reconnue ou pas (l'ancien code, cf. commentaire de
+  # jigger.plugin.zsh) ne se voit jamais — les cinq valeurs ci-dessus posent toutes
+  # JIGGER_LANG. `env -u` retire les quatre variables entièrement, y compris celles que
+  # `LANG=… make test-all` (Makefile) a posées dans l'environnement de ce processus : sans
+  # ce nettoyage, le cas ne serait « aucune variable » que par accident, sous une seule des
+  # trois locales de la vérification croisée.
+  zsh_lang=$(env -u JIGGER_LANG -u LC_ALL -u LC_MESSAGES -u LANG zsh -f -c "source $root/shell/jigger.plugin.zsh; print \$_jigger_lang" 2>/dev/null)
+  bin_lang=en
+  [[ "$(env -u JIGGER_LANG -u LC_ALL -u LC_MESSAGES -u LANG $bin 2>&1)" == *'<verbe>'* ]] && bin_lang=fr
+  check "aucune variable de locale posée : greffon ($zsh_lang) d'accord avec le binaire" "$zsh_lang" "$bin_lang"
 
   print -r -- "→ le popup apparaît en tapant une commande brew"
   out=$(visible "$(jigger_type 'brew inst')")

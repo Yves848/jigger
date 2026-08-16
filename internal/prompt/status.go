@@ -14,7 +14,6 @@ package prompt
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -24,6 +23,7 @@ import (
 	"time"
 
 	"gitlab.yg-devworks.com/yves/jigger/internal/brew"
+	"gitlab.yg-devworks.com/yves/jigger/internal/i18n"
 	"gitlab.yg-devworks.com/yves/jigger/internal/pm"
 	"gitlab.yg-devworks.com/yves/jigger/internal/scoop"
 	"gitlab.yg-devworks.com/yves/jigger/internal/winget"
@@ -31,7 +31,19 @@ import (
 
 // ErrVerrouille signale qu'un autre rafraîchissement est déjà en cours. Ce n'est pas
 // une panne : dix terminaux ouverts déclenchent dix `precmd`, un seul doit appeler brew.
-var ErrVerrouille = errors.New("rafraîchissement déjà en cours")
+//
+// Elle ressort à l'utilisateur (main.go, `jigger prompt --refresh`) et doit donc parler
+// sa langue — mais elle reste une sentinelle comparée par errors.Is. D'où un type sans
+// champ, donc comparable, dont seul le message est traduit : errors.New(i18n.T(…))
+// aurait figé le sien dans la langue résolue au chargement du paquet, ce que les tests
+// (Recharger) auraient pris en défaut.
+type errVerrouille struct{}
+
+func (errVerrouille) Error() string { return i18n.T("cli.refresh_locked") }
+
+// ErrVerrouille est la valeur unique de ce type : `errors.Is(err, ErrVerrouille)`
+// compare deux interfaces égales, exactement comme avant.
+var ErrVerrouille error = errVerrouille{}
 
 // peremptionVerrou : au-delà, un verrou est réputé abandonné (processus tué avant
 // d'avoir pu le retirer) et n'empêche plus de rafraîchir.
@@ -240,7 +252,10 @@ func SondeWindows() (Status, error) {
 			s.Secondary = n
 		}
 	} else if errWinget != nil {
-		return Status{}, fmt.Errorf("ni winget ni scoop : %w", errWinget)
+		// Le %w est dans le catalogue : c'est fmt.Errorf qui l'interprète (Tf passe par
+		// Sprintf, qui ne sait pas envelopper), et la ponctuation avant le deux-points
+		// diffère d'une langue à l'autre.
+		return Status{}, fmt.Errorf(i18n.T("cli.no_winget_no_scoop"), errWinget)
 	}
 
 	return s, nil

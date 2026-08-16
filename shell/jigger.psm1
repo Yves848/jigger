@@ -75,6 +75,56 @@ function Get-JiggerCacheDefaut {
 $script:CacheDir   = Get-JiggerSetting 'JIGGER_CACHE_DIR' (Get-JiggerCacheDefaut)
 $script:StatusFile = Join-Path $script:CacheDir 'status'
 
+# Langue des messages du module. $env:JIGGER_LANG est déjà une variable d'environnement :
+# le binaire la voit sans qu'on ait rien à exporter.
+#
+# Même découpage que côté binaire (internal/i18n/i18n.go, fonction depuisCode) : on
+# minuscule puis on coupe au premier séparateur (`_`, `-` ou `.`), pour que « FR »,
+# « fr-FR » et « fr_FR.UTF-8 » soient tous reconnus comme du français, pas seulement
+# « fr » déjà en minuscules. `.Trim()` avant la casse reproduit le TrimSpace de
+# depuisCode : sans conséquence pratique (une variable d'environnement n'a normalement pas
+# d'espace de bord), mais le commentaire promet la parité, qu'il la tienne.
+#
+# La résolution doit aussi *continuer* d'une source à l'autre quand celle-ci ne porte pas
+# un code reconnu — exactement ce que fait depuisCode(), appelée en boucle par resoudre()
+# côté binaire. S'arrêter dès que $env:JIGGER_LANG est non vide, reconnu ou pas (l'ancien
+# code), désynchronisait le module du binaire dès que JIGGER_LANG portait un code que
+# jigger ne sait pas traduire (JIGGER_LANG=ja, par exemple) : le binaire retombait sur
+# LC_ALL/LC_MESSAGES/LANG et pouvait afficher du français, tandis que le module restait
+# bloqué sur « ja » → anglais sans même les regarder. La tâche 7 (vérification croisée sous
+# plusieurs locales) l'a débusqué.
+#
+# Même ordre que resoudre() (internal/i18n/i18n.go) : JIGGER_LANG, puis LC_ALL,
+# LC_MESSAGES, LANG — ces trois-là existent aussi sous PowerShell 7 hors Windows, où
+# $env: les expose comme n'importe quelle variable d'environnement. CurrentUICulture ne
+# rejoint la liste que sous Windows : c'est là, et seulement là, que cultureSysteme()
+# (internal/i18n/langue_windows.go) rend une valeur côté binaire — la chaîne vide partout
+# ailleurs (internal/i18n/langue_unix.go), les variables POSIX ayant déjà été consultées.
+# La consulter aussi hors Windows ajouterait une source que le binaire n'a pas — la tâche 7
+# l'a mesuré : sous macOS, sans aucune variable de locale posée, cela rendait « fr » (la
+# préférence système, AppleLocale) quand le binaire, lui, retombe sur l'anglais.
+$script:Lang = 'en'
+$candidats = @($env:JIGGER_LANG, $env:LC_ALL, $env:LC_MESSAGES, $env:LANG)
+# `-or` court-circuite : sous Windows PowerShell 5.1, $IsWindows n'existe pas et le mode
+# strict refuserait de l'évaluer (même garde qu'à Get-JiggerCacheDefaut, ci-dessus).
+if ($PSVersionTable.PSVersion.Major -lt 6 -or $IsWindows) {
+    $candidats += [System.Globalization.CultureInfo]::CurrentUICulture.TwoLetterISOLanguageName
+}
+foreach ($candidat in $candidats) {
+    if ([string]::IsNullOrEmpty($candidat)) { continue }
+    $candidat = $candidat.Trim()
+    if ([string]::IsNullOrEmpty($candidat)) { continue }
+    # Comparaison en minuscules explicite : elle ne doit rien à l'insensibilité à la casse
+    # implicite de -eq, qui la casserait silencieusement si quelqu'un passait un jour à -ceq.
+    $code = ($candidat.ToLowerInvariant() -split '[_.-]')[0]
+    if ($code -eq 'fr' -or $code -eq 'en') { $script:Lang = $code; break }
+}
+
+function Get-JiggerText([string]$En, [string]$Fr) {
+    if ($script:Lang -eq 'fr') { return $Fr }
+    return $En
+}
+
 # Touches supplémentaires à relayer, en plus des ASCII imprimables : sur un clavier
 # AZERTY, la rangée des chiffres non pressée donne « éèçàù », qui doivent eux aussi
 # rafraîchir le popup.
@@ -103,7 +153,9 @@ $script:Focused   = $false # le popup a-t-il le clavier ? (cf. Step-JiggerSelect
 # ── Vérifications d'installation ──────────────────────────────────────────────────────
 
 if (-not (Get-Command $script:Exe -ErrorAction SilentlyContinue)) {
-    Write-Warning "jigger : binaire « $($script:Exe) » introuvable dans le PATH. Module inactif."
+    Write-Warning (Get-JiggerText `
+        "jigger: binary `"$($script:Exe)`" not found in PATH. Module inactive." `
+        "jigger : binaire « $($script:Exe) » introuvable dans le PATH. Module inactif.")
     return
 }
 
@@ -119,21 +171,26 @@ try {
 } catch { }
 if ($version -and $version -lt $script:VersionRequise) {
     $chemin = (Get-Command $script:Exe).Source
-    Write-Warning ("jigger : le binaire $chemin est en $version, or ce module en demande " +
-        "$($script:VersionRequise). Recompile-le (« make install ») ou remplace celui du PATH. Module inactif.")
+    Write-Warning (Get-JiggerText `
+        "jigger: the binary at $chemin is $version, but this module requires $($script:VersionRequise). Rebuild it (`"pwsh -File install-windows.ps1`") or replace the one in PATH. Module inactive." `
+        "jigger : le binaire $chemin est en $version, or ce module en demande $($script:VersionRequise). Recompile-le (« pwsh -File install-windows.ps1 ») ou remplace celui du PATH. Module inactif.")
     return
 }
 if (-not (Get-Module PSReadLine)) {
     Import-Module PSReadLine -ErrorAction SilentlyContinue
 }
 if (-not (Get-Module PSReadLine)) {
-    Write-Warning 'jigger : PSReadLine est absent. Module inactif.'
+    Write-Warning (Get-JiggerText `
+        'jigger: PSReadLine is missing. Module inactive.' `
+        'jigger : PSReadLine est absent. Module inactif.')
     return
 }
 # En mode Vi, les caractères imprimables ne s'insèrent pas toujours : les relayer
 # casserait la navigation en mode commande. On garde alors le seul mode ⇥.
 if ($script:Live -and (Get-PSReadLineOption).EditMode -eq 'Vi') {
-    Write-Warning 'jigger : popup vivant désactivé en mode Vi (⇥ ouvre le sélecteur).'
+    Write-Warning (Get-JiggerText `
+        'jigger: live popup disabled in Vi mode (⇥ opens the picker).' `
+        'jigger : popup vivant désactivé en mode Vi (⇥ ouvre le sélecteur).')
     $script:Live = $false
 }
 # Les cadres sont dessinés en caractères semi-graphiques : sans console en UTF-8, ils
@@ -525,12 +582,21 @@ $script:RelaisFin = @{
 # Register-JiggerKey mémorise le repli de la touche puis lui pose le relais donné. Une
 # touche qui ne fait rien aujourd'hui et n'a pas de défaut est laissée libre : lui
 # inventer un comportement ne nous regarde pas.
+#
+# Les étiquettes (-BriefDescription) restent en anglais **et fixes**, quelle que soit la
+# langue du module. Trois raisons : le préfixe « jigger: » est un contrat lu par
+# Get-JiggerFallback ; l'étiquette par défaut, « jigger:$fallback », porte un nom de
+# fonction PSReadLine — donc anglais par construction — et une étiquette traduite ferait
+# cohabiter « jigger:insérer » et « jigger:SelfInsert » dans la même table ; et une
+# étiquette qui suivrait la locale rendrait `Get-PSReadLineKeyHandler` — que la suite
+# tests/smoke.ps1 assère — dépendant de l'environnement. Ce sont des identifiants, pas
+# des messages : les messages, eux, passent par Get-JiggerText.
 function Register-JiggerKey([string]$Chord, [scriptblock]$Relais, [string]$Defaut, [string]$Etiquette) {
     $fallback = Get-JiggerFallback $Chord $Defaut
     if (-not $fallback -or $fallback -eq 'Ignore') { return }
     if (-not $Etiquette) { $Etiquette = "jigger:$fallback" }
     Set-PSReadLineKeyHandler -Chord $Chord -ScriptBlock $Relais `
-        -BriefDescription $Etiquette -Description 'Relaie la touche, puis rafraîchit le popup jigger.'
+        -BriefDescription $Etiquette -Description 'Relays the key, then refreshes the jigger popup.'
 }
 
 if ($script:Live) {
@@ -548,14 +614,14 @@ if ($script:Live) {
     }
 
     # ↑↓ (et ^N/^P, qui restent) : au popup s'il a le clavier, à l'historique sinon.
-    Register-JiggerKey 'DownArrow' $script:RelaisNavigation['DownArrow'] 'NextHistory'     'jigger:descendre'
-    Register-JiggerKey 'UpArrow'   $script:RelaisNavigation['UpArrow']   'PreviousHistory' 'jigger:monter'
-    Register-JiggerKey 'Ctrl+n'    $script:RelaisNavigation['Ctrl+n']    'NextHistory'     'jigger:suivant'
-    Register-JiggerKey 'Ctrl+p'    $script:RelaisNavigation['Ctrl+p']    'PreviousHistory' 'jigger:précédent'
+    Register-JiggerKey 'DownArrow' $script:RelaisNavigation['DownArrow'] 'NextHistory'     'jigger:down'
+    Register-JiggerKey 'UpArrow'   $script:RelaisNavigation['UpArrow']   'PreviousHistory' 'jigger:up'
+    Register-JiggerKey 'Ctrl+n'    $script:RelaisNavigation['Ctrl+n']    'NextHistory'     'jigger:next'
+    Register-JiggerKey 'Ctrl+p'    $script:RelaisNavigation['Ctrl+p']    'PreviousHistory' 'jigger:previous'
 
     # ^G : ferme le popup jusqu'à la fin de la ligne.
-    Set-PSReadLineKeyHandler -Chord 'Ctrl+g' -BriefDescription 'jigger:fermer' `
-        -Description 'Ferme le popup jigger pour la ligne en cours.' -ScriptBlock {
+    Set-PSReadLineKeyHandler -Chord 'Ctrl+g' -BriefDescription 'jigger:close' `
+        -Description 'Closes the jigger popup for the current line.' -ScriptBlock {
         if (Test-JiggerActive) {
             $script:Dismissed = $true
             $script:Focused = $false
@@ -564,16 +630,16 @@ if ($script:Live) {
         }
     }
 
-    Register-JiggerKey 'Enter'  $script:RelaisFin['Enter']  'AcceptLine'       'jigger:valider'
-    Register-JiggerKey 'Ctrl+c' $script:RelaisFin['Ctrl+c'] 'CopyOrCancelLine' 'jigger:annuler'
+    Register-JiggerKey 'Enter'  $script:RelaisFin['Enter']  'AcceptLine'       'jigger:accept'
+    Register-JiggerKey 'Ctrl+c' $script:RelaisFin['Ctrl+c'] 'CopyOrCancelLine' 'jigger:cancel'
 }
 
 # ⇥ : insère le candidat courant si le popup est là ; sinon sélecteur classique sur une
 # ligne de gestionnaire (ou popup refermé), et complétion PowerShell normale partout
 # ailleurs.
 $null = Get-JiggerFallback $script:InsertKey 'TabCompleteNext'   # mémorise ce que ⇥ faisait
-Set-PSReadLineKeyHandler -Chord $script:InsertKey -BriefDescription 'jigger:insérer' `
-    -Description 'Insère le candidat jigger, ou complète normalement.' -ScriptBlock {
+Set-PSReadLineKeyHandler -Chord $script:InsertKey -BriefDescription 'jigger:insert' `
+    -Description 'Inserts the jigger candidate, or completes normally.' -ScriptBlock {
     param($key, $arg)
 
     $line = $null

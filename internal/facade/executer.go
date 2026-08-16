@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 
+	"gitlab.yg-devworks.com/yves/jigger/internal/i18n"
 	"gitlab.yg-devworks.com/yves/jigger/internal/pm"
 )
 
@@ -76,7 +77,7 @@ func Executer(v pm.Verb, cibles []Cible, o Opts) ([]pm.Package, int) {
 		if liaison.Direct != nil {
 			out, err := liaison.Direct(cible.Args)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "jigger (%s) : %v\n", cible.Mgr.Cmd(), err)
+				fmt.Fprint(os.Stderr, i18n.Tf("facade.manager_error", cible.Mgr.Cmd(), err))
 				echecs++
 				dernierCode = 1
 				continue
@@ -94,10 +95,10 @@ func Executer(v pm.Verb, cibles []Cible, o Opts) ([]pm.Package, int) {
 				if !lecture {
 					// Écriture : on n'enchaîne pas sur un gestionnaire suivant après
 					// un échec.
-					fmt.Fprintf(os.Stderr, "jigger (%s) : échec\n", cible.Mgr.Cmd())
+					fmt.Fprint(os.Stderr, i18n.Tf("facade.failed", cible.Mgr.Cmd()))
 					return rows, c
 				}
-				fmt.Fprintf(os.Stderr, "jigger (%s) : %v\n", cible.Mgr.Cmd(), err)
+				fmt.Fprint(os.Stderr, i18n.Tf("facade.manager_error", cible.Mgr.Cmd(), err))
 				echoue = true
 				dernierCode = c
 				break
@@ -105,7 +106,7 @@ func Executer(v pm.Verb, cibles []Cible, o Opts) ([]pm.Package, int) {
 			if liaison.Parse != nil {
 				parsed, perr := liaison.Parse(out)
 				if perr != nil {
-					fmt.Fprintf(os.Stderr, "jigger (%s) : sortie illisible — %v\n", cible.Mgr.Cmd(), perr)
+					fmt.Fprint(os.Stderr, i18n.Tf("facade.unreadable", cible.Mgr.Cmd(), perr))
 					echoue = true
 					dernierCode = 1
 					break
@@ -122,9 +123,7 @@ func Executer(v pm.Verb, cibles []Cible, o Opts) ([]pm.Package, int) {
 				// protège toute table future qui prendrait la même forme mal remplie.
 				// Un verbe relayé (lecture == false) n'entre jamais ici : `out` y est
 				// toujours nil, rien à perdre.
-				fmt.Fprintf(os.Stderr,
-					"jigger (%s) : verbe %q normalisé sans analyseur déclaré — sortie ignorée par sécurité\n",
-					cible.Mgr.Cmd(), v)
+				fmt.Fprint(os.Stderr, i18n.Tf("facade.no_parser", cible.Mgr.Cmd(), v))
 				echoue = true
 				dernierCode = 1
 				break

@@ -29,6 +29,11 @@ if (-not (Test-Path $binaire)) {
     exit 1
 }
 $env:JIGGER_BIN = $binaire
+# La langue est épinglée pour que rien ici ne dépende de la locale de la machine qui
+# lance les tests : le module et le binaire (un sous-processus) parlent tous deux celle
+# qu'on leur donne. Les étiquettes de touches, elles, sont des identifiants fixes en
+# anglais (cf. Register-JiggerKey) : elles ne bougent pas avec ce réglage.
+$env:JIGGER_LANG = 'fr'
 
 $script:Echecs = 0
 $script:Total = 0
@@ -67,17 +72,92 @@ foreach ($h in Get-PSReadLineKeyHandler -Bound) { $avant[$h.Key] = $h.Function }
 Import-Module $module -Force
 $jigger = Get-Module jigger
 
+section 'la langue résolue par le module concorde avec celle du binaire'
+# Trois implémentations de la même règle (binaire, greffon zsh, module PowerShell),
+# mesurées à la main à la tâche 6 : sans assertion, la prochaine modification les fait
+# diverger sans bruit — un popup dans une langue, un module dans l'autre. On compare donc
+# à chaque fois $script:Lang à la résolution du binaire, jamais à une valeur en dur :
+# c'est la concordance qui est l'exigence, pas la valeur (cf. tests/zpty.zsh, même
+# principe côté zsh).
+#
+# Résolution du binaire : « jigger » sans argument imprime son usage sur stderr, et
+# cli.usage1 (internal/i18n/catalogue.go) est la seule chaîne du catalogue qui diffère
+# par un simple mot entre les deux langues — « <verb> » contre « <verbe> ». C'est le
+# marqueur le plus direct, sans avoir à exposer i18n.Courante() par une commande dédiée.
+foreach ($valeur in 'fr', 'FR', 'fr-FR', 'fr_FR.UTF-8', 'ja') {
+    $env:JIGGER_LANG = $valeur
+    Import-Module $module -Force
+    $jigger = Get-Module jigger
+    $langModule = & $jigger { $script:Lang }
+
+    $sortie = & $binaire 2>&1 | Out-String
+    $langBinaire = if ($sortie -match '<verbe>') { 'fr' } else { 'en' }
+
+    check "JIGGER_LANG=$valeur : module ($langModule) d'accord avec le binaire" $langModule $langBinaire
+}
+
+# Le repli d'une langue que jigger ne sait pas traduire, posé explicitement : avec
+# JIGGER_LANG=ja, la résolution doit descendre jusqu'à LANG et rendre « fr ». Le cas « ja »
+# de la boucle ci-dessus n'exerce ce chemin que si l'hôte est déjà en français — sur une
+# machine anglaise, il passerait avec un repli cassé. On pose donc LANG nous-mêmes, et on
+# retire LC_ALL et LC_MESSAGES, qui primeraient sur lui.
+$avantJa = @{}
+foreach ($nom in 'JIGGER_LANG', 'LC_ALL', 'LC_MESSAGES', 'LANG') {
+    $avantJa[$nom] = [Environment]::GetEnvironmentVariable($nom)
+    Set-Item -Path "Env:$nom" -Value $null -ErrorAction SilentlyContinue
+}
+$env:JIGGER_LANG = 'ja'
+$env:LANG = 'fr_FR.UTF-8'
+Import-Module $module -Force
+$jigger = Get-Module jigger
+$langModule = & $jigger { $script:Lang }
+$sortie = & $binaire 2>&1 | Out-String
+$langBinaire = if ($sortie -match '<verbe>') { 'fr' } else { 'en' }
+check "JIGGER_LANG=ja + LANG=fr_FR.UTF-8 : module ($langModule) d'accord avec le binaire" $langModule $langBinaire
+check "JIGGER_LANG=ja + LANG=fr_FR.UTF-8 : le repli descend jusqu'à LANG" $langModule 'fr'
+foreach ($nom in @($avantJa.Keys)) {
+    Set-Item -Path "Env:$nom" -Value $null -ErrorAction SilentlyContinue
+    if ($null -ne $avantJa[$nom]) { Set-Item -Path "Env:$nom" -Value $avantJa[$nom] }
+}
+
+# Le cas qui a débusqué la rupture de parité : sans lui, une résolution qui s'arrête à la
+# première variable non vide, reconnue ou pas (l'ancien code), ne se voit jamais — les cinq
+# valeurs ci-dessus posent toutes JIGGER_LANG. On retire ici les quatre variables
+# entièrement (`$env:X = $null` les enlève pour de bon, y compris pour les sous-processus —
+# vérifié : ce n'est pas juste les vider), pour que ce cas soit « aucune variable » pour de
+# vrai, pas seulement sous la locale qui a lancé cette suite.
+$avantLocale = @{}
+foreach ($nom in 'JIGGER_LANG', 'LC_ALL', 'LC_MESSAGES', 'LANG') {
+    $avantLocale[$nom] = [Environment]::GetEnvironmentVariable($nom)
+    Set-Item -Path "Env:$nom" -Value $null -ErrorAction SilentlyContinue
+}
+Import-Module $module -Force
+$jigger = Get-Module jigger
+$langModule = & $jigger { $script:Lang }
+$sortie = & $binaire 2>&1 | Out-String
+$langBinaire = if ($sortie -match '<verbe>') { 'fr' } else { 'en' }
+check "aucune variable de locale posée : module ($langModule) d'accord avec le binaire" $langModule $langBinaire
+foreach ($nom in $avantLocale.Keys) {
+    if ($null -ne $avantLocale[$nom]) { Set-Item -Path "Env:$nom" -Value $avantLocale[$nom] }
+}
+
+# Le reste de la suite travaille langue épinglée : on remet JIGGER_LANG=fr et on
+# réimporte, pour que les sections suivantes retrouvent l'état attendu.
+$env:JIGGER_LANG = 'fr'
+Import-Module $module -Force
+$jigger = Get-Module jigger
+
 section 'le module s''installe dans PSReadLine'
 $handlers = Get-PSReadLineKeyHandler -Bound
-check 'Tab est repris'        (($handlers | Where-Object { $_.Key -eq 'Tab' }).Function) 'jigger:insérer'
-check 'Ctrl+n est repris'     (($handlers | Where-Object { $_.Key -eq 'Ctrl+n' }).Function) 'jigger:suivant'
-check 'Ctrl+g est repris'     (($handlers | Where-Object { $_.Key -eq 'Ctrl+g' }).Function) 'jigger:fermer'
-check 'Entrée est reprise'    (($handlers | Where-Object { $_.Key -eq 'Enter' }).Function) 'jigger:valider'
+check 'Tab est repris'        (($handlers | Where-Object { $_.Key -eq 'Tab' }).Function) 'jigger:insert'
+check 'Ctrl+n est repris'     (($handlers | Where-Object { $_.Key -eq 'Ctrl+n' }).Function) 'jigger:next'
+check 'Ctrl+g est repris'     (($handlers | Where-Object { $_.Key -eq 'Ctrl+g' }).Function) 'jigger:close'
+check 'Entrée est reprise'    (($handlers | Where-Object { $_.Key -eq 'Enter' }).Function) 'jigger:accept'
 check 'les lettres aussi'     (($handlers | Where-Object { $_.Key -eq 'g' }).Function) 'jigger:SelfInsert'
 check 'Retour arrière aussi'  (($handlers | Where-Object { $_.Key -eq 'Backspace' }).Function) 'jigger:BackwardDeleteChar'
 check 'le prompt est enveloppé' ((Get-Command prompt).ScriptBlock -match 'jigger:prompt-hook') $true
 
-check 'Ctrl+c est repris'     (($handlers | Where-Object { $_.Key -ceq 'Ctrl+c' }).Function) 'jigger:annuler'
+check 'Ctrl+c est repris'     (($handlers | Where-Object { $_.Key -ceq 'Ctrl+c' }).Function) 'jigger:cancel'
 
 # Le repli d'une touche doit être **une** fonction PSReadLine, pas deux collées : `Ctrl+C`
 # (copier) et `Ctrl+c` (abandonner la ligne) sont deux liaisons distinctes, et le `-eq` de
@@ -104,8 +184,8 @@ Import-Module $module -Force
 check 'réimport : repli intact' $global:JiggerFallbacks['Backspace'] 'BackwardDeleteChar'
 
 section 'les flèches sont reprises, sans perdre l''historique'
-check '↓ est reprise'  (($handlers | Where-Object { $_.Key -ceq 'DownArrow' }).Function) 'jigger:descendre'
-check '↑ est reprise'  (($handlers | Where-Object { $_.Key -ceq 'UpArrow' }).Function) 'jigger:monter'
+check '↓ est reprise'  (($handlers | Where-Object { $_.Key -ceq 'DownArrow' }).Function) 'jigger:down'
+check '↑ est reprise'  (($handlers | Where-Object { $_.Key -ceq 'UpArrow' }).Function) 'jigger:up'
 # Le repli doit être ce que la flèche faisait avant nous — l'historique, sous une forme
 # ou une autre selon les réglages —, jamais un relais de jigger.
 foreach ($k in 'UpArrow', 'DownArrow') {

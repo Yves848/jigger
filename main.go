@@ -26,6 +26,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -37,6 +38,7 @@ import (
 
 	"gitlab.yg-devworks.com/yves/jigger/internal/complete"
 	"gitlab.yg-devworks.com/yves/jigger/internal/facade"
+	"gitlab.yg-devworks.com/yves/jigger/internal/i18n"
 	"gitlab.yg-devworks.com/yves/jigger/internal/managers"
 	"gitlab.yg-devworks.com/yves/jigger/internal/pm"
 	"gitlab.yg-devworks.com/yves/jigger/internal/prompt"
@@ -101,9 +103,9 @@ func arg(i int) string {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: jigger <verbe> [--pm <gestionnaire>] [--json] [--yes] [arguments…]")
-	fmt.Fprintln(os.Stderr, "       jigger pick|complete \"<ligne>\" | jigger render --line \"<ligne>\"")
-	fmt.Fprintln(os.Stderr, "       jigger prompt [--refresh [--wait]|--path] | jigger warm [--all|--installed]")
+	fmt.Fprintln(os.Stderr, i18n.T("cli.usage1"))
+	fmt.Fprintln(os.Stderr, i18n.T("cli.usage2"))
+	fmt.Fprintln(os.Stderr, i18n.T("cli.usage3"))
 }
 
 // optsCLI rassemble les drapeaux que jigger interprète lui-même. Tous les autres mots en
@@ -116,14 +118,14 @@ type optsCLI struct {
 
 func separerDrapeaux(argv []string) (verbe string, args []string, o optsCLI, err error) {
 	if len(argv) == 0 {
-		return "", nil, o, fmt.Errorf("aucun verbe")
+		return "", nil, o, errors.New(i18n.T("cli.no_verb"))
 	}
 	verbe = argv[0]
 	for i := 1; i < len(argv); i++ {
 		switch argv[i] {
 		case "--pm":
 			if i+1 >= len(argv) {
-				return "", nil, o, fmt.Errorf("jigger : --pm attend un nom de gestionnaire")
+				return "", nil, o, errors.New(i18n.T("cli.pm_expects_value"))
 			}
 			i++
 			o.PM = argv[i]
@@ -207,21 +209,21 @@ func trancher(amb *facade.Ambiguite) (string, bool) {
 
 	tty, err := openTTY()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "jigger : « %s » — connu de plusieurs gestionnaires :\n", amb.Nom)
+		fmt.Fprintf(os.Stderr, i18n.T("facade.ambiguous"), amb.Nom)
 		for _, c := range amb.Candidats {
 			fmt.Fprintf(os.Stderr, "        %s\n", c.Mgr.Cmd())
 		}
-		fmt.Fprintln(os.Stderr, "        Choisis avec --pm <gestionnaire>")
+		fmt.Fprintln(os.Stderr, i18n.T("facade.choose_pm"))
 		return "", false
 	}
 	defer tty.Close()
 
 	lipgloss.SetColorProfile(termenv.NewOutput(tty.Out).Profile)
-	titre := fmt.Sprintf("%s : %d gestionnaires", amb.Nom, len(amb.Candidats))
+	titre := i18n.Tf("popup.ambiguous_title", amb.Nom, len(amb.Candidats))
 	model := ui.New(titre, complete.Result{Executable: true, Items: items})
 	// Pied propre à la désambiguïsation : on choisit un gestionnaire, on n'insère ni
 	// n'exécute une commande — ⇥/↩ n'y ont pas de sens (spec §3, README).
-	model.Keys = []ui.Key{{Key: "↵", Label: "choisir"}, {Key: "^G", Label: "annuler"}}
+	model.Keys = []ui.Key{{Key: "↵", Label: i18n.T("popup.choose")}, {Key: "^G", Label: i18n.T("popup.cancel")}}
 
 	fmt.Fprint(tty.Out, "\r\n")
 	prog := tea.NewProgram(model, tea.WithInput(tty.In), tea.WithOutput(tty.Out))
@@ -246,8 +248,8 @@ func trancher(amb *facade.Ambiguite) (string, bool) {
 // dix réchauffements concurrents.
 func runWarm(args []string) int {
 	fs := flag.NewFlagSet("warm", flag.ContinueOnError)
-	tout := fs.Bool("all", false, "refait tout, même ce qui est encore frais")
-	installes := fs.Bool("installed", false, "refait les seules listes de paquets installés")
+	tout := fs.Bool("all", false, i18n.T("cli.flag_all"))
+	installes := fs.Bool("installed", false, i18n.T("cli.flag_installed"))
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
@@ -269,7 +271,7 @@ func runWarm(args []string) int {
 	code := 0
 	for _, m := range managers.Available() {
 		if err := m.Warm(scope); err != nil {
-			fmt.Fprintf(os.Stderr, "jigger warm (%s) : %v\n", m.Cmd(), err)
+			fmt.Fprint(os.Stderr, i18n.Tf("cli.warm_failed", m.Cmd(), err))
 			code = 1
 		}
 	}
@@ -284,9 +286,9 @@ func runWarm(args []string) int {
 // détaché, remonte ses échecs (utile en débogage).
 func runPrompt(args []string) int {
 	fs := flag.NewFlagSet("prompt", flag.ContinueOnError)
-	refresh := fs.Bool("refresh", false, "interroge brew et réécrit le cache (lent)")
-	wait := fs.Bool("wait", false, "avec --refresh : attend le verrou au lieu de renoncer")
-	path := fs.Bool("path", false, "imprime le chemin du fichier de cache")
+	refresh := fs.Bool("refresh", false, i18n.T("cli.flag_refresh"))
+	wait := fs.Bool("wait", false, i18n.T("cli.flag_wait"))
+	path := fs.Bool("path", false, i18n.T("cli.flag_path"))
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
@@ -308,7 +310,7 @@ func runPrompt(args []string) int {
 		if err != nil {
 			// Verrou pris par un autre shell, ou brew injoignable : le cache précédent
 			// reste en place et sera réessayé au prochain prompt périmé.
-			fmt.Fprintln(os.Stderr, "jigger prompt --refresh :", err)
+			fmt.Fprintln(os.Stderr, i18n.T("cli.prompt_failed"), err)
 			return 1
 		}
 		fmt.Println(s.Line())
@@ -343,12 +345,12 @@ const tropDeCandidats = 300
 // shell le récupère donc comme « tout ce qui suit ».
 func runRender(args []string) int {
 	fs := flag.NewFlagSet("render", flag.ContinueOnError)
-	line := fs.String("line", "", "ligne à compléter (jusqu'au curseur)")
-	sel := fs.Int("sel", 0, "index du candidat courant")
-	cols := fs.Int("cols", 0, "largeur du terminal")
-	rows := fs.Int("rows", 8, "nombre de candidats affichés")
-	color := fs.String("color", "auto", "profil couleur : auto|never|16|256|truecolor")
-	focus := fs.Bool("focus", false, "le popup a le clavier : les flèches lui reviennent")
+	line := fs.String("line", "", i18n.T("cli.flag_line"))
+	sel := fs.Int("sel", 0, i18n.T("cli.flag_sel"))
+	cols := fs.Int("cols", 0, i18n.T("cli.flag_cols"))
+	rows := fs.Int("rows", 8, i18n.T("cli.flag_rows"))
+	color := fs.String("color", "auto", i18n.T("cli.flag_color"))
+	focus := fs.Bool("focus", false, i18n.T("cli.flag_focus"))
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
@@ -359,9 +361,9 @@ func runRender(args []string) int {
 
 	// Le pied dit où ira la prochaine flèche : sans le focus, ↓ sert à entrer dans la
 	// liste (↑ reste l'historique) ; avec, les deux parcourent les candidats.
-	navigation := ui.Key{Key: "↓", Label: "parcourir"}
+	navigation := ui.Key{Key: "↓", Label: i18n.T("popup.browse")}
 	if *focus {
-		navigation = ui.Key{Key: "↑↓", Label: "naviguer"}
+		navigation = ui.Key{Key: "↑↓", Label: i18n.T("popup.navigate")}
 	}
 
 	frame := ui.Frame{
@@ -370,9 +372,9 @@ func runRender(args []string) int {
 		Rows:    *rows,
 		Focused: *focus,
 		Keys: []ui.Key{
-			{Key: "⇥", Label: "insérer"},
+			{Key: "⇥", Label: i18n.T("popup.insert")},
 			navigation,
-			{Key: "^G", Label: "fermer"},
+			{Key: "^G", Label: i18n.T("popup.close")},
 		},
 	}
 	if *cols > 0 {
@@ -382,11 +384,11 @@ func runRender(args []string) int {
 	// Contexte paquet, mot vide : on invite à filtrer plutôt que d'égrener le catalogue.
 	if res.Executable && res.Word == "" && len(res.Items) > tropDeCandidats {
 		frame.Items = nil
-		frame.Empty = fmt.Sprintf("tapez pour filtrer… (%d paquets)", len(res.Items))
+		frame.Empty = i18n.Tf("popup.filter_hint", len(res.Items))
 	} else if len(res.Items) == 0 {
 		// Le gestionnaire a parfois mieux à dire qu'« aucun candidat » — un catalogue
 		// winget encore en cours de constitution, par exemple.
-		frame.Empty = "aucun candidat"
+		frame.Empty = i18n.T("popup.empty")
 		if res.Note != "" {
 			frame.Empty = res.Note
 		}

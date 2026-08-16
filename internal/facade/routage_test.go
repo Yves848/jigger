@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"gitlab.yg-devworks.com/yves/jigger/internal/brew"
+	"gitlab.yg-devworks.com/yves/jigger/internal/i18n"
 	"gitlab.yg-devworks.com/yves/jigger/internal/pm"
 	"gitlab.yg-devworks.com/yves/jigger/internal/scoop"
 	"gitlab.yg-devworks.com/yves/jigger/internal/winget"
@@ -141,6 +142,36 @@ func TestRoutageNomInconnu(t *testing.T) {
 	}
 }
 
+// Le joint entre les noms de gestionnaires suit la langue. Il était écrit en dur («  et  »)
+// dans nomInconnu : sur une machine à deux gestionnaires — donc toute machine Windows —,
+// la phrase anglaise sortait « unknown to winget et scoop ». Invisible ici, où un seul
+// gestionnaire répond, d'où deuxGestionnaires() et l'assertion sur les deux langues.
+func TestRoutageNomInconnuJointLesGestionnairesDansLaLangue(t *testing.T) {
+	t.Cleanup(i18n.Recharger)
+
+	for _, cas := range []struct {
+		langue, attendu, proscrit string
+	}{
+		{"en", "unknown to winget and scoop", " et "},
+		{"fr", "inconnu de winget et scoop", " and "},
+	} {
+		t.Setenv("JIGGER_LANG", cas.langue)
+		i18n.Recharger()
+
+		_, _, err := Router("install", []string{"zzzz"}, "", nil, deuxGestionnaires(), catalogues())
+		if err == nil {
+			t.Fatalf("%s : attendu une erreur pour un nom inconnu de tous", cas.langue)
+		}
+		msg := err.Error()
+		if !strings.Contains(msg, cas.attendu) {
+			t.Errorf("%s : le message doit contenir %q : %s", cas.langue, cas.attendu, msg)
+		}
+		if strings.Contains(msg, cas.proscrit) {
+			t.Errorf("%s : fragment d'une autre langue (%q) dans le message : %s", cas.langue, cas.proscrit, msg)
+		}
+	}
+}
+
 // Sous PoolInstalles, le voisin proposé doit lui-même être installé : uninstall ne peut
 // viser qu'un paquet installé, donc suggérer un paquet simplement catalogué (« git » chez
 // scoop, qui l'a au catalogue mais ne l'a pas installé) mènerait droit à un second
@@ -179,6 +210,39 @@ func TestRoutageCatalogueEnConstruction(t *testing.T) {
 	}
 }
 
+// La note d'un catalogue en construction (cat.Note) est injectée dans facade.note :
+// « jigger : %s » ou « jigger: %s » selon la langue. Avant la relecture, le préfixe
+// restait « jigger : » (espace avant le deux-points, ponctuation française) même en
+// anglais — ce test aurait attrapé l'oubli, faute de quoi rien n'asserait ce préfixe.
+func TestRoutageCatalogueEnConstructionEnAnglais(t *testing.T) {
+	t.Cleanup(i18n.Recharger)
+	t.Setenv("JIGGER_LANG", "en")
+	i18n.Recharger()
+
+	cats := catalogues()
+	vide := pm.NewCatalog()
+	vide.Note = "winget catalog under construction"
+	cats["winget"] = vide
+
+	_, _, err := nomInconnuVia(cats)
+	if err == nil {
+		t.Fatal("attendu une erreur")
+	}
+	msg := err.Error()
+	if !strings.HasPrefix(msg, "jigger: ") {
+		t.Errorf("le préfixe anglais doit être « jigger: » (pas de ponctuation française) : %q", msg)
+	}
+	if strings.HasPrefix(msg, "jigger : ") {
+		t.Errorf("le préfixe ne doit plus être « jigger : » en anglais : %q", msg)
+	}
+}
+
+// nomInconnuVia route « install Git.Git » à travers les deux gestionnaires habituels,
+// pour exercer nomInconnu avec le catalogue winget donné (vide, avec une Note).
+func nomInconnuVia(cats map[string]*pm.Catalog) ([]Cible, *Ambiguite, error) {
+	return Router("install", []string{"Git.Git"}, "", nil, deuxGestionnaires(), cats)
+}
+
 // search prend une requête, pas un nom de paquet à résoudre au catalogue : une requête
 // qui ne correspond à aucun paquet connu doit tout de même atteindre les gestionnaires
 // capables — c'est à eux de chercher, pas à Router de refuser une recherche au prétexte
@@ -205,6 +269,8 @@ func TestRoutageSearchAtteintLesGestionnairesMemeSansCorrespondanceExacte(t *tes
 // verbe » suggérerait à tort qu'il existe mais ne sait pas rendre ce verbe précis, alors
 // que jigger ne sait tout simplement pas ce qu'est apt.
 func TestRoutageForcePMInconnuDeJigger(t *testing.T) {
+	t.Setenv("JIGGER_LANG", "fr")
+	i18n.Recharger()
 	_, _, err := Router("install", []string{"fd"}, "apt", nil, deuxGestionnaires(), catalogues())
 	if err == nil {
 		t.Fatal("attendu une erreur : « apt » n'est pas un gestionnaire de jigger")
@@ -223,6 +289,8 @@ func TestRoutageForcePMInconnuDeJigger(t *testing.T) {
 // « indisponible pour ce verbe », pas « inconnu » : jigger sait très bien ce qu'est
 // winget.
 func TestRoutageForcePMConnuMaisIndisponiblePourCeVerbe(t *testing.T) {
+	t.Setenv("JIGGER_LANG", "fr")
+	i18n.Recharger()
 	_, _, err := Router("doctor", nil, "winget", nil, []pm.Manager{scoop.New()}, catalogues())
 	if err == nil {
 		t.Fatal("attendu une erreur : winget n'est pas dans les capables pour doctor")
