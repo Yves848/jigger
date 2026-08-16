@@ -356,11 +356,18 @@ Décisions arrêtées le 16 août, en conception :
 - **Une seule spec** pour l'ensemble, en trois parties — choix assumé contre l'avis de
   découper en trois chantiers.
 
-Fait à ce jour : l'exécuteur (`cibuilder-go`, LXC 117) et la chaîne de release
-(`.gitlab-ci.yml`), éprouvée de bout en bout par un tag d'essai — release créée, binaires
-téléchargés, condensats vérifiés, le tout ensuite supprimé.
+Fait à ce jour :
 
-Reste : le bucket scoop, le miroir GitHub, `CONTRIBUTING.md`, la spec, puis l'annonce.
+- **L'exécuteur** `cibuilder-go` (LXC 117) et la **chaîne de release** (`.gitlab-ci.yml`),
+  éprouvée par un tag d'essai puis par la publication réelle de la v0.10.0.
+- **Le bucket scoop** (`yves/scoop-jigger`), dont le manifeste se génère depuis le
+  `SHA256SUMS` publié. Installation vérifiée sur une vraie machine Windows.
+- **Les fichiers d'accueil** : `CONTRIBUTING.md`, `SECURITY.md`, et le gabarit plus
+  l'action qui referment les PR sur le miroir — GitHub ne permettant pas de les désactiver.
+- **Le miroir GitHub** `Yves848/jigger` : public, issues ouvertes, alimenté par miroir
+  poussé depuis GitLab, topics posés. Les deux dépôts pointent sur le même commit.
+
+Reste : la spec, puis l'annonce.
 
 
 ---
