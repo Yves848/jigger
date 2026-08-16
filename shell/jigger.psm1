@@ -167,7 +167,7 @@ if (-not (Get-Command $script:Exe -ErrorAction SilentlyContinue)) {
 # qu'un binaire plus ancien ne connaît pas. Celui-ci sortirait alors en erreur, et le
 # popup ne s'afficherait jamais — sans un mot, ce qui est la pire façon de tomber en
 # panne. Un appel au démarrage (~25 ms) suffit à le dire.
-$script:VersionRequise = [version]'0.9.0'
+$script:VersionRequise = [version]'0.11.0'
 $version = $null
 try {
     $brut = @(& $script:Exe --version 2>$null)[0]

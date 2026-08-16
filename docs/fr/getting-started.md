@@ -344,6 +344,7 @@ Import-Module C:\chemin\vers\jigger\shell\jigger.psm1
 | `JIGGER_KEY` | `^I` (Tab) | touche d'insertion. `'^ '` pour Ctrl-Espace ; sous PowerShell, un nom PSReadLine (`Ctrl+Spacebar`) |
 | `JIGGER_MIN_COLUMNS` | `30` | en dessous de cette largeur, le cadre n'a plus de sens : rien ne s'affiche |
 | `JIGGER_CACHE_DIR` | `~/Library/Caches/jigger`, `%LOCALAPPDATA%\jigger` | emplacement du cache |
+| `JIGGER_BIN` | `jigger` | le binaire que le greffon appelle. Utile en développement : le `bin` de Homebrew précède d'ordinaire `~/.local/bin`, si bien qu'un jigger fraîchement compilé ne serait jamais celui qui tourne |
 | `JIGGER_PAGER` | `1` | `0` désarme la vue paginée : les verbes qui listent impriment toujours la table brute |
 | `JIGGER_LANG` | la langue de ta locale | messages : `en` ou `fr`. Lu avant `LC_ALL`, `LC_MESSAGES` et `LANG` — c'est lui qui rend le français à un shell qui tourne en anglais. Ce que jigger ne sait pas traduire retombe sur l'anglais |
 

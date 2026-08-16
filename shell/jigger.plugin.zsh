@@ -101,18 +101,27 @@ fi
 # tomber en panne. Un appel au source (quelques millisecondes) suffit à le dire.
 #
 # À relever **avec** la version du binaire, à chaque fois que le greffon se met à demander
-# quelque chose de neuf : 0.9.0 pour le bilinguisme. Un binaire 0.8.0 ne parle que français,
+# quelque chose de neuf : 0.9.0 pour le bilinguisme, 0.11.0 pour « render --regex »,
+# que le greffon passe dès qu'on bascule en expression rationnelle. Un binaire 0.8.0 ne parle que français,
 # tandis que ce greffon, lui, sait dire ses messages dans les deux langues : les deux
 # parleraient alors des langues différentes dans la même fenêtre — précisément ce que
 # l'internationalisation existe pour empêcher.
-typeset -g JIGGER_VERSION_REQUISE=0.9.0
+typeset -g JIGGER_VERSION_REQUISE=0.11.0
 autoload -Uz is-at-least
-typeset -g _jigger_v=${${(z)"$(command jigger --version 2>/dev/null)"}[2]}
+# Binaire à employer. Le module PowerShell a ce réglage depuis toujours ; le greffon zsh
+# ne l'avait pas, ce qui obligeait à jouer sur le PATH pour essayer une version en cours de
+# développement — alors que Homebrew place son bin avant ~/.local/bin.
+: "${JIGGER_BIN:=jigger}"
+
+typeset -g _jigger_v=${${(z)"$(command "$JIGGER_BIN" --version 2>/dev/null)"}[2]}
 if [[ -n $_jigger_v ]] && ! is-at-least $JIGGER_VERSION_REQUISE $_jigger_v; then
   if [[ $_jigger_lang == fr ]]; then
     print -u2 "jigger : le binaire $(command -v jigger) est en $_jigger_v, or ce greffon en demande $JIGGER_VERSION_REQUISE. Recompile-le (« make install ») ou remplace celui du PATH. Greffon inactif."
   else
-    print -u2 "jigger: the binary at $(command -v jigger) is $_jigger_v, but this plugin requires $JIGGER_VERSION_REQUISE. Rebuild it (\"make install\") or replace the one in PATH. Plugin inactive."
+    # Le message nomme le binaire fautif ET les deux façons d'en changer : refaire
+    # l'installation, ou désigner un autre binaire par JIGGER_BIN. Sans cette seconde
+    # mention, quelqu'un dont le PATH privilégie un jigger plus ancien n'a aucune piste.
+    print -u2 "jigger: the binary at $(command -v "$JIGGER_BIN") is $_jigger_v, but this plugin requires $JIGGER_VERSION_REQUISE. Rebuild it (\"make install\"), set JIGGER_BIN to another one, or replace the one in PATH. Plugin inactive."
   fi
   unset _jigger_v
   return 0
@@ -177,7 +186,7 @@ _jigger_fetch() {
   (( _jigger_focused )) && focus=true
   local -a extra=()
   (( _jigger_regex )) && extra=( --regex )
-  out=$(command jigger render --line "$LBUFFER" --sel "$_jigger_sel" --cols "$COLUMNS" \
+  out=$(command "$JIGGER_BIN" render --line "$LBUFFER" --sel "$_jigger_sel" --cols "$COLUMNS" \
         --rows "$rows" --color "$(_jigger_color)" --focus=$focus $extra 2>/dev/null) || return 1
 
   local -a lines
@@ -440,7 +449,7 @@ _jigger_widget() {
   # JIGGER_LIVE=0 : le sélecteur plein écran, celui qu'on a explicitement choisi. Il
   # possède le terminal le temps du choix.
   local out ret
-  out="$(command jigger pick "$LBUFFER")"
+  out="$(command "$JIGGER_BIN" pick "$LBUFFER")"
   ret=$?
 
   # 2 = annulé, ou sortie vide : on ne touche à rien.
@@ -597,7 +606,7 @@ _jigger_precmd() {
     _jigger_catalog_dirty=0
     # Détaché : personne n'attend après un catalogue. Le rendu qui suit se contentera de
     # l'ancien s'il n'est pas encore prêt — c'est toute la règle du réchauffement.
-    { command jigger warm --all >/dev/null 2>&1 &! } 2>/dev/null
+    { command "$JIGGER_BIN" warm --all >/dev/null 2>&1 &! } 2>/dev/null
   fi
   (( JIGGER_PROMPT )) && _jigger_prompt_precmd
   return 0
@@ -657,9 +666,9 @@ if (( JIGGER_PROMPT )); then
       _jigger_prompt_dirty=0
       _jigger_last_refresh=$EPOCHSECONDS
       if (( JIGGER_PROMPT_SYNC )); then
-        command jigger prompt --refresh --wait >/dev/null 2>&1
+        command "$JIGGER_BIN" prompt --refresh --wait >/dev/null 2>&1
       else
-        { command jigger prompt --refresh --wait >/dev/null 2>&1 &! } 2>/dev/null
+        { command "$JIGGER_BIN" prompt --refresh --wait >/dev/null 2>&1 &! } 2>/dev/null
       fi
     fi
 
@@ -706,4 +715,4 @@ precmd_functions=( _jigger_precmd ${precmd_functions:#_jigger_precmd} )
 # Au premier prompt, le catalogue peut être vieux d'un jour — ou absent, à la première
 # installation. On lance le réchauffement tout de suite, détaché : le binaire décide
 # lui-même s'il y a quelque chose à faire, et une frappe n'attend jamais après brew.
-{ command jigger warm >/dev/null 2>&1 &! } 2>/dev/null
+{ command "$JIGGER_BIN" warm >/dev/null 2>&1 &! } 2>/dev/null

@@ -349,6 +349,7 @@ Import-Module C:\path\to\jigger\shell\jigger.psm1
 | `JIGGER_KEY` | `^I` (Tab) | insertion key. `'^ '` for Ctrl-Space; under PowerShell, a PSReadLine name (`Ctrl+Spacebar`) |
 | `JIGGER_MIN_COLUMNS` | `30` | below this width, the frame stops making sense: nothing shows up |
 | `JIGGER_CACHE_DIR` | `~/Library/Caches/jigger`, `%LOCALAPPDATA%\jigger` | cache location |
+| `JIGGER_BIN` | `jigger` | which binary the plugin calls. Handy while developing: Homebrew's `bin` usually comes before `~/.local/bin`, so a freshly built jigger would otherwise never be the one that runs |
 | `JIGGER_PAGER` | `1` | `0` disables the paged view: listing verbs always print the plain table |
 | `JIGGER_LANG` | your locale's language | messages: `en` or `fr`. Read before `LC_ALL`, `LC_MESSAGES` and `LANG` — and this is how you get French back in an English-speaking shell. Anything jigger can't translate falls back to English |
 
