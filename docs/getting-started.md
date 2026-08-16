@@ -1,5 +1,7 @@
 # Getting started with jigger
 
+*Read this in [French](fr/getting-started.md).*
+
 From install to first completion, in about ten minutes. This guide is meant to be
 read start to finish; the [README](../README.md) covers the same ground in more
 detail, and explains _why_ things are built this way.
@@ -284,6 +286,7 @@ Import-Module C:\path\to\jigger\shell\jigger.psm1
 | `JIGGER_KEY` | `^I` (Tab) | insertion key. `'^ '` for Ctrl-Space; under PowerShell, a PSReadLine name (`Ctrl+Spacebar`) |
 | `JIGGER_MIN_COLUMNS` | `30` | below this width, the frame stops making sense: nothing shows up |
 | `JIGGER_CACHE_DIR` | `~/Library/Caches/jigger`, `%LOCALAPPDATA%\jigger` | cache location |
+| `JIGGER_LANG` | your locale's language | messages: `en` or `fr`. Read before `LC_ALL`, `LC_MESSAGES` and `LANG` — and this is how you get French back in an English-speaking shell. Anything jigger can't translate falls back to English |
 
 Two settings exist only under PowerShell, for lack of a useful zsh equivalent:
 

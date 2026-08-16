@@ -1,5 +1,7 @@
 # Premiers pas avec jigger
 
+*Ce document existe aussi en [anglais](../getting-started.md).*
+
 De l'installation à la première complétion, en une dizaine de minutes. Ce document se lit
 d'un bout à l'autre ; le [README](../../README.fr.md) reprend chaque point en détail, et explique
 _pourquoi_ les choses sont faites ainsi.
@@ -278,6 +280,7 @@ Import-Module C:\chemin\vers\jigger\shell\jigger.psm1
 | `JIGGER_KEY` | `^I` (Tab) | touche d'insertion. `'^ '` pour Ctrl-Espace ; sous PowerShell, un nom PSReadLine (`Ctrl+Spacebar`) |
 | `JIGGER_MIN_COLUMNS` | `30` | en dessous de cette largeur, le cadre n'a plus de sens : rien ne s'affiche |
 | `JIGGER_CACHE_DIR` | `~/Library/Caches/jigger`, `%LOCALAPPDATA%\jigger` | emplacement du cache |
+| `JIGGER_LANG` | la langue de ta locale | messages : `en` ou `fr`. Lu avant `LC_ALL`, `LC_MESSAGES` et `LANG` — c'est lui qui rend le français à un shell qui tourne en anglais. Ce que jigger ne sait pas traduire retombe sur l'anglais |
 
 Deux réglages n'existent que sous PowerShell, faute d'équivalent utile côté zsh :
 

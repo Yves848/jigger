@@ -13,6 +13,18 @@ lives in the git history.
 
 ### Added
 
+- **jigger speaks English and French.** Every string a user can see — the popup, the
+  facade's messages, the table headers, the usage and flag help, the two plugins' own
+  warnings — goes through a single catalogue
+  ([`internal/i18n/catalogue.go`](internal/i18n/catalogue.go)) that carries both
+  languages side by side, one line per key. A missing translation falls back to English
+  rather than leaving a blank.
+- **`JIGGER_LANG`** picks the language: `en` or `fr`. Unset, jigger reads `LC_ALL`,
+  `LC_MESSAGES` and `LANG` — then, under Windows, the system's own language — and settles
+  on English for anything it can't translate. This is the switch that gives French back
+  to someone whose shell runs in English. The binary, the zsh plugin and the PowerShell
+  module apply the same rule, so the popup and the plugin messages can't disagree; the
+  two test suites assert that agreement.
 - **A starship segment**, alongside the oh-my-posh one:
   [`shell/starship/brew.toml`](shell/starship/brew.toml) and
   [`windows.toml`](shell/starship/windows.toml). Three `env_var` modules per platform, on
@@ -29,6 +41,16 @@ lives in the git history.
 
 ### Changed
 
+- **English is now the default language.** A shell that says nothing about its locale
+  used to get French; it now gets English. Nothing is lost: `JIGGER_LANG=fr`, or any of
+  the usual locale variables set to French, restores exactly the previous wording — the
+  French strings didn't move by a single byte, and a golden bench of 480 rendered popups
+  ([`tests/render-golden.sh`](tests/render-golden.sh)) was written to prove it.
+- **The documentation is published in English**, with the French kept in full alongside
+  it: [`README.md`](README.md) and [`docs/getting-started.md`](docs/getting-started.md)
+  are the English originals, [`README.fr.md`](README.fr.md) and
+  [`docs/fr/getting-started.md`](docs/fr/getting-started.md) their French counterparts.
+  Each page links to the other at the top. This changelog stays English-only.
 - The README's "oh-my-posh block" section becomes **"Prompt block"** and covers both
   prompts (steps 2a/2b); the anchor is fixed in the guide, and the PowerShell ordering
   rule — import jigger **after** the prompt it wraps — now names starship as well as

@@ -138,15 +138,23 @@ The same in both shells — to be set **before** the `source` / `Import-Module`:
 JIGGER_LIVE=0     # disables the live popup: ⇥ opens the full-screen picker
 JIGGER_ROWS=12    # candidates shown (default 8; reduced if the terminal is short)
 JIGGER_KEY='^ '   # insertion key (default Tab)
+JIGGER_LANG=fr    # message language: en or fr
 ```
 
 ```powershell
 $env:JIGGER_LIVE = '0'
 $env:JIGGER_ROWS = '12'
 $env:JIGGER_KEY  = 'Ctrl+Spacebar'   # PSReadLine key names
+$env:JIGGER_LANG = 'fr'              # message language: en or fr
 $env:JIGGER_COMMANDS = 'winget,scoop'      # commands that trigger the popup
 $env:JIGGER_KEYS_EXTRA = 'éèçàù'           # keys to relay in addition to ASCII
 ```
+
+jigger speaks **English and French**. Left alone, it takes the language from `LC_ALL`,
+`LC_MESSAGES`, `LANG` — then, under Windows, from the system's own language — and falls
+back to English for anything it can't translate. `JIGGER_LANG` overrides all of that,
+and is how you get French back in an English-speaking shell. The binary and the plugin
+read it the same way, so the popup and the plugin's own messages never disagree.
 
 The popup clears itself if the terminal is too narrow — and, under zsh, if it doesn't
 respond to the cursor-position query.

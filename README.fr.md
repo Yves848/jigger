@@ -136,15 +136,24 @@ Identiques dans les deux shells — à poser **avant** le `source` / l'`Import-M
 JIGGER_LIVE=0     # désactive le popup vivant : ⇥ ouvre le sélecteur plein écran
 JIGGER_ROWS=12    # candidats affichés (défaut 8 ; réduit si le terminal est court)
 JIGGER_KEY='^ '   # touche d'insertion (défaut Tab)
+JIGGER_LANG=fr    # langue des messages : en ou fr
 ```
 
 ```powershell
 $env:JIGGER_LIVE = '0'
 $env:JIGGER_ROWS = '12'
 $env:JIGGER_KEY  = 'Ctrl+Spacebar'   # noms de touches PSReadLine
+$env:JIGGER_LANG = 'fr'              # langue des messages : en ou fr
 $env:JIGGER_COMMANDS = 'winget,scoop'      # commandes qui déclenchent le popup
 $env:JIGGER_KEYS_EXTRA = 'éèçàù'           # touches à relayer en plus des ASCII
 ```
+
+jigger parle **anglais et français**. Sans rien lui dire, il prend la langue de `LC_ALL`,
+`LC_MESSAGES`, `LANG` — puis, sous Windows, celle du système —, et retombe sur l'anglais
+pour tout ce qu'il ne sait pas traduire. `JIGGER_LANG` passe avant tout cela : c'est lui
+qui rend le français à un shell qui tourne en anglais. Le binaire et le greffon le lisent
+de la même façon, si bien que le popup et les messages du greffon ne se contredisent
+jamais.
 
 Le popup s'efface de lui-même si le terminal est trop étroit — et, sous zsh, s'il ne
 répond pas à l'interrogation de position du curseur.
