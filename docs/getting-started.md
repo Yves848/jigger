@@ -180,6 +180,7 @@ scoop uninstall 7z
 | `↑` | moves up; on the first candidate, hands the keyboard back to the shell |
 | `^N` / `^P` | the same, for those who prefer them to arrow keys |
 | `^G` | closes the popup for the current line (`⇥` reopens it) |
+| `^R` | switches the filter between plain text and regex. The frame's title shows `[regex]` while it is on, and the key goes back to the shell's reverse history search whenever the popup isn't up |
 
 Two things worth knowing, most of what makes this comfortable:
 

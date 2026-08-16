@@ -69,31 +69,6 @@ Homebrew local. Il est sorti de `make test-all` pour cette raison, et reste lan�
 main. Le rendre portable demanderait de neutraliser la bannière **et** de figer un catalogue
 d'essai.
 
-### A-11 — Filtrer le popup en regex ou en texte brut, quel que soit le gestionnaire
-
-**Priorité :** à déterminer · **Provenance :** demande du 16 août · **Moitié faite**
-
-**Fait :** le sélecteur plein écran bascule sur `^R` (MR !22). Le mode s'affiche sur la
-ligne de filtre ; un motif qui ne compile pas laisse la liste entière en le signalant.
-
-**Reste : le popup vivant, et il attend A-19.**
-
-Deux constats de la première moitié, qui ont réduit le problème et déplacé la difficulté :
-
-- **L'inquiétude du tableau était infondée.** Un motif ne peut pas « survivre à
-  l'insertion » : `render` construit la ligne comme `Prefix + InsertItem(candidat)`, où
-  `Prefix` est la ligne **sans le mot tapé**. Insérer remplace donc toujours le motif par
-  le nom du paquet. Le seul risque restant est de presser `↵` sans insérer — soit le
-  risque d'une faute de frappe ordinaire.
-- **La difficulté est la touche.** `^R` est la recherche inverse dans l'historique de zsh :
-  la prendre serait exactement la confiscation que jigger refuse pour les flèches. Et le
-  popup étant sans état, le mode serait un état de plus **côté greffon** — donc une touche
-  à lier dans zsh *et* dans PowerShell, plus un `--regex` sur `render`.
-
-C'est le sujet même d'A-19 : arrêter un jeu de raccourcis cohérent sur les deux surfaces.
-Trancher ici d'abord, puis rejuger là-bas, obligerait à changer la touche deux fois — après
-que les habitudes se seront prises.
-
 ### A-12 — Trier les colonnes du sélecteur plein écran
 
 **Priorité :** à déterminer · **Provenance :** demande du 16 août · **Dépend de :** A-10
@@ -399,6 +374,37 @@ ne vide pas la liste, `⇥` qui coche, `↵` qui imprime, `^G` qui n'imprime rie
 
 A-11 (regex dans le popup), A-12 (tri des colonnes) et A-13 (versions obsolètes) partent
 maintenant d'un terrain préparé.
+
+### A-11 — Filtrer le popup en regex ou en texte brut, quel que soit le gestionnaire
+
+**Fait le :** 2026-08-16 · **Provenance :** demande du 16 août
+
+`^R` bascule le filtre entre texte brut et expression rationnelle, **sur les trois
+surfaces** : popup vivant, sélecteur plein écran, vue paginée. Le titre du cadre affiche
+`[regex]` tant que c'est actif.
+
+**Rien n'est confisqué au shell.** Hors ligne surveillée, `^R` retourne à ce qu'il faisait —
+la recherche inverse dans l'historique. C'est le principe posé par A-19, et le mécanisme
+existait déjà pour les flèches. Vérifié : presser `^R` sur `echo bonjour` ne bascule rien.
+
+**Le filtre ne touche que les noms de paquets.** Les verbes, les sous-commandes et les
+options gardent leur préfixe : sur douze verbes, une expression rationnelle
+n'apprendrait rien et surprendrait.
+
+**Un motif fautif ne retient rien**, ici — l'inverse du sélecteur plein écran, et
+délibérément : dans le popup, le motif *est* le mot de la ligne de commande, et déverser
+16 000 entrées parce qu'une parenthèse manque serait une avalanche, pas une aide.
+
+**Deux défauts trouvés en chemin, dans les deux greffons :** la clé de cache du cadre ne
+portait pas le mode, si bien qu'une bascule ne redessinait rien — la ligne n'ayant pas
+changé. Et la condition d'activation, calquée sur « il y a des candidats », empêchait de
+basculer précisément quand la liste était vide, c'est-à-dire quand on en a le plus besoin.
+
+**Éprouvé** en pseudo-terminal zsh : bascule, motif `^fire.*x$` qui ne trouve que
+`firefox`, délégation hors popup, et les deux suites de greffons au complet. Le rendu par
+défaut du popup est **identique à l'octet près**. Côté PowerShell, le module est écrit et
+son banc passe, mais la bascule elle-même **reste à essayer sur une vraie machine
+Windows**.
 
 ### A-19 — Les raccourcis des listes à sélection multiple
 

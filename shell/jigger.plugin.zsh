@@ -128,6 +128,11 @@ autoload -Uz add-zle-hook-widget
 typeset -g _jigger_sel=0        # candidat courant
 typeset -g _jigger_selline=''   # ligne pour laquelle _jigger_sel a un sens
 typeset -g _jigger_dismissed=0  # ^G : popup fermé jusqu'à la fin de la ligne
+# Mode de filtre du popup : 0 = préfixe (le comportement historique), 1 = expression
+# rationnelle. Il vaut pour la session et non pour la ligne : le titre du cadre affiche
+# « [regex] » tant qu'il est actif, donc on ne l'oublie pas — et le rallumer à chaque
+# commande serait pénible pour qui s'en sert.
+typeset -g _jigger_regex=0
 typeset -g _jigger_count=0      # candidats du dernier rendu
 typeset -g _jigger_left=''      # LBUFFER après insertion du candidat courant
 typeset -g _jigger_frame=''     # cadre déjà rendu (évite un fork par redisplay)
@@ -170,8 +175,10 @@ _jigger_color() {
 _jigger_fetch() {
   local rows=${1:-$JIGGER_ROWS} out focus=false
   (( _jigger_focused )) && focus=true
+  local -a extra=()
+  (( _jigger_regex )) && extra=( --regex )
   out=$(command jigger render --line "$LBUFFER" --sel "$_jigger_sel" --cols "$COLUMNS" \
-        --rows "$rows" --color "$(_jigger_color)" --focus=$focus 2>/dev/null) || return 1
+        --rows "$rows" --color "$(_jigger_color)" --focus=$focus $extra 2>/dev/null) || return 1
 
   local -a lines
   lines=("${(@f)out}")
@@ -314,7 +321,9 @@ _jigger_redisplay() {
     _jigger_selline=$LBUFFER
   fi
 
-  local key="$LBUFFER|$_jigger_sel|$_jigger_focused|$COLUMNS|$rows"
+    # La clé porte TOUT ce dont le cadre dépend — le mode de filtre compris, sans quoi
+    # une bascule ^R ne redessinerait rien : la ligne, elle, n'a pas changé.
+    local key="$LBUFFER|$_jigger_sel|$_jigger_focused|$COLUMNS|$rows|$_jigger_regex"
   if [[ $key != $_jigger_key ]]; then
     _jigger_key=$key
     _jigger_fetch $rows || { _jigger_frame=''; _jigger_count=0; _jigger_erase; return }
@@ -354,6 +363,22 @@ _jigger_down() { _jigger_step 1  || zle ${_jigger_down_widget:-.down-line-or-his
 _jigger_up()   { _jigger_step -1 || zle ${_jigger_up_widget:-.up-line-or-history} }
 
 # ^N / ^P : les mêmes, pour qui les préfère aux flèches.
+# ^R bascule le mode de filtre — mais seulement quand le popup est là pour en profiter.
+# Sinon la touche retourne à ce qu'elle faisait : la recherche inverse dans l'historique.
+# C'est la règle générale de jigger (A-19) : prendre une touche tant qu'on a le clavier,
+# et la rendre sinon.
+_jigger_toggle_regex() {
+  # Le bon critère est « le popup vaut pour cette ligne », pas « il y a des candidats » :
+  # c'est justement quand la liste est vide qu'on veut changer de mode.
+  if (( JIGGER_LIVE )) && (( ! _jigger_dismissed )) && _jigger_is_watched; then
+    _jigger_regex=$(( ! _jigger_regex ))
+    _jigger_sel=0
+    zle -R
+    return 0
+  fi
+  zle ${_jigger_regex_widget:-.history-incremental-search-backward}
+}
+
 _jigger_next() { _jigger_step 1  || zle .down-line-or-history }
 _jigger_prev() { _jigger_step -1 || zle .up-line-or-history }
 
@@ -453,12 +478,17 @@ zle -N _jigger_prev
 zle -N _jigger_up
 zle -N _jigger_down
 zle -N _jigger_dismiss
+zle -N _jigger_toggle_regex
 
 bindkey "$JIGGER_KEY" _jigger_widget
 if (( JIGGER_LIVE )); then
   bindkey '^N' _jigger_next
   bindkey '^P' _jigger_prev
   bindkey '^G' _jigger_dismiss
+    # ^R : on relève d'abord ce qu'il faisait, puis on le prend — comme les flèches.
+    # Hors popup, la touche retourne à ce widget-là (A-19).
+    typeset -g _jigger_regex_widget=$(_jigger_bound_widget '^R')
+    bindkey '^R' _jigger_toggle_regex
 
   # Les flèches : on relève d'abord ce qu'elles faisaient, puis on les prend. Les deux
   # formes des séquences (mode normal et mode application) sont couvertes, plus celle

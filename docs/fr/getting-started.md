@@ -180,6 +180,7 @@ scoop uninstall 7z
 | `↑` | remonte ; au premier candidat, rend le clavier au shell |
 | `^N` / `^P` | les mêmes, pour qui les préfère aux flèches |
 | `^G` | ferme le popup pour la ligne en cours (`⇥` le rouvre) |
+| `^R` | bascule le filtre entre texte brut et expression rationnelle. Le titre du cadre affiche `[regex]` tant que c'est actif, et la touche retourne à la recherche inverse du shell dès que le popup n'est pas là |
 
 Deux choses à savoir, qui font l'essentiel du confort :
 
