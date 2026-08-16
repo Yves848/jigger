@@ -236,6 +236,34 @@ saurait le faire.
 `source` prend trois formes : `jg source` liste, `jg source add <dépôt>` ajoute,
 `jg source rm <dépôt>` retire.
 
+### Longues listes : la vue paginée
+
+`list`, `outdated`, `search` et `source` peuvent rendre des centaines de lignes. Quand la
+sortie est un terminal **et** que les lignes ne tiennent pas à l'écran, jigger les
+présente dans une vue navigable plutôt que de les faire défiler :
+
+| Touche | Effet |
+|---|---|
+| taper | filtre au fil de la frappe |
+| `^R` | bascule entre texte brut et expression rationnelle — le mode courant est toujours affiché |
+| `⇥` | coche la ligne (`Espace` ne peut pas : le champ de filtre a le clavier) |
+| `↵` | valide — imprime les lignes cochées, ou la ligne courante si aucune ne l'est |
+| `^G`, `esc` | quitte sans rien imprimer |
+| `↑` `↓`, `PgPréc` `PgSuiv` | se déplacer |
+
+**Rien ne change quand la sortie n'est pas un terminal.** `jg list | grep fd` imprime la
+même table brute qu'avant, à l'octet près, et `--json` n'est jamais paginé : c'est un
+contrat machine.
+
+Pour choisir des lignes *dans* un tube, il faut le demander :
+
+```sh
+jg install $(jg search fd --select)
+```
+
+`--select` dessine la vue sur le terminal et n'envoie que les noms retenus — un par ligne
+— dans le tube. `JIGGER_PAGER=0` désarme complètement la vue automatique.
+
 ### Comment le gestionnaire est choisi
 
 jigger cherche le nom dans le catalogue de chacun des gestionnaires présents :
@@ -313,6 +341,7 @@ Import-Module C:\chemin\vers\jigger\shell\jigger.psm1
 | `JIGGER_KEY` | `^I` (Tab) | touche d'insertion. `'^ '` pour Ctrl-Espace ; sous PowerShell, un nom PSReadLine (`Ctrl+Spacebar`) |
 | `JIGGER_MIN_COLUMNS` | `30` | en dessous de cette largeur, le cadre n'a plus de sens : rien ne s'affiche |
 | `JIGGER_CACHE_DIR` | `~/Library/Caches/jigger`, `%LOCALAPPDATA%\jigger` | emplacement du cache |
+| `JIGGER_PAGER` | `1` | `0` désarme la vue paginée : les verbes qui listent impriment toujours la table brute |
 | `JIGGER_LANG` | la langue de ta locale | messages : `en` ou `fr`. Lu avant `LC_ALL`, `LC_MESSAGES` et `LANG` — c'est lui qui rend le français à un shell qui tourne en anglais. Ce que jigger ne sait pas traduire retombe sur l'anglais |
 
 Deux réglages n'existent que sous PowerShell, faute d'équivalent utile côté zsh :

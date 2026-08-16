@@ -69,29 +69,6 @@ Homebrew local. Il est sorti de `make test-all` pour cette raison, et reste lan�
 main. Le rendre portable demanderait de neutraliser la bannière **et** de figer un catalogue
 d'essai.
 
-### A-10 — Mettre en page et paginer les sorties
-
-**Priorité :** à déterminer · **Provenance :** demande du 16 août
-
-`jigger list` — et les trois autres verbes tabulaires, `outdated`, `search`, `source` —
-rendent aujourd'hui un tableau aligné qui défile d'un bloc. Les rendre **navigables** :
-pagination, couleur, filtre au fil de la frappe, et un filtre qui accepte une **expression
-rationnelle** plutôt qu'une simple sous-chaîne.
-
-Trois choses à ne pas perdre de vue le jour où on s'y met :
-
-- **Rien ne doit casser hors terminal.** `jigger list | grep`, un script, une CI : la
-  pagination ne s'arme que si la sortie est un terminal — comme le fait `git`. Et `--json`
-  n'est jamais paginé, c'est un contrat machine.
-- **Le sélecteur existe déjà.** `internal/ui/picker.go` sait afficher une liste en plein
-  écran, la filtrer et la parcourir ; il sert déjà à `jigger pick` et à la désambiguïsation
-  de la façade. Le pager devrait le réemployer plutôt qu'ouvrir un deuxième dispositif
-  d'affichage à maintenir — quitte à lui ajouter un mode « lecture seule ».
-- **Le filtre passe de la sous-chaîne à la regex.** Changement de comportement pour qui
-  utilise déjà `jigger pick` : une frappe comme `c++` cesse d'être un texte pour devenir un
-  motif fautif. À trancher — regex par défaut avec repli en sous-chaîne quand le motif ne
-  compile pas, ou une touche qui bascule entre les deux.
-
 ### A-11 — Filtrer le popup en regex ou en texte brut, quel que soit le gestionnaire
 
 **Priorité :** à déterminer · **Provenance :** demande du 16 août · **Voisine de :** A-10
@@ -407,6 +384,30 @@ vérification faite dans un navigateur puis sur la page en ligne.
 (`cocktails-website`), ignoré par son parent — et l'`origin` du dépôt `cocktails` pousse
 vers GitLab **et** GitHub. Un premier commit est parti au mauvais endroit avant que je m'en
 aperçoive ; la branche vide a été supprimée des deux remotes.
+
+### A-10 — Mettre en page et paginer les sorties
+
+**Fait le :** 2026-08-16 · **Conception :** [`docs/specs/2026-08-16-pagination-design.md`](specs/2026-08-16-pagination-design.md)
+
+Les quatre verbes tabulaires s'affichent dans une vue navigable quand la sortie est un
+terminal **et** que le contenu dépasse l'écran : filtre au fil de la frappe, bascule
+texte/regex sur `^R`, sélection multiple sur `⇥`, `↵` qui imprime les lignes retenues.
+
+Trois engagements tenus, et vérifiés :
+
+- **La table brute ne bouge pas d'un octet** hors terminal — comparé binaire contre
+  binaire sur `list`, `outdated`, `source` et `--json`.
+- **Un seul cœur de navigation** (`internal/ui/liste.go`) sous le sélecteur et sous la
+  vue : les 366 lignes de tests du sélecteur passent **sans une modification**, ce qui est
+  le seul juge honnête de la refactorisation.
+- **Une seule source pour les colonnes** (`facade.Colonnes`), avec un test croisé qui
+  interdit à la table brute et à la vue de diverger.
+
+Éprouvé de bout en bout dans un vrai pseudo-terminal : filtrage, `^R`, motif invalide qui
+ne vide pas la liste, `⇥` qui coche, `↵` qui imprime, `^G` qui n'imprime rien.
+
+A-11 (regex dans le popup), A-12 (tri des colonnes) et A-13 (versions obsolètes) partent
+maintenant d'un terrain préparé.
 
 ### A-8 — La fiche du projet GitLab
 
