@@ -29,6 +29,41 @@ func TestClesDuPopup(t *testing.T) {
 	}
 }
 
+// Les clés de la façade et des en-têtes de tableaux existent et sont traduites dans les
+// deux langues — ce sont les chaînes les plus lues par un utilisateur qui se trompe.
+func TestClesDeLaFacade(t *testing.T) {
+	for _, cle := range []string{
+		"facade.no_verb", "facade.unknown_verb", "facade.nobody_can",
+		"facade.unknown_pm", "facade.pm_unavailable", "facade.unknown_name",
+		"facade.near", "facade.too_recent", "facade.ambiguous", "facade.choose_pm",
+		"facade.failed", "facade.unreadable", "facade.no_parser", "facade.nothing",
+		"table.package", "table.current", "table.available", "table.source", "table.pm",
+	} {
+		trad, ok := catalogue[cle]
+		if !ok {
+			t.Errorf("%s : absente du catalogue", cle)
+			continue
+		}
+		if trad[FR] == "" {
+			t.Errorf("%s : le français est vide", cle)
+		}
+	}
+}
+
+// Les en-têtes de tableaux sont traduits — c'est sans risque parce que --json existe.
+func TestEntetesTraduits(t *testing.T) {
+	t.Setenv("JIGGER_LANG", "en")
+	Recharger()
+	if got := T("table.package"); got != "PACKAGE" {
+		t.Fatalf("en-tête anglais : %q", got)
+	}
+	t.Setenv("JIGGER_LANG", "fr")
+	Recharger()
+	if got := T("table.package"); got != "PAQUET" {
+		t.Fatalf("en-tête français : %q", got)
+	}
+}
+
 // Le français d'aujourd'hui, mot pour mot : c'est lui que le banc de la tâche 2 compare.
 func TestLibellesFrancaisInchanges(t *testing.T) {
 	t.Setenv("JIGGER_LANG", "fr")

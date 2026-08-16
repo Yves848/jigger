@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"gitlab.yg-devworks.com/yves/jigger/internal/brew"
+	"gitlab.yg-devworks.com/yves/jigger/internal/i18n"
 	"gitlab.yg-devworks.com/yves/jigger/internal/pm"
 	"gitlab.yg-devworks.com/yves/jigger/internal/scoop"
 	"gitlab.yg-devworks.com/yves/jigger/internal/winget"
@@ -205,6 +206,8 @@ func TestRoutageSearchAtteintLesGestionnairesMemeSansCorrespondanceExacte(t *tes
 // verbe » suggérerait à tort qu'il existe mais ne sait pas rendre ce verbe précis, alors
 // que jigger ne sait tout simplement pas ce qu'est apt.
 func TestRoutageForcePMInconnuDeJigger(t *testing.T) {
+	t.Setenv("JIGGER_LANG", "fr")
+	i18n.Recharger()
 	_, _, err := Router("install", []string{"fd"}, "apt", nil, deuxGestionnaires(), catalogues())
 	if err == nil {
 		t.Fatal("attendu une erreur : « apt » n'est pas un gestionnaire de jigger")
@@ -223,6 +226,8 @@ func TestRoutageForcePMInconnuDeJigger(t *testing.T) {
 // « indisponible pour ce verbe », pas « inconnu » : jigger sait très bien ce qu'est
 // winget.
 func TestRoutageForcePMConnuMaisIndisponiblePourCeVerbe(t *testing.T) {
+	t.Setenv("JIGGER_LANG", "fr")
+	i18n.Recharger()
 	_, _, err := Router("doctor", nil, "winget", nil, []pm.Manager{scoop.New()}, catalogues())
 	if err == nil {
 		t.Fatal("attendu une erreur : winget n'est pas dans les capables pour doctor")

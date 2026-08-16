@@ -1,10 +1,12 @@
 package facade
 
 import (
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
 
+	"gitlab.yg-devworks.com/yves/jigger/internal/i18n"
 	"gitlab.yg-devworks.com/yves/jigger/internal/managers"
 	"gitlab.yg-devworks.com/yves/jigger/internal/pm"
 )
@@ -170,11 +172,9 @@ func filtrerParPM(mgrs []pm.Manager, forcePM string) ([]pm.Manager, error) {
 	// pour ce verbe » ferait croire à l'utilisateur qu'apt est un gestionnaire que
 	// jigger pourrait faire agir sur d'autres verbes.
 	if _, connu := managers.For(forcePM); !connu {
-		return nil, fmt.Errorf("jigger : --pm %s — gestionnaire inconnu de jigger. Connus : %s",
-			forcePM, strings.Join(nomsConnus(), ", "))
+		return nil, errors.New(i18n.Tf("facade.unknown_pm", forcePM, strings.Join(nomsConnus(), ", ")))
 	}
-	return nil, fmt.Errorf("jigger : --pm %s — gestionnaire indisponible pour ce verbe. Disponibles : %s",
-		forcePM, strings.Join(noms, ", "))
+	return nil, errors.New(i18n.Tf("facade.pm_unavailable", forcePM, strings.Join(noms, ", ")))
 }
 
 // nomsConnus rend les mots de commande de tous les gestionnaires que jigger sait
@@ -249,13 +249,13 @@ func nomInconnu(nom string, pool pm.Pool, mgrs []pm.Manager, cats map[string]*pm
 	for _, m := range mgrs {
 		noms = append(noms, m.Cmd())
 	}
-	msg := fmt.Sprintf("jigger : « %s » — inconnu de %s", nom, strings.Join(noms, " et "))
+	msg := i18n.Tf("facade.unknown_name", nom, strings.Join(noms, " et "))
 
 	if proches := voisins(nom, pool, mgrs, cats); len(proches) > 0 {
-		msg += "\n        Proche : " + strings.Join(proches, ", ")
+		msg += i18n.T("facade.near") + strings.Join(proches, ", ")
 	}
-	msg += fmt.Sprintf("\n        Si le paquet est trop récent pour le catalogue : jg … --pm %s %s", noms[0], nom)
-	return fmt.Errorf("%s", msg)
+	msg += i18n.Tf("facade.too_recent", noms[0], nom)
+	return errors.New(msg)
 }
 
 // voisins cherche les noms qui partagent un préfixe avec le nom demandé — de la longueur
