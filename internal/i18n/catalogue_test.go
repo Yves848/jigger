@@ -1,0 +1,51 @@
+package i18n
+
+import "testing"
+
+// L'anglais est l'original : une entrée vide n'aurait rien sur quoi se replier.
+func TestAucuneEntreeAnglaiseVide(t *testing.T) {
+	for cle, trad := range catalogue {
+		if trad[EN] == "" {
+			t.Errorf("%s : l'anglais est vide", cle)
+		}
+	}
+}
+
+// Les clés du popup existent et sont traduites dans les deux langues.
+func TestClesDuPopup(t *testing.T) {
+	for _, cle := range []string{
+		"popup.insert", "popup.execute", "popup.navigate", "popup.browse",
+		"popup.close", "popup.cancel", "popup.choose", "popup.filter",
+		"popup.empty", "popup.filter_hint", "popup.catalog_brew", "popup.catalog_winget",
+	} {
+		trad, ok := catalogue[cle]
+		if !ok {
+			t.Errorf("%s : absente du catalogue", cle)
+			continue
+		}
+		if trad[FR] == "" {
+			t.Errorf("%s : le français est vide", cle)
+		}
+	}
+}
+
+// Le français d'aujourd'hui, mot pour mot : c'est lui que le banc de la tâche 2 compare.
+func TestLibellesFrancaisInchanges(t *testing.T) {
+	t.Setenv("JIGGER_LANG", "fr")
+	Recharger()
+	for cle, attendu := range map[string]string{
+		"popup.insert":   "insérer",
+		"popup.execute":  "exécuter",
+		"popup.navigate": "naviguer",
+		"popup.browse":   "parcourir",
+		"popup.close":    "fermer",
+		"popup.cancel":   "annuler",
+		"popup.choose":   "choisir",
+		"popup.filter":   "filtrer…",
+		"popup.empty":    "aucun candidat",
+	} {
+		if got := T(cle); got != attendu {
+			t.Errorf("%s : %q, attendu %q", cle, got, attendu)
+		}
+	}
+}

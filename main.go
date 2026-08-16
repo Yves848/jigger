@@ -37,6 +37,7 @@ import (
 
 	"gitlab.yg-devworks.com/yves/jigger/internal/complete"
 	"gitlab.yg-devworks.com/yves/jigger/internal/facade"
+	"gitlab.yg-devworks.com/yves/jigger/internal/i18n"
 	"gitlab.yg-devworks.com/yves/jigger/internal/managers"
 	"gitlab.yg-devworks.com/yves/jigger/internal/pm"
 	"gitlab.yg-devworks.com/yves/jigger/internal/prompt"
@@ -221,7 +222,7 @@ func trancher(amb *facade.Ambiguite) (string, bool) {
 	model := ui.New(titre, complete.Result{Executable: true, Items: items})
 	// Pied propre à la désambiguïsation : on choisit un gestionnaire, on n'insère ni
 	// n'exécute une commande — ⇥/↩ n'y ont pas de sens (spec §3, README).
-	model.Keys = []ui.Key{{Key: "↵", Label: "choisir"}, {Key: "^G", Label: "annuler"}}
+	model.Keys = []ui.Key{{Key: "↵", Label: i18n.T("popup.choose")}, {Key: "^G", Label: i18n.T("popup.cancel")}}
 
 	fmt.Fprint(tty.Out, "\r\n")
 	prog := tea.NewProgram(model, tea.WithInput(tty.In), tea.WithOutput(tty.Out))
@@ -359,9 +360,9 @@ func runRender(args []string) int {
 
 	// Le pied dit où ira la prochaine flèche : sans le focus, ↓ sert à entrer dans la
 	// liste (↑ reste l'historique) ; avec, les deux parcourent les candidats.
-	navigation := ui.Key{Key: "↓", Label: "parcourir"}
+	navigation := ui.Key{Key: "↓", Label: i18n.T("popup.browse")}
 	if *focus {
-		navigation = ui.Key{Key: "↑↓", Label: "naviguer"}
+		navigation = ui.Key{Key: "↑↓", Label: i18n.T("popup.navigate")}
 	}
 
 	frame := ui.Frame{
@@ -370,9 +371,9 @@ func runRender(args []string) int {
 		Rows:    *rows,
 		Focused: *focus,
 		Keys: []ui.Key{
-			{Key: "⇥", Label: "insérer"},
+			{Key: "⇥", Label: i18n.T("popup.insert")},
 			navigation,
-			{Key: "^G", Label: "fermer"},
+			{Key: "^G", Label: i18n.T("popup.close")},
 		},
 	}
 	if *cols > 0 {
@@ -382,11 +383,11 @@ func runRender(args []string) int {
 	// Contexte paquet, mot vide : on invite à filtrer plutôt que d'égrener le catalogue.
 	if res.Executable && res.Word == "" && len(res.Items) > tropDeCandidats {
 		frame.Items = nil
-		frame.Empty = fmt.Sprintf("tapez pour filtrer… (%d paquets)", len(res.Items))
+		frame.Empty = i18n.Tf("popup.filter_hint", len(res.Items))
 	} else if len(res.Items) == 0 {
 		// Le gestionnaire a parfois mieux à dire qu'« aucun candidat » — un catalogue
 		// winget encore en cours de constitution, par exemple.
-		frame.Empty = "aucun candidat"
+		frame.Empty = i18n.T("popup.empty")
 		if res.Note != "" {
 			frame.Empty = res.Note
 		}

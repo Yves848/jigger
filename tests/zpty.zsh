@@ -36,6 +36,9 @@ _jigger_rc() {
 PS1='%% '
 PATH="$root:\$PATH"
 COLORTERM=truecolor
+# Cette suite assère des libellés français en dur (cf. i18n.T) : sans l'exporter, le
+# popup (un sous-processus) parlerait la langue de la machine qui lance les tests.
+export JIGGER_LANG=fr
 # Les flèches arrivent en trois octets (ESC [ A), et le harnais tape caractère par
 # caractère avec des pauses entre eux : sans allonger le délai, zsh conclurait à un
 # simple Échap avant d'avoir vu le reste. C'est un artefact du pseudo-terminal, pas du
