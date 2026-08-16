@@ -81,7 +81,13 @@ if ($Methode -eq 'shim') {
     }
     # `scoop shim add` refuse un nom déjà pris : on remplace plutôt que d'échouer, pour que
     # relancer ce script après un build soit sans effet de bord.
-    $existe = (& scoop shim info jigger 2>&1 | Out-String) -notmatch 'not found|introuvable'
+    #
+    # La présence du shim se lit **sur le disque**, et non dans la sortie de
+    # `scoop shim info` : ce message-là passe par Write-Host, donc par le flux Information,
+    # que `2>&1` ne capture pas. Le test sur le texte rendait donc toujours « présent », et
+    # le script tentait un `rm` avant le tout premier `add`.
+    $shims = if ($env:SCOOP) { Join-Path $env:SCOOP 'shims' } else { Join-Path $env:USERPROFILE 'scoop\shims' }
+    $existe = [bool](Get-ChildItem -Path $shims -Filter 'jigger.*' -ErrorAction SilentlyContinue)
     if ($existe) {
         Faire 'scoop shim rm jigger  (remplacement)' { & scoop shim rm jigger | Out-Null }
     }
@@ -102,10 +108,16 @@ if ($Methode -eq 'shim') {
     if ($pathUtilisateur -and ($pathUtilisateur -split ';' | Where-Object { $_.TrimEnd('\') -eq $Prefixe.TrimEnd('\') })) {
         Write-Host "  $Prefixe est déjà dans le PATH utilisateur"
     } else {
+        # Un PATH utilisateur absent est courant sur un compte neuf. Concaténer sans
+        # précaution donnerait « ;C:\... » — et Windows lit un segment vide comme « le
+        # répertoire courant », ce qu'on ne veut surtout pas ajouter au PATH de quelqu'un.
+        $nouveau = if ([string]::IsNullOrEmpty($pathUtilisateur)) { $Prefixe } else { "$pathUtilisateur;$Prefixe" }
         Faire "ajout de $Prefixe au PATH utilisateur" {
-            [Environment]::SetEnvironmentVariable('Path', "$pathUtilisateur;$Prefixe", 'User')
+            [Environment]::SetEnvironmentVariable('Path', $nouveau, 'User')
         }
-        Write-Host '  ⚠ rouvre le terminal : le PATH n''est lu qu''au démarrage' -ForegroundColor Yellow
+        if (-not $Simuler) {
+            Write-Host '  ⚠ rouvre le terminal : le PATH n''est lu qu''au démarrage' -ForegroundColor Yellow
+        }
     }
     $installe = Join-Path $Prefixe 'jigger.exe'
 }

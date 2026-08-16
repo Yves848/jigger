@@ -154,7 +154,7 @@ $script:Focused   = $false # le popup a-t-il le clavier ? (cf. Step-JiggerSelect
 
 if (-not (Get-Command $script:Exe -ErrorAction SilentlyContinue)) {
     Write-Warning (Get-JiggerText `
-        "jigger: binary "$($script:Exe)" not found in PATH. Module inactive." `
+        "jigger: binary `"$($script:Exe)`" not found in PATH. Module inactive." `
         "jigger : binaire « $($script:Exe) » introuvable dans le PATH. Module inactif.")
     return
 }
@@ -172,7 +172,7 @@ try {
 if ($version -and $version -lt $script:VersionRequise) {
     $chemin = (Get-Command $script:Exe).Source
     Write-Warning (Get-JiggerText `
-        "jigger: the binary at $chemin is $version, but this module requires $($script:VersionRequise). Rebuild it ("pwsh -File install-windows.ps1") or replace the one in PATH. Module inactive." `
+        "jigger: the binary at $chemin is $version, but this module requires $($script:VersionRequise). Rebuild it (`"pwsh -File install-windows.ps1`") or replace the one in PATH. Module inactive." `
         "jigger : le binaire $chemin est en $version, or ce module en demande $($script:VersionRequise). Recompile-le (« pwsh -File install-windows.ps1 ») ou remplace celui du PATH. Module inactif.")
     return
 }

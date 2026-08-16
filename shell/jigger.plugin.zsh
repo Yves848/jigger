@@ -110,7 +110,7 @@ if [[ -n $_jigger_v ]] && ! is-at-least $JIGGER_VERSION_REQUISE $_jigger_v; then
   if [[ $_jigger_lang == fr ]]; then
     print -u2 "jigger : le binaire $(command -v jigger) est en $_jigger_v, or ce greffon en demande $JIGGER_VERSION_REQUISE. Recompile-le (« make install ») ou remplace celui du PATH. Greffon inactif."
   else
-    print -u2 "jigger: the binary at $(command -v jigger) is $_jigger_v, but this plugin requires $JIGGER_VERSION_REQUISE. Rebuild it ("make install") or replace the one in PATH. Plugin inactive."
+    print -u2 "jigger: the binary at $(command -v jigger) is $_jigger_v, but this plugin requires $JIGGER_VERSION_REQUISE. Rebuild it (\"make install\") or replace the one in PATH. Plugin inactive."
   fi
   unset _jigger_v
   return 0
