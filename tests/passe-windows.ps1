@@ -132,12 +132,53 @@ try {
 
     New-Item -ItemType Directory -Force -Path 'tests/captures' | Out-Null
     [System.IO.File]::WriteAllText(
-        (Join-Path $racine 'tests/captures/derniers-tests.md'),
+        (Join-Path $racine 'tests/captures/derniers-tests-windows.md'),
         (($lignes -join "`r`n") + "`r`n"), $utf8)
+
+    # ── Le journal des passes ─────────────────────────────────────────────────────────
+    #
+    # Le rapport ci-dessus est écrasé à chaque passe : il dit l'état du moment. Le journal,
+    # lui, s'ajoute et ne se réécrit pas — c'est lui qui permettra de savoir, plus tard, si
+    # tel commit avait été éprouvé ici. Les échecs y figurent **en clair** : on doit pouvoir
+    # juger une passe sans ouvrir un autre fichier.
+    $commit = (& git rev-parse --short HEAD 2>&1 | Out-String).Trim()
+    $entree = [System.Collections.Generic.List[string]]::new()
+    $entree.Add("## $(Get-Date -Format 'yyyy-MM-dd HH:mm') — Windows — ``$commit`` — $verdict")
+    $entree.Add('')
+    $capt = if ($SansCaptures) { 'captures inchangées' } else { 'captures rafraîchies' }
+    $entree.Add("$([System.Environment]::OSVersion.VersionString) · pwsh $($PSVersionTable.PSVersion) · $((& go version 2>&1 | Out-String).Trim()) · $capt")
+    $entree.Add('')
+    $verts = @($etapes | Where-Object { $_.Code -eq 0 } | ForEach-Object { $_.Nom })
+    if ($verts) { $entree.Add("- **ok** — $($verts -join ' · ')") }
+    foreach ($e in $echecs) {
+        # On remonte les lignes que les harnais impriment pour dire ce qui a lâché : c'est
+        # ce qu'un lecteur veut voir, pas la centaine de lignes vertes qui les entourent.
+        $motifs = ($e.Sortie -split "`r?`n" |
+            Where-Object { $_ -match 'ÉCHEC|--- FAIL|FAIL\s|assertion' } |
+            Select-Object -First 6 | ForEach-Object { $_.Trim() })
+        $entree.Add("- **échec — $($e.Nom)** (code $($e.Code))")
+        foreach ($m in $motifs) { $entree.Add("  - $m") }
+        if (-not $motifs) { $entree.Add('  - (aucune ligne d''échec reconnue — voir le rapport détaillé)') }
+    }
+    $entree.Add('')
+
+    $journal = Join-Path $racine 'docs/tests/journal.md'
+    $marqueur = '<!-- nouvelles passes ici -->'
+    if (Test-Path $journal) {
+        $texte = [System.IO.File]::ReadAllText($journal)
+        if ($texte.Contains($marqueur)) {
+            $texte = $texte.Replace($marqueur, $marqueur + "`r`n`r`n" + ($entree -join "`r`n"))
+            [System.IO.File]::WriteAllText($journal, $texte, $utf8)
+        } else {
+            Write-Host "  (marqueur absent de docs/tests/journal.md — entrée non ajoutée)" -ForegroundColor Yellow
+        }
+    } else {
+        Write-Host "  (docs/tests/journal.md absent — entrée non ajoutée)" -ForegroundColor Yellow
+    }
 
     # ── Publication ───────────────────────────────────────────────────────────────────
     Write-Host "`n→ publication" -ForegroundColor Cyan
-    & git add 'internal/scoop/testdata' 'tests/captures' 2>&1 | Write-Host
+    & git add 'internal/scoop/testdata' 'tests/captures' 'docs/tests/journal.md' 2>&1 | Write-Host
 
     $enAttente = (& git diff --cached --name-only 2>&1 | Out-String).Trim()
     if (-not $enAttente) {
