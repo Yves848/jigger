@@ -1,0 +1,148 @@
+# Chaîne de release de jigger.
+#
+# Elle ne se déclenche **que sur un tag** : pousser un commit ordinaire ne produit rien.
+# Sur `v0.10.0`, elle vérifie, compile les quatre cibles, calcule les condensats, dépose
+# le tout dans le registre de paquets du projet, puis crée la release en reprenant la
+# section du CHANGELOG déjà écrite pour cette version.
+#
+# Exécuteur : `cibuilder-go` (LXC 117), executor docker, non privilégié.
+
+stages:
+  - verifier
+  - construire
+  - publier
+
+default:
+  # go.mod exige Go 1.26.5 : l'image est épinglée sur la série qui le fournit, et non
+  # sur « la dernière », pour qu'une release d'aujourd'hui se rejoue dans six mois.
+  image: golang:1.26-bookworm
+
+# Un seul point de vérité pour « ceci ne tourne que sur un tag ».
+.sur_tag: &sur_tag
+  rules:
+    - if: $CI_COMMIT_TAG
+
+verifier:
+  stage: verifier
+  <<: *sur_tag
+  script:
+    - go vet ./...
+    - go test ./...
+
+construire:
+  stage: construire
+  <<: *sur_tag
+  needs: [verifier]
+  script:
+    # Le tag porte un « v », la version affichée n'en porte pas : `jigger --version`
+    # doit dire « jigger 0.10.0 », comme le fait déjà la formule Homebrew.
+    - VERSION="${CI_COMMIT_TAG#v}"
+    - apt-get update -qq && apt-get install -y -qq zip
+    - mkdir -p dist
+    - |
+      set -eu
+      for cible in darwin/arm64 darwin/amd64 windows/amd64 linux/amd64; do
+        GOOS="${cible%/*}"; GOARCH="${cible#*/}"
+        binaire="jigger"; [ "$GOOS" = windows ] && binaire="jigger.exe"
+        echo "→ $GOOS/$GOARCH"
+
+        rm -rf etape && mkdir etape
+        CGO_ENABLED=0 GOOS="$GOOS" GOARCH="$GOARCH" \
+          go build -trimpath -ldflags "-s -w -X main.version=$VERSION" \
+                   -o "etape/$binaire" .
+        # Garde-fou : une compilation qui échoue sans arrêter la boucle produirait une
+        # archive de licence et de README, avec un SHA256SUMS d'apparence irréprochable.
+        # On refuse d'empaqueter ce qui n'est pas un binaire plausible.
+        taille="$(wc -c < "etape/$binaire")"
+        if [ "$taille" -lt 1000000 ]; then
+          echo "Binaire $GOOS/$GOARCH absent ou suspect : $taille octets" >&2
+          exit 1
+        fi
+
+        # Une archive qui distribue un binaire Apache-2.0 emporte sa licence.
+        cp LICENSE README.md etape/
+
+        base="jigger_${VERSION}_${GOOS}_${GOARCH}"
+        if [ "$GOOS" = windows ]; then
+          (cd etape && zip -qr "../dist/${base}.zip" .)
+        else
+          (cd etape && tar -czf "../dist/${base}.tar.gz" .)
+        fi
+      done
+      rm -rf etape
+      (cd dist && sha256sum jigger_* > SHA256SUMS && cat SHA256SUMS)
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 1 week
+
+publier:
+  stage: publier
+  <<: *sur_tag
+  needs: [construire]
+  script:
+    - VERSION="${CI_COMMIT_TAG#v}"
+    - |
+      set -eu
+      # Une release GitLab ne stocke pas de fichiers : elle porte des liens. Les archives
+      # vivent donc dans le registre de paquets générique du projet.
+      for f in dist/*; do
+        nom="$(basename "$f")"
+        echo "→ dépôt de $nom"
+        curl --fail --silent --show-error \
+             --header "JOB-TOKEN: $CI_JOB_TOKEN" \
+             --upload-file "$f" \
+             "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/jigger/${VERSION}/${nom}"
+      done
+    - |
+      set -eu
+      # Les notes de version sont celles du CHANGELOG, écrites avant le tag. Si la
+      # section manque, on s'arrête : mieux vaut une release absente qu'une release muette.
+      awk -v tag="$CI_COMMIT_TAG" '
+        $0 ~ "^## \\[" tag "\\]" { p = 1; next }
+        p && /^## \[/ { exit }
+        p { print }
+      ' CHANGELOG.md > notes.md
+      if [ ! -s notes.md ]; then
+        echo "Aucune section « ## [$CI_COMMIT_TAG] » dans CHANGELOG.md" >&2
+        exit 1
+      fi
+      head -5 notes.md
+  artifacts:
+    paths:
+      - notes.md
+      - dist/SHA256SUMS
+    expire_in: 1 month
+
+release:
+  stage: publier
+  <<: *sur_tag
+  needs: [publier]
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  script:
+    - |
+      set -eu
+      VERSION="${CI_COMMIT_TAG#v}"
+      racine="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/jigger/${VERSION}"
+
+      # `set --` plutôt qu'une chaîne concaténée : les noms de fichiers restent des
+      # arguments distincts, quoi qu'ils contiennent.
+      set --
+      for cible in darwin_arm64 darwin_amd64 linux_amd64; do
+        nom="jigger_${VERSION}_${cible}.tar.gz"
+        set -- "$@" --assets-link "{\"name\":\"${nom}\",\"url\":\"${racine}/${nom}\",\"link_type\":\"package\"}"
+      done
+      nom="jigger_${VERSION}_windows_amd64.zip"
+      set -- "$@" --assets-link "{\"name\":\"${nom}\",\"url\":\"${racine}/${nom}\",\"link_type\":\"package\"}"
+      set -- "$@" --assets-link "{\"name\":\"SHA256SUMS\",\"url\":\"${racine}/SHA256SUMS\",\"link_type\":\"other\"}"
+
+      # La release peut déjà exister — le rituel de publication la crée parfois à la main.
+      # On complète alors au lieu d'échouer.
+      if release-cli get --tag-name "$CI_COMMIT_TAG" >/dev/null 2>&1; then
+        echo "Release existante : mise à jour."
+        release-cli update --tag-name "$CI_COMMIT_TAG" \
+          --name "jigger $VERSION" --description "$(cat notes.md)" "$@"
+      else
+        release-cli create --tag-name "$CI_COMMIT_TAG" \
+          --name "jigger $VERSION" --description "$(cat notes.md)" "$@"
+      fi

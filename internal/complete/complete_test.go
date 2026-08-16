@@ -169,10 +169,24 @@ func TestWinget_SousCommandesEtOptions(t *testing.T) {
 	}
 }
 
+// dispoDeTest fournit une liste de gestionnaires explicite. `Complete` interroge la
+// machine — sans gestionnaire installé, elle ne propose aucun verbe, ce qui est le bon
+// comportement mais rend le test dépendant de l'endroit où il tourne : il passait sur un
+// Mac avec Homebrew et échouait dans le conteneur de la CI.
+func dispoDeTest() ([]pm.Manager, map[string]*pm.Catalog) {
+	dispo := []pm.Manager{brew.New(), scoop.New(), winget.New()}
+	cats := map[string]*pm.Catalog{}
+	for _, m := range dispo {
+		cats[m.Cmd()] = testCatalog()
+	}
+	return dispo, cats
+}
+
 // « jg ⇥ » complète le vocabulaire de la façade, pas les sous-commandes d'un
 // gestionnaire : les clés des tables SONT le vocabulaire.
 func TestFacade_CompleteLesVerbes(t *testing.T) {
-	res := Complete("jg ")
+	dispo, cats := dispoDeTest()
+	res := CompleteFacade("jg ", dispo, cats)
 	got := names(res.Items)
 	if len(got) == 0 {
 		t.Fatal("aucun verbe proposé")
@@ -191,7 +205,8 @@ func TestFacade_CompleteLesVerbes(t *testing.T) {
 }
 
 func TestFacade_CompleteLeSousVerbe(t *testing.T) {
-	res := Complete("jg source ")
+	dispo, cats := dispoDeTest()
+	res := CompleteFacade("jg source ", dispo, cats)
 	got := names(res.Items)
 	var add, rm bool
 	for _, n := range got {
@@ -214,10 +229,18 @@ func TestFacade_Titre(t *testing.T) {
 	}
 }
 
-// « jigger » en toutes lettres marche comme « jg ».
+// « jigger » en toutes lettres marche comme « jg ». Le routage se teste sur estFacade,
+// qui est la décision elle-même ; le contenu proposé, lui, dépendrait des gestionnaires
+// présents sur la machine.
 func TestFacade_NomComplet(t *testing.T) {
-	if len(Complete("jigger ").Items) == 0 {
-		t.Fatal("« jigger » doit déclencher la façade comme « jg »")
+	for _, mot := range []string{"jigger", "jg"} {
+		if !estFacade(mot) {
+			t.Errorf("%q doit déclencher la façade", mot)
+		}
+	}
+	dispo, cats := dispoDeTest()
+	if len(CompleteFacade("jigger ", dispo, cats).Items) == 0 {
+		t.Fatal("« jigger » doit proposer les verbes comme « jg »")
 	}
 }
 
