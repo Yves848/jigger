@@ -50,7 +50,7 @@ il ne requiert que le gestionnaire lui-même.
 
 ## Installation
 
-De bout en bout, pas à pas : **[Premiers pas](docs/getting-started.md)** — installer,
+De bout en bout, pas à pas : **[Premiers pas](docs/fr/getting-started.md)** — installer,
 brancher dans le shell, régler, dépanner. Ce qui suit en est le résumé.
 
 ```sh
