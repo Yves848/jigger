@@ -85,14 +85,6 @@ Proxmox maison, ce qui rouvre la question de l'hébergement pour un lien destin�
 Utilisateurs, contributeurs et vitrine, dans cet ordre. Dépend de A-6 pour la page
 d'atterrissage, et du miroir public pour la mécanique de contribution.
 
-### A-8 — La fiche du projet GitLab
-
-**Priorité :** à déterminer · **Provenance :** plan d'i18n, étape volontairement non
-déléguée
-
-La description annonce encore « Assistance Homebrew pour le terminal », d'avant winget,
-scoop et la façade ; les topics sont vides. C'est la première ligne que voit un visiteur.
-
 ### A-10 — Mettre en page et paginer les sorties
 
 **Priorité :** à déterminer · **Provenance :** demande du 16 août
@@ -354,6 +346,24 @@ Trois points à ne pas manquer :
 ---
 
 ## Fait
+
+### A-8 — La fiche du projet GitLab
+
+**Fait le :** 2026-08-16 · **Sans commit** — la fiche vit côté serveur, pas dans le dépôt
+
+La description datait d'avant winget, scoop et la façade, et les topics étaient vides.
+
+```
+avant   Assistance Homebrew pour le terminal (Go + Bubble Tea) — compagnon CLI de Cocktails
+après   One syntax for Homebrew, winget and scoop, with a live popup that follows your
+        typing. A small Go binary wired into zsh and PowerShell — CLI companion to Cocktails.
+```
+
+Topics posés : `cli`, `tui`, `package-manager`, `homebrew`, `winget`, `scoop`, `zsh`,
+`powershell`, `go`, `bubbletea`, `terminal`.
+
+En anglais, comme le reste de ce qui est publié depuis la v0.9.0 — c'est la première ligne
+que lit un visiteur, et la seule que voit celui qui ne clique pas.
 
 ### A-9 — Publier la v0.9.0
 
