@@ -1,0 +1,29 @@
+Gestionnaire de package Windows v1.29.280
+© 2026 Microsoft. Tous droits réservés.
+
+Gérer les sources à l’aide des sous-commandes. Une source fournit les données vous permettant de découvrir et d’installer des packages. Ajoutez une nouvelle source uniquement si elle est fiable en tant qu’emplacement sécurisé.
+
+Utilisation : winget source [<commande>] [<options>]
+
+Les sous-commandes suivantes sont disponibles :
+  add     Ajouter une nouvelle source
+  list    Répertorier les sources actuelles
+  update  Mettre à jour les sources actuelles
+  remove  Supprimer les sources actuelles
+  edit    Modifier les propriétés d’une source
+  reset   Réinitialiser les sources
+  export  Exporter les sources actuelles
+
+Pour en savoir plus sur une commande spécifique, passez-la à l’argument aide. [-?]
+
+Les options suivantes sont disponibles :
+  -?,--help                   Affiche l’aide sur la commande sélectionnée
+  --wait                      Invite l’utilisateur à appuyer sur une touche avant de quitter
+  --logs,--open-logs          Ouvrir l’emplacement des journaux par défaut
+  --verbose,--verbose-logs    Active la journalisation détaillée pour WinGet
+  --nowarn,--ignore-warnings  Supprime les sorties d'avertissement
+  --disable-interactivity     Désactiver les invites interactives
+  --proxy                     Définir un proxy à utiliser pour cette exécution
+  --no-proxy                  Désactiver l’utilisation du proxy pour cette exécution
+
+Vous trouverez de l’aide supplémentaire sur : 'https://aka.ms/winget-command-source'
