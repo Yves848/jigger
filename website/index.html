@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>jigger — one syntax for Homebrew, winget and scoop</title>
+  <meta name="description" content="A live package picker in your shell, and one syntax across Homebrew, winget and scoop. A small Go binary wired into zsh and PowerShell.">
+  <meta name="theme-color" content="#07090e">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="jigger — one syntax for Homebrew, winget and scoop">
+  <meta property="og:description" content="A live package picker in your shell, and one syntax across three package managers. A small Go binary wired into zsh and PowerShell.">
+  <meta property="og:url" content="https://jigger.yg-devworks.com/">
+  <meta property="og:image" content="https://jigger.yg-devworks.com/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="jigger — one syntax for Homebrew, winget and scoop">
+  <meta name="twitter:description" content="A live package picker in your shell, and one syntax across three package managers.">
+  <meta name="twitter:image" content="https://jigger.yg-devworks.com/og.png">
+  <link rel="icon" href="/jigger-icon.svg">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="brand" href="#top">jigger</a>
+      <nav aria-label="Main navigation">
+        <a href="#popup" data-i18n="nav.popup">The popup</a>
+        <a href="#facade" data-i18n="nav.facade">One syntax</a>
+        <a href="#install" data-i18n="nav.install">Install</a>
+      </nav>
+      <div class="lang-toggle" role="group" aria-label="Language">
+        <button type="button" data-lang="en" aria-pressed="true">EN</button>
+        <button type="button" data-lang="fr" aria-pressed="false">FR</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap">
+        <span class="eyebrow" data-i18n="hero.eyebrow">macOS · Windows · Linux</span>
+        <h1 data-i18n="hero.h1">Your package manager,<br><em>as you type.</em></h1>
+        <p class="lede" data-i18n="hero.lede">
+          A frame appears under your prompt and follows every keystroke. And across
+          Homebrew, winget and scoop, one syntax instead of three.
+        </p>
+
+        <!-- capture : jigger render --line "brew install fire" --cols 56 -->
+        <pre class="frame" aria-label="jigger in a terminal">❯ brew install fire
+╭──────────────────────────────────────────────────────╮
+│❯ brew install                            jigger 0.9.0│
+│  ▣  firealpaca                                       │
+│  ▣  firebase-admin                                   │
+│  ◆  firebase-cli                                     │
+│  ▣  firebird-emu                                     │
+│  ▣  firecamp                                         │
+│                                                      │
+│   ⇥  insert   ↓  browse   ^G  close                  │
+╰──────────────────────────────────────────────────────╯</pre>
+
+        <div class="hero-actions">
+          <a class="btn primary" href="#install" data-i18n="hero.install">Install it <span class="arw">→</span></a>
+          <a class="btn ghost" href="https://gitlab.yg-devworks.com/yves/jigger" data-i18n="hero.source">Read the source</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="popup">
+      <div class="wrap">
+        <span class="eyebrow" data-i18n="popup.eyebrow">The popup</span>
+        <h2 data-i18n="popup.h2">It follows your typing.</h2>
+        <p class="lede" data-i18n="popup.lede">
+          Type a package-manager command and the frame appears on its own, narrowing
+          down with every letter. Nothing to trigger, nothing to remember.
+        </p>
+
+        <ul class="keys">
+          <li><kbd>⇥</kbd> <span data-i18n="popup.k1">inserts the current candidate</span></li>
+          <li><kbd>↓</kbd> <span data-i18n="popup.k2">enters the list</span></li>
+          <li><kbd>↑</kbd> <span data-i18n="popup.k3">moves up, then hands the keyboard back to the shell</span></li>
+          <li><kbd>^G</kbd> <span data-i18n="popup.k4">closes it for this line</span></li>
+        </ul>
+
+        <p data-i18n="popup.arrows">
+          <strong>Your arrow keys are never taken over.</strong> Until the popup holds
+          the keyboard, <kbd>↑</kbd> and <kbd>↓</kbd> stay your shell history — where
+          they belong.
+        </p>
+      </div>
+    </section>
+
+    <section id="facade">
+      <div class="wrap">
+        <span class="eyebrow" data-i18n="facade.eyebrow">One syntax</span>
+        <h2 data-i18n="facade.h2">Three managers, one vocabulary.</h2>
+        <p class="lede" data-i18n="facade.lede">
+          <span class="mono">jg install fd</span> reaches whichever of Homebrew, winget
+          or scoop knows <span class="mono">fd</span> — without you having to know which.
+        </p>
+
+        <!-- capture : jigger render --line "jg " --cols 56 -->
+        <pre class="frame" aria-label="the twelve verbs in the popup">❯ jg
+╭──────────────────────────────────────────────────────╮
+│❯ jigger                                  jigger 0.9.0│
+│  •  cleanup                                          │
+│  •  doctor                                           │
+│  •  info                                             │
+│  •  install                                          │
+│                                                      │
+│   ⇥  insert   ↓  browse   ^G  close                  │
+╰──────────────────────────────────────────────────────╯</pre>
+
+        <ul class="verbs">
+          <li class="mono">install</li><li class="mono">uninstall</li>
+          <li class="mono">upgrade</li><li class="mono">list</li>
+          <li class="mono">outdated</li><li class="mono">search</li>
+          <li class="mono">info</li><li class="mono">source</li>
+          <li class="mono">pin</li><li class="mono">unpin</li>
+          <li class="mono">cleanup</li><li class="mono">doctor</li>
+        </ul>
+        <p class="muted-note" data-i18n="facade.verbs">
+          The first seven work everywhere. The others exist only where the manager does
+          — asking winget for <span class="mono">cleanup</span> fails cleanly, naming
+          who would know how to do it.
+        </p>
+
+        <p data-i18n="facade.choice">
+          <strong>Never an automatic choice.</strong> When a single manager knows the
+          name, it wins silently. When several do, the picker opens and you decide — two
+          packages sharing a name are not necessarily the same software. No setting
+          changes that; <span class="mono">--pm</span> is the way to settle it in a
+          script.
+        </p>
+      </div>
+    </section>
+    <section id="garanties">
+      <div class="wrap">
+        <span class="eyebrow" data-i18n="guar.eyebrow">What it guarantees</span>
+        <h2 data-i18n="guar.h2">It stays out of the way.</h2>
+        <ul class="grid-3">
+          <li>
+            <h3 data-i18n="guar.1h">Nothing slow while you type</h3>
+            <p data-i18n="guar.1p">Catalogs are cached and read from disk. A keystroke
+              never waits on a package manager.</p>
+          </li>
+          <li>
+            <h3 data-i18n="guar.2h">Your manager's output, untouched</h3>
+            <p data-i18n="guar.2p">Prompts, progress bars, elevation dialogs — jigger
+              relays them as they are instead of parsing them away.</p>
+          </li>
+          <li>
+            <h3 data-i18n="guar.3h">Made for pipes too</h3>
+            <p data-i18n="guar.3p">Every listing verb takes <span class="mono">--json</span>,
+              so a script never has to read a table meant for humans.</p>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="prompt">
+      <div class="wrap">
+        <span class="eyebrow" data-i18n="prompt.eyebrow">In your prompt</span>
+        <h2 data-i18n="prompt.h2">A Homebrew block, if you want one.</h2>
+        <p class="lede" data-i18n="prompt.lede">
+          Ready-made segments for oh-my-posh and starship: the brew version, and how many
+          formulae and casks are waiting.
+        </p>
+
+        <!-- capture : STARSHIP_CONFIG=shell/starship/brew.toml starship prompt -->
+        <pre class="frame" aria-label="the prompt segment">~ via 🐍 v3.14.7 🍺 6.0.17 🧪 5 📦 2
+❯ </pre>
+
+        <p data-i18n="prompt.how">
+          Set <span class="mono">JIGGER_PROMPT=1</span> before loading the plugin, then
+          paste the segment for your prompt — both ship with jigger.
+        </p>
+      </div>
+    </section>
+
+    <section id="cocktails">
+      <div class="wrap">
+        <span class="eyebrow" data-i18n="coc.eyebrow">Nearby</span>
+        <h2 data-i18n="coc.h2">And when you'd rather see than type.</h2>
+        <p class="lede" data-i18n="coc.lede">
+          <strong>Cocktails</strong> is the macOS app of the same family: your packages,
+          their dependencies and your updates, at a glance. jigger works perfectly well
+          without it — they are independent.
+        </p>
+        <a class="btn ghost" href="https://cocktails.yg-devworks.com/" data-i18n="coc.link">Visit the Cocktails site <span class="arw">→</span></a>
+      </div>
+    </section>
+
+    <section id="install">
+      <div class="wrap">
+        <span class="eyebrow" data-i18n="install.eyebrow">Install</span>
+        <h2 data-i18n="install.h2">Three lines, on any of the three.</h2>
+
+        <h3 data-i18n="install.mac">macOS and Linux — Homebrew</h3>
+        <pre class="cmd"><code data-verifier="install">brew tap yves/cocktails https://gitlab.yg-devworks.com/yves/homebrew-cocktails.git</code></pre>
+        <pre class="cmd"><code data-verifier="install">brew install jigger</code></pre>
+
+        <h3 data-i18n="install.win">Windows — from the clone</h3>
+        <pre class="cmd"><code data-verifier="install">pwsh -NoProfile -File install-windows.ps1</code></pre>
+        <p class="muted-note" data-i18n="install.winp">
+          It builds, then puts <span class="mono">jigger</span> within reach: a scoop shim
+          when scoop is around, a copy into your user directory otherwise. There is no
+          winget or scoop package for jigger yet.
+        </p>
+
+        <h3 data-i18n="install.go">Any platform — Go</h3>
+        <pre class="cmd"><code data-verifier="install">go install gitlab.yg-devworks.com/yves/jigger@latest</code></pre>
+
+        <p data-i18n="install.plugin">
+          Then wire the plugin into your shell — one <span class="mono">source</span> line
+          in <span class="mono">~/.zshrc</span>, one <span class="mono">Import-Module</span>
+          in your PowerShell profile. The guide walks through both, and through what to do
+          when nothing shows up.
+        </p>
+        <a class="btn primary" href="https://gitlab.yg-devworks.com/yves/jigger/-/blob/main/docs/getting-started.md" data-i18n="install.guide">Read the getting-started guide <span class="arw">→</span></a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p data-i18n="foot.made">Free software, Apache 2.0. Built in the open.</p>
+      <p class="foot-links">
+        <a href="https://gitlab.yg-devworks.com/yves/jigger" data-i18n="foot.repo">Repository</a>
+        <a href="https://gitlab.yg-devworks.com/yves/jigger/-/blob/main/docs/getting-started.md" data-i18n="foot.guide">Getting started</a>
+        <a href="https://gitlab.yg-devworks.com/yves/jigger/-/blob/main/CHANGELOG.md" data-i18n="foot.changelog">Changelog</a>
+      </p>
+    </div>
+  </footer>
+</body>
+</html>

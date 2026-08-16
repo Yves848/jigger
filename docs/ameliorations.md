@@ -69,15 +69,6 @@ Homebrew local. Il est sorti de `make test-all` pour cette raison, et reste lan�
 main. Le rendre portable demanderait de neutraliser la bannière **et** de figer un catalogue
 d'essai.
 
-### A-6 — Le site de présentation
-
-**Priorité :** à déterminer · **Provenance :** demande du 15 août
-
-Le contenu est enfin stable et en anglais. Reste la question tranchée à moitié : le modèle
-**(A)** — GitHub en façade publique, GitLab en source de vérité — a été retenu, mais rien
-n'est fait. Précédent utile : `cocktails-website`, une page statique déployée sur le
-Proxmox maison, ce qui rouvre la question de l'hébergement pour un lien destiné à circuler.
-
 ### A-7 — La stratégie de diffusion
 
 **Priorité :** à déterminer · **Provenance :** demande du 15 août
@@ -337,6 +328,18 @@ Trois points à ne pas manquer :
   comportement pour ce mot précis. À trancher : soit jigger l'intercepte et le traduit pour
   chaque gestionnaire, soit il en prend un autre pour lui.
 
+### A-18 — La section `#jigger` du site Cocktails
+
+**Priorité :** à déterminer · **Provenance :** constat en concevant A-6
+
+Elle présente jigger comme l'assistant Homebrew au clavier : elle parle de Tab et de brew,
+et ignore winget, scoop, la façade `jg` et le bilinguisme. Elle vivra à côté d'un site
+jigger qui dit autre chose.
+
+Le travail est dans **un autre dépôt** (`cocktails-website`), d'où une entrée à part : autre
+MR, autre relecture, autre déploiement. À faire une fois le site jigger en ligne, pour que
+le lien croisé pointe sur quelque chose.
+
 ---
 
 ## En cours
@@ -346,6 +349,26 @@ Trois points à ne pas manquer :
 ---
 
 ## Fait
+
+### A-6 — Le site de présentation
+
+**Fait le :** 2026-08-16 · **En ligne :** <https://jigger.yg-devworks.com/> ·
+**Commits :** `de53ec5` → `43fa4ce` (branche `feat/site`)
+
+Conception : [`docs/specs/2026-08-16-site-jigger-design.md`](specs/2026-08-16-site-jigger-design.md) ·
+plan : [`docs/plans/2026-08-16-site.md`](plans/2026-08-16-site.md)
+
+Une page unique et bilingue, source dans le dépôt sous `website/`, servie par le Proxmox
+maison — nginx pour les fichiers, Caddy pour l'HTTPS, releases horodatées et lien
+`current`. Anglais en clair dans le HTML, français en dictionnaire : le repli se fait sur
+l'anglais, comme dans le binaire depuis la v0.9.0.
+
+`website/verifier.sh` garde la page contre trois dérives, et le déploiement refuse de
+partir s'il échoue : une clé sans traduction, une entrée de dictionnaire orpheline, une
+ancre morte, ou une commande d'installation qui ne correspond plus mot pour mot au guide.
+Les quatre contrôles ont été prouvés mordants avant d'être adoptés.
+
+Le miroir GitHub du modèle **(A)** n'en faisait pas partie : il est passé à A-7.
 
 ### A-8 — La fiche du projet GitLab
 
