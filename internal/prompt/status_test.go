@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"gitlab.yg-devworks.com/yves/jigger/internal/i18n"
 )
 
 // sortie réelle de `brew --version` sur une installation à jour de quelques commits.
@@ -236,6 +238,36 @@ func TestRefreshRenonceSiUnVerrouEstDejaPris(t *testing.T) {
 	}
 	if _, ok := Read(dir); ok {
 		t.Error("aucun cache ne doit avoir été écrit")
+	}
+}
+
+// ErrVerrouille ressort à l'utilisateur derrière cli.prompt_failed : elle doit parler sa
+// langue — « jigger prompt --refresh: rafraîchissement déjà en cours » était la phrase
+// hybride d'avant — sans cesser d'être la sentinelle que errors.Is compare.
+func TestErrVerrouilleParleLaLangueEtResteComparable(t *testing.T) {
+	t.Cleanup(i18n.Recharger)
+
+	dir := t.TempDir()
+	libere, ok := lock(dir)
+	if !ok {
+		t.Fatal("le premier verrou devrait être obtenu")
+	}
+	defer libere()
+
+	for langue, attendu := range map[string]string{
+		"en": "a refresh is already running",
+		"fr": "rafraîchissement déjà en cours",
+	} {
+		t.Setenv("JIGGER_LANG", langue)
+		i18n.Recharger()
+
+		_, err := RefreshWith(dir, fauxBrew(versionAvecCommits, outdatedJSON, nil))
+		if !errors.Is(err, ErrVerrouille) {
+			t.Fatalf("%s : erreur = %v, attendu ErrVerrouille", langue, err)
+		}
+		if err.Error() != attendu {
+			t.Errorf("%s : message = %q, attendu %q", langue, err.Error(), attendu)
+		}
 	}
 }
 

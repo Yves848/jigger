@@ -2,82 +2,43 @@ package i18n
 
 import "testing"
 
-// L'anglais est l'original : une entrée vide n'aurait rien sur quoi se replier.
-func TestAucuneEntreeAnglaiseVide(t *testing.T) {
+// Toute entrée du catalogue a ses deux langues. L'anglais est l'original : une entrée
+// vide n'aurait rien sur quoi se replier. Le français, lui, peut techniquement l'être —
+// le repli joue —, mais une chaîne française manquante est un oubli de traduction, pas un
+// choix : elle sortirait en anglais au milieu d'une phrase française.
+//
+// Ce test balaie le catalogue au lieu de recopier des listes de clés : les trois listes
+// qu'il remplace (popup, façade, cli) avaient déjà laissé filer les cinq clés ajoutées en
+// cours de route — facade.note, knows_it, knows_it_as, manager_error, list_separator. Une
+// boucle sur `catalogue` est exhaustive par construction : une clé nouvelle est couverte
+// le jour où elle est écrite, sans qu'on ait à y penser.
+//
+// Les exceptions sont nommées plutôt que tues par une absence de liste : ces trois clés
+// ont volontairement la même chaîne des deux côtés. cli.usage3 ne contient que des noms
+// d'options (--refresh, --wait, --path, --all, --installed) ; table.source et table.pm
+// sont deux en-têtes que le français écrit pareil.
+func TestCatalogueComplet(t *testing.T) {
+	memeChaineDansLesDeuxLangues := map[string]bool{
+		"cli.usage3":   true,
+		"table.source": true,
+		"table.pm":     true,
+	}
+
 	for cle, trad := range catalogue {
 		if trad[EN] == "" {
 			t.Errorf("%s : l'anglais est vide", cle)
 		}
-	}
-}
-
-// Les clés du popup existent et sont traduites dans les deux langues.
-func TestClesDuPopup(t *testing.T) {
-	for _, cle := range []string{
-		"popup.insert", "popup.execute", "popup.navigate", "popup.browse",
-		"popup.close", "popup.cancel", "popup.choose", "popup.filter",
-		"popup.empty", "popup.filter_hint", "popup.catalog_brew", "popup.catalog_winget",
-		"popup.ambiguous_title",
-	} {
-		trad, ok := catalogue[cle]
-		if !ok {
-			t.Errorf("%s : absente du catalogue", cle)
-			continue
-		}
 		if trad[FR] == "" {
 			t.Errorf("%s : le français est vide", cle)
 		}
-	}
-}
-
-// Les clés de la façade et des en-têtes de tableaux existent et sont traduites dans les
-// deux langues — ce sont les chaînes les plus lues par un utilisateur qui se trompe.
-func TestClesDeLaFacade(t *testing.T) {
-	for _, cle := range []string{
-		"facade.no_verb", "facade.unknown_verb", "facade.nobody_can",
-		"facade.unknown_pm", "facade.pm_unavailable", "facade.unknown_name",
-		"facade.near", "facade.too_recent", "facade.ambiguous", "facade.choose_pm",
-		"facade.failed", "facade.unreadable", "facade.no_parser", "facade.nothing",
-		"table.package", "table.current", "table.available", "table.source", "table.pm",
-	} {
-		trad, ok := catalogue[cle]
-		if !ok {
-			t.Errorf("%s : absente du catalogue", cle)
+		if memeChaineDansLesDeuxLangues[cle] {
+			if trad[EN] != trad[FR] {
+				t.Errorf("%s : donnée pour identique dans les deux langues, mais %q ≠ %q", cle, trad[EN], trad[FR])
+			}
 			continue
 		}
-		if trad[FR] == "" {
-			t.Errorf("%s : le français est vide", cle)
-		}
-	}
-}
-
-// Les clés de la ligne de commande (usage, drapeaux, derniers messages de main.go)
-// existent et sont traduites dans les deux langues — même exigence que les popups et la
-// façade (TestClesDuPopup, TestClesDeLaFacade).
-//
-// Seule exception, explicite plutôt que tue par une absence de la liste : cli.usage3 n'a
-// volontairement pas de traduction distincte, la ligne ne contenant que des noms
-// d'options (--refresh, --wait, --path, --all, --installed), identiques dans les deux
-// langues.
-func TestClesDuCli(t *testing.T) {
-	const sansTraductionDistincte = "cli.usage3"
-	for _, cle := range []string{
-		"cli.usage1", "cli.usage2", "cli.usage3",
-		"cli.flag_all", "cli.flag_installed", "cli.flag_refresh", "cli.flag_wait",
-		"cli.flag_path", "cli.flag_line", "cli.flag_sel", "cli.flag_cols",
-		"cli.flag_rows", "cli.flag_color", "cli.flag_focus", "cli.warm_failed",
-		"cli.prompt_failed", "cli.no_verb", "cli.pm_expects_value",
-	} {
-		trad, ok := catalogue[cle]
-		if !ok {
-			t.Errorf("%s : absente du catalogue", cle)
-			continue
-		}
-		if cle == sansTraductionDistincte {
-			continue
-		}
-		if trad[FR] == "" {
-			t.Errorf("%s : le français est vide", cle)
+		if trad[EN] == trad[FR] {
+			t.Errorf("%s : anglais et français identiques (%q) — traduction oubliée ?", cle, trad[EN])
 		}
 	}
 }

@@ -142,6 +142,36 @@ func TestRoutageNomInconnu(t *testing.T) {
 	}
 }
 
+// Le joint entre les noms de gestionnaires suit la langue. Il était écrit en dur («  et  »)
+// dans nomInconnu : sur une machine à deux gestionnaires — donc toute machine Windows —,
+// la phrase anglaise sortait « unknown to winget et scoop ». Invisible ici, où un seul
+// gestionnaire répond, d'où deuxGestionnaires() et l'assertion sur les deux langues.
+func TestRoutageNomInconnuJointLesGestionnairesDansLaLangue(t *testing.T) {
+	t.Cleanup(i18n.Recharger)
+
+	for _, cas := range []struct {
+		langue, attendu, proscrit string
+	}{
+		{"en", "unknown to winget and scoop", " et "},
+		{"fr", "inconnu de winget et scoop", " and "},
+	} {
+		t.Setenv("JIGGER_LANG", cas.langue)
+		i18n.Recharger()
+
+		_, _, err := Router("install", []string{"zzzz"}, "", nil, deuxGestionnaires(), catalogues())
+		if err == nil {
+			t.Fatalf("%s : attendu une erreur pour un nom inconnu de tous", cas.langue)
+		}
+		msg := err.Error()
+		if !strings.Contains(msg, cas.attendu) {
+			t.Errorf("%s : le message doit contenir %q : %s", cas.langue, cas.attendu, msg)
+		}
+		if strings.Contains(msg, cas.proscrit) {
+			t.Errorf("%s : fragment d'une autre langue (%q) dans le message : %s", cas.langue, cas.proscrit, msg)
+		}
+	}
+}
+
 // Sous PoolInstalles, le voisin proposé doit lui-même être installé : uninstall ne peut
 // viser qu'un paquet installé, donc suggérer un paquet simplement catalogué (« git » chez
 // scoop, qui l'a au catalogue mais ne l'a pas installé) mènerait droit à un second

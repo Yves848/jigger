@@ -17,7 +17,7 @@ var catalogue = map[string][nbLangues]string{
 	"popup.cancel":   {"cancel", "annuler"},
 	"popup.choose":   {"choose", "choisir"},
 	"popup.filter":   {"filter…", "filtrer…"},
-	"popup.empty":    {"no match", "aucun candidat"},
+	"popup.empty":    {"no matches", "aucun candidat"},
 	// %d est le nombre de paquets du catalogue.
 	"popup.filter_hint":    {"type to filter… (%d packages)", "tapez pour filtrer… (%d paquets)"},
 	"popup.catalog_brew":   {"building the Homebrew catalog…", "catalogue Homebrew en préparation…"},
@@ -79,6 +79,10 @@ var catalogue = map[string][nbLangues]string{
 	"facade.knows_it_as":    {"%s knows it (%s)", "%s le sait (%s)"},
 	"facade.manager_error":  {"jigger (%s): %v\n", "jigger (%s) : %v\n"},
 	"facade.list_separator": {"; ", " ; "},
+	// Le joint entre deux noms de gestionnaires dans « inconnu de winget et scoop »
+	// (nomInconnu, routage.go). Il était écrit en dur en français : sur une machine
+	// Windows, la phrase anglaise sortait « unknown to winget et scoop ».
+	"facade.name_separator": {" and ", " et "},
 
 	// ── En-têtes de tableaux ──────────────────────────────────────────────────────────
 	// Traduits sans risque : --json sert ceux qui analysent.
@@ -103,17 +107,27 @@ var catalogue = map[string][nbLangues]string{
 	},
 	"cli.flag_all":       {"rebuild everything, even what is still fresh", "refait tout, même ce qui est encore frais"},
 	"cli.flag_installed": {"rebuild only the installed-package lists", "refait les seules listes de paquets installés"},
-	"cli.flag_refresh":   {"query the manager and rewrite the cache (slow)", "interroge brew et réécrit le cache (lent)"},
-	"cli.flag_wait":      {"with --refresh: wait for the lock instead of giving up", "avec --refresh : attend le verrou au lieu de renoncer"},
-	"cli.flag_path":      {"print the cache file path", "imprime le chemin du fichier de cache"},
-	"cli.flag_line":      {"line to complete (up to the cursor)", "ligne à compléter (jusqu'au curseur)"},
-	"cli.flag_sel":       {"index of the current candidate", "index du candidat courant"},
-	"cli.flag_cols":      {"terminal width", "largeur du terminal"},
-	"cli.flag_rows":      {"number of candidates shown", "nombre de candidats affichés"},
-	"cli.flag_color":     {"color profile: auto|never|16|256|truecolor", "profil couleur : auto|never|16|256|truecolor"},
-	"cli.flag_focus":     {"the popup owns the keyboard: arrows go to it", "le popup a le clavier : les flèches lui reviennent"},
-	"cli.warm_failed":    {"jigger warm (%s): %v\n", "jigger warm (%s) : %v\n"},
-	"cli.prompt_failed":  {"jigger prompt --refresh:", "jigger prompt --refresh :"},
+	// « interroge brew » depuis toujours ; faux depuis la façade multi-gestionnaires, qui
+	// interroge aussi bien winget et scoop. Aide de drapeau : hors du banc de
+	// non-régression, le français peut donc être corrigé.
+	"cli.flag_refresh":  {"query the manager and rewrite the cache (slow)", "interroge le gestionnaire et réécrit le cache (lent)"},
+	"cli.flag_wait":     {"with --refresh: wait for the lock instead of giving up", "avec --refresh : attend le verrou au lieu de renoncer"},
+	"cli.flag_path":     {"print the cache file path", "imprime le chemin du fichier de cache"},
+	"cli.flag_line":     {"line to complete (up to the cursor)", "ligne à compléter (jusqu'au curseur)"},
+	"cli.flag_sel":      {"index of the current candidate", "index du candidat courant"},
+	"cli.flag_cols":     {"terminal width", "largeur du terminal"},
+	"cli.flag_rows":     {"number of candidates shown", "nombre de candidats affichés"},
+	"cli.flag_color":    {"color profile: auto|never|16|256|truecolor", "profil couleur : auto|never|16|256|truecolor"},
+	"cli.flag_focus":    {"the popup owns the keyboard: arrows go to it", "le popup a le clavier : les flèches lui reviennent"},
+	"cli.warm_failed":   {"jigger warm (%s): %v\n", "jigger warm (%s) : %v\n"},
+	"cli.prompt_failed": {"jigger prompt --refresh:", "jigger prompt --refresh :"},
+
+	// Les deux erreurs du paquet prompt (internal/prompt/status.go) : elles ressortent
+	// telles quelles derrière cli.prompt_failed, et donnaient jusqu'ici la phrase hybride
+	// « jigger prompt --refresh: rafraîchissement déjà en cours ». cli.no_winget_no_scoop
+	// porte son %w — c'est fmt.Errorf qui l'interprète, pour garder l'enveloppement.
+	"cli.refresh_locked":     {"a refresh is already running", "rafraîchissement déjà en cours"},
+	"cli.no_winget_no_scoop": {"neither winget nor scoop: %w", "ni winget ni scoop : %w"},
 
 	// Erreurs de separerDrapeaux — relevées en relecture : « les derniers messages de
 	// main.go » de l'intitulé de la tâche 5 les couvre, le brief avait juste omis de les

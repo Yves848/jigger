@@ -582,12 +582,21 @@ $script:RelaisFin = @{
 # Register-JiggerKey mémorise le repli de la touche puis lui pose le relais donné. Une
 # touche qui ne fait rien aujourd'hui et n'a pas de défaut est laissée libre : lui
 # inventer un comportement ne nous regarde pas.
+#
+# Les étiquettes (-BriefDescription) restent en anglais **et fixes**, quelle que soit la
+# langue du module. Trois raisons : le préfixe « jigger: » est un contrat lu par
+# Get-JiggerFallback ; l'étiquette par défaut, « jigger:$fallback », porte un nom de
+# fonction PSReadLine — donc anglais par construction — et une étiquette traduite ferait
+# cohabiter « jigger:insérer » et « jigger:SelfInsert » dans la même table ; et une
+# étiquette qui suivrait la locale rendrait `Get-PSReadLineKeyHandler` — que la suite
+# tests/smoke.ps1 assère — dépendant de l'environnement. Ce sont des identifiants, pas
+# des messages : les messages, eux, passent par Get-JiggerText.
 function Register-JiggerKey([string]$Chord, [scriptblock]$Relais, [string]$Defaut, [string]$Etiquette) {
     $fallback = Get-JiggerFallback $Chord $Defaut
     if (-not $fallback -or $fallback -eq 'Ignore') { return }
     if (-not $Etiquette) { $Etiquette = "jigger:$fallback" }
     Set-PSReadLineKeyHandler -Chord $Chord -ScriptBlock $Relais `
-        -BriefDescription $Etiquette -Description 'Relaie la touche, puis rafraîchit le popup jigger.'
+        -BriefDescription $Etiquette -Description 'Relays the key, then refreshes the jigger popup.'
 }
 
 if ($script:Live) {
@@ -605,14 +614,14 @@ if ($script:Live) {
     }
 
     # ↑↓ (et ^N/^P, qui restent) : au popup s'il a le clavier, à l'historique sinon.
-    Register-JiggerKey 'DownArrow' $script:RelaisNavigation['DownArrow'] 'NextHistory'     'jigger:descendre'
-    Register-JiggerKey 'UpArrow'   $script:RelaisNavigation['UpArrow']   'PreviousHistory' 'jigger:monter'
-    Register-JiggerKey 'Ctrl+n'    $script:RelaisNavigation['Ctrl+n']    'NextHistory'     'jigger:suivant'
-    Register-JiggerKey 'Ctrl+p'    $script:RelaisNavigation['Ctrl+p']    'PreviousHistory' 'jigger:précédent'
+    Register-JiggerKey 'DownArrow' $script:RelaisNavigation['DownArrow'] 'NextHistory'     'jigger:down'
+    Register-JiggerKey 'UpArrow'   $script:RelaisNavigation['UpArrow']   'PreviousHistory' 'jigger:up'
+    Register-JiggerKey 'Ctrl+n'    $script:RelaisNavigation['Ctrl+n']    'NextHistory'     'jigger:next'
+    Register-JiggerKey 'Ctrl+p'    $script:RelaisNavigation['Ctrl+p']    'PreviousHistory' 'jigger:previous'
 
     # ^G : ferme le popup jusqu'à la fin de la ligne.
-    Set-PSReadLineKeyHandler -Chord 'Ctrl+g' -BriefDescription 'jigger:fermer' `
-        -Description 'Ferme le popup jigger pour la ligne en cours.' -ScriptBlock {
+    Set-PSReadLineKeyHandler -Chord 'Ctrl+g' -BriefDescription 'jigger:close' `
+        -Description 'Closes the jigger popup for the current line.' -ScriptBlock {
         if (Test-JiggerActive) {
             $script:Dismissed = $true
             $script:Focused = $false
@@ -621,16 +630,16 @@ if ($script:Live) {
         }
     }
 
-    Register-JiggerKey 'Enter'  $script:RelaisFin['Enter']  'AcceptLine'       'jigger:valider'
-    Register-JiggerKey 'Ctrl+c' $script:RelaisFin['Ctrl+c'] 'CopyOrCancelLine' 'jigger:annuler'
+    Register-JiggerKey 'Enter'  $script:RelaisFin['Enter']  'AcceptLine'       'jigger:accept'
+    Register-JiggerKey 'Ctrl+c' $script:RelaisFin['Ctrl+c'] 'CopyOrCancelLine' 'jigger:cancel'
 }
 
 # ⇥ : insère le candidat courant si le popup est là ; sinon sélecteur classique sur une
 # ligne de gestionnaire (ou popup refermé), et complétion PowerShell normale partout
 # ailleurs.
 $null = Get-JiggerFallback $script:InsertKey 'TabCompleteNext'   # mémorise ce que ⇥ faisait
-Set-PSReadLineKeyHandler -Chord $script:InsertKey -BriefDescription 'jigger:insérer' `
-    -Description 'Insère le candidat jigger, ou complète normalement.' -ScriptBlock {
+Set-PSReadLineKeyHandler -Chord $script:InsertKey -BriefDescription 'jigger:insert' `
+    -Description 'Inserts the jigger candidate, or completes normally.' -ScriptBlock {
     param($key, $arg)
 
     $line = $null

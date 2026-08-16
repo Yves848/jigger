@@ -249,7 +249,7 @@ func nomInconnu(nom string, pool pm.Pool, mgrs []pm.Manager, cats map[string]*pm
 	for _, m := range mgrs {
 		noms = append(noms, m.Cmd())
 	}
-	msg := i18n.Tf("facade.unknown_name", nom, strings.Join(noms, " et "))
+	msg := i18n.Tf("facade.unknown_name", nom, strings.Join(noms, i18n.T("facade.name_separator")))
 
 	if proches := voisins(nom, pool, mgrs, cats); len(proches) > 0 {
 		msg += i18n.T("facade.near") + strings.Join(proches, ", ")

@@ -215,6 +215,18 @@ suite() {
     check "JIGGER_LANG=$val : greffon ($zsh_lang) d'accord avec le binaire" "$zsh_lang" "$bin_lang"
   done
 
+  # Le repli d'une langue que jigger ne sait pas traduire, posé explicitement : avec
+  # JIGGER_LANG=ja, la résolution doit descendre jusqu'à LANG et rendre « fr ». Le cas
+  # « ja » du tableau ci-dessus n'exerce ce chemin que si l'hôte est déjà en français —
+  # sur une machine anglaise, il passerait avec un repli cassé. On pose donc LANG nous-
+  # mêmes, et on retire LC_ALL et LC_MESSAGES, qui primeraient sur lui.
+  local -a ja_env=(env -u LC_ALL -u LC_MESSAGES JIGGER_LANG=ja LANG=fr_FR.UTF-8)
+  zsh_lang=$($ja_env zsh -f -c "source $root/shell/jigger.plugin.zsh; print \$_jigger_lang" 2>/dev/null)
+  bin_lang=en
+  [[ "$($ja_env $bin 2>&1)" == *'<verbe>'* ]] && bin_lang=fr
+  check "JIGGER_LANG=ja + LANG=fr_FR.UTF-8 : greffon ($zsh_lang) d'accord avec le binaire" "$zsh_lang" "$bin_lang"
+  check "JIGGER_LANG=ja + LANG=fr_FR.UTF-8 : le repli descend jusqu'à LANG" "$zsh_lang" fr
+
   # Le cas qui a débusqué la rupture de parité : sans lui, une résolution qui s'arrête à
   # la première variable *non vide*, reconnue ou pas (l'ancien code, cf. commentaire de
   # jigger.plugin.zsh) ne se voit jamais — les cinq valeurs ci-dessus posent toutes
