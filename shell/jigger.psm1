@@ -77,8 +77,16 @@ $script:StatusFile = Join-Path $script:CacheDir 'status'
 
 # Langue des messages du module. $env:JIGGER_LANG est déjà une variable d'environnement :
 # le binaire la voit sans qu'on ait rien à exporter.
+#
+# Même découpage que côté binaire (internal/i18n/i18n.go, fonction depuisCode) : on
+# minuscule puis on coupe au premier séparateur (`_`, `-` ou `.`), pour que « FR »,
+# « fr-FR » et « fr_FR.UTF-8 » soient tous reconnus comme du français, pas seulement
+# « fr » déjà en minuscules. La comparaison ci-dessous est en minuscules explicitement :
+# elle ne doit rien à l'insensibilité à la casse implicite de -eq, qui la casserait
+# silencieusement si quelqu'un passait un jour à -ceq.
 $script:Lang = if ($env:JIGGER_LANG) { $env:JIGGER_LANG }
                else { [System.Globalization.CultureInfo]::CurrentUICulture.TwoLetterISOLanguageName }
+$script:Lang = ($script:Lang.ToLowerInvariant() -split '[_.-]')[0]
 if ($script:Lang -ne 'fr') { $script:Lang = 'en' }
 
 function Get-JiggerText([string]$En, [string]$Fr) {

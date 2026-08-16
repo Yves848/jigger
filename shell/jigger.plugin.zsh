@@ -43,10 +43,15 @@
 # interne (celle de $LANG) a besoin de la garde — les $VAR:-… qui l'entourent gèrent déjà
 # le cas « non définie » sans y toucher ; mais y toucher aussi ne coûte rien et documente
 # l'intention.
+#
+# Même découpage que côté binaire (internal/i18n/i18n.go, fonction depuisCode) : on
+# minuscule avant de couper, et on coupe au premier `_`, `-` ou `.` — pas seulement `_`
+# et `.` — sans quoi « FR » ou « fr-FR » resteraient anglais ici tout en étant français
+# pour le binaire. C'est précisément le défaut que cette variable existe pour éviter.
 if [[ -n ${JIGGER_LANG-} ]]; then
   export JIGGER_LANG
 fi
-typeset -g _jigger_lang=${${JIGGER_LANG:-${LC_ALL:-${LC_MESSAGES:-${LANG-}}}}%%[_.]*}
+typeset -g _jigger_lang=${${(L)${JIGGER_LANG:-${LC_ALL:-${LC_MESSAGES:-${LANG-}}}}}%%[_.-]*}
 [[ $_jigger_lang == fr ]] || _jigger_lang=en
 
 # ── Vérifications d'installation ──────────────────────────────────────────────────────
