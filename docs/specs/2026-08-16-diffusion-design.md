@@ -158,7 +158,8 @@ Une liste à vérifier, pas à supposer. Tout est fait sauf la dernière ligne.
 - [x] Le miroir GitHub existe, ses issues sont ouvertes, ses PR sont gérées.
 - [x] `CONTRIBUTING.md`, `SECURITY.md`, `LICENSE`, `CHANGELOG.md` en place.
 - [x] La documentation ne contient plus d'affirmation périmée.
-- [ ] Les textes des quatre messages, relus par Yves.
+- [~] Les textes des quatre messages : **écrits** (`docs/annonces/`), relecture par
+      Yves en attente, ainsi que le rejeu du cadre `winget` sur une vraie machine.
 
 ## Portée
 

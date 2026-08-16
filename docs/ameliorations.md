@@ -367,7 +367,14 @@ Fait à ce jour :
 - **Le miroir GitHub** `Yves848/jigger` : public, issues ouvertes, alimenté par miroir
   poussé depuis GitLab, topics posés. Les deux dépôts pointent sur le même commit.
 
-Reste : la spec, puis l'annonce.
+- **La conception** ([`docs/specs/2026-08-16-diffusion-design.md`](specs/2026-08-16-diffusion-design.md)),
+  écrite après coup pour ne consigner que ce qui a tenu.
+- **Les quatre textes d'annonce** ([`docs/annonces/`](annonces/)), un par canal, avec
+  l'ordre et l'espacement.
+
+Reste, et ce n'est plus du ressort de l'assistant : la relecture des textes par Yves, le
+rejeu du cadre `winget` sur le Dell XPS, puis la publication — r/commandline d'abord, Show
+HN en dernier, à deux ou trois jours d'intervalle.
 
 
 ---
