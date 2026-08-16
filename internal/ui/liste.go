@@ -172,6 +172,33 @@ func (l *Liste) Cocher() {
 	}
 }
 
+// CocherTout bascule la sélection de **toutes les lignes visibles**, c'est-à-dire de la
+// liste filtrée et non du catalogue entier. C'est le geste utile : on filtre, puis on
+// prend tout ce qui reste.
+//
+// La bascule suit la règle du « tout ou rien » : si chaque ligne visible est déjà cochée,
+// on les décoche ; sinon on coche celles qui manquent. Une sélection partielle se complète
+// donc d'un geste au lieu de s'inverser, ce qui serait imprévisible.
+func (l *Liste) CocherTout() {
+	if len(l.filtrees) == 0 {
+		return
+	}
+	toutes := true
+	for _, li := range l.filtrees {
+		if !l.cochees[li.Cle()] {
+			toutes = false
+			break
+		}
+	}
+	for _, li := range l.filtrees {
+		if toutes {
+			delete(l.cochees, li.Cle())
+		} else {
+			l.cochees[li.Cle()] = true
+		}
+	}
+}
+
 // EstCochee dit si la ligne d'indice donné (dans la liste filtrée) est sélectionnée.
 func (l *Liste) EstCochee(i int) bool {
 	if i < 0 || i >= len(l.filtrees) {

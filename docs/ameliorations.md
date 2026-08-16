@@ -289,38 +289,6 @@ Trois points à ne pas manquer :
   comportement pour ce mot précis. À trancher : soit jigger l'intercepte et le traduit pour
   chaque gestionnaire, soit il en prend un autre pour lui.
 
-### A-19 — Les raccourcis des listes à sélection multiple
-
-**Priorité :** à déterminer · **Provenance :** demande du 16 août, après A-10
-
-A-10 a livré une sélection multiple avec `⇥` pour cocher, et **rien pour tout cocher**.
-Reste à arrêter le jeu complet de raccourcis — (dé)sélectionner une ligne, tout
-(dé)sélectionner — sur deux critères : la **position sur le clavier** et la **cohérence**
-avec ce que jigger fait déjà ailleurs.
-
-Ce qu'A-10 a appris, et qui contraint la réponse avant même qu'on cherche :
-
-- **Le champ de filtre a le focus en permanence.** `Espace` est donc une lettre, pas un
-  raccourci — c'était le candidat le plus naturel, et il est hors jeu.
-- **`^A`, `^E`, `^K`, `^U`, `^W` appartiennent à l'édition du champ.** Or `^A` est
-  précisément le « tout sélectionner » de tout le monde. C'est le nœud du problème.
-- **Les claviers d'Yves sont AZERTY :** aucun chiffre ni symbole décalé, sous peine d'un
-  raccourci à deux mains.
-- `⇥` coche aujourd'hui, par analogie avec fzf. Le pied du cadre annonce les touches, donc
-  tout changement doit s'y refléter — et se répercuter dans les deux langues du catalogue.
-
-Pistes à peser, sans en privilégier une avant l'étude : un préfixe façon Emacs (`^X` puis
-une lettre), une touche de bascule globale sur une lettre libre, ou l'inversion — `^A`
-rendu au « tout cocher » et l'édition de début de ligne déplacée, si le champ de filtre
-peut se le permettre.
-
-Le résultat doit valoir aussi pour le sélecteur plein écran et pour le popup, sans quoi
-jigger aura deux conventions de sélection.
-
-**A-19 tranche aussi la touche de bascule regex du popup vivant** (seconde moitié d'A-11),
-pour la même raison : `^R` convient au plein écran, où jigger a le clavier, et pas au
-popup, où il appartient au shell.
-
 ---
 
 ## En cours
@@ -431,6 +399,34 @@ ne vide pas la liste, `⇥` qui coche, `↵` qui imprime, `^G` qui n'imprime rie
 
 A-11 (regex dans le popup), A-12 (tri des colonnes) et A-13 (versions obsolètes) partent
 maintenant d'un terrain préparé.
+
+### A-19 — Les raccourcis des listes à sélection multiple
+
+**Fait le :** 2026-08-16 · **Provenance :** demande du 16 août, après A-10
+
+Le jeu de touches est arrêté, et un principe le porte : **jigger ne prend une touche que
+tant qu'il a le clavier**, et la rend à ce qu'elle faisait sinon. Ce n'est pas neuf — le
+greffon le fait déjà pour les flèches (`_jigger_up` délègue au widget qu'il a relevé). Le
+reconnaître comme règle générale a dissous le conflit qui bloquait A-11.
+
+| Action | Touche | Justification |
+|---|---|---|
+| (Dé)sélectionner une ligne | `⇥` | Rien à insérer dans une vue de lecture, donc aucune concurrence |
+| Tout (dé)sélectionner | `^A` | Le geste universel. Repris au champ de saisie, qui garde `Début` |
+| Pages | `PgPréc` `PgSuiv` | `^B` et `^F` **rendus** au curseur du champ |
+| Regex | `^R` | Sur les deux surfaces, avec délégation au shell hors focus |
+
+**« Tout cocher » porte sur le filtre**, pas sur le catalogue : on filtre, puis on prend ce
+qui reste. Et c'est une bascule « tout ou rien » — une sélection partielle se **complète**
+au lieu de s'inverser, ce qui serait imprévisible.
+
+**Un défaut d'A-10 corrigé au passage** : `^B`/`^F` avaient été liés au défilement par
+page, alors qu'ils appartiennent au champ de saisie. Le champ avait perdu son déplacement
+de curseur sans que personne s'en aperçoive.
+
+Ce qu'A-19 a tranché pour A-11 : la bascule regex du popup vivant sera **`^R`**, avec la
+même délégation que les flèches — recherche inverse de zsh tant que jigger n'a pas le
+focus. La même touche sur les deux surfaces, sans rien confisquer.
 
 ### A-8 — La fiche du projet GitLab
 

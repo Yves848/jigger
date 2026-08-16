@@ -247,6 +247,7 @@ présente dans une vue navigable plutôt que de les faire défiler :
 | taper | filtre au fil de la frappe |
 | `^R` | bascule entre texte brut et expression rationnelle — le mode courant est toujours affiché |
 | `⇥` | coche la ligne (`Espace` ne peut pas : le champ de filtre a le clavier) |
+| `^A` | coche **tout ce que le filtre laisse** — ou décoche, si tout l'est déjà |
 | `↵` | valide — imprime les lignes cochées, ou la ligne courante si aucune ne l'est |
 | `^G`, `esc` | quitte sans rien imprimer |
 | `↑` `↓`, `PgPréc` `PgSuiv` | se déplacer |

@@ -250,6 +250,7 @@ view instead of scrolling past:
 | type | filters as you go |
 | `^R` | switches between plain-text and regex matching — the current mode is always shown |
 | `⇥` | selects the row (`Space` can't: the filter field has the keyboard) |
+| `^A` | selects **everything the filter leaves** — or clears it, if all of it is already selected |
 | `↵` | confirms — prints the selected rows, or the current one if none are selected |
 | `^G`, `esc` | leaves without printing anything |
 | `↑` `↓`, `PgUp` `PgDn` | move |

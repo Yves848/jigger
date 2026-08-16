@@ -95,7 +95,10 @@ var catalogue = map[string][nbLangues]string{
 	// ── Vue paginée ───────────────────────────────────────────────────────────────────
 	// Les touches sont annoncées dans le pied du cadre : on ne devine ni ce qu'elles
 	// font, ni dans quel mode de filtre on se trouve.
-	"table.toggle":  {"select", "cocher"},
+	"table.toggle": {"select", "cocher"},
+	// « tout » plutôt que « tout cocher » : le pied du cadre a une largeur à tenir, et
+	// la touche est à côté de son libellé.
+	"table.toggleall": {"all", "tout"},
 	"table.confirm": {"confirm", "valider"},
 	"table.page":    {"page", "page"},
 	"table.regex":   {"regex", "regex"},
