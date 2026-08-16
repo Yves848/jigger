@@ -215,6 +215,18 @@ suite() {
     check "JIGGER_LANG=$val : greffon ($zsh_lang) d'accord avec le binaire" "$zsh_lang" "$bin_lang"
   done
 
+  # Le cas qui a débusqué la rupture de parité : sans lui, une résolution qui s'arrête à
+  # la première variable *non vide*, reconnue ou pas (l'ancien code, cf. commentaire de
+  # jigger.plugin.zsh) ne se voit jamais — les cinq valeurs ci-dessus posent toutes
+  # JIGGER_LANG. `env -u` retire les quatre variables entièrement, y compris celles que
+  # `LANG=… make test-all` (Makefile) a posées dans l'environnement de ce processus : sans
+  # ce nettoyage, le cas ne serait « aucune variable » que par accident, sous une seule des
+  # trois locales de la vérification croisée.
+  zsh_lang=$(env -u JIGGER_LANG -u LC_ALL -u LC_MESSAGES -u LANG zsh -f -c "source $root/shell/jigger.plugin.zsh; print \$_jigger_lang" 2>/dev/null)
+  bin_lang=en
+  [[ "$(env -u JIGGER_LANG -u LC_ALL -u LC_MESSAGES -u LANG $bin 2>&1)" == *'<verbe>'* ]] && bin_lang=fr
+  check "aucune variable de locale posée : greffon ($zsh_lang) d'accord avec le binaire" "$zsh_lang" "$bin_lang"
+
   print -r -- "→ le popup apparaît en tapant une commande brew"
   out=$(visible "$(jigger_type 'brew inst')")
   check "cadre affiché"                 "$out" '╭─'

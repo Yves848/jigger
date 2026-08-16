@@ -81,18 +81,38 @@ $script:StatusFile = Join-Path $script:CacheDir 'status'
 # Même découpage que côté binaire (internal/i18n/i18n.go, fonction depuisCode) : on
 # minuscule puis on coupe au premier séparateur (`_`, `-` ou `.`), pour que « FR »,
 # « fr-FR » et « fr_FR.UTF-8 » soient tous reconnus comme du français, pas seulement
-# « fr » déjà en minuscules.
+# « fr » déjà en minuscules. `.Trim()` avant la casse reproduit le TrimSpace de
+# depuisCode : sans conséquence pratique (une variable d'environnement n'a normalement pas
+# d'espace de bord), mais le commentaire promet la parité, qu'il la tienne.
 #
 # La résolution doit aussi *continuer* d'une source à l'autre quand celle-ci ne porte pas
 # un code reconnu — exactement ce que fait depuisCode(), appelée en boucle par resoudre()
 # côté binaire. S'arrêter dès que $env:JIGGER_LANG est non vide, reconnu ou pas (l'ancien
 # code), désynchronisait le module du binaire dès que JIGGER_LANG portait un code que
-# jigger ne sait pas traduire (JIGGER_LANG=ja, par exemple) : le binaire retombait sur la
-# culture système et pouvait afficher du français, tandis que le module restait bloqué sur
-# « ja » → anglais sans même la regarder. La tâche 7 (vérification croisée sous plusieurs
-# locales) l'a débusqué.
+# jigger ne sait pas traduire (JIGGER_LANG=ja, par exemple) : le binaire retombait sur
+# LC_ALL/LC_MESSAGES/LANG et pouvait afficher du français, tandis que le module restait
+# bloqué sur « ja » → anglais sans même les regarder. La tâche 7 (vérification croisée sous
+# plusieurs locales) l'a débusqué.
+#
+# Même ordre que resoudre() (internal/i18n/i18n.go) : JIGGER_LANG, puis LC_ALL,
+# LC_MESSAGES, LANG — ces trois-là existent aussi sous PowerShell 7 hors Windows, où
+# $env: les expose comme n'importe quelle variable d'environnement. CurrentUICulture ne
+# rejoint la liste que sous Windows : c'est là, et seulement là, que cultureSysteme()
+# (internal/i18n/langue_windows.go) rend une valeur côté binaire — la chaîne vide partout
+# ailleurs (internal/i18n/langue_unix.go), les variables POSIX ayant déjà été consultées.
+# La consulter aussi hors Windows ajouterait une source que le binaire n'a pas — la tâche 7
+# l'a mesuré : sous macOS, sans aucune variable de locale posée, cela rendait « fr » (la
+# préférence système, AppleLocale) quand le binaire, lui, retombe sur l'anglais.
 $script:Lang = 'en'
-foreach ($candidat in $env:JIGGER_LANG, [System.Globalization.CultureInfo]::CurrentUICulture.TwoLetterISOLanguageName) {
+$candidats = @($env:JIGGER_LANG, $env:LC_ALL, $env:LC_MESSAGES, $env:LANG)
+# `-or` court-circuite : sous Windows PowerShell 5.1, $IsWindows n'existe pas et le mode
+# strict refuserait de l'évaluer (même garde qu'à Get-JiggerCacheDefaut, ci-dessus).
+if ($PSVersionTable.PSVersion.Major -lt 6 -or $IsWindows) {
+    $candidats += [System.Globalization.CultureInfo]::CurrentUICulture.TwoLetterISOLanguageName
+}
+foreach ($candidat in $candidats) {
+    if ([string]::IsNullOrEmpty($candidat)) { continue }
+    $candidat = $candidat.Trim()
     if ([string]::IsNullOrEmpty($candidat)) { continue }
     # Comparaison en minuscules explicite : elle ne doit rien à l'insensibilité à la casse
     # implicite de -eq, qui la casserait silencieusement si quelqu'un passait un jour à -ceq.

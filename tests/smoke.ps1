@@ -93,6 +93,28 @@ foreach ($valeur in 'fr', 'FR', 'fr-FR', 'fr_FR.UTF-8', 'ja') {
 
     check "JIGGER_LANG=$valeur : module ($langModule) d'accord avec le binaire" $langModule $langBinaire
 }
+
+# Le cas qui a débusqué la rupture de parité : sans lui, une résolution qui s'arrête à la
+# première variable non vide, reconnue ou pas (l'ancien code), ne se voit jamais — les cinq
+# valeurs ci-dessus posent toutes JIGGER_LANG. On retire ici les quatre variables
+# entièrement (`$env:X = $null` les enlève pour de bon, y compris pour les sous-processus —
+# vérifié : ce n'est pas juste les vider), pour que ce cas soit « aucune variable » pour de
+# vrai, pas seulement sous la locale qui a lancé cette suite.
+$avantLocale = @{}
+foreach ($nom in 'JIGGER_LANG', 'LC_ALL', 'LC_MESSAGES', 'LANG') {
+    $avantLocale[$nom] = [Environment]::GetEnvironmentVariable($nom)
+    Set-Item -Path "Env:$nom" -Value $null -ErrorAction SilentlyContinue
+}
+Import-Module $module -Force
+$jigger = Get-Module jigger
+$langModule = & $jigger { $script:Lang }
+$sortie = & $binaire 2>&1 | Out-String
+$langBinaire = if ($sortie -match '<verbe>') { 'fr' } else { 'en' }
+check "aucune variable de locale posée : module ($langModule) d'accord avec le binaire" $langModule $langBinaire
+foreach ($nom in $avantLocale.Keys) {
+    if ($null -ne $avantLocale[$nom]) { Set-Item -Path "Env:$nom" -Value $avantLocale[$nom] }
+}
+
 # Le reste de la suite assère des libellés français en dur : on remet JIGGER_LANG=fr et
 # on réimporte, pour que les sections suivantes retrouvent l'état attendu.
 $env:JIGGER_LANG = 'fr'

@@ -70,6 +70,11 @@ fi
 # qu'un autre greffon pourrait tout à fait vouloir utiliser.
 local _jigger_candidat _jigger_code
 for _jigger_candidat in "${JIGGER_LANG-}" "${LC_ALL-}" "${LC_MESSAGES-}" "${LANG-}"; do
+  # depuisCode commence par un TrimSpace ; `read` sans -r n'existe pas ici, mais IFS=…
+  # read -r fait le même office sans extendedglob ni dépendance externe — un aller-retour
+  # par un here-string, qui laisse IFS à sa valeur normale une fois la commande finie
+  # (l'affectation ne porte que sur elle).
+  IFS=$' \t\n' read -r _jigger_candidat <<< "$_jigger_candidat"
   [[ -n $_jigger_candidat ]] || continue
   _jigger_code=${${(L)_jigger_candidat}%%[_.-]*}
   if [[ $_jigger_code == fr || $_jigger_code == en ]]; then
