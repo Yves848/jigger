@@ -92,10 +92,33 @@ var catalogue = map[string][nbLangues]string{
 	"table.source":    {"SOURCE", "SOURCE"},
 	"table.pm":        {"PM", "PM"},
 
+	// ── Vue paginée ───────────────────────────────────────────────────────────────────
+	// Les touches sont annoncées dans le pied du cadre : on ne devine ni ce qu'elles
+	// font, ni dans quel mode de filtre on se trouve.
+	"table.toggle":  {"select", "cocher"},
+	"table.confirm": {"confirm", "valider"},
+	"table.page":    {"page", "page"},
+	"table.regex":   {"regex", "regex"},
+	// Le mode courant, affiché en permanence : « texte » est le mode par défaut, celui
+	// que le sélecteur a toujours eu.
+	"table.modetexte": {"text", "texte"},
+	"table.moderegex": {"regex", "regex"},
+	// %d est le nombre de lignes cochées.
+	"table.selected": {"%d selected", "%d cochées"},
+	// Un motif qui ne compile pas laisse la liste entière plutôt que de la vider : sans
+	// ce message, on croirait qu'aucun paquet ne correspond.
+	"table.badregex": {"invalid pattern", "motif invalide"},
+	// --select hors terminal : le dire plutôt que de retomber en silence sur la table
+	// brute, ce qui laisserait croire que le drapeau a été pris en compte.
+	"cli.select_needs_tty": {
+		"--select needs a terminal to draw on; printing the plain table instead",
+		"--select a besoin d'un terminal pour s'afficher ; table brute à la place",
+	},
+
 	// ── Ligne de commande ─────────────────────────────────────────────────────────────
 	"cli.usage1": {
-		"usage: jigger <verb> [--pm <manager>] [--json] [--yes] [arguments…]",
-		"usage: jigger <verbe> [--pm <gestionnaire>] [--json] [--yes] [arguments…]",
+		"usage: jigger <verb> [--pm <manager>] [--json] [--yes] [--select] [arguments…]",
+		"usage: jigger <verbe> [--pm <gestionnaire>] [--json] [--yes] [--select] [arguments…]",
 	},
 	"cli.usage2": {
 		"       jigger pick|complete \"<line>\" | jigger render --line \"<line>\"",

@@ -28,6 +28,19 @@ func Formater(v pm.Verb, rows []pm.Package, enJSON bool) string {
 		return i18n.T("facade.nothing")
 	}
 
+	entete, cellules := Colonnes(rows)
+	return aligner(append([][]string{entete}, cellules...))
+}
+
+// Colonnes rend l'en-tête et les cellules d'un jeu de lignes, selon la règle adaptative :
+// une colonne toujours vide n'apprend rien, donc elle n'apparaît pas. PM ne sort que si
+// plusieurs gestionnaires ont contribué ; ACTUEL que si une version est renseignée — le
+// cas de list/outdated, pas de search/source.
+//
+// C'est la SEULE source des colonnes : la table brute et la vue paginée l'appellent
+// toutes les deux, sans quoi elles divergeraient le jour où l'une des deux évoluerait
+// (spec §1).
+func Colonnes(rows []pm.Package) (entete []string, cellules [][]string) {
 	avecPM := plusieursPM(rows)
 	avecActuel := false
 	avecDispo := false
@@ -44,10 +57,7 @@ func Formater(v pm.Verb, rows []pm.Package, enJSON bool) string {
 		}
 	}
 
-	// ACTUEL suit la même règle adaptative que DISPO, SOURCE et PM : une colonne
-	// toujours vide n'apprend rien — c'est le cas de list/outdated (Version renseigné),
-	// mais pas de search/source, qui n'ont aucune version à montrer.
-	entete := []string{i18n.T("table.package")}
+	entete = []string{i18n.T("table.package")}
 	if avecActuel {
 		entete = append(entete, i18n.T("table.current"))
 	}
@@ -61,7 +71,7 @@ func Formater(v pm.Verb, rows []pm.Package, enJSON bool) string {
 		entete = append(entete, i18n.T("table.pm"))
 	}
 
-	table := [][]string{entete}
+	cellules = make([][]string, 0, len(rows))
 	for _, r := range rows {
 		ligne := []string{r.Name}
 		if avecActuel {
@@ -76,9 +86,9 @@ func Formater(v pm.Verb, rows []pm.Package, enJSON bool) string {
 		if avecPM {
 			ligne = append(ligne, r.PM)
 		}
-		table = append(table, ligne)
+		cellules = append(cellules, ligne)
 	}
-	return aligner(table)
+	return entete, cellules
 }
 
 // plusieursPM délègue à pm.PlusieursPM : c'est la même règle que la colonne PM du popup
