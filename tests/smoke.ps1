@@ -70,6 +70,35 @@ foreach ($h in Get-PSReadLineKeyHandler -Bound) { $avant[$h.Key] = $h.Function }
 Import-Module $module -Force
 $jigger = Get-Module jigger
 
+section 'la langue résolue par le module concorde avec celle du binaire'
+# Trois implémentations de la même règle (binaire, greffon zsh, module PowerShell),
+# mesurées à la main à la tâche 6 : sans assertion, la prochaine modification les fait
+# diverger sans bruit — un popup dans une langue, un module dans l'autre. On compare donc
+# à chaque fois $script:Lang à la résolution du binaire, jamais à une valeur en dur :
+# c'est la concordance qui est l'exigence, pas la valeur (cf. tests/zpty.zsh, même
+# principe côté zsh).
+#
+# Résolution du binaire : « jigger » sans argument imprime son usage sur stderr, et
+# cli.usage1 (internal/i18n/catalogue.go) est la seule chaîne du catalogue qui diffère
+# par un simple mot entre les deux langues — « <verb> » contre « <verbe> ». C'est le
+# marqueur le plus direct, sans avoir à exposer i18n.Courante() par une commande dédiée.
+foreach ($valeur in 'fr', 'FR', 'fr-FR', 'fr_FR.UTF-8', 'ja') {
+    $env:JIGGER_LANG = $valeur
+    Import-Module $module -Force
+    $jigger = Get-Module jigger
+    $langModule = & $jigger { $script:Lang }
+
+    $sortie = & $binaire 2>&1 | Out-String
+    $langBinaire = if ($sortie -match '<verbe>') { 'fr' } else { 'en' }
+
+    check "JIGGER_LANG=$valeur : module ($langModule) d'accord avec le binaire" $langModule $langBinaire
+}
+# Le reste de la suite assère des libellés français en dur : on remet JIGGER_LANG=fr et
+# on réimporte, pour que les sections suivantes retrouvent l'état attendu.
+$env:JIGGER_LANG = 'fr'
+Import-Module $module -Force
+$jigger = Get-Module jigger
+
 section 'le module s''installe dans PSReadLine'
 $handlers = Get-PSReadLineKeyHandler -Bound
 check 'Tab est repris'        (($handlers | Where-Object { $_.Key -eq 'Tab' }).Function) 'jigger:insérer'

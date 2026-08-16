@@ -81,13 +81,24 @@ $script:StatusFile = Join-Path $script:CacheDir 'status'
 # Même découpage que côté binaire (internal/i18n/i18n.go, fonction depuisCode) : on
 # minuscule puis on coupe au premier séparateur (`_`, `-` ou `.`), pour que « FR »,
 # « fr-FR » et « fr_FR.UTF-8 » soient tous reconnus comme du français, pas seulement
-# « fr » déjà en minuscules. La comparaison ci-dessous est en minuscules explicitement :
-# elle ne doit rien à l'insensibilité à la casse implicite de -eq, qui la casserait
-# silencieusement si quelqu'un passait un jour à -ceq.
-$script:Lang = if ($env:JIGGER_LANG) { $env:JIGGER_LANG }
-               else { [System.Globalization.CultureInfo]::CurrentUICulture.TwoLetterISOLanguageName }
-$script:Lang = ($script:Lang.ToLowerInvariant() -split '[_.-]')[0]
-if ($script:Lang -ne 'fr') { $script:Lang = 'en' }
+# « fr » déjà en minuscules.
+#
+# La résolution doit aussi *continuer* d'une source à l'autre quand celle-ci ne porte pas
+# un code reconnu — exactement ce que fait depuisCode(), appelée en boucle par resoudre()
+# côté binaire. S'arrêter dès que $env:JIGGER_LANG est non vide, reconnu ou pas (l'ancien
+# code), désynchronisait le module du binaire dès que JIGGER_LANG portait un code que
+# jigger ne sait pas traduire (JIGGER_LANG=ja, par exemple) : le binaire retombait sur la
+# culture système et pouvait afficher du français, tandis que le module restait bloqué sur
+# « ja » → anglais sans même la regarder. La tâche 7 (vérification croisée sous plusieurs
+# locales) l'a débusqué.
+$script:Lang = 'en'
+foreach ($candidat in $env:JIGGER_LANG, [System.Globalization.CultureInfo]::CurrentUICulture.TwoLetterISOLanguageName) {
+    if ([string]::IsNullOrEmpty($candidat)) { continue }
+    # Comparaison en minuscules explicite : elle ne doit rien à l'insensibilité à la casse
+    # implicite de -eq, qui la casserait silencieusement si quelqu'un passait un jour à -ceq.
+    $code = ($candidat.ToLowerInvariant() -split '[_.-]')[0]
+    if ($code -eq 'fr' -or $code -eq 'en') { $script:Lang = $code; break }
+}
 
 function Get-JiggerText([string]$En, [string]$Fr) {
     if ($script:Lang -eq 'fr') { return $Fr }

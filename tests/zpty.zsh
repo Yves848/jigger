@@ -192,6 +192,29 @@ check() {
 suite() {
   local out
 
+  print -r -- "→ la langue résolue par le greffon concorde avec celle du binaire"
+  # Trois implémentations de la même règle (binaire, greffon zsh, module PowerShell),
+  # mesurées à la main à la tâche 6 : sans assertion, la prochaine modification les fait
+  # diverger sans bruit — un popup dans une langue, un module dans l'autre. On compare
+  # donc à chaque fois la résolution du greffon à celle du binaire, jamais à une valeur
+  # en dur : c'est la concordance qui est l'exigence, pas la valeur.
+  #
+  # Résolution du greffon : $_jigger_lang est observable sans pseudo-terminal, en
+  # sourçant le greffon dans un zsh jetable (-f : pas de rc, pour ne rien devoir à la
+  # locale de la machine qui lance les tests).
+  #
+  # Résolution du binaire : « jigger » sans argument imprime son usage sur stderr, et
+  # cli.usage1 (internal/i18n/catalogue.go) est la seule chaîne du catalogue qui diffère
+  # par un simple mot entre les deux langues — « <verb> » contre « <verbe> ». C'est le
+  # marqueur le plus direct, sans avoir à exposer i18n.Courante() par une commande dédiée.
+  local val zsh_lang bin_lang
+  for val in fr FR fr-FR fr_FR.UTF-8 ja; do
+    zsh_lang=$(JIGGER_LANG=$val zsh -f -c "source $root/shell/jigger.plugin.zsh; print \$_jigger_lang" 2>/dev/null)
+    bin_lang=en
+    [[ "$(JIGGER_LANG=$val $bin 2>&1)" == *'<verbe>'* ]] && bin_lang=fr
+    check "JIGGER_LANG=$val : greffon ($zsh_lang) d'accord avec le binaire" "$zsh_lang" "$bin_lang"
+  done
+
   print -r -- "→ le popup apparaît en tapant une commande brew"
   out=$(visible "$(jigger_type 'brew inst')")
   check "cadre affiché"                 "$out" '╭─'

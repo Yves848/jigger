@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"gitlab.yg-devworks.com/yves/jigger/internal/i18n"
 	"gitlab.yg-devworks.com/yves/jigger/internal/pm"
 )
 
@@ -18,6 +19,9 @@ func lignes() []pm.Package {
 // La colonne PM n'apparaît que si plus d'un gestionnaire a contribué : sur macOS, où seul
 // brew répond, elle serait du bruit.
 func TestColonnePMSeulementSiPlusieurs(t *testing.T) {
+	t.Setenv("JIGGER_LANG", "fr")
+	i18n.Recharger()
+
 	avec := Formater("outdated", lignes(), false)
 	if !strings.Contains(avec, "PM") {
 		t.Errorf("deux gestionnaires : la colonne PM est attendue\n%s", avec)
@@ -59,6 +63,9 @@ func TestFormatJSON(t *testing.T) {
 
 // `list` n'a pas de version disponible : la colonne DISPO n'a rien à faire là.
 func TestListNAPasDeColonneDispo(t *testing.T) {
+	t.Setenv("JIGGER_LANG", "fr")
+	i18n.Recharger()
+
 	rows := []pm.Package{{Name: "fd", Version: "10.2.0", PM: "scoop"}}
 	out := Formater("list", rows, false)
 	if strings.Contains(out, "DISPO") {
@@ -72,6 +79,9 @@ func TestListNAPasDeColonneDispo(t *testing.T) {
 // était systématique : chaque ligne finissait par les espaces de remplissage de PAQUET,
 // puisque la colonne ACTUEL restait là, vide, en bout de ligne.
 func TestSourceNAPasDeColonneActuelNiEspacesResiduels(t *testing.T) {
+	t.Setenv("JIGGER_LANG", "fr")
+	i18n.Recharger()
+
 	rows := []pm.Package{{Name: "homebrew/cask-fonts", PM: "brew"}}
 	out := Formater("source", rows, false)
 	if strings.Contains(out, "ACTUEL") {

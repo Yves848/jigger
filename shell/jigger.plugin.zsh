@@ -39,20 +39,45 @@
 # *binaire*, sans quoi le popup parlerait une autre langue que ces messages.
 #
 # Gardes ${VAR-} plutôt que $VAR nu : sous `setopt nounset` (que certains utilisateurs
-# posent), référencer une variable non définie est une erreur. Seule la référence la plus
-# interne (celle de $LANG) a besoin de la garde — les $VAR:-… qui l'entourent gèrent déjà
-# le cas « non définie » sans y toucher ; mais y toucher aussi ne coûte rien et documente
-# l'intention.
+# posent), référencer une variable non définie est une erreur.
 #
 # Même découpage que côté binaire (internal/i18n/i18n.go, fonction depuisCode) : on
 # minuscule avant de couper, et on coupe au premier `_`, `-` ou `.` — pas seulement `_`
 # et `.` — sans quoi « FR » ou « fr-FR » resteraient anglais ici tout en étant français
-# pour le binaire. C'est précisément le défaut que cette variable existe pour éviter.
+# pour le binaire.
+#
+# La résolution doit aussi *continuer* d'une variable à l'autre quand celle-ci ne porte
+# pas un code reconnu — exactement ce que fait depuisCode(), appelée en boucle par
+# resoudre() côté binaire (internal/i18n/i18n.go). Un simple ${JIGGER_LANG:-${LC_ALL:-…}}
+# s'arrêtait à la première variable *non vide*, reconnue ou pas : avec JIGGER_LANG=ja (une
+# langue que jigger ne sait pas traduire) et LANG=fr_FR.UTF-8, le binaire retombait sur
+# LANG et parlait français, tandis que le greffon restait bloqué sur « ja » → anglais sans
+# même regarder LANG. La tâche 7 (vérification croisée sous plusieurs locales) l'a
+# débusqué : la « valeur inconnue » de son tableau de parité (ja) est justement le cas que
+# l'ancien code manquait.
+typeset -g _jigger_lang=en
 if [[ -n ${JIGGER_LANG-} ]]; then
   export JIGGER_LANG
 fi
-typeset -g _jigger_lang=${${(L)${JIGGER_LANG:-${LC_ALL:-${LC_MESSAGES:-${LANG-}}}}}%%[_.-]*}
-[[ $_jigger_lang == fr ]] || _jigger_lang=en
+# local, pas typeset -g : ces deux-là ne sont que l'itération, sans utilité au-delà de ce
+# bloc. Sans fonction autour (source direct depuis .zshrc), zsh traite `local` en tête de
+# script comme `typeset` ordinaire — pas d'erreur, pas de fuite, l'`unset` explicite plus
+# bas nettoie de toute façon. Sourcé depuis une fonction, en revanche — le cas courant des
+# gestionnaires de greffons (zinit, antidote…), qui chargent chaque plugin depuis l'une des
+# leurs — `local` les confine à cette fonction et les efface tout seul à son retour, sans
+# rien laisser dans l'espace de noms de l'appelant. `typeset -g` aurait, lui, posé
+# _jigger_candidat et _jigger_code comme globales dans ce second cas — un nom generique
+# qu'un autre greffon pourrait tout à fait vouloir utiliser.
+local _jigger_candidat _jigger_code
+for _jigger_candidat in "${JIGGER_LANG-}" "${LC_ALL-}" "${LC_MESSAGES-}" "${LANG-}"; do
+  [[ -n $_jigger_candidat ]] || continue
+  _jigger_code=${${(L)_jigger_candidat}%%[_.-]*}
+  if [[ $_jigger_code == fr || $_jigger_code == en ]]; then
+    _jigger_lang=$_jigger_code
+    break
+  fi
+done
+unset _jigger_candidat _jigger_code
 
 # ── Vérifications d'installation ──────────────────────────────────────────────────────
 
