@@ -16,6 +16,14 @@ Ce journal-ci, lui, garde la trace.
 
 <!-- nouvelles passes ici -->
 
+## 2026-08-16 08:57 — macOS — `3af3efb` — tout passe
+
+macOS 26.5.2 · zsh 5.9 · go1.26.6
+
+- **ok** — go build · go test · zpty.zsh (vrai pseudo-terminal) · smoke.ps1
+- durée totale : 144 s
+
+
 ## 2026-08-16 08:51 — Windows — `eb3d131` — tout passe
 
 Microsoft Windows NT 10.0.26200.0 · pwsh 7.6.3 · go version go1.26.5 windows/amd64 · captures rafraîchies

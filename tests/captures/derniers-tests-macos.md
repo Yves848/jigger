@@ -4,19 +4,19 @@
 
 **Verdict : tout passe.**
 
-| Étape | Code |
-|---|---|
-| go build | ok |
-| go test | ok |
-| zpty.zsh (vrai pseudo-terminal) | ok |
-| smoke.ps1 | ok |
+| Étape | Code | Durée |
+|---|---|---|
+| go build | ok | 0 s |
+| go test | ok | 0 s |
+| zpty.zsh (vrai pseudo-terminal) | ok | 143 s |
+| smoke.ps1 | ok | 1 s |
 
 ## Contexte
 
 ```
-date    : 2026-08-16 08:11:15
+date    : 2026-08-16 08:57:18
 macOS 26.5.2 · zsh 5.9 · go1.26.6
-commit  : 047f11c
+commit  : 3af3efb
 ```
 
 ## go build
