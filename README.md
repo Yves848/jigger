@@ -38,12 +38,12 @@ nothing but the package manager itself.
   - brew: picking a "pure" cask behind `install`/`reinstall` inserts `--cask <name>`;
   - scoop: a name present in several buckets is inserted qualified, `main/flux`;
   - winget: an identifier containing spaces is inserted in quotes.
-- **A popup that's alive**: the frame appears as soon as you type "`winget `" and filters
-  itself with every keystroke, without a single key press. `↓` enters the list, `⇥`
+- **A popup that's alive**: the frame appears as soon as you type "`winget `" and narrows
+  itself down with every keystroke, without a single key press. `↓` enters the list, `⇥`
   inserts, `^G` closes.
 - **Explicit focus**: the popup only takes the arrow keys once you've entered it. `↓`
   moves you in; `↑` moves you back out on the first candidate — and until it holds the
-  keyboard, `↑`/`↓` stay the shell's history. The current line shows which is which:
+  keyboard, `↑`/`↓` remain the shell's history. The current line shows which is which:
   underlined when the popup holds the keyboard, at rest when it doesn't.
 - **Prompt block** (optional): the manager's version and pending upgrades in the prompt,
   counted separately — never slowing it down. Segments ready to paste for
@@ -119,7 +119,7 @@ brew install fire        → same thing, on macOS
 | `^N` / `^P` | the same, for those who prefer them to arrow keys |
 | `^G` | closes the popup for the current line (`⇥` reopens it) |
 
-As long as the popup doesn't hold the keyboard, `↑` and `↓` stay the **shell's
+As long as the popup doesn't hold the keyboard, `↑` and `↓` remain the **shell's
 history** — whether the popup is open or not: opening a candidate list doesn't cost
 access to the previous command. What they'll do is shown in the frame — footer
 `↓ browse` and the current line at rest while it doesn't have focus, `↑↓ navigate` and
@@ -187,9 +187,9 @@ knows it and how to ask that manager for it.
 | `search {q}` | `search {q}` | `search {q}` | `search {q}` |
 | `info {pkg}` | `info {pkg}` | `show --id {pkg}` | `info {pkg}` |
 
-`{pkgs}` for brew and scoop: a single call, every name on it — `{pkg}` for winget: one
-`--id` per call, one call per name. winget only accepts one identifier at a time; jigger
-therefore calls it once per name it gets back, in sequence.
+`{pkgs}` for brew and scoop means a single call with every name on it; `{pkg}` for winget
+means one `--id` per call, one call per name. winget only accepts one identifier at a
+time; jigger therefore invokes it once for every name that resolves to it, in sequence.
 
 **Convergent** — the same concept, a different name for each (or for two out of three):
 
@@ -223,8 +223,8 @@ jigger looks up the requested name in the catalog of each available manager:
 - **none knows it** → an error, with the closest neighbors when the catalog has any
   to offer.
 
-There's no fourth case: no setting (there's no `JIGGER_PM_ORDER`) decides in the
-user's place. Two packages sharing the same name aren't necessarily the same software,
+There's no fourth case: no setting (there's no `JIGGER_PM_ORDER`) decides on the
+user's behalf. Two packages sharing the same name aren't necessarily the same software,
 and a silent arbitration between the two is precisely what would make a facade
 impossible to trust.
 
@@ -242,7 +242,7 @@ jigger: « zzznonexistentpkgzzz » — unknown to brew
 `--pm <manager>` is the escape hatch — for settling an ambiguity outside a terminal
 (pipe, script, CI), reaching a package too recent for the cached catalog, or targeting a
 verb with no name (`jg doctor --pm scoop`). Captured for real, on a machine that only
-has brew — hence the failure being that of a missing manager, not of an ambiguity:
+has brew — so the failure here is a missing manager, not an ambiguity:
 
 ```
 $ jg list --pm scoop
@@ -322,7 +322,7 @@ yves/cocktails
 ```
 
 (captured for real — the taps actually configured on this machine; the listing above and
-the `outdated` example further up are in the same case.) The `PM` column only shows up
+the `outdated` example further up are in the same situation.) The `PM` column only shows up
 when **several** managers contributed to a table — a column that's always identical
 teaches nothing. On this machine, only brew answers: no PM column. With both winget and
 scoop present, `jg outdated` would show a third column distinguishing the two origins.
@@ -330,8 +330,8 @@ scoop present, `jg outdated` would show a third column distinguishing the two or
 ### What the facade doesn't change
 
 Native commands — `brew install fd`, `winget search Git`, `scoop info 7zip` — keep
-working exactly as before, live popup included: the facade **adds itself on top**, it
-replaces nothing. `jg`/`jigger` is one more path, not a mandatory one.
+working exactly as before, live popup included: the facade **only adds**, it never
+replaces. `jg`/`jigger` is one more path, not a mandatory one.
 
 **What isn't there yet:**
 
@@ -366,8 +366,8 @@ prefer monochrome **Nerd Font** glyphs — which take on the segment's color, wh
 emoji imposes its own —, every segment file lists the matching codes.
 
 Either way, write them as **escapes** (`\u21E1`, `\U0001F37A`) rather than literally:
-it's the only form that survives editors, copy-paste, and tools that normalize
-Unicode unscathed. Both JSON and TOML accept it, and the themes shipped with
+it's the only form that comes through editors, copy-paste, and Unicode-normalizing
+tools unscathed. Both JSON and TOML accept it, and the themes shipped with
 oh-my-posh do the same.
 
 Counting upgrades costs one to five seconds — `brew outdated` as much as
@@ -385,8 +385,8 @@ for anything (usually under a second, after a command that took far longer);
 `JIGGER_PROMPT_SYNC=0` makes that refresh detached instead, at the cost of an accurate
 counter only on the prompt *after that one*.
 
-Only what the shell sees go by is detected: an upgrade launched elsewhere — another
-tab, a GUI app — is only caught up with by the TTL.
+Only commands typed in the shell are detected: an upgrade launched elsewhere — another
+tab, a GUI app — only gets picked up once the TTL expires.
 
 Everything goes through **environment variables**: oh-my-posh has had no `command`
 segment since v26, and having starship spawn a process on every prompt would go
@@ -528,8 +528,8 @@ jigger warm --all                # everything, stale or not
 `render`, `complete`, `pick`, `prompt`, `warm`, and `demo` are **reserved words**: the
 first word of the line is a facade verb as soon as it isn't one of these. A permanent
 constraint going forward — no future internal use will ever be able to reuse a
-canonical verb's name; if an internal "jigger list" were ever needed, it's that one
-that would have to change name, not the verb.
+canonical verb's name; if an internal "jigger list" were ever needed, it would be that
+one that gets renamed, not the verb.
 
 `render` is **stateless**: the selected index lives on the shell side and comes back
 through `--sel`. That's what lets the plugin stay in charge of the keyboard — the
@@ -613,7 +613,7 @@ from any platform, that the Windows code compiles.
 Deliberate non-goals of facade phase 1 — left out on purpose, not forgotten:
 
 - **Singular verbs** (`brew services`, `winget export`, `scoop reset`…) — one table
-  row each, the day one turns out to be missing.
+  row each, the day one of them turns out to be missing.
 - **Automatic tie-breaking** (a `JIGGER_PM_ORDER` that would choose for you between
   two managers that know the same name) — a silent arbitration between two `git`
   packages that aren't the same software would break trust in the facade. `--pm`
