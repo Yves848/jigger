@@ -4,8 +4,6 @@
 package ui
 
 import (
-	"strings"
-
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -96,16 +94,28 @@ var (
 // ambiguïté sur le binaire réellement lancé. Renseignée par main au démarrage.
 var Version = ""
 
+// itemLigne fait d'un candidat de complétion une Ligne : une clé, une cellule. Le
+// sélecteur délègue ainsi filtre, curseur et défilement au cœur commun (liste.go),
+// que la vue tabulaire emploie de la même façon.
+type itemLigne struct{ complete.Item }
+
+func (i itemLigne) Cle() string        { return i.Name }
+func (i itemLigne) Cellules() []string { return []string{i.Name} }
+
 // Model est le sélecteur.
 type Model struct {
 	title      string
-	all        []complete.Item
-	filtered   []complete.Item
+	liste      *Liste
 	input      textinput.Model
-	cursor     int
-	offset     int
 	executable bool
 	quitting   bool // sortie en cours → View() vide pour que Bubble Tea efface le cadre
+
+	// Projections du cœur, rafraîchies par sync(). Elles existent pour deux raisons :
+	// le rendu du cadre veut des complete.Item concrets, et les tests du sélecteur —
+	// qui font foi pour cette refactorisation — les lisent directement.
+	filtered []complete.Item
+	cursor   int
+	offset   int
 
 	Chosen  *complete.Item // sélection (nil si annulé)
 	Execute bool           // ↩ : la commande est à exécuter
@@ -128,42 +138,40 @@ func New(title string, res complete.Result) Model {
 	ti.PlaceholderStyle = base.Foreground(muted)
 	ti.Focus()
 
-	m := Model{title: title, all: res.Items, executable: res.Executable, input: ti}
-	m.applyFilter()
+	lignes := make([]Ligne, len(res.Items))
+	for i, it := range res.Items {
+		lignes[i] = itemLigne{it}
+	}
+
+	m := Model{
+		title:      title,
+		liste:      NouvelleListe(lignes, visibleRows),
+		executable: res.Executable,
+		input:      ti,
+	}
+	m.sync()
 	return m
 }
 
 func (m Model) Init() tea.Cmd { return textinput.Blink }
 
-func (m *Model) applyFilter() {
-	q := strings.ToLower(strings.TrimSpace(m.input.Value()))
-	// Toujours reconstruire dans un nouveau tableau : ne JAMAIS réutiliser le backing
-	// de m.all (un `m.filtered = m.all` suivi d'un `m.filtered[:0]` réécrirait m.all et
-	// dupliquerait les candidats au fil des frappes).
-	filtered := make([]complete.Item, 0, len(m.all))
-	if q == "" {
-		filtered = append(filtered, m.all...)
-	} else {
-		for _, it := range m.all {
-			if strings.Contains(strings.ToLower(it.Name), q) {
-				filtered = append(filtered, it)
-			}
-		}
+// sync recopie l'état du cœur dans les projections du modèle. Un seul endroit le fait,
+// pour qu'il n'y ait jamais deux vérités sur ce qui est affiché.
+func (m *Model) sync() {
+	ls := m.liste.Filtrees()
+	out := make([]complete.Item, len(ls))
+	for i, l := range ls {
+		out[i] = l.(itemLigne).Item
 	}
-	m.filtered = filtered
-	if m.cursor >= len(m.filtered) {
-		m.cursor = max(0, len(m.filtered)-1)
-	}
-	m.clampOffset()
+	m.filtered = out
+	m.cursor = m.liste.Curseur()
+	m.offset = m.liste.Offset()
 }
 
-func (m *Model) clampOffset() {
-	if m.cursor < m.offset {
-		m.offset = m.cursor
-	}
-	if m.cursor >= m.offset+visibleRows {
-		m.offset = m.cursor - visibleRows + 1
-	}
+// applyFilter conserve son nom : les tests du sélecteur l'appellent directement.
+func (m *Model) applyFilter() {
+	m.liste.Filtrer(m.input.Value())
+	m.sync()
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -178,16 +186,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.quitting = true
 			return m, tea.Quit
 		case "up", "ctrl+p":
-			if m.cursor > 0 {
-				m.cursor--
-				m.clampOffset()
-			}
+			m.liste.Haut()
+			m.sync()
 			return m, nil
 		case "down", "ctrl+n":
-			if m.cursor < len(m.filtered)-1 {
-				m.cursor++
-				m.clampOffset()
-			}
+			m.liste.Bas()
+			m.sync()
 			return m, nil
 		case "tab":
 			m.choose(false)
@@ -207,8 +211,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) choose(execute bool) {
-	if m.cursor >= 0 && m.cursor < len(m.filtered) {
-		it := m.filtered[m.cursor]
+	if l := m.liste.Courante(); l != nil {
+		it := l.(itemLigne).Item
 		m.Chosen = &it
 		m.Execute = execute
 	}
