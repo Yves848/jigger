@@ -12,7 +12,7 @@ command, a frame appears under the prompt and tracks your keystrokes.
 ```
 ❯ brew install fire
 ╭──────────────────────────────────────────────────────╮
-│❯ brew install                            jigger 0.9.0│
+│❯ brew install                           jigger 0.10.0│
 │  ▣  firealpaca                                       │
 │  ▣  firebase-admin                                   │
 │  ◆  firebase-cli                                     │
@@ -56,6 +56,25 @@ dependency), installs the zsh plugin under `share/`, and along the way sets up
 
 To upgrade later: `brew upgrade jigger`.
 
+### Windows — via scoop (recommended)
+
+Since v0.10.0, releases carry prebuilt binaries, and a [scoop](https://scoop.sh) bucket
+points at them. Nothing to compile, no Go to install:
+
+```powershell
+scoop bucket add jigger https://gitlab.yg-devworks.com/yves/scoop-jigger.git
+scoop install jigger
+```
+
+`scoop bucket add` takes **two** arguments — the local name you choose, then the
+repository. Passing only a name makes scoop look it up in its own directory of known
+buckets, and it answers `unknown bucket`.
+
+To upgrade later: `scoop update jigger`.
+
+The bucket installs the **binary** only. The PowerShell plugin — the part that makes the
+popup appear as you type — comes from the repository; § 3 wires it in.
+
 ### Any platform — via Go
 
 ```sh
@@ -86,9 +105,9 @@ what `jigger` runs, which is what you want while developing — or a **copy** in
 `%USERPROFILE%\bin`, added to your user `PATH`, when it isn't. `-Methode`, `-Prefixe`,
 `-Profil` and `-Simuler` let you steer or preview it.
 
-This is the route to take on Windows for now: there's no winget or scoop package for
-jigger yet (it's on the roadmap). Either way, the PowerShell plugin comes from the cloned
-repository.
+This is the route for **developing** jigger, or for running a version that isn't
+released yet. To simply use it, the scoop bucket above is less work. There is still no
+winget package. Either way, the PowerShell plugin comes from the cloned repository.
 
 > **Only one binary on the `PATH`.** If you installed through more than one route,
 > `which -a jigger` (or `Get-Command jigger -All`) will tell you. An old binary
@@ -125,7 +144,7 @@ import jigger **after** it (see § 8).
 ## 4. Check that it works
 
 ```sh
-jigger --version        # → jigger 0.9.0, or newer
+jigger --version        # → jigger 0.10.0, or newer
 ```
 
 Open a fresh shell and type `brew ins` (or `winget ins`) **without pressing Enter**.
@@ -201,7 +220,7 @@ packages:
 ```
 ❯ jg
 ╭──────────────────────────────────────────────────────╮
-│❯ jigger                                  jigger 0.9.0│
+│❯ jigger                                 jigger 0.10.0│
 │  •  cleanup                                          │
 │  •  doctor                                           │
 │  •  info                                             │

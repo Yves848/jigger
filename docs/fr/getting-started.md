@@ -12,7 +12,7 @@ gestionnaire de paquets, un cadre s'affiche sous le prompt et suit ta frappe.
 ```
 ❯ brew install fire
 ╭──────────────────────────────────────────────────────╮
-│❯ brew install                            jigger 0.9.0│
+│❯ brew install                           jigger 0.10.0│
 │  ▣  firealpaca                                       │
 │  ▣  firebase-admin                                   │
 │  ◆  firebase-cli                                     │
@@ -56,6 +56,25 @@ installe le greffon zsh sous `share/`, et pose au passage `brew-jigger` — ce q
 
 Mise à jour, ensuite : `brew upgrade jigger`.
 
+### Windows — par scoop (recommandé)
+
+Depuis la v0.10.0, les releases portent des binaires précompilés, et un bucket
+[scoop](https://scoop.sh) pointe dessus. Rien à compiler, pas de Go à installer :
+
+```powershell
+scoop bucket add jigger https://gitlab.yg-devworks.com/yves/scoop-jigger.git
+scoop install jigger
+```
+
+`scoop bucket add` prend **deux** arguments : le nom local que tu choisis, puis le dépôt.
+N'en passer qu'un fait chercher à scoop un bucket de son propre annuaire, et il répond
+`unknown bucket`.
+
+Pour monter de version ensuite : `scoop update jigger`.
+
+Le bucket n'installe que le **binaire**. Le greffon PowerShell — ce qui fait apparaître le
+popup pendant la frappe — vient du dépôt ; le § 3 le branche.
+
 ### Toutes plateformes — par Go
 
 ```sh
@@ -86,9 +105,10 @@ pointe sur le binaire **du dépôt**, si bien qu'un simple `go build` suffit ens
 `%USERPROFILE%\bin`, ajoutée au `PATH` de l'utilisateur, sinon. `-Methode`, `-Prefixe`,
 `-Profil` et `-Simuler` permettent de choisir ou de prévisualiser.
 
-C'est la voie à prendre sous Windows pour l'instant : il n'existe pas encore de paquet
-winget ni scoop pour jigger (c'est à la feuille de route). Dans les deux cas, le greffon
-PowerShell est celui du dépôt cloné.
+C'est la voie pour **développer** jigger, ou pour faire tourner une version pas encore
+publiée. Pour simplement l'utiliser, le bucket scoop ci-dessus demande moins de travail.
+Il n'existe toujours pas de paquet winget. Dans les deux cas, le greffon PowerShell est
+celui du dépôt cloné.
 
 > **Un seul binaire dans le `PATH`.** Si tu as installé par plusieurs voies, `which -a
 > jigger` (ou `Get-Command jigger -All`) le dira. Un binaire ancien devant un greffon
@@ -124,7 +144,7 @@ importe jigger **après** lui (cf. § 8).
 ## 4. Vérifier que ça marche
 
 ```sh
-jigger --version        # → jigger 0.9.0, ou plus récent
+jigger --version        # → jigger 0.10.0, ou plus récent
 ```
 
 Ouvre un shell neuf et tape `brew ins` (ou `winget ins`) **sans valider**. Le cadre doit
@@ -197,7 +217,7 @@ de marcher exactement comme avant, popup compris.
 ```
 ❯ jg
 ╭──────────────────────────────────────────────────────╮
-│❯ jigger                                  jigger 0.9.0│
+│❯ jigger                                 jigger 0.10.0│
 │  •  cleanup                                          │
 │  •  doctor                                           │
 │  •  info                                             │

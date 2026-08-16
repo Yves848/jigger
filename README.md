@@ -54,8 +54,14 @@ nothing but the package manager itself.
 Start to finish, step by step: **[Getting started](docs/getting-started.md)** —
 install, wire into the shell, configure, troubleshoot. What follows is the summary.
 
+```powershell
+# Windows — prebuilt, nothing to compile
+scoop bucket add jigger https://gitlab.yg-devworks.com/yves/scoop-jigger.git
+scoop install jigger
+```
+
 ```sh
-# the binary (Go ≥ 1.26)
+# anywhere else, or to build it yourself (Go ≥ 1.26)
 go install gitlab.yg-devworks.com/yves/jigger@latest   # → $GOBIN/jigger
 #   or:  git clone … && make install          (Windows: install-windows.ps1)
 ```
@@ -615,8 +621,8 @@ from any platform, that the Windows code compiles.
   ("To install …, run: …").
 - Preview pane (`brew desc`, `winget show`) in the picker **and** in `jg search` /
   `jg info`.
-- Distribution as an **external brew command** (`brew jigger`) via a tap, and a
-  **scoop** / **winget** package.
+- A **winget** package. The Homebrew tap and the scoop bucket exist; winget's
+  submission process is a different animal and hasn't been started.
 
 Deliberate non-goals of facade phase 1 — left out on purpose, not forgotten:
 
