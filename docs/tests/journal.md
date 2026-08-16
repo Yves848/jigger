@@ -16,6 +16,14 @@ Ce journal-ci, lui, garde la trace.
 
 <!-- nouvelles passes ici -->
 
+## 2026-08-16 11:15 — macOS — `5a54e20` — tout passe
+
+macOS 26.5.2 · zsh 5.9 · go1.26.6
+
+- **ok** — go build · go test · zpty.zsh (vrai pseudo-terminal) · smoke.ps1
+- durée totale : 133 s
+
+
 ## 2026-08-16 08:57 — macOS — `3af3efb` — tout passe
 
 macOS 26.5.2 · zsh 5.9 · go1.26.6

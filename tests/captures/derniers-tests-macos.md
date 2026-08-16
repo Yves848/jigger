@@ -7,16 +7,16 @@
 | Étape | Code | Durée |
 |---|---|---|
 | go build | ok | 0 s |
-| go test | ok | 0 s |
-| zpty.zsh (vrai pseudo-terminal) | ok | 143 s |
+| go test | ok | 1 s |
+| zpty.zsh (vrai pseudo-terminal) | ok | 131 s |
 | smoke.ps1 | ok | 1 s |
 
 ## Contexte
 
 ```
-date    : 2026-08-16 08:57:18
+date    : 2026-08-16 11:15:01
 macOS 26.5.2 · zsh 5.9 · go1.26.6
-commit  : 3af3efb
+commit  : 5a54e20
 ```
 
 ## go build
@@ -31,6 +31,7 @@ ok  	gitlab.yg-devworks.com/yves/jigger	(cached)
 ok  	gitlab.yg-devworks.com/yves/jigger/internal/brew	(cached)
 ok  	gitlab.yg-devworks.com/yves/jigger/internal/complete	(cached)
 ok  	gitlab.yg-devworks.com/yves/jigger/internal/facade	(cached)
+ok  	gitlab.yg-devworks.com/yves/jigger/internal/i18n	(cached)
 ?   	gitlab.yg-devworks.com/yves/jigger/internal/managers	[no test files]
 ok  	gitlab.yg-devworks.com/yves/jigger/internal/pm	(cached)
 ok  	gitlab.yg-devworks.com/yves/jigger/internal/prompt	(cached)
@@ -97,5 +98,5 @@ tout passe
   ok   sans bloc de prompt, rien de plus
   ok   aucune commande mutante, aucun appel
 
-tout passe (62 assertions)
+tout passe (70 assertions)
 ```
