@@ -158,6 +158,31 @@ Deux points à ne pas oublier :
 À faire d'un seul tenant avec A-10 : c'est le même moteur de filtre, et deux
 implémentations divergeraient.
 
+### A-12 — Trier les colonnes du sélecteur plein écran
+
+**Priorité :** à déterminer · **Provenance :** demande du 16 août · **Dépend de :** A-10
+
+Pouvoir trier la liste sur la colonne de son choix, et inverser l'ordre.
+
+**Il n'y a pas encore de colonnes à trier**, et c'est le premier constat à faire. Le
+sélecteur affiche aujourd'hui une liste d'items (`pm.Item` : nom, badge, installé, version,
+gestionnaire) dont seuls le badge, le nom et — quand plusieurs gestionnaires répondent — le
+code PM sont rendus. Les vraies colonnes (`PACKAGE`, `CURRENT`, `AVAILABLE`, `SOURCE`, `PM`)
+vivent dans les tableaux de la façade, qui ne passent pas par le sélecteur. Le tri prend
+donc son sens **après** A-10, quand ces tableaux s'afficheront dans le sélecteur.
+
+À trancher le moment venu :
+
+- **Les touches.** Rien n'est libre par hasard dans ce cadre : ⇥, ↩, ↑↓, ^N/^P, ^G et esc
+  sont pris, et les caractères imprimables vont au filtre. Le tri devra passer par une
+  combinaison qui ne mange pas la frappe — et se lire dans le pied, comme le reste.
+- **Trier une version n'est pas trier du texte.** `0.10.0` précède `0.9.0` dans l'ordre
+  lexicographique, et c'est faux. Un tri sur `CURRENT` ou `AVAILABLE` demande une
+  comparaison qui comprenne les numéros ; jigger n'en a pas encore.
+- **Dans le popup d'insertion, l'ordre a des conséquences.** Le premier candidat est celui
+  que `⇥` insère : trier n'y est pas un confort d'affichage mais un changement de ce que
+  fait la touche. En lecture seule (A-10), la question ne se pose pas.
+
 ---
 
 ## En cours
