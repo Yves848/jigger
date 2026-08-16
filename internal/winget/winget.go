@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"gitlab.yg-devworks.com/yves/jigger/internal/i18n"
 	"gitlab.yg-devworks.com/yves/jigger/internal/pm"
 )
 
@@ -172,7 +173,7 @@ func (Manager) Load() *pm.Catalog {
 		pm.TriggerWarm()
 	}
 	if len(noms) == 0 {
-		cat.Note = "catalogue winget en préparation…"
+		cat.Note = i18n.T("popup.catalog_winget")
 	}
 	return cat
 }

@@ -31,10 +31,67 @@
 # En dessous de cette largeur de terminal, le cadre n'a plus de sens : on n'affiche rien.
 : "${JIGGER_MIN_COLUMNS:=30}"
 
+# La langue des messages du greffon. Même ordre que le binaire : JIGGER_LANG, puis les
+# variables POSIX, puis l'anglais.
+#
+# L'export n'est pas décoratif : les réglages de jigger se posent sans lui (JIGGER_ROWS=12
+# avant le source) parce que le greffon les lit lui-même, mais celui-ci doit atteindre le
+# *binaire*, sans quoi le popup parlerait une autre langue que ces messages.
+#
+# Gardes ${VAR-} plutôt que $VAR nu : sous `setopt nounset` (que certains utilisateurs
+# posent), référencer une variable non définie est une erreur.
+#
+# Même découpage que côté binaire (internal/i18n/i18n.go, fonction depuisCode) : on
+# minuscule avant de couper, et on coupe au premier `_`, `-` ou `.` — pas seulement `_`
+# et `.` — sans quoi « FR » ou « fr-FR » resteraient anglais ici tout en étant français
+# pour le binaire.
+#
+# La résolution doit aussi *continuer* d'une variable à l'autre quand celle-ci ne porte
+# pas un code reconnu — exactement ce que fait depuisCode(), appelée en boucle par
+# resoudre() côté binaire (internal/i18n/i18n.go). Un simple ${JIGGER_LANG:-${LC_ALL:-…}}
+# s'arrêtait à la première variable *non vide*, reconnue ou pas : avec JIGGER_LANG=ja (une
+# langue que jigger ne sait pas traduire) et LANG=fr_FR.UTF-8, le binaire retombait sur
+# LANG et parlait français, tandis que le greffon restait bloqué sur « ja » → anglais sans
+# même regarder LANG. La tâche 7 (vérification croisée sous plusieurs locales) l'a
+# débusqué : la « valeur inconnue » de son tableau de parité (ja) est justement le cas que
+# l'ancien code manquait.
+typeset -g _jigger_lang=en
+if [[ -n ${JIGGER_LANG-} ]]; then
+  export JIGGER_LANG
+fi
+# local, pas typeset -g : ces deux-là ne sont que l'itération, sans utilité au-delà de ce
+# bloc. Sans fonction autour (source direct depuis .zshrc), zsh traite `local` en tête de
+# script comme `typeset` ordinaire — pas d'erreur, pas de fuite, l'`unset` explicite plus
+# bas nettoie de toute façon. Sourcé depuis une fonction, en revanche — le cas courant des
+# gestionnaires de greffons (zinit, antidote…), qui chargent chaque plugin depuis l'une des
+# leurs — `local` les confine à cette fonction et les efface tout seul à son retour, sans
+# rien laisser dans l'espace de noms de l'appelant. `typeset -g` aurait, lui, posé
+# _jigger_candidat et _jigger_code comme globales dans ce second cas — un nom generique
+# qu'un autre greffon pourrait tout à fait vouloir utiliser.
+local _jigger_candidat _jigger_code
+for _jigger_candidat in "${JIGGER_LANG-}" "${LC_ALL-}" "${LC_MESSAGES-}" "${LANG-}"; do
+  # depuisCode commence par un TrimSpace ; `read` sans -r n'existe pas ici, mais IFS=…
+  # read -r fait le même office sans extendedglob ni dépendance externe — un aller-retour
+  # par un here-string, qui laisse IFS à sa valeur normale une fois la commande finie
+  # (l'affectation ne porte que sur elle).
+  IFS=$' \t\n' read -r _jigger_candidat <<< "$_jigger_candidat"
+  [[ -n $_jigger_candidat ]] || continue
+  _jigger_code=${${(L)_jigger_candidat}%%[_.-]*}
+  if [[ $_jigger_code == fr || $_jigger_code == en ]]; then
+    _jigger_lang=$_jigger_code
+    break
+  fi
+done
+unset _jigger_candidat _jigger_code
+
 # ── Vérifications d'installation ──────────────────────────────────────────────────────
 
 if ! command -v jigger >/dev/null 2>&1; then
-  print -u2 "jigger : binaire introuvable dans le PATH. Greffon inactif."
+  if [[ $_jigger_lang == fr ]]; then
+    print -u2 "jigger : binaire introuvable dans le PATH. Greffon inactif."
+  else
+    print -u2 "jigger: binary not found in PATH. Plugin inactive."
+  fi
   return 0
 fi
 
@@ -50,7 +107,11 @@ typeset -g JIGGER_VERSION_REQUISE=0.8.0
 autoload -Uz is-at-least
 typeset -g _jigger_v=${${(z)"$(command jigger --version 2>/dev/null)"}[2]}
 if [[ -n $_jigger_v ]] && ! is-at-least $JIGGER_VERSION_REQUISE $_jigger_v; then
-  print -u2 "jigger : le binaire $(command -v jigger) est en $_jigger_v, or ce greffon en demande $JIGGER_VERSION_REQUISE. Recompile-le (« make install ») ou remplace celui du PATH. Greffon inactif."
+  if [[ $_jigger_lang == fr ]]; then
+    print -u2 "jigger : le binaire $(command -v jigger) est en $_jigger_v, or ce greffon en demande $JIGGER_VERSION_REQUISE. Recompile-le (« make install ») ou remplace celui du PATH. Greffon inactif."
+  else
+    print -u2 "jigger: the binary at $(command -v jigger) is $_jigger_v, but this plugin requires $JIGGER_VERSION_REQUISE. Rebuild it (\"make install\") or replace the one in PATH. Plugin inactive."
+  fi
   unset _jigger_v
   return 0
 fi

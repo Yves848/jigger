@@ -7,10 +7,11 @@
 package facade
 
 import (
-	"fmt"
+	"errors"
 	"sort"
 	"strings"
 
+	"gitlab.yg-devworks.com/yves/jigger/internal/i18n"
 	"gitlab.yg-devworks.com/yves/jigger/internal/managers"
 	"gitlab.yg-devworks.com/yves/jigger/internal/pm"
 )
@@ -25,7 +26,7 @@ func ResoudreVerbe(ligne []string) (pm.Verb, []string, []pm.Manager, error) {
 // permet de simuler une machine où tel gestionnaire manque.
 func resoudreVerbe(ligne []string, dispo, tous []pm.Manager) (pm.Verb, []string, []pm.Manager, error) {
 	if len(ligne) == 0 {
-		return "", nil, nil, fmt.Errorf("jigger : aucun verbe. Essaie « jg install <paquet> » ou « jg outdated »")
+		return "", nil, nil, errors.New(i18n.T("facade.no_verb"))
 	}
 
 	tablesDispo := managers.Tables(dispo)
@@ -73,18 +74,17 @@ func verbeIndisponible(ligne []string, dispo, tous []pm.Manager) error {
 			continue
 		}
 		if natif := liaison.NomNatif(); natif != "" && natif != mot {
-			ailleurs = append(ailleurs, fmt.Sprintf("%s le sait (%s)", m.Cmd(), natif))
+			ailleurs = append(ailleurs, i18n.Tf("facade.knows_it_as", m.Cmd(), natif))
 		} else {
-			ailleurs = append(ailleurs, fmt.Sprintf("%s le sait", m.Cmd()))
+			ailleurs = append(ailleurs, i18n.Tf("facade.knows_it", m.Cmd()))
 		}
 	}
 
 	if len(ailleurs) == 0 {
-		return fmt.Errorf("jigger : « %s » — verbe inconnu. « jg ⇥ » liste ce que jigger sait faire", mot)
+		return errors.New(i18n.Tf("facade.unknown_verb", mot))
 	}
 	sort.Strings(ailleurs)
-	return fmt.Errorf("jigger : « %s » — aucun gestionnaire disponible ne sait faire ça.\n        %s, mais n'est pas installé",
-		mot, strings.Join(ailleurs, " ; "))
+	return errors.New(i18n.Tf("facade.nobody_can", mot, strings.Join(ailleurs, i18n.T("facade.list_separator"))))
 }
 
 func estDispo(m pm.Manager, dispo []pm.Manager) bool {

@@ -37,6 +37,9 @@ $rc = Join-Path ([IO.Path]::GetTempPath()) 'jigger-pty-rc.ps1'
 function global:prompt { "``nPS> " }
 Set-PSReadLineOption -PredictionSource None
 `$env:JIGGER_BIN = '$binaire'
+# Cette suite assère des libellés français en dur : sans l'exporter, le module lirait la
+# langue de la machine qui lance les tests.
+`$env:JIGGER_LANG = 'fr'
 Import-Module '$racine\shell\jigger.psm1' -Force
 "@ | Set-Content -Path $rc
 
@@ -113,6 +116,7 @@ Set-PSReadLineOption -PredictionSource History -PredictionViewStyle ListView
 [Microsoft.PowerShell.PSConsoleReadLine]::AddToHistory('winget install Git.Git')
 [Microsoft.PowerShell.PSConsoleReadLine]::AddToHistory('winget install Mozilla.Firefox')
 `$env:JIGGER_BIN = '$binaire'
+`$env:JIGGER_LANG = 'fr'
 Import-Module '$racine\shell\jigger.psm1' -Force
 "@ | Set-Content -Path $rcListe
 

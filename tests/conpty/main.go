@@ -8,8 +8,8 @@
 // disparaît, la ligne est réécrite — ne se voit que dans ce que PSReadLine écrit sur le
 // terminal, et PSReadLine ne s'anime que devant une vraie console.
 //
-//	go run ./tests/conpty -rc essai.ps1 -keys 'winget ins\t\r'
-//	go run ./tests/conpty -rc essai.ps1 -keys 'winget u' -visible
+//	go run ./tests/conpty -rc setup.ps1 -keys 'winget ins\t\r'
+//	go run ./tests/conpty -rc setup.ps1 -keys 'winget u' -visible
 package main
 
 import (

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"gitlab.yg-devworks.com/yves/jigger/internal/brew"
+	"gitlab.yg-devworks.com/yves/jigger/internal/i18n"
 	"gitlab.yg-devworks.com/yves/jigger/internal/pm"
 	"gitlab.yg-devworks.com/yves/jigger/internal/scoop"
 	"gitlab.yg-devworks.com/yves/jigger/internal/winget"
@@ -71,6 +72,35 @@ func TestVerbeConnuAilleursMaisIndisponible(t *testing.T) {
 		if !strings.Contains(msg, attendu) {
 			t.Errorf("le message ne contient pas %q : %s", attendu, msg)
 		}
+	}
+}
+
+// Le fragment « X le sait (Y) » de facade.nobody_can est lui-même passé par le
+// catalogue : en anglais, il ne doit plus rester un seul mot français dans la phrase.
+// Ce test aurait laissé passer l'oubli de la relecture (facade.knows_it / knows_it_as
+// non branchées) : rien n'assérait ce fragment avant lui.
+func TestVerbeConnuAilleursMaisIndisponibleEnAnglais(t *testing.T) {
+	// Cleanup enregistré avant Setenv : à la fin du test, Setenv restaure d'abord
+	// JIGGER_LANG (son propre nettoyage, ajouté après le nôtre, s'exécute donc en
+	// premier — LIFO), puis Recharger relit l'environnement remis en place. Pas besoin
+	// de savoir quelle langue tournait avant ce test.
+	t.Cleanup(i18n.Recharger)
+	t.Setenv("JIGGER_LANG", "en")
+	i18n.Recharger()
+
+	dispo := []pm.Manager{winget.New()}
+	tous := []pm.Manager{brew.New(), winget.New(), scoop.New()}
+
+	_, _, _, err := resoudreVerbe([]string{"doctor"}, dispo, tous)
+	if err == nil {
+		t.Fatal("attendu une erreur : winget seul ne sait pas doctor")
+	}
+	msg := err.Error()
+	if !strings.Contains(msg, "knows it") {
+		t.Errorf("le message anglais doit contenir « knows it » : %s", msg)
+	}
+	if strings.Contains(msg, "le sait") {
+		t.Errorf("le message anglais ne doit plus contenir « le sait » : %s", msg)
 	}
 }
 

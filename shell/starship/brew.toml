@@ -1,0 +1,42 @@
+# Bloc Homebrew pour starship — mode d'emploi dans le README de jigger, § « Bloc de
+# prompt ». Les variables sont posées par le hook de jigger.plugin.zsh (JIGGER_PROMPT=1) ;
+# sans elles, les modules disparaissent.
+#
+# Colle ces trois blocs à la fin de ~/.config/starship.toml. Rien d'autre à faire : le
+# format par défaut de starship (« $all ») contient déjà $env_var. Pour placer le bloc
+# ailleurs, écris un `format` explicite et pose-y ${env_var} — ou, module par module,
+# ${env_var.JIGGER_BREW_VERSION}.
+#
+# La clé de section *est* le nom de la variable lue ; les trois modules s'affichent dans
+# l'ordre où ils sont déclarés ici, et chacun s'efface tout seul quand sa variable n'est
+# pas définie — un compteur à zéro n'en est jamais une.
+#
+# Émojis : bière (brew), éprouvette (formulae), colis (casks) — aucune police particulière
+# requise. Pour des glyphes Nerd Font monochromes, qui prennent la couleur du module là où
+# un émoji impose la sienne, remplacer \U0001F37A par \uF0FC, \U0001F9EA par \uF0C3
+# et \U0001F4E6 par \uF1B2. Dans les deux cas, garder la forme échappée plutôt que le
+# caractère en clair : c'est la seule qui traverse sans dommage les éditeurs, les
+# copier-coller et les outils qui normalisent l'Unicode.
+#
+# Pour un seul chiffre au lieu du détail par type, remplacer les deux derniers blocs par
+# celui-ci :
+#
+#   [env_var.JIGGER_BREW_OUTDATED]
+#   symbol = "\u21E1 "
+#   style  = "#F9E2AF"
+#   format = "[$symbol$env_value]($style) "
+
+[env_var.JIGGER_BREW_VERSION]
+symbol = "\U0001F37A "
+style  = "#FAB387"
+format = "[$symbol$env_value]($style) "
+
+[env_var.JIGGER_BREW_FORMULAE]
+symbol = "\U0001F9EA "
+style  = "#F9E2AF"
+format = "[$symbol$env_value]($style) "
+
+[env_var.JIGGER_BREW_CASKS]
+symbol = "\U0001F4E6 "
+style  = "#F9E2AF"
+format = "[$symbol$env_value]($style) "

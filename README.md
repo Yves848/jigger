@@ -1,66 +1,71 @@
 # jigger
 
-**Assistance aux gestionnaires de paquets dans le terminal** — complétion contextuelle
-et sélecteur interactif, dans _ton_ vrai shell.
+*Read this in [French](README.fr.md).*
 
-`jigger` est un petit binaire Go autonome (démarrage quasi instantané) branché dans le
-shell : dès que tu tapes une commande de gestionnaire de paquets, un **sélecteur**
-([Bubble Tea] / [Lip Gloss]) s'affiche sous le prompt et suit ta frappe, proposant les
-bons candidats selon le contexte. ⇥ insère le candidat courant dans la ligne ; tu n'as
-jamais à demander.
+**Package-manager assistance in the terminal** — context-aware completion and an
+interactive picker, right inside _your_ real shell.
 
-| Plateforme | Shell | Gestionnaires |
+`jigger` is a small, self-contained Go binary (near-instant startup) wired into the
+shell: the moment you type a package-manager command, a **popup**
+([Bubble Tea] / [Lip Gloss]) appears under the prompt and tracks your keystrokes,
+offering the right candidates for the context. ⇥ inserts the current candidate into the
+line — you never have to ask for it.
+
+| Platform | Shell | Managers |
 |---|---|---|
 | macOS, Linux | zsh (`shell/jigger.plugin.zsh`) | [Homebrew](https://brew.sh) |
 | Windows | PowerShell (`shell/jigger.psm1`) | [winget](https://learn.microsoft.com/windows/package-manager/), [scoop](https://scoop.sh) |
 
-C'est le **premier mot de la ligne** qui décide : `brew`, `winget` ou `scoop`. Chacun
-apporte ses sous-commandes, ses options et son catalogue ; tout le reste — le popup, les
-touches, le bloc de prompt — est commun.
+The **first word of the line** decides: `brew`, `winget`, or `scoop`. Each one brings its
+own subcommands, options, and catalog; everything else — the popup, the keys, the prompt
+block — is shared.
 
-Compagnon en ligne de commande de l'app GUI **Cocktails**, mais **totalement indépendant** :
-il ne requiert que le gestionnaire lui-même.
+Command-line companion to the **Cocktails** GUI app, but **fully independent**: it needs
+nothing but the package manager itself.
 
-## Ce qu'il fait
+## What it does
 
-- **Complétion contextuelle**
-  - premier mot → sous-commandes (`install`, `uninstall`, `search`…) ;
-  - après `install`, `show`, `info`… → **tous** les paquets connus ;
-  - après `uninstall`, `upgrade`, `pin`… → seulement les paquets **installés** ;
-  - après `-` → les **options** de la sous-commande (`winget install --exact`,
+- **Context-aware completion**
+  - first word → subcommands (`install`, `uninstall`, `search`…);
+  - after `install`, `show`, `info`… → **all** known packages;
+  - after `uninstall`, `upgrade`, `pin`… → only **installed** packages;
+  - after `-` → the subcommand's **options** (`winget install --exact`,
     `brew list --versions`…).
-- **Badges** et **indicateur « installé »** dans le sélecteur : ◆ pour le cas ordinaire
-  (formula, paquet du catalogue winget, bucket `main`), ▣ pour l'autre (cask, application
-  détectée hors catalogue, bucket tiers).
-- **Corrections automatiques** — celles qui évitent une commande fautive :
-  - brew : choisir un cask « pur » derrière `install`/`reinstall` insère `--cask <nom>` ;
-  - scoop : un nom présent dans plusieurs buckets s'insère qualifié, `main/flux` ;
-  - winget : un identifiant contenant des espaces s'insère entre guillemets.
-- **Popup vivant** : le cadre apparaît dès « `winget ` » et se filtre au fil de la frappe,
-  sans presser la moindre touche. `↓` fait entrer dans la liste, `⇥` insère, `^G` ferme.
-- **Focus explicite** : le popup ne prend les flèches qu'une fois qu'on y est entré. `↓`
-  l'y fait entrer, `↑` en ressort dès le premier candidat — et tant qu'il n'a pas le
-  clavier, `↑`/`↓` restent l'historique du shell. La ligne courante le montre : soulignée
-  quand le popup a le clavier, au repos quand il ne l'a pas.
-- **Bloc oh-my-posh** (optionnel) : version du gestionnaire et mises à jour en attente
-  dans le prompt, comptées séparément — sans jamais le ralentir.
+- **Badges** and an **"installed" indicator** in the picker: ◆ for the ordinary case
+  (formula, catalog package on winget, `main` bucket), ▣ for the other one (cask,
+  application detected outside the catalog, third-party bucket).
+- **Automatic corrections** — the kind that prevent a broken command:
+  - brew: picking a "pure" cask behind `install`/`reinstall` inserts `--cask <name>`;
+  - scoop: a name present in several buckets is inserted qualified, `main/flux`;
+  - winget: an identifier containing spaces is inserted in quotes.
+- **A popup that's alive**: the frame appears as soon as you type "`winget `" and narrows
+  itself down with every keystroke, without a single key press. `↓` enters the list, `⇥`
+  inserts, `^G` closes.
+- **Explicit focus**: the popup only takes the arrow keys once you've entered it. `↓`
+  moves you in; `↑` moves you back out on the first candidate — and until it holds the
+  keyboard, `↑`/`↓` remain the shell's history. The current line shows which is which:
+  underlined when the popup holds the keyboard, at rest when it doesn't.
+- **Prompt block** (optional): the manager's version and pending upgrades in the prompt,
+  counted separately — never slowing it down. Segments ready to paste for
+  **oh-my-posh** and **starship**.
 
 ## Installation
 
-De bout en bout, pas à pas : **[Premiers pas](docs/getting-started.md)** — installer,
-brancher dans le shell, régler, dépanner. Ce qui suit en est le résumé.
+Start to finish, step by step: **[Getting started](docs/getting-started.md)** —
+install, wire into the shell, configure, troubleshoot. What follows is the summary.
 
 ```sh
-# le binaire (Go ≥ 1.24)
+# the binary (Go ≥ 1.24)
 go install gitlab.yg-devworks.com/yves/jigger@latest   # → $GOBIN/jigger
-#   ou :  git clone … && make install
+#   or:  git clone … && make install          (Windows: install-windows.ps1)
 ```
 
-Le binaire `jigger` doit être dans le `PATH`.
+The `jigger` binary must be on the `PATH`.
 
 ### zsh (Homebrew)
 
-Par le tap, qui compile le binaire, installe le greffon et pose `brew jigger` :
+Through the tap, which builds the binary, installs the plugin, and sets up
+`brew jigger`:
 
 ```sh
 brew tap yves/cocktails https://gitlab.yg-devworks.com/yves/homebrew-cocktails.git
@@ -68,230 +73,231 @@ brew install jigger
 ```
 
 ```sh
-# dans ~/.zshrc
+# in ~/.zshrc
 source "$(brew --prefix jigger)/share/jigger/jigger.plugin.zsh"
-#   depuis les sources :  source /chemin/vers/jigger/shell/jigger.plugin.zsh
+#   from source:  source /path/to/jigger/shell/jigger.plugin.zsh
 ```
 
-Recharge ton shell (`exec zsh`).
+Reload your shell (`exec zsh`).
 
 ### PowerShell (winget, scoop)
 
 ```powershell
-# dans $PROFILE  (notepad $PROFILE pour l'ouvrir)
-Import-Module C:\chemin\vers\jigger\shell\jigger.psm1
+# in $PROFILE  (notepad $PROFILE to open it)
+Import-Module C:\path\to\jigger\shell\jigger.psm1
 ```
 
-Recharge ton shell (`. $PROFILE`, ou un nouvel onglet). PowerShell 7 est recommandé ;
-PSReadLine est requis (il est livré avec Windows).
+Reload your shell (`. $PROFILE`, or a new tab). PowerShell 7 is recommended;
+PSReadLine is required (it ships with Windows).
 
-Deux réserves, à connaître :
+Two caveats, worth knowing:
 
-- le **mode Vi** de PSReadLine désactive le popup vivant (⇥ reste disponible) : relayer
-  les caractères imprimables casserait la navigation en mode commande ;
-- `PredictionViewStyle = ListView` dessine au même endroit que le popup. jigger range la
-  vue le temps du cadre — la prédiction repasse en `InlineView`, à la suite du curseur —
-  et la lui rend dès qu'il s'efface. Sans quoi les deux se disputeraient les mêmes lignes
-  à chaque frappe.
+- PSReadLine's **Vi mode** disables the live popup (⇥ still works): relaying printable
+  characters would break navigation in command mode;
+- `PredictionViewStyle = ListView` draws in the same spot as the popup. jigger tucks the
+  prediction view away for as long as the frame is showing — it switches back to
+  `InlineView`, right after the cursor — and hands it back the moment the frame clears.
+  Otherwise the two would fight over the same lines on every keystroke.
 
 ## Usage
 
-Tape simplement une commande — le popup vit tout seul :
+Just type a command — the popup lives on its own:
 
 ```
-winget ␣                 → les sous-commandes
-winget install Git.      → les paquets « Git.… », mis à jour à chaque lettre
-scoop uninstall ␣        → les applications installées
-winget list --           → les options de list
-brew install fire        → idem, côté macOS
+winget ␣                 → the subcommands
+winget install Git.      → the "Git.…" packages, updated with every letter
+scoop uninstall ␣        → the installed applications
+winget list --           → the options of list
+brew install fire        → same thing, on macOS
 ```
 
-| Touche | Effet |
+| Key | Effect |
 |---|---|
-| `⇥` | insère le candidat courant (corrigé si besoin) |
-| `↓` | entre dans la liste, puis descend d'un candidat |
-| `↑` | remonte ; au premier candidat, rend le clavier au shell |
-| `^N` / `^P` | les mêmes, pour qui les préfère aux flèches |
-| `^G` | ferme le popup pour la ligne en cours (`⇥` le rouvre) |
+| `⇥` | inserts the current candidate (corrected if needed) |
+| `↓` | enters the list, then moves down one candidate |
+| `↑` | moves up; on the first candidate, hands the keyboard back to the shell |
+| `^N` / `^P` | the same, for those who prefer them to arrow keys |
+| `^G` | closes the popup for the current line (`⇥` reopens it) |
 
-Tant que le popup n'a pas le clavier, `↑` et `↓` sont **l'historique du shell**, popup
-ouvert ou non : ouvrir une liste de candidats ne coûte pas l'accès à la commande
-précédente. Ce qu'elles feront se lit dans le cadre — pied `↓ parcourir` et ligne
-courante au repos tant qu'il n'a pas le focus, `↑↓ naviguer` et ligne soulignée dès
-qu'il l'a. Et jigger rend toujours la touche à ce qu'elle faisait avant lui : si un autre
-greffon tient déjà tes flèches (recherche par préfixe dans l'historique, par exemple),
-c'est lui qui reprend la main.
+As long as the popup doesn't hold the keyboard, `↑` and `↓` remain the **shell's
+history** — whether the popup is open or not: opening a candidate list doesn't cost
+access to the previous command. What they'll do is shown in the frame — footer
+`↓ browse` and the current line at rest while it doesn't have focus, `↑↓ navigate` and
+an underlined line once it does. And jigger always hands the key back to whatever it
+was doing before: if another plugin already holds your arrow keys (prefix search in
+history, for example), that one keeps control.
 
-Après `winget install`, le mot est vide et le catalogue compte des milliers d'entrées :
-le cadre invite alors à taper au moins une lettre plutôt que d'égrener la liste.
+After `winget install`, the word is empty and the catalog holds thousands of entries:
+the frame then invites you to type at least one letter rather than listing everything.
 
-### Réglages
+### Settings
 
-Identiques dans les deux shells — à poser **avant** le `source` / l'`Import-Module` :
+The same in both shells — to be set **before** the `source` / `Import-Module`:
 
 ```sh
-JIGGER_LIVE=0     # désactive le popup vivant : ⇥ ouvre le sélecteur plein écran
-JIGGER_ROWS=12    # candidats affichés (défaut 8 ; réduit si le terminal est court)
-JIGGER_KEY='^ '   # touche d'insertion (défaut Tab)
+JIGGER_LIVE=0     # disables the live popup: ⇥ opens the full-screen picker
+JIGGER_ROWS=12    # candidates shown (default 8; reduced if the terminal is short)
+JIGGER_KEY='^ '   # insertion key (default Tab)
+JIGGER_LANG=fr    # message language: en or fr
 ```
 
 ```powershell
 $env:JIGGER_LIVE = '0'
 $env:JIGGER_ROWS = '12'
-$env:JIGGER_KEY  = 'Ctrl+Spacebar'   # noms de touches PSReadLine
-$env:JIGGER_COMMANDS = 'winget,scoop'      # commandes qui déclenchent le popup
-$env:JIGGER_KEYS_EXTRA = 'éèçàù'           # touches à relayer en plus des ASCII
+$env:JIGGER_KEY  = 'Ctrl+Spacebar'   # PSReadLine key names
+$env:JIGGER_LANG = 'fr'              # message language: en or fr
+$env:JIGGER_COMMANDS = 'winget,scoop'      # commands that trigger the popup
+$env:JIGGER_KEYS_EXTRA = 'éèçàù'           # keys to relay in addition to ASCII
 ```
 
-Le popup s'efface de lui-même si le terminal est trop étroit — et, sous zsh, s'il ne
-répond pas à l'interrogation de position du curseur.
+jigger speaks **English and French**. Left alone, it takes the language from `LC_ALL`,
+`LC_MESSAGES`, `LANG` — then, under Windows, from the system's own language — and falls
+back to English for anything it can't translate. `JIGGER_LANG` overrides all of that,
+and is how you get French back in an English-speaking shell. The binary and the plugin
+read it the same way, so the popup and the plugin's own messages never disagree.
 
-Quand le prompt occupe la dernière ligne de l'écran — le cas ordinaire d'un terminal en
-usage —, **jigger pousse l'écran** pour dégager la place du cadre, comme le fait
-`fzf --height`. C'est vrai des deux shells : sans cela, le popup ne s'afficherait pour
-ainsi dire jamais.
+The popup clears itself if the terminal is too narrow — and, under zsh, if it doesn't
+respond to the cursor-position query.
 
-Chacun des deux greffons **vérifie la version du binaire** au chargement. Greffon et
-binaire vont par paire : un binaire plus ancien ne connaît pas les options que le greffon
-lui passe, il sort en erreur, et le popup ne s'affiche jamais — sans un mot. Il le dit
-désormais.
+When the prompt sits on the terminal's last line — the ordinary case for a terminal in
+active use —, **jigger pushes the screen up** to make room for the frame, the same way
+`fzf --height` does. That holds for both shells: without it, the popup would almost
+never get to show at all.
 
-`JIGGER_KEYS_EXTRA` mérite un mot : PSReadLine n'offre aucun crochet appelé à chaque
-frappe. jigger réenregistre donc, une à une, les touches qui modifient la ligne — les
-ASCII imprimables, plus celles de cette liste. Sur un clavier AZERTY, la rangée des
-chiffres non pressée donne « éèçàù » : d'où le réglage, et sa valeur par défaut.
+Each of the two plugins **checks the binary's version** on load. Plugin and binary go
+together: an older binary doesn't know about the options the plugin passes it, exits
+with an error, and the popup never shows — without a word. It says so now.
 
-## Une seule syntaxe
+`JIGGER_KEYS_EXTRA` deserves a note: PSReadLine offers no hook called on every
+keystroke. jigger therefore re-registers, one by one, the keys that modify the line —
+the printable ASCII ones, plus those in this list. On an AZERTY keyboard, the digit
+row, unshifted, produces "éèçàù" — hence the setting, and its default value.
 
-Au-dessus des trois popups natifs, `jg <verbe> [paquet…]` — alias de `jigger <verbe>…`,
-posé par le greffon zsh — parle un seul vocabulaire aux trois gestionnaires. `jg install fd`
-fait exactement ce que ferait `brew install fd` (ou `scoop install fd`, ou
-`winget install --id fd --exact`) : la façade se contente de trouver, pour `fd`, quel
-gestionnaire le connaît et comment le lui demander.
+## One syntax
 
-### Douze verbes, trois traductions
+Above the three native popups, `jg <verb> [package…]` — an alias for `jigger <verb>…`,
+set up by the zsh plugin — speaks one vocabulary to all three managers. `jg install fd`
+does exactly what `brew install fd` would (or `scoop install fd`, or
+`winget install --id fd --exact`): the facade just works out, for `fd`, which manager
+knows it and how to ask that manager for it.
 
-**Universels** — les trois gestionnaires savent faire :
+### Twelve verbs, three translations
 
-| Verbe `jg` | brew | winget | scoop |
+**Universal** — all three managers can do these:
+
+| `jg` verb | brew | winget | scoop |
 |---|---|---|---|
 | `install {pkgs}` | `install {pkgs}` | `install --id {pkg} --exact` | `install {pkgs}` |
 | `uninstall {pkgs}` | `uninstall {pkgs}` | `uninstall --id {pkg} --exact` | `uninstall {pkgs}` |
 | `upgrade [pkgs]` | `upgrade [pkgs]` | `upgrade --id {pkg}` | `update {pkgs}` / `update *` |
 | `list` | `list --versions` | `list` | `list` |
-| `outdated` | `outdated --json=v2` | `list --upgrade-available` | lu sur le disque, sans sous-processus |
+| `outdated` | `outdated --json=v2` | `list --upgrade-available` | read from disk, no subprocess |
 | `search {q}` | `search {q}` | `search {q}` | `search {q}` |
 | `info {pkg}` | `info {pkg}` | `show --id {pkg}` | `info {pkg}` |
 
-`{pkgs}` chez brew et scoop : une seule invocation, tous les noms dessus — `{pkg}` chez
-winget : un `--id` par appel, un appel par nom. winget ne prend qu'un identifiant à la
-fois ; jigger appelle donc autant de fois qu'il y a de noms qui lui reviennent, en séquence.
+`{pkgs}` for brew and scoop means a single call with every name on it; `{pkg}` for winget
+means one `--id` per call, one call per name. winget only accepts one identifier at a
+time; jigger therefore invokes it once for every name that resolves to it, in sequence.
 
-**Convergents** — un même concept, un nom différent chez chacun (ou chez deux sur trois) :
+**Convergent** — the same concept, a different name for each (or for two out of three):
 
-| Verbe `jg` | brew | winget | scoop |
+| `jg` verb | brew | winget | scoop |
 |---|---|---|---|
 | `source` | `tap` | `source list` | `bucket list` |
 | `source add {arg}` | `tap {arg}` | `source add {arg}` | `bucket add {arg}` |
 | `source rm {arg}` | `untap {arg}` | `source remove {arg}` | `bucket rm {arg}` |
 | `pin {pkg}` | `pin {pkg}` | `pin add --id {pkg}` | `hold {pkg}` |
 | `unpin {pkg}` | `unpin {pkg}` | `pin remove --id {pkg}` | `unhold {pkg}` |
-| `cleanup` | `cleanup` | _(pas ce concept)_ | `cleanup *` |
-| `doctor` | `doctor` | _(pas ce concept)_ | `checkup` |
+| `cleanup` | `cleanup` | _(no such concept)_ | `cleanup *` |
+| `doctor` | `doctor` | _(no such concept)_ | `checkup` |
 
-`cleanup` et `doctor` n'existent pas chez winget : les demander avec winget pour seul
-gestionnaire disponible échoue proprement, en disant qui saurait faire ça et pourquoi ce
-n'est pas lui — c'est le modèle de capacités qui parle, pas une erreur muette.
+`cleanup` and `doctor` don't exist for winget: asking for them with winget as the only
+available manager fails cleanly, naming who would know how to do it and why it isn't
+this one — that's the capability model speaking, not a silent error.
 
-> **Colonnes winget et scoop : à prendre avec précaution.** Elles viennent du cahier des
-> charges et n'ont, à ce jour, jamais été vérifiées contre une vraie installation — cette
-> machine est un Mac. Seule la colonne brew a tourné pour de vrai (`brew <verbe> --help`,
-> une à une). `internal/winget/verbs.go` et `internal/scoop/verbs.go` portent le même
-> avertissement en commentaire ; une passe Windows le lèvera.
+> **The winget and scoop columns: to be taken with caution.** They come from the spec
+> and, as of today, have never been checked against a real install — this machine is a
+> Mac. Only the brew column has actually run for real (`brew <verb> --help`, one at a
+> time). `internal/winget/verbs.go` and `internal/scoop/verbs.go` carry the same
+> warning as a comment; a Windows pass will lift it.
 
-### Le routage : jamais de choix automatique
+### Routing: never an automatic choice
 
-jigger cherche le nom demandé dans le catalogue de chaque gestionnaire disponible :
+jigger looks up the requested name in the catalog of each available manager:
 
-- **un seul le connaît** → il gagne, sans qu'on ait à le dire ;
-- **plusieurs le connaissent** → le sélecteur s'ouvre, badges à l'appui — le même popup
-  qu'à la complétion, avec un autre titre à son cadre ;
-- **aucun ne le connaît** → erreur, avec les voisins les plus proches quand le catalogue
-  en propose.
+- **only one knows it** → it wins, without anyone having to say so;
+- **several know it** → the picker opens, badges included — the same popup as
+  completion, with a different title on its frame;
+- **none knows it** → an error, with the closest neighbors when the catalog has any
+  to offer.
 
-Il n'y a pas de quatrième cas : aucun réglage (pas de `JIGGER_PM_ORDER`) ne tranche à la
-place de l'utilisateur. Deux paquets qui portent le même nom ne sont pas forcément le même
-logiciel, et un arbitrage silencieux entre les deux est précisément ce qui rendrait une
-façade impossible à croire.
+There's no fourth case: no setting (there's no `JIGGER_PM_ORDER`) decides on the
+user's behalf. Two packages sharing the same name aren't necessarily the same software,
+and a silent arbitration between the two is precisely what would make a facade
+impossible to trust.
 
-Deux erreurs capturées pour de vrai (brew, seul gestionnaire présent sur cette machine) :
+Two errors captured for real (brew, the only manager present on this machine):
 
 ```
 $ jg frobnicate
-jigger : « frobnicate » — verbe inconnu. « jg ⇥ » liste ce que jigger sait faire
+jigger: "frobnicate" — unknown verb. "jg ⇥" lists what jigger can do
 
 $ jg info zzznonexistentpkgzzz
-jigger : « zzznonexistentpkgzzz » — inconnu de brew
-        Si le paquet est trop récent pour le catalogue : jg … --pm brew zzznonexistentpkgzzz
+jigger: "zzznonexistentpkgzzz" — unknown to brew
+        If the package is too recent for the catalog: jg … --pm brew zzznonexistentpkgzzz
 ```
 
-`--pm <gestionnaire>` est l'échappatoire — pour trancher une ambiguïté hors terminal (pipe,
-script, CI), atteindre un paquet trop récent pour le catalogue en cache, ou cibler un verbe
-sans nom (`jg doctor --pm scoop`). Capturé pour de vrai, sur une machine qui n'a que
-brew — d'où l'échec, celui d'un gestionnaire absent plutôt que celui d'une ambiguïté :
+`--pm <manager>` is the escape hatch — for settling an ambiguity outside a terminal
+(pipe, script, CI), reaching a package too recent for the cached catalog, or targeting a
+verb with no name (`jg doctor --pm scoop`). Captured for real, on a machine that only
+has brew — so the failure here is a missing manager, not an ambiguity:
 
 ```
 $ jg list --pm scoop
-jigger : --pm scoop — gestionnaire indisponible pour ce verbe. Disponibles : brew
+jigger: --pm scoop — manager unavailable for this verb. Available: brew
 ```
 
-Sous Windows, avec winget et scoop tous deux présents, une vraie ambiguïté ouvrirait le
-sélecteur (exemple illustratif, faute de machine Windows sous la main) :
+On Windows, with both winget and scoop present, a real ambiguity would open the picker
+(illustrative example, for lack of a Windows machine at hand):
 
 ```
 $ jg install git
-┌─ git : 2 gestionnaires ──────────┐
+┌─ git: 2 managers ────────────────┐
 │ ◆ Git.Git            winget      │
 │ ▣ git                scoop/main  │
-└─ ↵ choisir   ^G annuler ─────────┘
+└─ ↵ choose   ^G cancel ───────────┘
 ```
 
 ### `--json`, `--yes`
 
-Les quatre verbes qui rendent un **tableau** — `list`, `outdated`, `search`, `source` —
-acceptent `--json` pour la même donnée en machine-readable. Tout le reste (`install`,
-`uninstall`, `info`…) relaie la sortie du gestionnaire **telle quelle** : invites, barres
-de progression et élévation UAC fonctionnent sans une ligne de code de plus, précisément
-parce que jigger ne s'interpose pas.
+The four verbs that render a **table** — `list`, `outdated`, `search`, `source` —
+accept `--json` for the same data, machine-readable. Everything else (`install`,
+`uninstall`, `info`…) relays the manager's output **as is**: prompts, progress bars,
+and UAC elevation work without a single extra line of code, precisely because jigger
+doesn't get in the way.
 
-Capturé pour de vrai (`brew`, macOS) :
+Captured for real (`brew`, macOS):
 
 ```
 $ jg outdated
-PAQUET         ACTUEL    DISPO
-boost          1.90.0_1  1.92.0
-pipx           1.16.6    1.16.7
-uv             0.12.4    0.12.5
-vtk            9.6.2     9.6.2_1
-1password-cli  2.38.1    2.39.0
-claude-code    2.1.223   2.1.224
+PACKAGE  CURRENT  AVAILABLE
+nushell  0.114.1  0.115.0
 
 $ jg outdated --json
 [
   {
-    "name": "boost",
-    "version": "1.90.0_1",
-    "available": "1.92.0",
+    "name": "nushell",
+    "version": "0.114.1",
+    "available": "0.115.0",
     "kind": "F",
     "source": "",
     "pm": "brew"
-  },
-  …
+  }
 ]
 ```
 
-Et un exemple de relais brut, sur `info` (jamais normalisé) — tronqué ici, mais chaque
-ligne ci-dessous est celle qu'imprime réellement `brew info fd` :
+And an example of raw relay, on `info` (never normalized) — truncated here, but every
+line below is what `brew info fd` actually prints:
 
 ```
 $ jg info fd
@@ -304,17 +310,17 @@ Not installed
 …
 ```
 
-`--yes` accepte les **accords de licence de winget**
-(`--accept-package-agreements --accept-source-agreements`) sur `install`/`uninstall`/
-`upgrade`. Il n'est **jamais implicite** : sans lui, l'invite de winget s'affiche
-normalement — la sortie étant relayée, rien n'empêche d'y répondre à la main. Chez brew et
-scoop, qui n'ont pas cette notion, `--yes` ne fait rien.
+`--yes` accepts winget's **license agreements**
+(`--accept-package-agreements --accept-source-agreements`) on `install`/`uninstall`/
+`upgrade`. It's **never implicit**: without it, winget's prompt shows up normally — the
+output being relayed, nothing stops you from answering it by hand. For brew and scoop,
+which have no such notion, `--yes` does nothing.
 
-### La colonne PM
+### The PM column
 
 ```
 $ jg source
-PAQUET                     ACTUEL
+PACKAGE
 asmvik/formulae
 felixkratz/formulae
 jandedobbeleer/oh-my-posh
@@ -323,274 +329,308 @@ nikitabobko/tap
 yves/cocktails
 ```
 
-(capturé pour de vrai — les taps réellement configurés sur cette machine ; `list` ci-dessus
-et `outdated` plus haut sont dans le même cas.) La colonne `PM` ne s'affiche que si
-**plusieurs** gestionnaires ont contribué à un tableau — une colonne toujours identique
-n'apprend rien. Sur cette machine, brew seul répond : pas de colonne PM. Avec winget et
-scoop tous deux présents, `jg outdated` afficherait une troisième colonne distinguant les
-deux origines.
+(captured for real — the taps actually configured on this machine; the listing above and
+the `outdated` example further up are in the same situation.) The `PM` column only shows up
+when **several** managers contributed to a table — a column that's always identical
+teaches nothing. On this machine, only brew answers: no PM column. With both winget and
+scoop present, `jg outdated` would show a third column distinguishing the two origins.
 
-### Ce que la façade ne change pas
+### What the facade doesn't change
 
-Les commandes natives — `brew install fd`, `winget search Git`, `scoop info 7zip` —
-continuent de marcher exactement comme avant, popup vivant compris : la façade **s'ajoute**,
-elle ne remplace rien. `jg`/`jigger` est un chemin de plus, pas un chemin obligé.
+Native commands — `brew install fd`, `winget search Git`, `scoop info 7zip` — keep
+working exactly as before, live popup included: the facade **only adds**, it never
+replaces. `jg`/`jigger` is one more path, not a mandatory one.
 
-**Ce qui n'est pas encore là :**
+**What isn't there yet:**
 
-- **PowerShell n'a pas encore l'alias `jg`.** Seul le greffon zsh
-  (`shell/jigger.plugin.zsh`) reconnaît `jigger`/`jg` en plus de `brew` ; `shell/jigger.psm1`
-  garde `JIGGER_COMMANDS` à `winget,scoop` par défaut, sans façade. Une passe Windows la
-  posera.
-- Les colonnes winget et scoop de la table ci-dessus restent **non vérifiées en pratique**
-  (cf. l'avertissement plus haut) — seule brew a tourné pour de vrai.
+- **PowerShell doesn't have the `jg` alias yet.** Only the zsh plugin
+  (`shell/jigger.plugin.zsh`) recognizes `jigger`/`jg` in addition to `brew`;
+  `shell/jigger.psm1` keeps `JIGGER_COMMANDS` at `winget,scoop` by default, without the
+  facade. A Windows pass will add it.
+- The winget and scoop columns of the table above remain **unverified in practice**
+  (see the warning above) — only brew has actually run for real.
 
-## Bloc oh-my-posh
+## Prompt block
 
-Un bloc dans le prompt : la **version du gestionnaire**, et les **mises à jour en
-attente**, comptées séparément.
+A block in the prompt: the **manager's version**, and **pending upgrades**, counted
+separately. Ready to paste for **oh-my-posh** and for **starship**; everything goes
+through environment variables, so any other prompt can read them too.
 
 ```
  yves@MacBook  ~/git/jigger   main  🍺 6.0.17  🧪 7  📦 2 ❯      ← macOS
  PS D:\jigger  🪟 1.29.280  📦 48  🥄 1 ❯                        ← Windows
 ```
 
-Sur macOS : une **bière** pour brew, une **éprouvette** pour les formulae, un **colis**
-pour les casks. Sous Windows : une **fenêtre** pour la version de winget, un **colis**
-pour les paquets winget à mettre à niveau, une **cuillère** pour les applications scoop.
+On macOS: a **beer** for brew, a **test tube** for formulae, a **package** for casks.
+On Windows: a **window** for winget's version, a **package** for winget packages to
+upgrade, a **spoon** for scoop applications.
 
-Chaque compteur disparaît quand il tombe à zéro — ` 1.29.280  🥄 1` s'il ne reste que
-scoop, ` 1.29.280` tout court quand tout est à jour. Un compteur ne s'affichant **jamais**
-à zéro, sa seule présence signifie « à mettre à jour » : ni flèche ni lettre à ajouter.
+Each counter disappears once it hits zero — ` 1.29.280  🥄 1` if only scoop remains,
+` 1.29.280` alone once everything is up to date. A counter that's **never** shown at
+zero means its mere presence says "needs an update": no arrow or letter to add.
 
-Ce sont des **émojis** : aucune police particulière n'est requise, et ils s'affichent
-partout. Si tu préfères des glyphes **Nerd Font** monochromes — qui prennent la couleur du
-segment, là où un émoji impose la sienne —, chaque fichier de segment indique les
-codes correspondants.
+These are **emoji**: no special font is required, and they show up everywhere. If you
+prefer monochrome **Nerd Font** glyphs — which take on the segment's color, where an
+emoji imposes its own —, every segment file lists the matching codes.
 
-Dans les deux cas, écris-les en **échappements JSON** plutôt qu'en clair : c'est la seule
-forme qui traverse sans dommage les éditeurs, les copier-coller et les outils qui
-normalisent l'Unicode. Les thèmes livrés par oh-my-posh font de même.
+Either way, write them as **escapes** (`\u21E1`, `\U0001F37A`) rather than literally:
+it's the only form that comes through editors, copy-paste, and Unicode-normalizing
+tools unscathed. Both JSON and TOML accept it, and the themes shipped with
+oh-my-posh do the same.
 
-Compter les mises à jour coûte de une à cinq secondes — `brew outdated` comme
-`winget list --upgrade-available` : c'est donc **exclu du chemin du prompt**. jigger le
-lance en tâche de fond et dépose le résultat dans un fichier d'une ligne, que le hook
-relit avec les seules primitives du shell — **aucun processus lancé, aucune attente**. La
-valeur affichée est celle du dernier calcul ; passé `JIGGER_PROMPT_TTL`, un
-rafraîchissement part détaché et le prompt suivant est à jour.
+Counting upgrades costs one to five seconds — `brew outdated` as much as
+`winget list --upgrade-available`: it is therefore **kept off the prompt's critical
+path**. jigger runs it in the background and drops the result into a one-line file,
+which the hook reads back using nothing but shell primitives — **no process spawned,
+no waiting**. The value shown is that of the last computation; past
+`JIGGER_PROMPT_TTL`, a refresh is fired off detached and the next prompt is up to date.
 
-Ce TTL seul laisserait le compteur mentir une demi-heure après un `winget upgrade`. jigger
-repère donc les commandes qui changent l'état — `install`, `upgrade`, `uninstall`,
-`update`, `bucket`… — au moment où elles partent, et rafraîchit **dans la foulée** : le
-prompt qui suit l'upgrade est déjà juste. C'est la seule fois où le prompt attend quelque
-chose (moins d'une seconde en général, après une commande qui a duré bien plus) ;
-`JIGGER_PROMPT_SYNC=0` rend ce rafraîchissement détaché, au prix d'un compteur juste au
-prompt d'*après*.
+That TTL alone would let the counter lie for half an hour after a `winget upgrade`.
+jigger therefore watches for the commands that change state — `install`, `upgrade`,
+`uninstall`, `update`, `bucket`… — as they leave, and refreshes **right after**: the
+prompt following the upgrade is already accurate. It's the only time the prompt waits
+for anything (usually under a second, after a command that took far longer);
+`JIGGER_PROMPT_SYNC=0` makes that refresh detached instead, at the cost of an accurate
+counter only on the prompt *after that one*.
 
-Seul ce que le shell voit passer est détecté : une mise à jour lancée ailleurs — autre
-onglet, application graphique — reste rattrapée par le TTL.
+Only commands typed in the shell are detected: an upgrade launched elsewhere — another
+tab, a GUI app — only gets picked up once the TTL expires.
 
-oh-my-posh n'ayant plus de segment `command` depuis la v26, tout passe par des variables
-d'environnement et un segment `text`.
+Everything goes through **environment variables**: oh-my-posh has had no `command`
+segment since v26, and having starship spawn a process on every prompt would go
+against the rule above. The hook exports, the prompt reads — a `text` segment on the
+oh-my-posh side, `env_var` modules on the starship side.
 
-**1. Activer le hook** — *avant* le chargement du greffon :
+**1. Enable the hook** — *before* loading the plugin:
 
 ```sh
 JIGGER_PROMPT=1                                    # ~/.zshrc
-source /chemin/vers/jigger/shell/jigger.plugin.zsh
+source /path/to/jigger/shell/jigger.plugin.zsh
 ```
 
 ```powershell
 $env:JIGGER_PROMPT = '1'                           # $PROFILE
-Import-Module C:\chemin\vers\jigger\shell\jigger.psm1
+Import-Module C:\path\to\jigger\shell\jigger.psm1
 ```
 
-Sous PowerShell, `prompt` est le seul « precmd » disponible : jigger **enveloppe** celui
-qui est en place. Importe donc jigger **après** oh-my-posh, sans quoi le bloc aurait
-toujours un coup de retard. (Sous zsh, l'ordre des `source` n'a pas d'importance : le
-hook se place de lui-même en tête de `precmd_functions`.)
+Under PowerShell, `prompt` is the only "precmd" available: jigger **wraps** whatever
+is already in place. So import jigger **after** oh-my-posh or starship, or the block
+would always lag one prompt behind. (Under zsh, the order of `source` calls doesn't
+matter: the hook places itself at the front of `precmd_functions` on its own, so
+before the prompt gets rendered.)
 
-**2. Ajouter le segment** — les thèmes livrés avec oh-my-posh sont écrasés à chaque mise
-à jour : travaille sur une copie.
+**2a. The oh-my-posh segment** — the themes shipped with oh-my-posh get overwritten on
+every update: work on a copy.
 
 ```sh
 mkdir -p ~/.config/oh-my-posh
 cp "$(brew --prefix oh-my-posh)/themes/catppuccin_mocha.omp.json" \
-   ~/.config/oh-my-posh/mon-theme.omp.json
+   ~/.config/oh-my-posh/my-theme.omp.json
 ```
 
-Colle le contenu de [`shell/oh-my-posh/brew.segment.json`](shell/oh-my-posh/brew.segment.json)
-— ou de [`windows.segment.json`](shell/oh-my-posh/windows.segment.json) — dans le tableau
-`segments` du bloc voulu, puis fais pointer ton profil sur ta copie :
+Paste the content of [`shell/oh-my-posh/brew.segment.json`](shell/oh-my-posh/brew.segment.json)
+— or of [`windows.segment.json`](shell/oh-my-posh/windows.segment.json) — into the
+`segments` array of the block you want, then point your profile at your copy:
 
 ```sh
-eval "$(oh-my-posh init zsh --config ~/.config/oh-my-posh/mon-theme.omp.json)"
+eval "$(oh-my-posh init zsh --config ~/.config/oh-my-posh/my-theme.omp.json)"
 ```
 
-Le segment n'affiche **rien** tant que le cache n'existe pas — le bloc apparaît au
-deuxième prompt, une fois le premier rafraîchissement terminé.
-
-### Réglages
+**2b. The starship segment** — nothing to copy beforehand: starship has only one
+config file, yours. Append the content of
+[`shell/starship/brew.toml`](shell/starship/brew.toml) — or of
+[`windows.toml`](shell/starship/windows.toml) — to the end of
+`~/.config/starship.toml`:
 
 ```sh
-JIGGER_PROMPT=1        # active le bloc (défaut 0)
-JIGGER_PROMPT_TTL=1800 # âge du cache, en secondes, avant rafraîchissement (défaut 30 min)
-JIGGER_PROMPT_SYNC=1   # après une commande mutante, rafraîchir avant d'afficher le
-                       # prompt (défaut) ; 0 = détaché, juste au prompt suivant
-JIGGER_CACHE_DIR=…     # emplacement du cache (défaut ~/Library/Caches/jigger sur macOS,
-                       # %LOCALAPPDATA%\jigger sous Windows)
+cat /path/to/jigger/shell/starship/brew.toml >> ~/.config/starship.toml
 ```
 
-### Variables exposées
+These are three [`env_var`](https://starship.rs/config/#environment-variable)
+modules, one per variable. starship's default `format` (`$all`) already contains
+`$env_var`: the block shows up without anything more. To place it elsewhere, write an
+explicit `format` and put `${env_var}` in it — or, module by module,
+`${env_var.JIGGER_BREW_VERSION}`.
 
-| Variable | Contenu |
+Where the oh-my-posh segment ties the whole block to the manager's version, the three
+starship modules are independent: on a machine that only has scoop, `🥄 1` shows up
+alone rather than nothing at all.
+
+The block shows **nothing** until the cache exists — it appears on the second prompt,
+once the first refresh has finished.
+
+### Settings
+
+```sh
+JIGGER_PROMPT=1        # enables the block (default 0)
+JIGGER_PROMPT_TTL=1800 # cache age, in seconds, before a refresh (default 30 min)
+JIGGER_PROMPT_SYNC=1   # after a mutating command, refresh before showing the
+                       # prompt (default); 0 = detached, only on the next prompt
+JIGGER_CACHE_DIR=…     # cache location (default ~/Library/Caches/jigger on macOS,
+                       # %LOCALAPPDATA%\jigger on Windows)
+```
+
+### Exposed variables
+
+| Variable | Content |
 |---|---|
-| `JIGGER_BREW_VERSION` | version de brew, sans suffixe de commits : `6.0.17` |
-| `JIGGER_BREW_FORMULAE` | formulae obsolètes |
-| `JIGGER_BREW_CASKS` | casks obsolètes |
-| `JIGGER_BREW_OUTDATED` | total des deux |
-| `JIGGER_WINGET_VERSION` | version de winget : `1.29.280` |
-| `JIGGER_WINGET_OUTDATED` | paquets winget à mettre à niveau |
-| `JIGGER_SCOOP_OUTDATED` | applications scoop à mettre à niveau |
-| `JIGGER_OUTDATED` | total des deux |
+| `JIGGER_BREW_VERSION` | brew's version, without the commit suffix: `6.0.17` |
+| `JIGGER_BREW_FORMULAE` | outdated formulae |
+| `JIGGER_BREW_CASKS` | outdated casks |
+| `JIGGER_BREW_OUTDATED` | total of the two |
+| `JIGGER_WINGET_VERSION` | winget's version: `1.29.280` |
+| `JIGGER_WINGET_OUTDATED` | winget packages to upgrade |
+| `JIGGER_SCOOP_OUTDATED` | scoop applications to upgrade |
+| `JIGGER_OUTDATED` | total of the two |
 
-Un compteur **n'est pas défini** quand il vaut zéro. Le template se réduit ainsi à un
-`{{ if .Env.JIGGER_WINGET_OUTDATED }}`, sans comparaison de chaînes — et le bloc s'efface
-tout seul quand il n'y a rien à dire. Pour n'afficher qu'un chiffre plutôt que le détail
-par gestionnaire, remplace les deux blocs du template par :
+A counter is **left unset** when it's zero. On the oh-my-posh side, the template
+reduces to a plain `{{ if .Env.JIGGER_WINGET_OUTDATED }}`, no string comparison
+needed; on the starship side, an `env_var` module with no variable simply doesn't
+show, and there's no condition to write. On both sides, the block clears itself when
+there's nothing to say.
+
+To show a single figure instead of the per-manager breakdown, replace the two
+oh-my-posh template blocks with:
 
 ```
 {{ if .Env.JIGGER_OUTDATED }} <#F9E2AF>\u21e1{{ .Env.JIGGER_OUTDATED }}</>{{ end }}
 ```
 
-Rien n'interdit de se servir de ces variables ailleurs que dans oh-my-posh (starship, un
-prompt maison…). Sous PowerShell, `Update-JiggerPrompt` est exportée exprès : appelle-la
-depuis ta propre fonction `prompt`.
+… or the last two starship modules with:
 
-## Sous le capot (CLI)
-
-Le greffon s'appuie sur ces sous-commandes ; utilisables seules :
-
-```sh
-jigger <verbe> [--pm <gestionnaire>] [--json] [--yes] [arguments…]
-                                 # la façade, cf. § Une seule syntaxe — install, uninstall,
-                                 # upgrade, list, outdated, search, info, source[ add|rm],
-                                 # pin, unpin, cleanup, doctor
-jigger render --line "winget install Git." --sel 0 --cols 80   # une frame du popup vivant
-                                 # 1re ligne : count=… sel=… exec=… left=<ligne complétée>
-                                 # --focus=true : le popup a le clavier (cf. § Usage)
-jigger complete "install fire"   # candidats, un par ligne (complétion classique)
-jigger pick "scoop uninstall 7z" # sélecteur interactif ; imprime la nouvelle ligne
-                                 # code retour : 0 = insérer, 10 = exécuter, 2 = annulé
-jigger demo                      # aperçu statique coloré du sélecteur
-jigger prompt                    # état en cache : version⇥compteur1⇥compteur2⇥epoch
-jigger prompt --refresh          # interroge le gestionnaire et réécrit le cache (lent)
-jigger prompt --path             # chemin du fichier de cache
-jigger warm                      # reconstitue les catalogues périmés (lent, détaché)
-jigger warm --installed          # les seules listes de paquets installés
-jigger warm --all                # tout, périmé ou non
+```toml
+[env_var.JIGGER_OUTDATED]
+symbol = "\u21E1 "
+style  = "#F9E2AF"
+format = "[$symbol$env_value]($style) "
 ```
 
-`render`, `complete`, `pick`, `prompt`, `warm` et `demo` sont des **mots réservés** : le
-premier mot de la ligne est un verbe de façade dès qu'il n'en fait pas partie. Contrainte
-permanente pour la suite — aucun futur usage interne ne pourra reprendre le nom d'un verbe
-canonique ; s'il fallait un jour un « jigger list » interne, c'est lui qui changerait de
-nom, pas le verbe.
+Nothing stops you from using these variables outside these two prompts (a homemade
+prompt, a hand-rolled `PS1`…). Under PowerShell, `Update-JiggerPrompt` is exported on
+purpose: call it from your own `prompt` function.
 
-`render` est **sans état** : l'index sélectionné vit côté shell et lui revient par
-`--sel`. C'est ce qui permet au greffon de rester maître du clavier — le shell garde sa
-ligne, jigger ne fait qu'imprimer un cadre.
+## Under the hood (CLI)
 
-**Rien de lent n'est jamais dans le chemin d'un rendu** (~8 ms de travail, ~30 ms de bout
-en bout sous Windows, où démarrer un processus coûte le plus cher). Chaque gestionnaire y
-parvient à sa façon :
+The plugin builds on these subcommands; usable on their own:
 
-| | catalogue | installés | obsolètes |
+```sh
+jigger <verb> [--pm <manager>] [--json] [--yes] [arguments…]
+                                 # the facade, see § One syntax — install, uninstall,
+                                 # upgrade, list, outdated, search, info, source[ add|rm],
+                                 # pin, unpin, cleanup, doctor
+jigger render --line "winget install Git." --sel 0 --cols 80   # one frame of the live popup
+                                 # 1st line: count=… sel=… exec=… left=<completed line>
+                                 # --focus=true: the popup holds the keyboard (see § Usage)
+jigger complete "install fire"   # candidates, one per line (classic completion)
+jigger pick "scoop uninstall 7z" # interactive picker; prints the new line
+                                 # exit code: 0 = insert, 10 = execute, 2 = cancelled
+jigger demo                      # static, colored preview of the picker
+jigger prompt                    # cached state: version⇥counter1⇥counter2⇥epoch
+jigger prompt --refresh          # queries the manager and rewrites the cache (slow)
+jigger prompt --path             # path to the cache file
+jigger warm                      # rebuilds stale catalogs (slow, detached)
+jigger warm --installed          # only the installed-package lists
+jigger warm --all                # everything, stale or not
+```
+
+`render`, `complete`, `pick`, `prompt`, `warm`, and `demo` are **reserved words**: the
+first word of the line is a facade verb as soon as it isn't one of these. A permanent
+constraint going forward — no future internal use will ever be able to reuse a
+canonical verb's name; if an internal "jigger list" were ever needed, it would be that
+one that gets renamed, not the verb.
+
+`render` is **stateless**: the selected index lives on the shell side and comes back
+through `--sel`. That's what lets the plugin stay in charge of the keyboard — the
+shell keeps its line, jigger only prints a frame.
+
+**Nothing slow is ever on a render's critical path** (~8 ms of work, ~30 ms end to end
+on Windows, where spawning a process costs the most). Each manager gets there its own
+way:
+
+| | catalog | installed | outdated |
 |---|---|---|---|
-| **brew** | `brew formulae` / `casks`, en cache 24 h | lus dans `Cellar`/`Caskroom` (~1 ms) | `brew outdated --json=v2`, en tâche de fond |
-| **scoop** | lu dans `buckets/*/bucket/*.json` | lus dans `apps/<nom>/<version>` | comparaison des manifestes, sur le disque |
-| **winget** | `winget search .`, en cache 24 h | `winget list`, en cache 10 min | `winget list --upgrade-available`, en tâche de fond |
+| **brew** | `brew formulae` / `casks`, cached 24 h | read from `Cellar`/`Caskroom` (~1 ms) | `brew outdated --json=v2`, in the background |
+| **scoop** | read from `buckets/*/bucket/*.json` | read from `apps/<name>/<version>` | manifest comparison, on disk |
+| **winget** | `winget search .`, cached 24 h | `winget list`, cached 10 min | `winget list --upgrade-available`, in the background |
 
-scoop n'a besoin d'**aucun cache** : tout ce que jigger lui demande est déjà sur le
-disque, dans une arborescence qui ressemble à s'y méprendre au `Cellar` de Homebrew. Même
-le compte des mises à jour en attente s'y lit — c'est ce que fait `scoop status`, mais
-sans démarrer PowerShell ni toucher au réseau.
+scoop needs **no cache at all**: everything jigger asks it for is already on disk, in
+a tree structure that looks a lot like Homebrew's `Cellar`. Even the count of pending
+upgrades is read from there — that's what `scoop status` does, but without starting
+PowerShell or touching the network.
 
-winget est à l'opposé : aucune sortie machine (que des tableaux de largeur fixe, aux
-en-têtes **traduits** — d'où un découpage aux frontières de colonnes, et des jeux d'essai
-en français), et près de deux secondes par appel. Ses deux listes sont donc tenues en
-cache et reconstituées par `jigger warm`, que `render` lance détaché dès qu'il les trouve
-périmées. Le catalogue s'obtient en cherchant `.` : le point qui sépare l'éditeur du
-paquet dans tous les identifiants de la source officielle (`Git.Git`,
-`Microsoft.PowerShell`) — soit, ici, 14 401 noms.
+winget is the opposite: no machine-readable output (only fixed-width tables, with
+headers that are **translated** — hence a split at column boundaries, and test
+fixtures in French), and close to two seconds per call. Its two lists are therefore
+kept in a cache and rebuilt by `jigger warm`, which `render` launches detached the
+moment it finds them stale. The catalog is obtained by searching for `.`: the dot that
+separates publisher from package in every identifier from the official source
+(`Git.Git`, `Microsoft.PowerShell`) — that is, here, 14,401 names.
 
 ## Tests
 
 ```sh
-make test-all     # tests Go + suite du shell de la plateforme
+make test-all     # Go tests + the platform's shell suite
 ```
 
-Le widget zsh ne se teste que dans un vrai pseudo-terminal : `tests/zpty.zsh` lance un zsh
-interactif sous `zpty`, tape une séquence de touches et vérifie ce qui est réellement
-écrit à l'écran. `JIGGER_TEST_PLUGINS=1` y ajoute zsh-autosuggestions et
-zsh-syntax-highlighting, pour prouver qu'ils cohabitent.
+The zsh widget can only be tested in a real pseudo-terminal: `tests/zpty.zsh` launches
+an interactive zsh under `zpty`, types a sequence of keys, and checks what's actually
+written to the screen. `JIGGER_TEST_PLUGINS=1` adds zsh-autosuggestions and
+zsh-syntax-highlighting to the mix, to prove they coexist.
 
-Sous Windows, `tests/conpty` joue le même rôle : il lance un pwsh dans un **pseudo-terminal**
-(ConPTY), tape une séquence de touches et **rend l'écran** tel qu'on le verrait, cadre
-compris. `tests/pty.ps1` (`make test-pty`) en tire ses assertions, dans la situation qui
-compte — prompt sur la dernière ligne de l'écran, comme dans un terminal en usage.
+On Windows, `tests/conpty` plays the same role: it launches a pwsh in a
+**pseudo-terminal** (ConPTY), types a sequence of keys, and **renders the screen** as
+you'd actually see it, frame included. `tests/pty.ps1` (`make test-pty`) draws its
+assertions from that, in the situation that matters — prompt on the terminal's last
+line, as in a terminal in active use.
 
 ```sh
-go run ./tests/conpty -rc essai.ps1 -keys 'winget ins\t' -screen   # l'écran final
+go run ./tests/conpty -rc setup.ps1 -keys 'winget ins\t' -screen   # the final screen
 ```
 
-`tests/smoke.ps1` couvre ce qui ne demande pas de console : les touches effectivement
-reprises, l'analyse de la sortie de `render`, les séquences d'affichage et d'effacement,
-la détection des commandes mutantes, et l'export des variables du prompt depuis un cache
-fabriqué.
+`tests/smoke.ps1` covers what doesn't need a console: the keys actually relayed, the
+parsing of `render`'s output, the show/clear sequences, mutating-command detection,
+and exporting the prompt's variables from a manufactured cache.
 
-Cette suite-là tourne **aussi sur le pwsh de macOS ou de Linux** :
+That suite also runs **on macOS's or Linux's pwsh**:
 
 ```sh
 go build -o jigger . && pwsh -NoProfile -File tests/smoke.ps1
 ```
 
-Le module PowerShell se développe donc dans la même boucle que le reste, sans démarrer une
-machine Windows — laquelle reste indispensable pour le popup à l'écran (`tests/conpty`) et
-pour tout ce qui passe par les vraies CLI winget et scoop. `GOOS=windows go build` et
-`GOOS=windows go vet ./...` vérifient au passage, depuis n'importe quelle plateforme, que
-le code Windows compile.
+The PowerShell module is therefore developed in the same loop as everything else,
+without spinning up a Windows machine — which stays indispensable for the on-screen
+popup (`tests/conpty`) and for everything that goes through the real winget and scoop
+CLIs. `GOOS=windows go build` and `GOOS=windows go vet ./...` check, along the way and
+from any platform, that the Windows code compiles.
 
-## Feuille de route
+## Roadmap
 
-- **L'alias `jg` sous PowerShell.** Posé côté zsh seulement (§ Une seule syntaxe) ;
-  `shell/jigger.psm1` attend encore d'ajouter `jigger`/`jg` à `JIGGER_COMMANDS`.
-- **Vérifier les colonnes winget et scoop** de la table de verbes contre les vraies CLI
-  (`internal/winget/verbs.go`, `internal/scoop/verbs.go`) — écrites de mémoire, jamais
-  confrontées à une machine Windows.
-- Complétion **fish** et **bash**.
-- Wrapper de commande : proposer d'**enchaîner** sur les commandes suggérées par le
-  gestionnaire (« To install …, run: … »).
-- Volet d'aperçu (`brew desc`, `winget show`) dans le sélecteur **et** dans `jg search` /
+- **The `jg` alias under PowerShell.** Set up on the zsh side only (§ One syntax);
+  `shell/jigger.psm1` still needs `jigger`/`jg` added to `JIGGER_COMMANDS`.
+- **Verify the winget and scoop columns** of the verb table against the real CLIs
+  (`internal/winget/verbs.go`, `internal/scoop/verbs.go`) — written from memory, never
+  checked against a Windows machine.
+- **fish** and **bash** completion.
+- Command wrapper: offer to **chain** onto the commands suggested by the manager
+  ("To install …, run: …").
+- Preview pane (`brew desc`, `winget show`) in the picker **and** in `jg search` /
   `jg info`.
-- Distribution comme **commande externe brew** (`brew jigger`) via un tap, et paquet
-  **scoop** / **winget**.
+- Distribution as an **external brew command** (`brew jigger`) via a tap, and a
+  **scoop** / **winget** package.
 
-Non-buts assumés de la phase 1 de la façade — écartés en connaissance de cause, pas
-oubliés :
+Deliberate non-goals of facade phase 1 — left out on purpose, not forgotten:
 
-- **Les verbes singuliers** (`brew services`, `winget export`, `scoop reset`…) — une ligne
-  de table chacun, le jour où l'un vient à manquer.
-- **Le départage automatique** (un `JIGGER_PM_ORDER` qui choisirait pour toi entre deux
-  gestionnaires qui connaissent le même nom) — un arbitrage silencieux entre deux `git` qui
-  ne sont pas le même logiciel romprait la confiance dans la façade. `--pm` reste la seule
-  échappatoire.
-- **Les gestionnaires tiers par sous-processus** (apt, pacman… branchés sans recompiler) —
-  mérite son propre ADR.
-- **De nouveaux gestionnaires** eux-mêmes — la phase 1 prouve le mécanisme sur trois, pas
-  sur cinq.
+- **Singular verbs** (`brew services`, `winget export`, `scoop reset`…) — one table
+  row each, the day one of them turns out to be missing.
+- **Automatic tie-breaking** (a `JIGGER_PM_ORDER` that would choose for you between
+  two managers that know the same name) — a silent arbitration between two `git`
+  packages that aren't the same software would break trust in the facade. `--pm`
+  remains the only escape hatch.
+- **Third-party managers via subprocess** (apt, pacman… wired in without recompiling)
+  — deserves its own ADR.
+- **New managers** themselves — phase 1 proves the mechanism on three, not on five.
 
-## Licence
+## License
 
 Apache-2.0.
 

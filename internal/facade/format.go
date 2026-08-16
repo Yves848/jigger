@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"gitlab.yg-devworks.com/yves/jigger/internal/i18n"
 	"gitlab.yg-devworks.com/yves/jigger/internal/pm"
 )
 
@@ -24,7 +25,7 @@ func Formater(v pm.Verb, rows []pm.Package, enJSON bool) string {
 	}
 
 	if len(rows) == 0 {
-		return "rien à signaler\n"
+		return i18n.T("facade.nothing")
 	}
 
 	avecPM := plusieursPM(rows)
@@ -46,18 +47,18 @@ func Formater(v pm.Verb, rows []pm.Package, enJSON bool) string {
 	// ACTUEL suit la même règle adaptative que DISPO, SOURCE et PM : une colonne
 	// toujours vide n'apprend rien — c'est le cas de list/outdated (Version renseigné),
 	// mais pas de search/source, qui n'ont aucune version à montrer.
-	entete := []string{"PAQUET"}
+	entete := []string{i18n.T("table.package")}
 	if avecActuel {
-		entete = append(entete, "ACTUEL")
+		entete = append(entete, i18n.T("table.current"))
 	}
 	if avecDispo {
-		entete = append(entete, "DISPO")
+		entete = append(entete, i18n.T("table.available"))
 	}
 	if avecSource {
-		entete = append(entete, "SOURCE")
+		entete = append(entete, i18n.T("table.source"))
 	}
 	if avecPM {
-		entete = append(entete, "PM")
+		entete = append(entete, i18n.T("table.pm"))
 	}
 
 	table := [][]string{entete}
