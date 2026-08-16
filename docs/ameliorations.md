@@ -93,14 +93,6 @@ déléguée
 La description annonce encore « Assistance Homebrew pour le terminal », d'avant winget,
 scoop et la façade ; les topics sont vides. C'est la première ligne que voit un visiteur.
 
-### A-9 — Publier la v0.9.0
-
-**Priorité :** à déterminer
-
-`main.go` est encore en `0.8.0` et le CHANGELOG a une section `[Unreleased]` fournie :
-l'internationalisation, l'installation Windows, les analyseurs scoop. La chaîne est connue
-— consignation, CHANGELOG, tag, release, formule du tap, `brew upgrade`.
-
 ### A-10 — Mettre en page et paginer les sorties
 
 **Priorité :** à déterminer · **Provenance :** demande du 16 août
@@ -363,4 +355,25 @@ Trois points à ne pas manquer :
 
 ## Fait
 
-*(vide)*
+### A-9 — Publier la v0.9.0
+
+**Fait le :** 2026-08-16 · **Commit :** `dfa3292` · **Tag :** `v0.9.0` ·
+[release](https://gitlab.yg-devworks.com/yves/jigger/-/releases/v0.9.0)
+
+Tout ce qui avait été fusionné restait invisible pour qui installe par le tap — la
+réparation des analyseurs scoop comprise. C'est publié : `brew upgrade jigger` mène de la
+0.8.0 à la 0.9.0.
+
+Deux choses au-delà de la chaîne habituelle :
+
+- **Les deux greffons exigent désormais la 0.9.0** (contre 0.8.0 côté zsh, 0.6.0 côté
+  PowerShell). Un binaire 0.8.0 ne parle que français, alors que ces greffons disent leurs
+  messages dans les deux langues : les apparier produirait deux langues dans la même
+  fenêtre. Le refus a été vérifié avec un faux binaire 0.8.0 dans le `PATH`.
+- **Le tap livre enfin le segment starship** : le répertoire `shell/starship` n'existait pas
+  dans l'archive v0.8.0, ce qui était noté à la publication précédente et attendait ce tag.
+
+Les cadres de la documentation ont été régénérés dans les deux langues, et la référence du
+banc de rendu recapturée — elle porte le numéro de version, ce qui est précisément l'objet
+d'A-5.
+
