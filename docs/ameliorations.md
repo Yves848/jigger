@@ -214,6 +214,39 @@ Trois points à traiter :
   compteur du prompt qui ne s'affiche jamais à zéro dit « à mettre à jour » par sa seule
   présence, sans flèche ni couleur.
 
+### A-14 — Un écran de configuration (TUI)
+
+**Priorité :** à déterminer · **Provenance :** demande du 16 août
+
+Un écran plein terminal pour régler jigger, dont la mise en page découlerait des paramètres
+**déclarés par chaque gestionnaire enregistré** — comme la table de verbes fait découler les
+capacités de la façade.
+
+Trois obstacles, dont deux sont des décisions d'architecture avant d'être du code. Ils ne
+condamnent rien, mais ils expliquent pourquoi cette entrée est plus lourde qu'elle n'en a
+l'air.
+
+- **Il n'existe aucun fichier de configuration.** Tout se règle par variables
+  d'environnement — `JIGGER_LIVE`, `JIGGER_ROWS`, `JIGGER_KEY`, `JIGGER_PROMPT`,
+  `JIGGER_LANG`… Un écran de configuration suppose de créer un fichier, donc de trancher un
+  ordre de préséance (environnement > fichier > défauts, vraisemblablement) et un
+  emplacement. C'est de niveau ADR, comme l'ont été le choix de Go et la table déclarative.
+- **La moitié des réglages n'appartient pas au binaire.** `JIGGER_ROWS`, `JIGGER_KEY`,
+  `JIGGER_LIVE` sont lus par le **greffon**, au chargement du shell, avant tout appel à
+  jigger. Un écran lancé depuis le binaire ne peut donc pas les appliquer au shell en cours :
+  il écrit un fichier que le greffon lira au prochain démarrage, ou il imprime les lignes à
+  coller. À décider explicitement, sinon l'écran promettra un effet qu'il n'a pas.
+- **Les gestionnaires ne déclarent aujourd'hui aucun paramètre.** Les réglages existants
+  sont globaux à jigger ; côté gestionnaires, il n'y a que des variables qui ne lui
+  appartiennent pas (`$SCOOP`, `$SCOOP_GLOBAL`) et des durées de cache écrites en dur. Pour
+  qu'une mise en page « claire et logique » se déduise des gestionnaires, il faut d'abord
+  que chacun **déclare** ses paramètres — une seconde table à côté de `pm.Bindings`, dans
+  l'esprit de l'ADR-0002 : ce qui est déclaré est vérifiable, ce qui est codé en dur ne
+  l'est pas.
+
+La partie visible, elle, est la moins coûteuse : Bubble Tea est déjà là, et `internal/ui`
+sait dessiner un cadre, naviguer et filtrer.
+
 ---
 
 ## En cours
