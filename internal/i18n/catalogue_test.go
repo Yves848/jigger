@@ -17,6 +17,7 @@ func TestClesDuPopup(t *testing.T) {
 		"popup.insert", "popup.execute", "popup.navigate", "popup.browse",
 		"popup.close", "popup.cancel", "popup.choose", "popup.filter",
 		"popup.empty", "popup.filter_hint", "popup.catalog_brew", "popup.catalog_winget",
+		"popup.ambiguous_title",
 	} {
 		trad, ok := catalogue[cle]
 		if !ok {
@@ -35,10 +36,9 @@ func TestClesDeLaFacade(t *testing.T) {
 	for _, cle := range []string{
 		"facade.no_verb", "facade.unknown_verb", "facade.nobody_can",
 		"facade.unknown_pm", "facade.pm_unavailable", "facade.unknown_name",
-		"facade.near", "facade.too_recent", "facade.ambiguous", "facade.ambiguous_title",
-		"facade.choose_pm", "facade.failed", "facade.unreadable", "facade.no_parser",
-		"facade.nothing", "table.package", "table.current", "table.available",
-		"table.source", "table.pm",
+		"facade.near", "facade.too_recent", "facade.ambiguous", "facade.choose_pm",
+		"facade.failed", "facade.unreadable", "facade.no_parser", "facade.nothing",
+		"table.package", "table.current", "table.available", "table.source", "table.pm",
 	} {
 		trad, ok := catalogue[cle]
 		if !ok {
@@ -52,17 +52,32 @@ func TestClesDeLaFacade(t *testing.T) {
 }
 
 // Les clés de la ligne de commande (usage, drapeaux, derniers messages de main.go)
-// existent dans le catalogue.
+// existent et sont traduites dans les deux langues — même exigence que les popups et la
+// façade (TestClesDuPopup, TestClesDeLaFacade).
+//
+// Seule exception, explicite plutôt que tue par une absence de la liste : cli.usage3 n'a
+// volontairement pas de traduction distincte, la ligne ne contenant que des noms
+// d'options (--refresh, --wait, --path, --all, --installed), identiques dans les deux
+// langues.
 func TestClesDuCli(t *testing.T) {
+	const sansTraductionDistincte = "cli.usage3"
 	for _, cle := range []string{
 		"cli.usage1", "cli.usage2", "cli.usage3",
 		"cli.flag_all", "cli.flag_installed", "cli.flag_refresh", "cli.flag_wait",
 		"cli.flag_path", "cli.flag_line", "cli.flag_sel", "cli.flag_cols",
 		"cli.flag_rows", "cli.flag_color", "cli.flag_focus", "cli.warm_failed",
-		"cli.prompt_failed",
+		"cli.prompt_failed", "cli.no_verb", "cli.pm_expects_value",
 	} {
-		if _, ok := catalogue[cle]; !ok {
+		trad, ok := catalogue[cle]
+		if !ok {
 			t.Errorf("%s : absente du catalogue", cle)
+			continue
+		}
+		if cle == sansTraductionDistincte {
+			continue
+		}
+		if trad[FR] == "" {
+			t.Errorf("%s : le français est vide", cle)
 		}
 	}
 }

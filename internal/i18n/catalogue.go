@@ -22,6 +22,13 @@ var catalogue = map[string][nbLangues]string{
 	"popup.filter_hint":    {"type to filter… (%d packages)", "tapez pour filtrer… (%d paquets)"},
 	"popup.catalog_brew":   {"building the Homebrew catalog…", "catalogue Homebrew en préparation…"},
 	"popup.catalog_winget": {"building the winget catalog…", "catalogue winget en préparation…"},
+	// Titre du popup de désambiguïsation ouvert par trancher() (main.go) : fuite
+	// assemblée trouvée hors des lignes citées par le brief — un fmt.Sprintf qui
+	// fabriquait ce titre en français, y compris à JIGGER_LANG=en. Préfixée popup. (et
+	// non facade.) : elle s'affiche dans le cadre, comme popup.insert ou
+	// popup.filter_hint — facade.ambiguous et facade.choose_pm, eux, sortent en Fprintf
+	// brut sur stderr, une surface différente.
+	"popup.ambiguous_title": {"%s: %d managers", "%s : %d gestionnaires"},
 
 	// ── Façade ────────────────────────────────────────────────────────────────────────
 	"facade.no_verb": {
@@ -73,11 +80,6 @@ var catalogue = map[string][nbLangues]string{
 	"facade.manager_error":  {"jigger (%s): %v\n", "jigger (%s) : %v\n"},
 	"facade.list_separator": {"; ", " ; "},
 
-	// Titre du popup de désambiguïsation ouvert par trancher() (main.go) : fuite
-	// assemblée trouvée hors des lignes citées par le brief — un fmt.Sprintf qui
-	// fabriquait ce titre en français, y compris à JIGGER_LANG=en.
-	"facade.ambiguous_title": {"%s: %d managers", "%s : %d gestionnaires"},
-
 	// ── En-têtes de tableaux ──────────────────────────────────────────────────────────
 	// Traduits sans risque : --json sert ceux qui analysent.
 	"table.package":   {"PACKAGE", "PAQUET"},
@@ -112,4 +114,10 @@ var catalogue = map[string][nbLangues]string{
 	"cli.flag_focus":     {"the popup owns the keyboard: arrows go to it", "le popup a le clavier : les flèches lui reviennent"},
 	"cli.warm_failed":    {"jigger warm (%s): %v\n", "jigger warm (%s) : %v\n"},
 	"cli.prompt_failed":  {"jigger prompt --refresh:", "jigger prompt --refresh :"},
+
+	// Erreurs de separerDrapeaux — relevées en relecture : « les derniers messages de
+	// main.go » de l'intitulé de la tâche 5 les couvre, le brief avait juste omis de les
+	// citer.
+	"cli.no_verb":          {"no verb", "aucun verbe"},
+	"cli.pm_expects_value": {"jigger: --pm expects a manager name", "jigger : --pm attend un nom de gestionnaire"},
 }

@@ -26,6 +26,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -117,14 +118,14 @@ type optsCLI struct {
 
 func separerDrapeaux(argv []string) (verbe string, args []string, o optsCLI, err error) {
 	if len(argv) == 0 {
-		return "", nil, o, fmt.Errorf("aucun verbe")
+		return "", nil, o, errors.New(i18n.T("cli.no_verb"))
 	}
 	verbe = argv[0]
 	for i := 1; i < len(argv); i++ {
 		switch argv[i] {
 		case "--pm":
 			if i+1 >= len(argv) {
-				return "", nil, o, fmt.Errorf("jigger : --pm attend un nom de gestionnaire")
+				return "", nil, o, errors.New(i18n.T("cli.pm_expects_value"))
 			}
 			i++
 			o.PM = argv[i]
@@ -218,7 +219,7 @@ func trancher(amb *facade.Ambiguite) (string, bool) {
 	defer tty.Close()
 
 	lipgloss.SetColorProfile(termenv.NewOutput(tty.Out).Profile)
-	titre := i18n.Tf("facade.ambiguous_title", amb.Nom, len(amb.Candidats))
+	titre := i18n.Tf("popup.ambiguous_title", amb.Nom, len(amb.Candidats))
 	model := ui.New(titre, complete.Result{Executable: true, Items: items})
 	// Pied propre à la désambiguïsation : on choisit un gestionnaire, on n'insère ni
 	// n'exécute une commande — ⇥/↩ n'y ont pas de sens (spec §3, README).
