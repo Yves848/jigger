@@ -1,8 +1,8 @@
 # Getting started with jigger
 
-From install to first completion, in about ten minutes. This document reads start to
-end; the [README](../README.md) covers the same ground in more detail, and explains
-_why_ things are built this way.
+From install to first completion, in about ten minutes. This guide is meant to be
+read start to finish; the [README](../README.md) covers the same ground in more
+detail, and explains _why_ things are built this way.
 
 `jigger` wires a package picker into your shell: the moment you type a package-manager
 command, a frame appears under the prompt and tracks your keystrokes.
@@ -21,7 +21,7 @@ command, a frame appears under the prompt and tracks your keystrokes.
 ╰──────────────────────────────────────────────────────╯
 ```
 
-And, over all three managers, **one syntax**: `jg install fd` reaches whichever one
+And, across all three managers, **one syntax**: `jg install fd` reaches whichever one
 knows `fd`, without you having to know which (§ 6).
 
 | Platform | Shell | Managers |
@@ -31,8 +31,9 @@ knows `fd`, without you having to know which (§ 6).
 
 ## 1. Prerequisites
 
-- **The manager itself** — and nothing else. jigger depends on no service, talks to no
-  network, and works only with what `brew`, `winget`, or `scoop` already has on disk.
+- **The manager itself** — and nothing else. jigger depends on no service, makes no
+  network calls, and works only with what `brew`, `winget`, or `scoop` already has on
+  disk.
 - **zsh** (ships with macOS) or **PowerShell 7** with PSReadLine (ships with Windows).
 - **Go ≥ 1.24**, only to compile — the Homebrew package handles that on its own.
 
@@ -75,9 +76,9 @@ jigger yet (it's on the roadmap). In that case, the PowerShell plugin comes from
 the cloned repository.
 
 > **Only one binary on the `PATH`.** If you installed through more than one route,
-> `which -a jigger` (or `Get-Command jigger -All`) will tell you. An old binary in
-> front of a recent plugin is the most painful failure to diagnose — hence the check
-> in § 4.
+> `which -a jigger` (or `Get-Command jigger -All`) will tell you. An old binary
+> paired with a recent plugin is the most painful failure to diagnose — hence
+> the check in § 4.
 
 ## 3. Wire the plugin into the shell
 
@@ -133,7 +134,7 @@ Just type a command. The popup lives on its own:
 ```
 brew install fire         packages named "fire…", updated with every letter
 brew uninstall ␣          installed packages only
-brew list --              the options of list
+brew list --              list's own options
 winget install Git.       same idea, on Windows
 scoop uninstall 7z
 ```
@@ -146,7 +147,7 @@ scoop uninstall 7z
 | `^N` / `^P` | the same, for those who prefer them to arrow keys |
 | `^G` | closes the popup for the current line (`⇥` reopens it) |
 
-Two things worth knowing, which account for most of the comfort:
+Two things worth knowing, most of what makes this comfortable:
 
 - **The arrow keys remain your history** as long as the popup doesn't hold the
   keyboard — open or not. The frame shows which: the current line underlined and the
