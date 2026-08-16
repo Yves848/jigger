@@ -168,6 +168,20 @@ func (m *Model) sync() {
 	m.offset = m.liste.Offset()
 }
 
+// modeView affiche le mode de filtre courant, et signale un motif qui ne compile pas.
+// En mode texte — le comportement historique — rien ne s'affiche : le sélecteur reste
+// exactement ce qu'il était pour qui ne se sert pas des expressions rationnelles.
+func (m Model) modeView() string {
+	if m.liste.Mode() == FiltreSousChaine {
+		return ""
+	}
+	s := filterHint.Render("  [" + i18n.T("table.moderegex") + "]")
+	if !m.liste.Valide() {
+		s += base.Foreground(amber).Render(" " + i18n.T("table.badregex"))
+	}
+	return s
+}
+
 // applyFilter conserve son nom : les tests du sélecteur l'appellent directement.
 func (m *Model) applyFilter() {
 	m.liste.Filtrer(m.input.Value())
@@ -185,6 +199,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.Chosen = nil
 			m.quitting = true
 			return m, tea.Quit
+		// ^R bascule entre texte brut et expression rationnelle. Sans conflit ici : le
+		// sélecteur plein écran a le clavier pour lui seul, là où ^R appartient au shell
+		// dans le popup vivant (A-11, seconde moitié).
+		case "ctrl+r":
+			m.liste.BasculerMode()
+			m.sync()
+			return m, nil
 		case "up", "ctrl+p":
 			m.liste.Haut()
 			m.sync()
@@ -232,7 +253,13 @@ func (m Model) View() string {
 		if m.executable {
 			keys = append(keys, Key{"↩", i18n.T("popup.execute")})
 		}
-		keys = append(keys, Key{"↑↓", i18n.T("popup.navigate")}, Key{"esc", i18n.T("popup.cancel")})
+		// ^R prend la place de « ↑↓ naviguer » : le cadre a une largeur fixe, et un pied
+		// qui déborde perd son dernier libellé. Dans une liste, les flèches sont
+		// évidentes ; l'existence d'un mode regex ne l'est pas — c'est elle qu'un pied
+		// doit enseigner. La ligne de filtre, elle, affiche le mode courant.
+		keys = append(keys,
+			Key{"^R", i18n.T("table.regex")},
+			Key{"esc", i18n.T("popup.cancel")})
 	}
 
 	return Frame{
@@ -240,7 +267,7 @@ func (m Model) View() string {
 		Items:      m.filtered,
 		Sel:        m.cursor,
 		Offset:     m.offset,
-		FilterView: filterHint.Render("› ") + m.input.View(),
+		FilterView: filterHint.Render("› ") + m.input.View() + m.modeView(),
 		Empty:      i18n.T("popup.empty"),
 		Keys:       keys,
 		Focused:    true, // le sélecteur plein écran possède le clavier, par construction

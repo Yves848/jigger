@@ -337,6 +337,7 @@ Import-Module C:\chemin\vers\jigger\shell\jigger.psm1
 | Variable | Défaut | Rôle |
 |---|---|---|
 | `JIGGER_LIVE` | `1` | popup vivant. `0` = ⇥ ouvre le sélecteur plein écran, et rien ne s'affiche sans le demander |
+| — | — | dans ce sélecteur plein écran, `^R` bascule le filtre entre texte brut et expression rationnelle ; le mode s'affiche sur la ligne de filtre |
 | `JIGGER_ROWS` | `8` | candidats affichés — à réduire sur un terminal court |
 | `JIGGER_KEY` | `^I` (Tab) | touche d'insertion. `'^ '` pour Ctrl-Espace ; sous PowerShell, un nom PSReadLine (`Ctrl+Spacebar`) |
 | `JIGGER_MIN_COLUMNS` | `30` | en dessous de cette largeur, le cadre n'a plus de sens : rien ne s'affiche |

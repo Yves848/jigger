@@ -71,37 +71,28 @@ d'essai.
 
 ### A-11 — Filtrer le popup en regex ou en texte brut, quel que soit le gestionnaire
 
-**Priorité :** à déterminer · **Provenance :** demande du 16 août · **Voisine de :** A-10
+**Priorité :** à déterminer · **Provenance :** demande du 16 août · **Moitié faite**
 
-Le filtre du popup accepterait **deux modes** : texte brut comme aujourd'hui, ou expression
-rationnelle. Indépendant du gestionnaire — brew, winget, scoop se filtrent pareil.
+**Fait :** le sélecteur plein écran bascule sur `^R` (MR !22). Le mode s'affiche sur la
+ligne de filtre ; un motif qui ne compile pas laisse la liste entière en le signalant.
 
-Ce qu'il faudra trancher en premier, parce que « le popup » désigne deux choses :
+**Reste : le popup vivant, et il attend A-19.**
 
-- **Le popup vivant** (`jigger render`, appelé à chaque frappe par le greffon) filtre sur
-  le mot en cours de saisie **dans la ligne de commande** — mot qui finira inséré dans
-  cette ligne. Un motif comme `^fire` n'a rien à y faire une fois inséré : si la regex
-  s'applique ici, il faut décider ce que `⇥` insère, et le motif ne doit pas survivre à
-  l'insertion.
-- **Le sélecteur plein écran** (`jigger pick`, `JIGGER_LIVE=0`) a un champ de filtre
-  **séparé** de la ligne. La regex y va de soi : rien de ce qu'on tape n'est destiné à être
-  inséré tel quel.
+Deux constats de la première moitié, qui ont réduit le problème et déplacé la difficulté :
 
-Le second est le terrain naturel ; le premier demande une décision d'interface avant une
-ligne de code.
+- **L'inquiétude du tableau était infondée.** Un motif ne peut pas « survivre à
+  l'insertion » : `render` construit la ligne comme `Prefix + InsertItem(candidat)`, où
+  `Prefix` est la ligne **sans le mot tapé**. Insérer remplace donc toujours le motif par
+  le nom du paquet. Le seul risque restant est de presser `↵` sans insérer — soit le
+  risque d'une faute de frappe ordinaire.
+- **La difficulté est la touche.** `^R` est la recherche inverse dans l'historique de zsh :
+  la prendre serait exactement la confiscation que jigger refuse pour les flèches. Et le
+  popup étant sans état, le mode serait un état de plus **côté greffon** — donc une touche
+  à lier dans zsh *et* dans PowerShell, plus un `--regex` sur `render`.
 
-Deux points à ne pas oublier :
-
-- **La bascule doit se voir.** Le pied du cadre dit déjà ce que font les touches ; il devra
-  dire dans quel mode on filtre, sinon un motif qui ne trouve rien passera pour un
-  catalogue vide.
-- **Le budget de frappe.** Le popup vivant tient ~8 ms par rendu, sur des catalogues de
-  16 000 entrées côté winget. Compiler un motif et balayer la liste à chaque touche entre
-  dans ce budget, mais un motif fautif ne doit ni coûter ni faire échouer le rendu — un
-  motif qui ne compile pas se traite comme du texte brut, ou n'est pas appliqué du tout.
-
-À faire d'un seul tenant avec A-10 : c'est le même moteur de filtre, et deux
-implémentations divergeraient.
+C'est le sujet même d'A-19 : arrêter un jeu de raccourcis cohérent sur les deux surfaces.
+Trancher ici d'abord, puis rejuger là-bas, obligerait à changer la touche deux fois — après
+que les habitudes se seront prises.
 
 ### A-12 — Trier les colonnes du sélecteur plein écran
 
@@ -325,6 +316,10 @@ peut se le permettre.
 
 Le résultat doit valoir aussi pour le sélecteur plein écran et pour le popup, sans quoi
 jigger aura deux conventions de sélection.
+
+**A-19 tranche aussi la touche de bascule regex du popup vivant** (seconde moitié d'A-11),
+pour la même raison : `^R` convient au plein écran, où jigger a le clavier, et pas au
+popup, où il appartient au shell.
 
 ---
 
