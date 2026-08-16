@@ -83,6 +83,9 @@ func TestLangDonneLaLangue(t *testing.T) {
 // Une langue que jigger ne connaît pas n'est pas une erreur : elle retombe sur l'anglais.
 func TestLangueInconnueRetombeSurAnglais(t *testing.T) {
 	t.Setenv("JIGGER_LANG", "ja")
+	t.Setenv("LC_ALL", "")
+	t.Setenv("LC_MESSAGES", "")
+	t.Setenv("LANG", "")
 	Recharger()
 	if Courante() != EN {
 		t.Fatalf("une langue inconnue doit retomber sur l'anglais")
