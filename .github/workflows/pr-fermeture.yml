@@ -1,0 +1,61 @@
+# Referme les pull requests ouvertes sur le miroir GitHub.
+#
+# Le dépôt GitHub est alimenté par miroir depuis GitLab : un commit poussé ici serait
+# écrasé à la synchronisation suivante. GitHub ne permet pas de désactiver les pull
+# requests — on ne peut couper que les issues —, donc la seule réponse honnête est de
+# refermer en expliquant où aller, plutôt que de laisser la contribution mourir sans
+# réponse.
+#
+# Ce fichier vit dans le dépôt GitLab et voyage avec le miroir.
+
+name: Fermeture des pull requests
+
+on:
+  pull_request_target:
+    types: [opened, reopened]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  fermer:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Commenter puis refermer
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const numero = context.payload.pull_request.number;
+            const auteur = context.payload.pull_request.user.login;
+
+            const message = [
+              `Thanks for this, @${auteur} — and sorry to close it unread.`,
+              ``,
+              `**This repository is a mirror.** It is pushed from a self-hosted GitLab,`,
+              `which is the only source of truth, so anything merged here would be`,
+              `overwritten on the next sync. GitHub has no setting to turn pull requests`,
+              `off, hence this automated close: it is not a judgement on your work.`,
+              ``,
+              `Two ways to get the change in:`,
+              ``,
+              `- open a merge request on <https://gitlab.yg-devworks.com/yves/jigger>`,
+              `  (anyone can register), or`,
+              `- open an **issue here** describing it — issues on this mirror are read`,
+              `  and answered — and it will be carried over.`,
+              ``,
+              `See [CONTRIBUTING.md](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/main/CONTRIBUTING.md).`,
+            ].join("\n");
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: numero,
+              body: message,
+            });
+
+            await github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: numero,
+              state: "closed",
+            });
