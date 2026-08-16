@@ -241,7 +241,7 @@ func ambiguite(nom string, proprios []pm.Manager, cats map[string]*pm.Catalog) *
 func nomInconnu(nom string, pool pm.Pool, mgrs []pm.Manager, cats map[string]*pm.Catalog) error {
 	for _, m := range mgrs {
 		if cat := cats[m.Cmd()]; cat != nil && len(cat.Names) == 0 && cat.Note != "" {
-			return fmt.Errorf("jigger : %s", cat.Note)
+			return errors.New(i18n.Tf("facade.note", cat.Note))
 		}
 	}
 

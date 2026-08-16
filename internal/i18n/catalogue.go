@@ -63,6 +63,16 @@ var catalogue = map[string][nbLangues]string{
 	},
 	"facade.nothing": {"nothing to report\n", "rien à signaler\n"},
 
+	// Ajoutées en relecture : la note d'un catalogue en construction (cat.Note, déjà
+	// traduite) et l'erreur brute d'un gestionnaire (%v) fuyaient la ponctuation
+	// française même en anglais — de même que le séparateur et les fragments qui
+	// composent la liste « X le sait (Y) » de facade.nobody_can.
+	"facade.note":           {"jigger: %s", "jigger : %s"},
+	"facade.knows_it":       {"%s knows it", "%s le sait"},
+	"facade.knows_it_as":    {"%s knows it (%s)", "%s le sait (%s)"},
+	"facade.manager_error":  {"jigger (%s): %v\n", "jigger (%s) : %v\n"},
+	"facade.list_separator": {"; ", " ; "},
+
 	// ── En-têtes de tableaux ──────────────────────────────────────────────────────────
 	// Traduits sans risque : --json sert ceux qui analysent.
 	"table.package":   {"PACKAGE", "PAQUET"},

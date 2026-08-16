@@ -77,7 +77,7 @@ func Executer(v pm.Verb, cibles []Cible, o Opts) ([]pm.Package, int) {
 		if liaison.Direct != nil {
 			out, err := liaison.Direct(cible.Args)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "jigger (%s) : %v\n", cible.Mgr.Cmd(), err)
+				fmt.Fprint(os.Stderr, i18n.Tf("facade.manager_error", cible.Mgr.Cmd(), err))
 				echecs++
 				dernierCode = 1
 				continue
@@ -98,7 +98,7 @@ func Executer(v pm.Verb, cibles []Cible, o Opts) ([]pm.Package, int) {
 					fmt.Fprint(os.Stderr, i18n.Tf("facade.failed", cible.Mgr.Cmd()))
 					return rows, c
 				}
-				fmt.Fprintf(os.Stderr, "jigger (%s) : %v\n", cible.Mgr.Cmd(), err)
+				fmt.Fprint(os.Stderr, i18n.Tf("facade.manager_error", cible.Mgr.Cmd(), err))
 				echoue = true
 				dernierCode = c
 				break

@@ -180,6 +180,39 @@ func TestRoutageCatalogueEnConstruction(t *testing.T) {
 	}
 }
 
+// La note d'un catalogue en construction (cat.Note) est injectée dans facade.note :
+// « jigger : %s » ou « jigger: %s » selon la langue. Avant la relecture, le préfixe
+// restait « jigger : » (espace avant le deux-points, ponctuation française) même en
+// anglais — ce test aurait attrapé l'oubli, faute de quoi rien n'asserait ce préfixe.
+func TestRoutageCatalogueEnConstructionEnAnglais(t *testing.T) {
+	t.Cleanup(i18n.Recharger)
+	t.Setenv("JIGGER_LANG", "en")
+	i18n.Recharger()
+
+	cats := catalogues()
+	vide := pm.NewCatalog()
+	vide.Note = "winget catalog under construction"
+	cats["winget"] = vide
+
+	_, _, err := nomInconnuVia(cats)
+	if err == nil {
+		t.Fatal("attendu une erreur")
+	}
+	msg := err.Error()
+	if !strings.HasPrefix(msg, "jigger: ") {
+		t.Errorf("le préfixe anglais doit être « jigger: » (pas de ponctuation française) : %q", msg)
+	}
+	if strings.HasPrefix(msg, "jigger : ") {
+		t.Errorf("le préfixe ne doit plus être « jigger : » en anglais : %q", msg)
+	}
+}
+
+// nomInconnuVia route « install Git.Git » à travers les deux gestionnaires habituels,
+// pour exercer nomInconnu avec le catalogue winget donné (vide, avec une Note).
+func nomInconnuVia(cats map[string]*pm.Catalog) ([]Cible, *Ambiguite, error) {
+	return Router("install", []string{"Git.Git"}, "", nil, deuxGestionnaires(), cats)
+}
+
 // search prend une requête, pas un nom de paquet à résoudre au catalogue : une requête
 // qui ne correspond à aucun paquet connu doit tout de même atteindre les gestionnaires
 // capables — c'est à eux de chercher, pas à Router de refuser une recherche au prétexte

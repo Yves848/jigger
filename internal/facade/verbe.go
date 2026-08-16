@@ -8,7 +8,6 @@ package facade
 
 import (
 	"errors"
-	"fmt"
 	"sort"
 	"strings"
 
@@ -75,9 +74,9 @@ func verbeIndisponible(ligne []string, dispo, tous []pm.Manager) error {
 			continue
 		}
 		if natif := liaison.NomNatif(); natif != "" && natif != mot {
-			ailleurs = append(ailleurs, fmt.Sprintf("%s le sait (%s)", m.Cmd(), natif))
+			ailleurs = append(ailleurs, i18n.Tf("facade.knows_it_as", m.Cmd(), natif))
 		} else {
-			ailleurs = append(ailleurs, fmt.Sprintf("%s le sait", m.Cmd()))
+			ailleurs = append(ailleurs, i18n.Tf("facade.knows_it", m.Cmd()))
 		}
 	}
 
@@ -85,7 +84,7 @@ func verbeIndisponible(ligne []string, dispo, tous []pm.Manager) error {
 		return errors.New(i18n.Tf("facade.unknown_verb", mot))
 	}
 	sort.Strings(ailleurs)
-	return errors.New(i18n.Tf("facade.nobody_can", mot, strings.Join(ailleurs, " ; ")))
+	return errors.New(i18n.Tf("facade.nobody_can", mot, strings.Join(ailleurs, i18n.T("facade.list_separator"))))
 }
 
 func estDispo(m pm.Manager, dispo []pm.Manager) bool {
