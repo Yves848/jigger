@@ -56,7 +56,7 @@ brancher dans le shell, régler, dépanner. Ce qui suit en est le résumé.
 ```sh
 # le binaire (Go ≥ 1.24)
 go install gitlab.yg-devworks.com/yves/jigger@latest   # → $GOBIN/jigger
-#   ou :  git clone … && make install
+#   ou :  git clone … && make install         (Windows : install-windows.ps1)
 ```
 
 Le binaire `jigger` doit être dans le `PATH`.

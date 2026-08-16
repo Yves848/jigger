@@ -73,9 +73,22 @@ cd jigger
 make install            # → ~/.local/bin/jigger  (PREFIX=… pour changer)
 ```
 
-C'est la voie à prendre sous **Windows** : il n'existe pas encore de paquet winget ni
-scoop pour jigger (c'est à la feuille de route). Le greffon PowerShell est alors celui du
-dépôt cloné.
+Sous **Windows**, passe par le script — `make install` y appelle `install(1)`, un outil
+POSIX que Windows n'a pas, et `make` lui-même n'y est pas livré :
+
+```powershell
+pwsh -NoProfile -File install-windows.ps1
+```
+
+Il compile, puis met `jigger` à portée : un **shim scoop** si scoop est là — le shim
+pointe sur le binaire **du dépôt**, si bien qu'un simple `go build` suffit ensuite à mettre
+à jour ce que `jigger` exécute, ce qu'on veut pour développer — ou une **copie** dans
+`%USERPROFILE%\bin`, ajoutée au `PATH` de l'utilisateur, sinon. `-Methode`, `-Prefixe`,
+`-Profil` et `-Simuler` permettent de choisir ou de prévisualiser.
+
+C'est la voie à prendre sous Windows pour l'instant : il n'existe pas encore de paquet
+winget ni scoop pour jigger (c'est à la feuille de route). Dans les deux cas, le greffon
+PowerShell est celui du dépôt cloné.
 
 > **Un seul binaire dans le `PATH`.** Si tu as installé par plusieurs voies, `which -a
 > jigger` (ou `Get-Command jigger -All`) le dira. Un binaire ancien devant un greffon
@@ -360,7 +373,7 @@ comptage n'est pas terminé. Les réglages associés (`JIGGER_PROMPT_TTL`,
 | Symptôme | Cause probable |
 |---|---|
 | « binaire introuvable dans le PATH » au démarrage du shell | le répertoire d'installation n'est pas dans le `PATH` — ou le shell n'a pas été rechargé |
-| « le binaire … est en X, or ce greffon en demande Y » | deux installations concurrentes. `which -a jigger` ; `brew upgrade jigger` ou `make install` |
+| « le binaire … est en X, or ce greffon en demande Y » | deux installations concurrentes. `which -a jigger` (`Get-Command jigger -All`) ; `brew upgrade jigger`, `make install`, ou `install-windows.ps1` sous Windows |
 | aucun cadre, aucun message | terminal trop étroit (`JIGGER_MIN_COLUMNS`), ou terminal qui ne répond pas à l'interrogation de position du curseur — jigger s'abstient alors plutôt que de dessiner à l'aveugle |
 | cadre absent sous PowerShell en **mode Vi** | le popup vivant y est désactivé exprès : relayer les caractères imprimables casserait le mode commande. ⇥ reste disponible |
 | affichage qui se bat avec la prédiction PSReadLine | jigger range `PredictionViewStyle = ListView` le temps du cadre et le rend ensuite ; s'il reste en `InlineView`, un shell neuf remet tout d'aplomb |

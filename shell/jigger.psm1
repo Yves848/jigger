@@ -172,8 +172,8 @@ try {
 if ($version -and $version -lt $script:VersionRequise) {
     $chemin = (Get-Command $script:Exe).Source
     Write-Warning (Get-JiggerText `
-        "jigger: the binary at $chemin is $version, but this module requires $($script:VersionRequise). Rebuild it (« make install ») or replace the one in PATH. Module inactive." `
-        "jigger : le binaire $chemin est en $version, or ce module en demande $($script:VersionRequise). Recompile-le (« make install ») ou remplace celui du PATH. Module inactif.")
+        "jigger: the binary at $chemin is $version, but this module requires $($script:VersionRequise). Rebuild it (« pwsh -File install-windows.ps1 ») or replace the one in PATH. Module inactive." `
+        "jigger : le binaire $chemin est en $version, or ce module en demande $($script:VersionRequise). Recompile-le (« pwsh -File install-windows.ps1 ») ou remplace celui du PATH. Module inactif.")
     return
 }
 if (-not (Get-Module PSReadLine)) {

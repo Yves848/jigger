@@ -57,7 +57,7 @@ install, wire into the shell, configure, troubleshoot. What follows is the summa
 ```sh
 # the binary (Go ≥ 1.24)
 go install gitlab.yg-devworks.com/yves/jigger@latest   # → $GOBIN/jigger
-#   or:  git clone … && make install
+#   or:  git clone … && make install          (Windows: install-windows.ps1)
 ```
 
 The `jigger` binary must be on the `PATH`.

@@ -73,9 +73,22 @@ cd jigger
 make install            # → ~/.local/bin/jigger  (PREFIX=… to change it)
 ```
 
-This is the route to take on **Windows**: there's no winget or scoop package for
-jigger yet (it's on the roadmap). In that case, the PowerShell plugin comes from
-the cloned repository.
+On **Windows**, use the script instead — `make install` calls `install(1)`, a POSIX tool
+Windows doesn't have, and `make` isn't shipped there either:
+
+```powershell
+pwsh -NoProfile -File install-windows.ps1
+```
+
+It builds, then puts `jigger` within reach: a **scoop shim** when scoop is around — the
+shim points at the binary *in the repository*, so a plain `go build` is enough to update
+what `jigger` runs, which is what you want while developing — or a **copy** into
+`%USERPROFILE%\bin`, added to your user `PATH`, when it isn't. `-Methode`, `-Prefixe`,
+`-Profil` and `-Simuler` let you steer or preview it.
+
+This is the route to take on Windows for now: there's no winget or scoop package for
+jigger yet (it's on the roadmap). Either way, the PowerShell plugin comes from the cloned
+repository.
 
 > **Only one binary on the `PATH`.** If you installed through more than one route,
 > `which -a jigger` (or `Get-Command jigger -All`) will tell you. An old binary
@@ -366,7 +379,7 @@ the exposed variables are described in the
 | Symptom | Likely cause |
 |---|---|
 | "binary not found in PATH" at shell startup | the install directory isn't on the `PATH` — or the shell wasn't reloaded |
-| "binary … is at X, but this plugin requires Y" | two competing installs. `which -a jigger`; `brew upgrade jigger` or `make install` |
+| "binary … is at X, but this plugin requires Y" | two competing installs. `which -a jigger` (`Get-Command jigger -All`); `brew upgrade jigger`, `make install`, or `install-windows.ps1` on Windows |
 | no frame, no message | terminal too narrow (`JIGGER_MIN_COLUMNS`), or a terminal that doesn't answer the cursor-position query — jigger then abstains rather than draw blind |
 | frame missing under PowerShell in **Vi mode** | the live popup is disabled there on purpose: relaying printable characters would break command mode. ⇥ still works |
 | display fighting with PSReadLine prediction | jigger sets `PredictionViewStyle = ListView` for as long as the frame shows and restores it afterward; if it's stuck on `InlineView`, a fresh shell sorts it out |
