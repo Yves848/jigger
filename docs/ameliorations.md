@@ -321,18 +321,6 @@ Trois points à ne pas manquer :
   comportement pour ce mot précis. À trancher : soit jigger l'intercepte et le traduit pour
   chaque gestionnaire, soit il en prend un autre pour lui.
 
-### A-18 — La section `#jigger` du site Cocktails
-
-**Priorité :** à déterminer · **Provenance :** constat en concevant A-6
-
-Elle présente jigger comme l'assistant Homebrew au clavier : elle parle de Tab et de brew,
-et ignore winget, scoop, la façade `jg` et le bilinguisme. Elle vivra à côté d'un site
-jigger qui dit autre chose.
-
-Le travail est dans **un autre dépôt** (`cocktails-website`), d'où une entrée à part : autre
-MR, autre relecture, autre déploiement. À faire une fois le site jigger en ligne, pour que
-le lien croisé pointe sur quelque chose.
-
 ---
 
 ## En cours
@@ -400,6 +388,25 @@ ancre morte, ou une commande d'installation qui ne correspond plus mot pour mot 
 Les quatre contrôles ont été prouvés mordants avant d'être adoptés.
 
 Le miroir GitHub du modèle **(A)** n'en faisait pas partie : il est passé à A-7.
+
+### A-18 — La section `#jigger` du site Cocktails
+
+**Fait le :** 2026-08-16 · **Dépôt :** `yves/cocktails-website` · **MR :** !1 · **En ligne**
+
+Elle décrivait un outil qui n'existait plus : complétion de `brew` seul déclenchée par Tab,
+« aucun alias » alors que `jg` en est un, « ne requiert que brew », « rien de binaire à
+faire confiance » — et des touches d'aide (`↩ exécuter`, `esc annuler`) qui n'ont jamais
+été celles de jigger.
+
+Elle dit désormais les trois gestionnaires, le cadre qui suit la frappe, la syntaxe `jg`,
+et les flèches qui restent l'historique du shell. Liens croisés vers le site de jigger
+posés des deux côtés. Les deux langues reprises ensemble, parité des clés contrôlée,
+vérification faite dans un navigateur puis sur la page en ligne.
+
+**Leçon d'organisation :** `~/git/cocktails/website/` est un **dépôt imbriqué**
+(`cocktails-website`), ignoré par son parent — et l'`origin` du dépôt `cocktails` pousse
+vers GitLab **et** GitHub. Un premier commit est parti au mauvais endroit avant que je m'en
+aperçoive ; la branche vide a été supprimée des deux remotes.
 
 ### A-8 — La fiche du projet GitLab
 
