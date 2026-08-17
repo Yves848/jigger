@@ -342,7 +342,7 @@ yes (the line open by default is *cancel*).
 $ jg install Some.Package
 jigger (winget): this command requires administrator privileges.
 ╭──────────────────────────────────────────────────────────╮
-│❯ Run as administrator?                      jigger 0.11.0│
+│❯ Run as administrator?                      jigger 0.12.0│
 │  •  cancel                                               │
 │  •  run it in an elevated window                         │
 │                                                          │
