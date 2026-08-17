@@ -114,35 +114,70 @@ publier:
       - dist/SHA256SUMS
     expire_in: 1 month
 
+# La release est posée par l'API et non par release-cli : son sous-commande `update`
+# n'accepte pas --assets-link (v0.24.0, mesuré sur le tag v0.12.0), or la release existe
+# déjà quand le rituel de publication l'a créée à la main. Un seul chemin ici, et les
+# archives sont attachées de la même façon que la release soit neuve ou non.
+#
+# Tout passe par des champs de formulaire : les notes de version contiennent des
+# apostrophes, des accolades et des sauts de ligne, que `--data-urlencode …@fichier`
+# encode sans qu'on ait à fabriquer du JSON à la main.
 release:
   stage: publier
   <<: *sur_tag
   needs: [publier]
-  image: registry.gitlab.com/gitlab-org/release-cli:latest
   script:
     - |
       set -eu
       VERSION="${CI_COMMIT_TAG#v}"
-      racine="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/jigger/${VERSION}"
+      api="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}"
+      entete="JOB-TOKEN: $CI_JOB_TOKEN"
 
-      # `set --` plutôt qu'une chaîne concaténée : les noms de fichiers restent des
-      # arguments distincts, quoi qu'ils contiennent.
-      set --
-      for cible in darwin_arm64 darwin_amd64 linux_amd64; do
-        nom="jigger_${VERSION}_${cible}.tar.gz"
-        set -- "$@" --assets-link "{\"name\":\"${nom}\",\"url\":\"${racine}/${nom}\",\"link_type\":\"package\"}"
-      done
-      nom="jigger_${VERSION}_windows_amd64.zip"
-      set -- "$@" --assets-link "{\"name\":\"${nom}\",\"url\":\"${racine}/${nom}\",\"link_type\":\"package\"}"
-      set -- "$@" --assets-link "{\"name\":\"SHA256SUMS\",\"url\":\"${racine}/SHA256SUMS\",\"link_type\":\"other\"}"
+      code="$(curl --silent --output /dev/null --write-out '%{http_code}' \
+                   --header "$entete" "${api}/releases/${CI_COMMIT_TAG}")"
 
-      # La release peut déjà exister — le rituel de publication la crée parfois à la main.
-      # On complète alors au lieu d'échouer.
-      if release-cli get --tag-name "$CI_COMMIT_TAG" >/dev/null 2>&1; then
-        echo "Release existante : mise à jour."
-        release-cli update --tag-name "$CI_COMMIT_TAG" \
-          --name "jigger $VERSION" --description "$(cat notes.md)" "$@"
+      if [ "$code" = 200 ]; then
+        echo "→ release existante : description reprise du CHANGELOG"
+        curl --fail --silent --show-error --output /dev/null --request PUT \
+             --header "$entete" \
+             --data-urlencode "name=jigger $VERSION" \
+             --data-urlencode "description@notes.md" \
+             "${api}/releases/${CI_COMMIT_TAG}"
       else
-        release-cli create --tag-name "$CI_COMMIT_TAG" \
-          --name "jigger $VERSION" --description "$(cat notes.md)" "$@"
+        echo "→ création de la release"
+        curl --fail --silent --show-error --output /dev/null \
+             --header "$entete" \
+             --data-urlencode "tag_name=$CI_COMMIT_TAG" \
+             --data-urlencode "name=jigger $VERSION" \
+             --data-urlencode "description@notes.md" \
+             "${api}/releases"
       fi
+    - |
+      set -eu
+      VERSION="${CI_COMMIT_TAG#v}"
+      api="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}"
+      racine="${api}/packages/generic/jigger/${VERSION}"
+      entete="JOB-TOKEN: $CI_JOB_TOKEN"
+
+      # Un lien déjà présent fait répondre 400 : c'est le cas d'un job rejoué, et ce n'est
+      # pas une raison d'échouer. Tout autre code, en revanche, doit se voir.
+      attacher() {
+        nom="$1"; type="$2"
+        code="$(curl --silent --output /dev/null --write-out '%{http_code}' \
+                     --header "$entete" \
+                     --data-urlencode "name=${nom}" \
+                     --data-urlencode "url=${racine}/${nom}" \
+                     --data-urlencode "link_type=${type}" \
+                     "${api}/releases/${CI_COMMIT_TAG}/assets/links")"
+        case "$code" in
+          20*) echo "  + ${nom}" ;;
+          400) echo "  = ${nom} (déjà attaché)" ;;
+          *)   echo "Attachement de ${nom} : HTTP ${code}" >&2; return 1 ;;
+        esac
+      }
+
+      for cible in darwin_arm64 darwin_amd64 linux_amd64; do
+        attacher "jigger_${VERSION}_${cible}.tar.gz" package
+      done
+      attacher "jigger_${VERSION}_windows_amd64.zip" package
+      attacher "SHA256SUMS" other
