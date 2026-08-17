@@ -63,7 +63,8 @@ Limits, up front: zsh and PowerShell only, no fish or bash; `brew` on macOS and 
 `winget`/`scoop` on Windows, nothing else; and it needs PSReadLine-equivalent behaviour
 that plain `sh` doesn't have, so it's genuinely a zsh plugin rather than a portable one.
 
-Apache-2.0. https://jigger.yg-devworks.com/ · https://github.com/Yves848/jigger
+Apache-2.0. https://jigger.yg-devworks.com/ · https://gitlab.yg-devworks.com/yves/jigger
+(self-hosted GitLab; mirrored on GitHub as well)
 
 What I'd like to hear: **does the arrow-key handover behave in your setup?** The test
 harness replays a real session in a `zpty` with `zsh-autosuggestions` and
