@@ -50,6 +50,17 @@ func T(cle string) string {
 // Tf formate la traduction avec des paramètres.
 func Tf(cle string, args ...any) string { return fmt.Sprintf(T(cle), args...) }
 
+// culture est la dernière source de resoudre — la langue de l'utilisateur sous Windows —
+// et la seule qui ne se lise pas dans l'environnement.
+//
+// C'est une variable, et non l'appel direct, pour que les tests puissent la poser :
+// `t.Setenv` ne vide pas GetUserDefaultLocaleName, si bien que « toutes les sources sont
+// muettes » était un état inatteignable sur une machine Windows. Les tests qui l'ignoraient
+// n'avaient que deux issues, toutes deux mauvaises : assérer la langue de la machine qui
+// les lance (i18n_test.go, qui échouait sur un Windows français), ou se dispenser d'y
+// tourner (locale_test.go, qui s'y passait en silence). Ils la posent désormais.
+var culture = cultureSysteme
+
 // resoudre applique l'ordre de la spec : JIGGER_LANG, puis les variables POSIX, puis la
 // culture du système, puis l'anglais.
 func resoudre() Langue {
@@ -61,7 +72,7 @@ func resoudre() Langue {
 			return l
 		}
 	}
-	if l, ok := depuisCode(cultureSysteme()); ok {
+	if l, ok := depuisCode(culture()); ok {
 		return l
 	}
 	return EN

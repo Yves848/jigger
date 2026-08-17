@@ -155,5 +155,5 @@ if ($Simuler) {
     Write-Host ''
     Write-Host "Installé — $installe" -ForegroundColor Green
     Write-Host 'Ouvre un terminal neuf et tape « winget ins » sans valider : le cadre doit apparaître.'
-    Write-Host 'Note : l''alias « jg » n''existe pas encore côté PowerShell — la façade s''écrit « jigger <verbe> ».'
+    Write-Host 'La façade s''écrit « jg <verbe> » — l''alias est posé par le module, au même titre que côté zsh.'
 }

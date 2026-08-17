@@ -207,8 +207,8 @@ jg search ripgrep
 jg info fd
 ```
 
-`jg` est un alias de `jigger`, posé par le greffon zsh ; les deux s'écrivent
-indifféremment. **La façade s'ajoute, elle ne remplace rien** : `brew install fd` continue
+`jg` est un alias de `jigger`, posé par les deux greffons — celui de zsh et le module
+PowerShell ; les deux s'écrivent indifféremment. **La façade s'ajoute, elle ne remplace rien** : `brew install fd` continue
 de marcher exactement comme avant, popup compris.
 
 ### Les douze verbes
@@ -311,9 +311,6 @@ accepte les accords de licence ; il n'est jamais implicite.
 
 ### Ce qui n'est pas encore là
 
-- **PowerShell n'a pas l'alias `jg`.** Seul le greffon zsh arme la façade ; sous Windows,
-  `jigger install …` reste utilisable en tapant le nom complet, mais le popup ne le suit
-  pas encore.
 - **Les traductions winget et scoop n'ont pas été vérifiées contre les vraies CLI** — le
   développement s'est fait sur Mac. Seule la colonne brew a tourné pour de vrai. La table
   complète, avec cet avertissement, est dans le
@@ -352,7 +349,7 @@ Deux réglages n'existent que sous PowerShell, faute d'équivalent utile côté 
 
 | Variable | Défaut | Rôle |
 |---|---|---|
-| `JIGGER_COMMANDS` | `winget,scoop` | commandes qui déclenchent le popup |
+| `JIGGER_COMMANDS` | `winget,scoop` | commandes qui déclenchent le popup. `jigger` et `jg` s'ajoutent **toujours** à ce que tu poses : sans quoi la façade s'éteindrait chez quiconque a un jour recopié le défaut à la main |
 | `JIGGER_KEYS_EXTRA` | `éèêàçùâîôûëïüö°²µ§£€` | touches relayées en plus des ASCII imprimables |
 
 `JIGGER_KEYS_EXTRA` mérite un mot : PSReadLine n'offre aucun crochet appelé à chaque

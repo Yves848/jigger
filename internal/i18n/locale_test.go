@@ -13,13 +13,12 @@ import "testing"
 func TestLocaleExotiqueDonneAnglais(t *testing.T) {
 	t.Cleanup(Recharger)
 
-	// Sous Windows, resoudre() consulte encore la culture du système quand aucune
-	// variable ne tranche (langue_windows.go) : sur une machine réglée en français,
-	// « ja_JP.UTF-8 » y donnerait FR — et ce serait juste. Le cas n'est déterministe que
-	// là où cultureSysteme() ne rend rien, c'est-à-dire partout ailleurs.
-	if culture := cultureSysteme(); culture != "" {
-		t.Skipf("la culture du système (%q) tranche après les variables POSIX", culture)
-	}
+	// Sous Windows, resoudre() consulte encore la culture du système quand aucune variable
+	// ne tranche (langue_windows.go) : sur une machine réglée en français, « ja_JP.UTF-8 »
+	// y donnerait FR — et ce serait juste. Ce test se passait donc de tourner là où cette
+	// culture existe, c'est-à-dire sur la seule plateforme où elle décide. Il la pose
+	// désormais lui-même : les sept cas valent sur les trois plateformes.
+	avecCultureSysteme(t, "")
 
 	for _, cas := range []struct {
 		lcAll    string
