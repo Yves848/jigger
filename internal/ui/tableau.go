@@ -125,6 +125,14 @@ func (t Tableau) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			t.liste.Cocher()
 			return t, nil
 
+		// ^A, le « tout sélectionner » que personne n'a besoin d'apprendre. Repris au
+		// champ de saisie, qui l'employait pour « aller au début de ligne » — geste de
+		// bien moindre valeur dans un filtre de quelques mots, et que `Début` assure
+		// toujours (A-19).
+		case "ctrl+a":
+			t.liste.CocherTout()
+			return t, nil
+
 		case "ctrl+r":
 			t.liste.BasculerMode()
 			return t, nil
@@ -135,10 +143,13 @@ func (t Tableau) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "down", "ctrl+n":
 			t.liste.Bas()
 			return t, nil
-		case "pgup", "ctrl+b":
+		// Les pages restent sur PgPréc/PgSuiv seulement : ^B et ^F appartiennent au
+		// champ de saisie, qui s'en sert pour déplacer le curseur. Les intercepter ici
+		// les lui volait — défaut introduit par A-10, corrigé par A-19.
+		case "pgup":
 			t.liste.PageHaut()
 			return t, nil
-		case "pgdown", "ctrl+f":
+		case "pgdown":
 			t.liste.PageBas()
 			return t, nil
 		}
@@ -227,8 +238,8 @@ func (t Tableau) ligne(cellules []string, tronque bool) string {
 func (t Tableau) pied() string {
 	keys := []Key{
 		{"⇥", i18n.T("table.toggle")},
+		{"^A", i18n.T("table.toggleall")},
 		{"↵", i18n.T("table.confirm")},
-		{"↑↓", i18n.T("popup.navigate")},
 		{"^R", i18n.T("table.regex")},
 		{"^G", i18n.T("popup.cancel")},
 	}

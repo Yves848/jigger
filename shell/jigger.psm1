@@ -149,6 +149,10 @@ $script:Key       = ''     # signature du dernier rendu
 $script:Shown     = $false # un cadre est-il actuellement à l'écran ?
 $script:Failures  = 0      # échecs d'affichage d'affilée
 $script:Focused   = $false # le popup a-t-il le clavier ? (cf. Step-JiggerSelection)
+# Mode de filtre : $false = préfixe (le comportement historique), $true = expression
+# rationnelle. Il vaut pour la session : le titre du cadre affiche « [regex] » tant qu'il
+# est actif, donc on ne l'oublie pas.
+$script:Regex     = $false
 
 # ── Vérifications d'installation ──────────────────────────────────────────────────────
 
@@ -163,7 +167,7 @@ if (-not (Get-Command $script:Exe -ErrorAction SilentlyContinue)) {
 # qu'un binaire plus ancien ne connaît pas. Celui-ci sortirait alors en erreur, et le
 # popup ne s'afficherait jamais — sans un mot, ce qui est la pire façon de tomber en
 # panne. Un appel au démarrage (~25 ms) suffit à le dire.
-$script:VersionRequise = [version]'0.9.0'
+$script:VersionRequise = [version]'0.11.0'
 $version = $null
 try {
     $brut = @(& $script:Exe --version 2>$null)[0]
@@ -246,8 +250,10 @@ function Test-JiggerActive {
 # afficher.
 function Get-JiggerFrame([string]$Buffer, [int]$Rows, [int]$Columns) {
     $focus = if ($script:Focused) { 'true' } else { 'false' }
+    $extra = @()
+    if ($script:Regex) { $extra += '--regex' }
     $out = & $script:Exe render --line $Buffer --sel $script:Sel --cols $Columns `
-                --rows $Rows --color $script:Color --focus=$focus 2>$null
+                --rows $Rows --color $script:Color --focus=$focus @extra 2>$null
     if ($LASTEXITCODE -ne 0 -or $null -eq $out) { return $false }
     $lines = @($out)
     if ($lines.Count -lt 2) { return $false }
@@ -398,7 +404,9 @@ function Update-JiggerPopup {
             $script:SelLine = $buffer
         }
 
-        $signature = "$buffer|$($script:Sel)|$($script:Focused)|$largeur|$rows"
+        # La signature porte TOUT ce dont le cadre dépend — le mode de filtre compris,
+        # sans quoi une bascule ^R ne redessinerait rien : la ligne n'a pas changé.
+        $signature = "$buffer|$($script:Sel)|$($script:Focused)|$largeur|$rows|$($script:Regex)"
         if ($signature -ne $script:Key) {
             $script:Key = $signature
             if (-not (Get-JiggerFrame $buffer $rows $largeur)) {
@@ -627,6 +635,21 @@ if ($script:Live) {
             $script:Focused = $false
             $script:Frame = ''
             Hide-JiggerPopup
+        }
+    }
+
+    # ^R bascule le mode de filtre quand le popup vaut pour cette ligne — et retourne à
+    # la recherche inverse dans l'historique sinon. C'est la règle générale de jigger
+    # (A-19) : prendre une touche tant qu'on a le clavier, et la rendre autrement.
+    Set-PSReadLineKeyHandler -Chord 'Ctrl+r' -BriefDescription 'jigger:regex' `
+        -Description 'Toggles the jigger filter between plain text and regex.' -ScriptBlock {
+        if ($script:Live -and -not $script:Dismissed -and (Test-JiggerLine (Get-JiggerBuffer))) {
+            $script:Regex = -not $script:Regex
+            $script:Sel = 0
+            $script:Frame = ''
+            Update-JiggerPopup
+        } else {
+            [Microsoft.PowerShell.PSConsoleReadLine]::ReverseSearchHistory()
         }
     }
 

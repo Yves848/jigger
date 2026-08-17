@@ -46,7 +46,7 @@ import (
 	"gitlab.yg-devworks.com/yves/jigger/internal/ui"
 )
 
-var version = "0.10.0"
+var version = "0.11.0"
 
 // motsReserves sont les sous-commandes internes de jigger. Tout autre premier mot est un
 // verbe de façade.
@@ -438,13 +438,14 @@ func runRender(args []string) int {
 	rows := fs.Int("rows", 8, i18n.T("cli.flag_rows"))
 	color := fs.String("color", "auto", i18n.T("cli.flag_color"))
 	focus := fs.Bool("focus", false, i18n.T("cli.flag_focus"))
+	regex := fs.Bool("regex", false, i18n.T("cli.flag_regex"))
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
 
 	lipgloss.SetColorProfile(colorProfile(*color))
 
-	res := complete.Complete(*line)
+	res := complete.CompleteAvec(*line, *regex)
 
 	// Le pied dit où ira la prochaine flèche : sans le focus, ↓ sert à entrer dans la
 	// liste (↑ reste l'historique) ; avec, les deux parcourent les candidats.
@@ -453,8 +454,16 @@ func runRender(args []string) int {
 		navigation = ui.Key{Key: "↑↓", Label: i18n.T("popup.navigate")}
 	}
 
+	// Le mode s'affiche dans le titre, jamais dans le pied : le cadre a une largeur fixe
+	// et le pied y perdrait son dernier libellé. En mode préfixe — le cas ordinaire — le
+	// titre est exactement celui d'avant, donc le rendu du popup ne bouge pas d'un octet.
+	titre := res.Title()
+	if *regex {
+		titre += " [" + i18n.T("table.moderegex") + "]"
+	}
+
 	frame := ui.Frame{
-		Title:   res.Title(),
+		Title:   titre,
 		Items:   res.Items,
 		Rows:    *rows,
 		Focused: *focus,

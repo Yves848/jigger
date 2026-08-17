@@ -75,7 +75,12 @@ func estFacade(mot string) bool {
 
 // Complete calcule le contexte et les candidats pour la ligne donnée, en interrogeant
 // le gestionnaire qu'elle nomme.
-func Complete(line string) Result {
+func Complete(line string) Result { return CompleteAvec(line, false) }
+
+// CompleteAvec est Complete, en choisissant comment le mot filtre les **noms de paquets** :
+// par préfixe (le comportement historique) ou par expression rationnelle. Les verbes, les
+// sous-commandes et les options gardent leur préfixe dans les deux cas.
+func CompleteAvec(line string, regex bool) Result {
 	premier, _, _ := strings.Cut(strings.TrimSpace(line), " ")
 	if estFacade(premier) {
 		dispo := managers.Available()
@@ -83,10 +88,10 @@ func Complete(line string) Result {
 		for _, m := range dispo {
 			cats[m.Cmd()] = m.Load()
 		}
-		return CompleteFacade(line, dispo, cats)
+		return completeFacade(line, dispo, cats, regex)
 	}
 	m := managers.Detect(line)
-	return CompleteWith(line, m, m.Load())
+	return completeWith(line, m, m.Load(), regex)
 }
 
 // CompleteFacade complète la syntaxe unique : « jg ⇥ » propose les verbes, « jg source ⇥ »
@@ -96,6 +101,10 @@ func Complete(line string) Result {
 // compte : concaténer trois catalogues — 14 401 noms rien que pour winget — puis balayer
 // coûterait le budget de la frappe (cf. spec §5).
 func CompleteFacade(line string, dispo []pm.Manager, cats map[string]*pm.Catalog) Result {
+	return completeFacade(line, dispo, cats, false)
+}
+
+func completeFacade(line string, dispo []pm.Manager, cats map[string]*pm.Catalog, regex bool) Result {
 	var prefix, word string
 	if i := strings.LastIndex(line, " "); i < 0 {
 		word = line
@@ -113,6 +122,7 @@ func CompleteFacade(line string, dispo []pm.Manager, cats map[string]*pm.Catalog
 		mgrsParPM: indexParPM(dispo), catsParPM: cats,
 	}
 	lw := strings.ToLower(word)
+	filtre := NouveauFiltre(word, regex)
 	tables := managers.Tables(dispo)
 
 	// Premier mot : les verbes.
@@ -174,7 +184,7 @@ func CompleteFacade(line string, dispo []pm.Manager, cats map[string]*pm.Catalog
 		}
 		// Filtrer ici, chez le gestionnaire : c'est ce qui tient le budget.
 		for _, n := range vivier {
-			if !strings.HasPrefix(strings.ToLower(n), lw) {
+			if !filtre.Correspond(n) {
 				continue
 			}
 			res.Items = append(res.Items, Item{
@@ -205,6 +215,10 @@ func indexParPM(dispo []pm.Manager) map[string]pm.Manager {
 // CompleteWith est Complete sur un gestionnaire et un catalogue donnés (tests, et tout
 // appelant qui a déjà chargé le catalogue).
 func CompleteWith(line string, m pm.Manager, cat *pm.Catalog) Result {
+	return completeWith(line, m, cat, false)
+}
+
+func completeWith(line string, m pm.Manager, cat *pm.Catalog, regex bool) Result {
 	var prefix, word string
 	if i := strings.LastIndex(line, " "); i < 0 {
 		word = line
@@ -240,6 +254,7 @@ func CompleteWith(line string, m pm.Manager, cat *pm.Catalog) Result {
 		Executable: isPackage, mgr: m, cat: cat,
 	}
 	lw := strings.ToLower(word)
+	filtre := NouveauFiltre(word, regex)
 
 	switch {
 	case isOption:
@@ -260,7 +275,7 @@ func CompleteWith(line string, m pm.Manager, cat *pm.Catalog) Result {
 			pool = cat.InstalledNames()
 		}
 		for _, n := range pool {
-			if strings.HasPrefix(strings.ToLower(n), lw) {
+			if filtre.Correspond(n) {
 				res.Items = append(res.Items, Item{
 					Name:      n,
 					Badge:     cat.Badge(n),
