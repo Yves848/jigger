@@ -11,12 +11,23 @@
 # l'ordre où ils sont déclarés ici, et chacun s'efface tout seul quand sa variable n'est
 # pas définie — un compteur à zéro n'en est jamais une.
 #
-# Émojis : bière (brew), éprouvette (formulae), colis (casks) — aucune police particulière
-# requise. Pour des glyphes Nerd Font monochromes, qui prennent la couleur du module là où
-# un émoji impose la sienne, remplacer \U0001F37A par \uF0FC, \U0001F9EA par \uF0C3
-# et \U0001F4E6 par \uF1B2. Dans les deux cas, garder la forme échappée plutôt que le
-# caractère en clair : c'est la seule qui traverse sans dommage les éditeurs, les
-# copier-coller et les outils qui normalisent l'Unicode.
+# Émojis : bière (brew), microscope (formulae), colis (casks) — aucune police particulière
+# requise. Le choix n'est pourtant pas libre : un émoji postérieur à Unicode 8 n'a pas de
+# largeur sur laquelle le shell et le terminal s'accordent. Le wcwidth() de macOS ne le
+# connaît pas, zsh le compte alors pour 0 colonne quand le terminal en dessine 2, et ZLE perd
+# un caractère à l'affichage dès que la ligne atteint le bord droit — le tampon restant
+# intact, la commande exécutée est pourtant la bonne, ce qui rend la panne très trompeuse.
+# L'éprouvette \U0001F9EA était dans ce cas. Piège symétrique, dans l'autre sens : les
+# glyphes à présentation texte par défaut (\U0001F5A5 écran, \U0001F6E0 marteau et clé),
+# que zsh compte pour 2 colonnes et que le terminal dessine sur 1.
+#
+# Avant de poser un autre émoji, le vérifier : ${(m)#c} sous zsh doit valoir ce que le
+# terminal dessine. Sur macOS 25.5, 848 des 1171 glyphes larges passent ce test. Pour
+# esquiver la question, des glyphes Nerd Font monochromes, de largeur 1 et jamais ambiguë,
+# qui prennent en prime la couleur du module : \uF0FC, \uF0C3 et \uF1B2.
+#
+# Garder la forme échappée plutôt que le caractère en clair : c'est la seule qui traverse
+# sans dommage les éditeurs, les copier-coller et les outils qui normalisent l'Unicode.
 #
 # Pour un seul chiffre au lieu du détail par type, remplacer les deux derniers blocs par
 # celui-ci :
@@ -32,7 +43,7 @@ style  = "#FAB387"
 format = "[$symbol$env_value]($style) "
 
 [env_var.JIGGER_BREW_FORMULAE]
-symbol = "\U0001F9EA "
+symbol = "\U0001F52C "
 style  = "#F9E2AF"
 format = "[$symbol$env_value]($style) "
 

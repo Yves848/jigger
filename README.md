@@ -360,21 +360,32 @@ separately. Ready to paste for **oh-my-posh** and for **starship**; everything g
 through environment variables, so any other prompt can read them too.
 
 ```
- yves@MacBook  ~/git/jigger   main  🍺 6.0.17  🧪 7  📦 2 ❯      ← macOS
- PS D:\jigger  🪟 1.29.280  📦 48  🥄 1 ❯                        ← Windows
+ yves@MacBook  ~/git/jigger   main  🍺 6.0.17  🔬 7  📦 2 ❯      ← macOS
+ PS D:\jigger  💻 1.29.280  📦 48  🥄 1 ❯                        ← Windows
 ```
 
-On macOS: a **beer** for brew, a **test tube** for formulae, a **package** for casks.
-On Windows: a **window** for winget's version, a **package** for winget packages to
+On macOS: a **beer** for brew, a **microscope** for formulae, a **package** for casks.
+On Windows: a **laptop** for winget's version, a **package** for winget packages to
 upgrade, a **spoon** for scoop applications.
 
-Each counter disappears once it hits zero — ` 1.29.280  🥄 1` if only scoop remains,
-` 1.29.280` alone once everything is up to date. A counter that's **never** shown at
+Each counter disappears once it hits zero — `💻 1.29.280  🥄 1` if only scoop remains,
+`💻 1.29.280` alone once everything is up to date. A counter that's **never** shown at
 zero means its mere presence says "needs an update": no arrow or letter to add.
 
-These are **emoji**: no special font is required, and they show up everywhere. If you
-prefer monochrome **Nerd Font** glyphs — which take on the segment's color, where an
-emoji imposes its own —, every segment file lists the matching codes.
+These are **emoji**: no special font is required. The choice is not free, though. macOS's
+`wcwidth()` does not know the width of any emoji added after Unicode 8 and reports zero: zsh
+then counts zero columns where the terminal draws two, its cursor arithmetic drifts, and the
+command line loses a character **on screen** as soon as it reaches the right margin. The
+buffer stays intact — the command that runs is the right one, which makes the failure all
+the more confusing. The test tube `\U0001F9EA` and the window `\U0001FA9F` were two of
+those, and have been replaced. The mirror trap exists too: glyphs with **text presentation**
+by default, such as `\U0001F5A5` (desktop computer) or `\U0001F6E0` (hammer and wrench),
+which zsh counts as two columns and the terminal draws on one.
+
+Before picking another emoji, check it: `${(m)#c}` under zsh must match what the terminal
+draws. On macOS 25.5, 848 of the 1171 wide glyphs pass. To sidestep the question entirely,
+every segment file lists the matching **Nerd Font** glyphs, one column wide and never
+ambiguous.
 
 Either way, write them as **escapes** (`\u21E1`, `\U0001F37A`) rather than literally:
 it's the only form that comes through editors, copy-paste, and Unicode-normalizing
