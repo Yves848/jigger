@@ -5,7 +5,8 @@
 #   • popup vivant — dès que la ligne courante est une commande brew, le sélecteur
 #     s'affiche sous le prompt et suit la frappe, sans rien demander. ↓ (ou ^N) fait
 #     entrer dans la liste, ↑ (ou ^P) en ressort et rend l'historique, ⇥ insère le
-#     candidat courant, ^G ferme le popup pour la ligne en cours.
+#     candidat courant, ⏎ le pose et exécute la ligne dans la même frappe, ^G ferme le
+#     popup pour la ligne en cours.
 #   • Tab classique — quand le popup vivant est éteint (JIGGER_LIVE=0), ⇥ ouvre le
 #     sélecteur interactif plein écran (`jigger pick`, avec son filtre en sous-chaîne).
 #
@@ -159,6 +160,7 @@ typeset -g _jigger_row_value='' # ligne écran du curseur (réponse au DSR)
 typeset -gi _jigger_dsr_misses=0 # DSR restés sans réponse d'affilée
 typeset -gi _jigger_focused=0   # le popup a-t-il le clavier ? (cf. _jigger_step)
 typeset -g _jigger_up_widget='' _jigger_down_widget='' # ce que les flèches faisaient
+typeset -g _jigger_accept_widget=''                    # ce que ⏎ faisait
 
 # Commandes qui arment le popup vivant. « jigger » et son alias « jg » (posé plus haut)
 # s'ajoutent à « brew » : l'expansion d'alias n'a pas encore eu lieu tant que la ligne
@@ -411,6 +413,40 @@ _jigger_bound_widget() {
   print -r -- $w
 }
 
+# _jigger_completable : ⏎ a-t-il un candidat à poser dans la ligne avant de l'exécuter ?
+#
+# La règle vaut pour tout l'arbre de sélection, et à tous ses niveaux — sous-commande,
+# option, nom de paquet : ⏎ complète la dernière partie, puis exécute, en **une seule
+# frappe**. « brew u ⏎ » lance donc `brew uninstall`. Presser ⏎, c'est dire « pars », et
+# la ligne part — complétée si un candidat était désigné, telle quelle sinon, sans qu'on
+# se demande à sa place si elle est correcte.
+#
+# Reste à ne pas réécrire une ligne qui porte déjà son candidat : c'est tout ce que dit la
+# comparaison ci-dessous.
+#
+# $LBUFFER est cité, et il le faut : à droite d'un `!=` dans un `[[ ]]`, zsh traite son
+# opérande comme un **motif**. Une ligne qui porte un `*` ou un `[` — « scoop update * »,
+# entre autres — se comparerait alors par glob, et la règle se tromperait.
+_jigger_completable() {
+  _jigger_active || return 1
+  [[ -n $_jigger_left && $_jigger_left != "$LBUFFER" ]]
+}
+
+# ⏎ : pose le candidat courant s'il y en a un, puis accepte la ligne — toujours. Accepter,
+# c'est rendre la touche au widget qui la tenait avant nous — accept-line, ou ce qu'un
+# autre greffon y a mis (zsh-autosuggestions enveloppe le sien) : c'est la règle générale
+# de jigger (A-19), prendre une touche tant qu'on a le clavier, et la rendre autrement.
+#
+# Un `if`, et non `_jigger_completable && _jigger_insert` : chez qui pose `setopt
+# err_exit`, une condition qui échoue dans un `&&` n'est pas exempte — la condition d'un
+# `if`, elle, l'est toujours.
+_jigger_accept() {
+  if _jigger_completable; then
+    _jigger_insert
+  fi
+  zle ${_jigger_accept_widget:-.accept-line}
+}
+
 # ^G : ferme le popup jusqu'à la fin de la ligne. Sans popup, c'est l'abandon habituel.
 _jigger_dismiss() {
   if _jigger_active; then
@@ -423,14 +459,21 @@ _jigger_dismiss() {
   fi
 }
 
+# _jigger_insert pose le candidat courant dans la ligne : c'est le geste de ⇥, et celui que
+# ⏎ emprunte avant d'exécuter (cf. _jigger_completable). Une seule écriture de $LBUFFER,
+# donc, pour les deux touches.
+_jigger_insert() {
+  LBUFFER=$_jigger_left
+  _jigger_key=''          # la ligne a changé : le cadre est à refaire
+  _jigger_selline=$LBUFFER
+  _jigger_sel=0
+}
+
 # ⇥ : insère le candidat courant si le popup est là ; sinon sélecteur classique sur une
 # ligne brew (ou popup refermé), et complétion zsh normale partout ailleurs.
 _jigger_widget() {
   if _jigger_active; then
-    LBUFFER=$_jigger_left
-    _jigger_key=''          # la ligne a changé : le cadre est à refaire
-    _jigger_selline=$LBUFFER
-    _jigger_sel=0
+    _jigger_insert
     return
   fi
 
@@ -496,6 +539,7 @@ zle -N _jigger_up
 zle -N _jigger_down
 zle -N _jigger_dismiss
 zle -N _jigger_toggle_regex
+zle -N _jigger_accept
 
 bindkey "$JIGGER_KEY" _jigger_widget
 if (( JIGGER_LIVE )); then
@@ -520,6 +564,14 @@ if (( JIGGER_LIVE )); then
   for _jigger_k in $_jigger_down_keys; do _jigger_down_widget=$(_jigger_bound_widget $_jigger_k) && break; done
   for _jigger_k in $_jigger_up_keys;   do bindkey $_jigger_k _jigger_up;   done
   for _jigger_k in $_jigger_down_keys; do bindkey $_jigger_k _jigger_down; done
+
+  # ⏎ : même traitement que les flèches. Les deux séquences que les terminaux envoient
+  # pour la touche Entrée (^M en mode ordinaire, ^J quand le retour chariot est traduit)
+  # sont prises ; le repli relevé sur la première qui en a un vaut pour les deux, ces
+  # deux séquences désignant la même touche.
+  typeset -ga _jigger_accept_keys=( '^M' '^J' )
+  for _jigger_k in $_jigger_accept_keys; do _jigger_accept_widget=$(_jigger_bound_widget $_jigger_k) && break; done
+  for _jigger_k in $_jigger_accept_keys; do bindkey $_jigger_k _jigger_accept; done
   unset _jigger_k
   add-zle-hook-widget line-pre-redraw _jigger_redisplay
   add-zle-hook-widget line-init _jigger_line_init

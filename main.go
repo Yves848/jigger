@@ -469,8 +469,14 @@ func runRender(args []string) int {
 		Items:   res.Items,
 		Rows:    *rows,
 		Focused: *focus,
+		// Quatre pastilles, contre trois avant : ⏎ pose le candidat *et* exécute, ce que
+		// ⇥ ne fait pas — deux gestes distincts, donc deux libellés, et le même
+		// vocabulaire que le sélecteur plein écran. Les quatre tiennent dans la largeur
+		// du cadre ; l'ordre est celui du clipping, le dernier étant celui qu'un
+		// terminal étroit perdra d'abord.
 		Keys: []ui.Key{
 			{Key: "⇥", Label: i18n.T("popup.insert")},
+			{Key: "↩", Label: i18n.T("popup.execute")},
 			navigation,
 			{Key: "^G", Label: i18n.T("popup.close")},
 		},

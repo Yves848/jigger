@@ -5,7 +5,8 @@
 #   • popup vivant — dès que la ligne courante est une commande winget ou scoop, le
 #     sélecteur s'affiche sous le prompt et suit la frappe, sans rien demander. ↓ (ou ^N)
 #     fait entrer dans la liste, ↑ (ou ^P) en ressort et rend l'historique, ⇥ insère le
-#     candidat courant, ^G ferme le popup pour la ligne en cours.
+#     candidat courant, ⏎ le pose et exécute la ligne dans la même frappe, ^G ferme le
+#     popup pour la ligne en cours.
 #   • Tab classique — quand le popup vivant est éteint (JIGGER_LIVE=0), ⇥ ouvre le
 #     sélecteur interactif plein écran (`jigger pick`).
 #
@@ -517,6 +518,50 @@ function Step-JiggerSelection([int]$Sens, [bool]$Actif) {
     return $true
 }
 
+# Write-JiggerCandidate écrit le candidat courant dans la ligne, et rien d'autre. Séparée
+# de Set-JiggerCandidate parce que ⏎ n'a que faire de la suite : la ligne part aussitôt,
+# le cadre s'efface, et refaire un rendu qu'on va recouvrir coûterait un processus pour
+# rien.
+function Write-JiggerCandidate {
+    $line = $null
+    $cursor = 0
+    [Microsoft.PowerShell.PSConsoleReadLine]::GetBufferState([ref]$line, [ref]$cursor)
+    [Microsoft.PowerShell.PSConsoleReadLine]::Replace(0, $cursor, $script:Left)
+}
+
+# Set-JiggerCandidate : le geste de ⇥ — écrire le candidat, puis refaire le cadre pour le
+# contexte que la ligne complétée ouvre.
+function Set-JiggerCandidate {
+    Write-JiggerCandidate
+    $script:Key = ''                       # la ligne a changé : le cadre est à refaire
+    $script:SelLine = $script:Left
+    $script:Sel = 0
+    Update-JiggerPopup
+}
+
+# Test-JiggerCompletion : ⏎ a-t-il un candidat à poser dans la ligne avant de l'exécuter ?
+#
+# La règle vaut pour tout l'arbre de sélection, et à tous ses niveaux — sous-commande,
+# option, nom de paquet : ⏎ complète la dernière partie, puis exécute, en **une seule
+# frappe**. « winget li ⏎ » lance donc `winget list`. Presser ⏎, c'est dire « pars », et
+# la ligne part — complétée si un candidat était désigné, telle quelle sinon, sans qu'on
+# se demande à sa place si elle est correcte.
+#
+# Reste à ne pas réécrire une ligne qui porte déjà son candidat : c'est tout ce que dit le
+# `-cne` ci-dessous.
+#
+# Comme Step-JiggerSelection, elle ne lit ni la console ni l'état du module : tout lui est
+# passé, ce qui la rend vérifiable hors terminal (cf. tests/smoke.ps1).
+#
+# `-cne`, et non `-ne` : la comparaison de PowerShell ignore la casse par défaut, or la
+# casse est justement ce que la complétion corrige souvent — « winget install git.mingit »
+# doit devenir « Git.MinGit », un identifiant que winget résout au caractère près.
+function Test-JiggerCompletion([bool]$Actif, [string]$Buffer, [string]$Left) {
+    if (-not $Actif) { return $false }
+    if ([string]::IsNullOrEmpty($Left)) { return $false }
+    return $Left -cne $Buffer
+}
+
 # ── Touches ───────────────────────────────────────────────────────────────────────────
 
 # Les fonctions de PSReadLine prennent toutes ($key, $arg) : un relais peut donc rappeler
@@ -627,8 +672,17 @@ $script:RelaisEdition = @{
 # ⏎ et ^C mettent fin à la ligne : ce qui suivait le prompt va être recouvert par la
 # sortie de la commande, ou par le prompt suivant. On efface le cadre *avant* de leur
 # rendre la main, sinon il resterait à l'écran, coupé en deux.
+#
+# ⏎ pose d'abord le candidat courant dans la ligne, s'il en désigne un (cf.
+# Test-JiggerCompletion) : la dernière partie se complète et la ligne part dans la même
+# frappe. Le reste ne change pas — cadre effacé, état remis à zéro, puis la touche à qui
+# la tenait avant nous.
 $script:RelaisFin = @{
-    'Enter'  = { param($key, $arg) Hide-JiggerPopup; Reset-JiggerLine
+    'Enter'  = { param($key, $arg)
+                 if (Test-JiggerCompletion (Test-JiggerActive) (Get-JiggerBuffer) $script:Left) {
+                     Write-JiggerCandidate
+                 }
+                 Hide-JiggerPopup; Reset-JiggerLine
                  Invoke-JiggerFallback 'Enter'  $key $arg 'AcceptLine' }
     'Ctrl+c' = { param($key, $arg) Hide-JiggerPopup; Reset-JiggerLine
                  Invoke-JiggerFallback 'Ctrl+c' $key $arg 'CopyOrCancelLine' }
@@ -718,11 +772,7 @@ Set-PSReadLineKeyHandler -Chord $script:InsertKey -BriefDescription 'jigger:inse
     $buffer = if ($null -eq $line) { '' } else { $line.Substring(0, $cursor) }
 
     if (Test-JiggerActive) {
-        [Microsoft.PowerShell.PSConsoleReadLine]::Replace(0, $cursor, $script:Left)
-        $script:Key = ''                       # la ligne a changé : le cadre est à refaire
-        $script:SelLine = $script:Left
-        $script:Sel = 0
-        Update-JiggerPopup
+        Set-JiggerCandidate
         return
     }
 

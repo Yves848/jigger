@@ -107,6 +107,21 @@ Write-Host "`n→ ⇥ insère le candidat courant dans la ligne"
 $e = ecran 'winget ins\t'
 check 'ligne complétée'        $e 'PS> winget install'
 
+Write-Host "`n→ ⏎ complète la dernière partie, et exécute dans la même frappe"
+# La frappe économisée : ⇥ n'est plus nécessaire avant ⏎. La ligne échoue (aucun paquet
+# n'est nommé) et c'est voulu — ⏎ dit « pars », la ligne part. C'est la trace d'exécution
+# qu'on assère, pas la réussite.
+$e = ecran 'jg ins\r'
+check 'ligne complétée'        $e 'jg install'
+check 'ligne exécutée'         $e 'jigger'
+check 'cadre effacé'           $e '╭' $false
+
+Write-Host "`n→ ⏎ reste ⏎ là où il n'y a rien à compléter"
+# L'autre moitié de la règle : hors ligne de gestionnaire, aucun popup, donc la touche
+# rend la main à PSReadLine et la commande s'exécute. Sans elle, plus rien ne partirait.
+$e = ecran 'echo bonjour\r'
+check 'commande exécutée'      $e 'bonjour'
+
 Write-Host "`n→ ⇥ sans candidat rend la main au shell, sans ouvrir de sélecteur"
 $e = ecran 'winget zzz\t'
 check 'ligne intacte'          $e 'PS> winget zzz'

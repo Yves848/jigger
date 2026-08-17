@@ -11,16 +11,16 @@ gestionnaire de paquets, un cadre s'affiche sous le prompt et suit ta frappe.
 
 ```
 ❯ brew install fire
-╭──────────────────────────────────────────────────────╮
-│❯ brew install                           jigger 0.10.0│
-│  ▣  firealpaca                                       │
-│  ▣  firebase-admin                                   │
-│  ◆  firebase-cli                                     │
-│  ▣  firebird-emu                                     │
-│  ▣  firecamp                                         │
-│                                                      │
-│   ⇥  insérer   ↓  parcourir   ^G  fermer             │
-╰──────────────────────────────────────────────────────╯
+╭──────────────────────────────────────────────────────────╮
+│❯ brew install                               jigger 0.10.0│
+│  ▣  firealpaca                                           │
+│  ▣  firebase-admin                                       │
+│  ◆  firebase-cli                                         │
+│  ▣  firebird-emu                                         │
+│  ▣  firecamp                                             │
+│                                                          │
+│   ⇥  insérer   ↩  exécuter   ↓  parcourir   ^G  fermer   │
+╰──────────────────────────────────────────────────────────╯
 ```
 
 Et, par-dessus les trois gestionnaires, **une seule syntaxe** : `jg install fd` s'adresse à
@@ -176,14 +176,20 @@ scoop uninstall 7z
 | Touche | Effet |
 |---|---|
 | `⇥` | insère le candidat courant |
+| `⏎` | complète la dernière partie **et** exécute la ligne, en une seule frappe |
 | `↓` | entre dans la liste, puis descend d'un candidat |
 | `↑` | remonte ; au premier candidat, rend le clavier au shell |
 | `^N` / `^P` | les mêmes, pour qui les préfère aux flèches |
 | `^G` | ferme le popup pour la ligne en cours (`⇥` le rouvre) |
 | `^R` | bascule le filtre entre texte brut et expression rationnelle. Le titre du cadre affiche `[regex]` tant que c'est actif, et la touche retourne à la recherche inverse du shell dès que le popup n'est pas là |
 
-Deux choses à savoir, qui font l'essentiel du confort :
+Trois choses à savoir, qui font l'essentiel du confort :
 
+- **`⏎` complète, puis exécute — dans la même frappe.** `winget li ⏎` lance
+  `winget list` : c'est `⇥` qu'on n'a plus à taper, et cela vaut à tous les niveaux —
+  verbe, sous-verbe, option, nom de paquet. Presser `⏎`, c'est dire « pars » : la ligne
+  part, complétée si un candidat était désigné, telle quelle sinon. `^G` ferme le popup
+  pour la ligne en cours si tu veux exécuter exactement ce que tu as tapé.
 - **Les flèches restent ton historique** tant que le popup n'a pas le clavier — popup
   ouvert ou non. Le cadre le montre : ligne courante soulignée et pied `↑↓ naviguer` quand
   il a le focus, au repos et `↓ parcourir` quand il ne l'a pas.
@@ -217,15 +223,15 @@ de marcher exactement comme avant, popup compris.
 
 ```
 ❯ jg
-╭──────────────────────────────────────────────────────╮
-│❯ jigger                                 jigger 0.10.0│
-│  •  cleanup                                          │
-│  •  doctor                                           │
-│  •  info                                             │
-│  •  install                                          │
-│                                                      │
-│   ⇥  insérer   ↓  parcourir   ^G  fermer             │
-╰──────────────────────────────────────────────────────╯
+╭──────────────────────────────────────────────────────────╮
+│❯ jigger                                     jigger 0.10.0│
+│  •  cleanup                                              │
+│  •  doctor                                               │
+│  •  info                                                 │
+│  •  install                                              │
+│                                                          │
+│   ⇥  insérer   ↩  exécuter   ↓  parcourir   ^G  fermer   │
+╰──────────────────────────────────────────────────────────╯
 ```
 
 `install`, `uninstall`, `upgrade`, `list`, `outdated`, `search`, `info` — les sept que les

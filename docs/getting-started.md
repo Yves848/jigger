@@ -11,16 +11,16 @@ command, a frame appears under the prompt and tracks your keystrokes.
 
 ```
 ❯ brew install fire
-╭──────────────────────────────────────────────────────╮
-│❯ brew install                           jigger 0.10.0│
-│  ▣  firealpaca                                       │
-│  ▣  firebase-admin                                   │
-│  ◆  firebase-cli                                     │
-│  ▣  firebird-emu                                     │
-│  ▣  firecamp                                         │
-│                                                      │
-│   ⇥  insert   ↓  browse   ^G  close                  │
-╰──────────────────────────────────────────────────────╯
+╭──────────────────────────────────────────────────────────╮
+│❯ brew install                               jigger 0.10.0│
+│  ▣  firealpaca                                           │
+│  ▣  firebase-admin                                       │
+│  ◆  firebase-cli                                         │
+│  ▣  firebird-emu                                         │
+│  ▣  firecamp                                             │
+│                                                          │
+│   ⇥  insert   ↩  execute   ↓  browse   ^G  close         │
+╰──────────────────────────────────────────────────────────╯
 ```
 
 And, across all three managers, **one syntax**: `jg install fd` reaches whichever one
@@ -176,14 +176,20 @@ scoop uninstall 7z
 | Key | Effect |
 |---|---|
 | `⇥` | inserts the current candidate |
+| `⏎` | completes the last part **and** runs the line, in a single keystroke |
 | `↓` | enters the list, then moves down one candidate |
 | `↑` | moves up; on the first candidate, hands the keyboard back to the shell |
 | `^N` / `^P` | the same, for those who prefer them to arrow keys |
 | `^G` | closes the popup for the current line (`⇥` reopens it) |
 | `^R` | switches the filter between plain text and regex. The frame's title shows `[regex]` while it is on, and the key goes back to the shell's reverse history search whenever the popup isn't up |
 
-Two things worth knowing, most of what makes this comfortable:
+Three things worth knowing, most of what makes this comfortable:
 
+- **`⏎` completes, then runs — in the same keystroke.** `winget li ⏎` runs `winget list`:
+  that's `⇥` you no longer have to type, and it holds at every level — verb, sub-verb,
+  option, package name. Pressing `⏎` means "go", and the line goes: completed if a
+  candidate was designated, as typed otherwise. `^G` closes the popup for the current line
+  if you want to run exactly what you typed.
 - **The arrow keys remain your history** as long as the popup doesn't hold the
   keyboard — open or not. The frame shows which: the current line underlined and the
   footer reading `↑↓ navigate` when it has focus, at rest and `↓ browse` when it
@@ -221,15 +227,15 @@ packages:
 
 ```
 ❯ jg
-╭──────────────────────────────────────────────────────╮
-│❯ jigger                                 jigger 0.10.0│
-│  •  cleanup                                          │
-│  •  doctor                                           │
-│  •  info                                             │
-│  •  install                                          │
-│                                                      │
-│   ⇥  insert   ↓  browse   ^G  close                  │
-╰──────────────────────────────────────────────────────╯
+╭──────────────────────────────────────────────────────────╮
+│❯ jigger                                     jigger 0.10.0│
+│  •  cleanup                                              │
+│  •  doctor                                               │
+│  •  info                                                 │
+│  •  install                                              │
+│                                                          │
+│   ⇥  insert   ↩  execute   ↓  browse   ^G  close         │
+╰──────────────────────────────────────────────────────────╯
 ```
 
 `install`, `uninstall`, `upgrade`, `list`, `outdated`, `search`, `info` — the seven
