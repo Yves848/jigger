@@ -52,12 +52,40 @@ func code(err error) int {
 	return 1
 }
 
-// Executer déroule les cibles en séquence. L'ordre vient de Router, qui le tient de
+// Rejeu décrit un échec de privilèges qu'un appelant peut proposer de rejouer. L'argv est
+// celui qui a **réellement** tourné, `accords()` compris : rejouer autre chose que ce qui
+// a échoué serait un piège.
+type Rejeu struct {
+	Cmd    string
+	Argv   []string
+	Droits pm.Droits // DroitsRequis ou DroitsInterdits — jamais DroitsRien
+}
+
+// Resultat est ce qu'une exécution produit, élévation comprise.
+type Resultat struct {
+	Rows  []pm.Package
+	Code  int
+	Rejeu *Rejeu // non nil quand un code de sortie a parlé de privilèges
+}
+
+// Executer déroule les cibles en séquence, et rend le couple court dont presque tout le
+// monde se contente. La forme longue est ExecuterAvec — même partage que
+// complete.Complete / CompleteAvec.
+func Executer(v pm.Verb, cibles []Cible, o Opts) ([]pm.Package, int) {
+	r := ExecuterAvec(v, cibles, o)
+	return r.Rows, r.Code
+}
+
+// ExecuterAvec déroule les cibles en séquence. L'ordre vient de Router, qui le tient de
 // managers.All() : deux exécutions successives font la même chose dans le même ordre.
 //
 // Lecture et écriture ne traitent pas l'échec de la même façon, et c'est délibéré : la
 // lecture est au mieux, l'écriture ne devine pas.
-func Executer(v pm.Verb, cibles []Cible, o Opts) ([]pm.Package, int) {
+//
+// Rien n'est intercepté et rien n'est élevé ici : la commande tourne relayée, exactement
+// comme avant, et son code de sortie est lu **après coup** (ADR-0004). La façade constate
+// et rend ; c'est l'appelant qui a le terminal, donc c'est lui qui propose.
+func ExecuterAvec(v pm.Verb, cibles []Cible, o Opts) Resultat {
 	lecture := Normalise(v)
 	var rows []pm.Package
 	var reussites, echecs int
@@ -96,7 +124,13 @@ func Executer(v pm.Verb, cibles []Cible, o Opts) ([]pm.Package, int) {
 					// Écriture : on n'enchaîne pas sur un gestionnaire suivant après
 					// un échec.
 					fmt.Fprint(os.Stderr, i18n.Tf("facade.failed", cible.Mgr.Cmd()))
-					return rows, c
+					res := Resultat{Rows: rows, Code: c}
+					// Seule l'écriture porte un rejeu : une lecture qui échoue passe au
+					// gestionnaire suivant, il n'y a rien à relancer.
+					if d := pm.DroitsDe(cible.Mgr, c); d != pm.DroitsRien {
+						res.Rejeu = &Rejeu{Cmd: cible.Mgr.Cmd(), Argv: argv, Droits: d}
+					}
+					return res
 				}
 				fmt.Fprint(os.Stderr, i18n.Tf("facade.manager_error", cible.Mgr.Cmd(), err))
 				echoue = true
@@ -139,13 +173,13 @@ func Executer(v pm.Verb, cibles []Cible, o Opts) ([]pm.Package, int) {
 	if lecture {
 		// Au mieux : 0 dès qu'un gestionnaire a répondu.
 		if reussites > 0 {
-			return rows, 0
+			return Resultat{Rows: rows}
 		}
 		if echecs > 0 {
-			return rows, dernierCode
+			return Resultat{Rows: rows, Code: dernierCode}
 		}
 	}
-	return rows, 0
+	return Resultat{Rows: rows}
 }
 
 // accords ajoute les acceptations de licence de winget, et seulement sur --yes : jigger

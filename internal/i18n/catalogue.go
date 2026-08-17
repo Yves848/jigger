@@ -70,6 +70,34 @@ var catalogue = map[string][nbLangues]string{
 	},
 	"facade.nothing": {"nothing to report\n", "rien à signaler\n"},
 
+	// ── Élévation (ADR-0004) ──────────────────────────────────────────────────────────
+	// jigger constate, il n'intercepte pas : ces messages sortent APRÈS l'échec, et le
+	// code de sortie qui les déclenche a nommé la cause lui-même. D'où le ton — on
+	// rapporte ce que le gestionnaire a dit, on ne devine pas.
+	"elev.required": {
+		"jigger (%s): this command requires administrator privileges.\n",
+		"jigger (%s) : cette commande demande les privilèges d'administrateur.\n",
+	},
+	// Le contre-cas, et il est aussi fréquent que l'autre : deux des quatre codes de
+	// winget qui parlent de droits disent l'inverse. Rien n'est proposé sur celui-ci.
+	"elev.forbidden": {
+		"jigger (%s): this command refuses to run elevated. Try again from an ordinary terminal.\n",
+		"jigger (%s) : cette commande refuse de tourner élevée. Réessaie depuis un terminal ordinaire.\n",
+	},
+	"elev.title":        {"Run as administrator?", "Relancer en administrateur ?"},
+	"elev.retry_sudo":   {"run it with sudo", "relancer avec sudo"},
+	"elev.retry_window": {"run it in an elevated window", "relancer dans une fenêtre élevée"},
+	// Sans terminal — un tube, un script, une tâche planifiée —, on ne pose aucune
+	// question : on imprime la ligne exacte, et on rend le code d'origine.
+	"elev.manual": {
+		"        Run it yourself: %s\n",
+		"        Relance-la toi-même : %s\n",
+	},
+	"elev.declined": {
+		"jigger: elevation declined.\n",
+		"jigger : élévation refusée.\n",
+	},
+
 	// Ajoutées en relecture : la note d'un catalogue en construction (cat.Note, déjà
 	// traduite) et l'erreur brute d'un gestionnaire (%v) fuyaient la ponctuation
 	// française même en anglais — de même que le séparateur et les fragments qui

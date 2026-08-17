@@ -215,6 +215,27 @@ check '↑ atteint le premier candidat'               $transitions[4] 'True/0/Tr
 check '↑ au premier candidat rend le clavier'       $transitions[5] 'True/0/False'
 check 'sans popup, rien n''est pris'                $transitions[6] 'False/0/False'
 
+section '⏎ complète la dernière partie, puis exécute'
+# La règle vaut à tous les niveaux de l'arbre — sous-commande, option, paquet — parce
+# qu'elle ne connaît que deux choses : y a-t-il un candidat désigné, et apporte-t-il
+# quelque chose à la ligne. Les cas ci-dessous prennent un niveau chacun.
+#
+# $false ne veut pas dire « la ligne ne part pas » : elle part toujours. Il veut dire
+# « rien à poser dedans avant » — ligne déjà complète, aucun candidat, ou pas de popup.
+foreach ($cas in @(
+    @('une sous-commande à finir', $true,  'winget li',            'winget list',            $true),
+    @('une option à finir',        $true,  'scoop install --g',    'scoop install --global', $true),
+    @('un paquet à finir',         $true,  'winget install Git.M', 'winget install Git.MinGit', $true),
+    @('la ligne est complète',     $true,  'winget list',          'winget list',            $false),
+    # La casse compte : c'est elle que la complétion corrige le plus souvent, et winget
+    # résout ses identifiants au caractère près.
+    @('seule la casse diffère',    $true,  'winget install git.mingit', 'winget install Git.MinGit', $true),
+    @('aucun candidat',            $true,  'winget install zzzz',  '',                       $false),
+    @('pas de popup',              $false, 'winget li',            'winget list',            $false))) {
+    check "« $($cas[2]) » : $($cas[0])" `
+        (& $jigger { param($a, $b, $l) Test-JiggerCompletion $a $b $l } $cas[1] $cas[2] $cas[3]) $cas[4]
+}
+
 section 'la ligne est reconnue (ou non) comme celle d''un gestionnaire'
 # « jg » et « jigger » sont de la partie : la façade arme le popup au même titre que les
 # gestionnaires. Et c'est « jg » **tel qu'il est tapé** qui doit être reconnu — le relais

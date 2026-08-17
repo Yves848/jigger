@@ -364,3 +364,53 @@ func TestShowsAtMostVisibleRowsCandidates(t *testing.T) {
 		t.Errorf("%d candidats affichés, attendu %d", shown, visibleRows)
 	}
 }
+
+// SansFiltre : une question par oui ou non n'a rien à filtrer. La ligne de saisie
+// disparaît, et — c'est l'autre moitié, celle qui compte — la frappe ne filtre plus rien.
+// La masquer en laissant la saisie active ferait disparaître des choix sans que rien ne
+// dise pourquoi : le pire des deux mondes.
+func TestSansFiltreRetireLaLigneDeSaisie(t *testing.T) {
+	lipgloss.SetColorProfile(termenv.Ascii)
+
+	res := complete.Result{Items: []complete.Item{{Name: "annuler"}, {Name: "relancer"}}}
+
+	avec := visible(New("Relancer ?", res).View())
+	if !strings.Contains(avec, "›") {
+		t.Fatal("le sélecteur ordinaire doit garder sa ligne de filtre")
+	}
+
+	m := New("Relancer ?", res)
+	m.SansFiltre = true
+	if shown := visible(m.View()); strings.Contains(shown, "›") {
+		t.Errorf("ligne de filtre présente malgré SansFiltre :\n%s", shown)
+	}
+}
+
+func TestSansFiltreIgnoreLaFrappe(t *testing.T) {
+	res := complete.Result{Items: []complete.Item{{Name: "annuler"}, {Name: "relancer"}}}
+
+	m := New("Relancer ?", res)
+	m.SansFiltre = true
+	suite, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("z")})
+	after := suite.(Model)
+
+	if len(after.filtered) != 2 {
+		t.Fatalf("%d candidats après une frappe, attendu 2 : la saisie ne doit plus filtrer",
+			len(after.filtered))
+	}
+}
+
+// Les touches qui comptent restent prises : sans elles, la question serait sans réponse.
+func TestSansFiltreGardeLaNavigationEtLeChoix(t *testing.T) {
+	res := complete.Result{Items: []complete.Item{{Name: "annuler"}, {Name: "relancer"}}}
+
+	m := New("Relancer ?", res)
+	m.SansFiltre = true
+	bas, _ := m.Update(tea.KeyMsg{Type: tea.KeyDown})
+	choisi, _ := bas.(Model).Update(tea.KeyMsg{Type: tea.KeyEnter})
+
+	final := choisi.(Model)
+	if final.Chosen == nil || final.Chosen.Name != "relancer" {
+		t.Fatalf("choix = %v, attendu « relancer »", final.Chosen)
+	}
+}

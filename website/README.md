@@ -43,8 +43,8 @@ commentaire HTML la commande qui l'a produite ; à rejouer quand l'affichage de 
 change :
 
 ```sh
-jigger render --line "brew install fire" --cols 56
-jigger render --line "jg " --cols 56
+jigger render --line "brew install fire" --cols 60
+jigger render --line "jg " --cols 60
 STARSHIP_CONFIG=shell/starship/brew.toml starship prompt
 ```
 

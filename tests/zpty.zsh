@@ -303,6 +303,18 @@ suite() {
   out=$(visible "$(jigger_type $'brew u\e[B')")
   check "puis à naviguer"               "$out" '↑↓  naviguer'
 
+  print -r -- "→ ⏎ complète la dernière partie, et exécute dans la même frappe"
+  # La frappe économisée : « brew u ⏎ » lance `brew uninstall`, sans le ⇥ qu'il fallait
+  # taper avant. Une seule frappe — c'est bien CMD:[uninstall] qu'on attend, pas CMD:[u].
+  out=$(visible "$(jigger_type $'brew u\n')")
+  check "la ligne complétée est exécutée" "$out" 'CMD:[uninstall]'
+
+  print -r -- "→ ⏎ exécute telle quelle une ligne qui n'a rien à compléter"
+  # Aucun candidat ne s'appelle « zzzzqq » : il n'y a rien à poser dans la ligne, et elle
+  # part quand même. ⏎ dit « pars » — jigger ne juge pas à sa place si elle est correcte.
+  out=$(visible "$(jigger_type $'brew install zzzzqq\n')")
+  check "ligne exécutée telle quelle"   "$out" 'CMD:[install zzzzqq]'
+
   print -r -- "→ ^G ferme le popup et laisse la ligne intacte"
   out=$(visible "$(jigger_type $'brew u\x07\n')")
   check "ligne exécutée telle quelle"   "$out" 'CMD:[u]'

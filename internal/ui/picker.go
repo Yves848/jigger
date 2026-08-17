@@ -126,6 +126,12 @@ type Model struct {
 	// « ↵ choisir / ^G annuler » — ⇥ et ↩ n'ont pas de sens propre là où on choisit un
 	// gestionnaire, pas un texte à insérer (spec §3, README).
 	Keys []Key
+
+	// SansFiltre retire la ligne de saisie. Un filtre a du sens sur des candidats ; il
+	// n'en a aucun sur une question par oui ou non — il invite à taper là où il n'y a
+	// rien à chercher, et masquer la ligne sans couper la saisie filtrerait à l'insu de
+	// celui qui répond. C'est la confirmation d'élévation qui le pose (ADR-0004).
+	SansFiltre bool
 }
 
 // New crée le sélecteur pour un résultat de complétion.
@@ -225,6 +231,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
+	// Sans ligne de filtre, la frappe ne va nulle part : filtrer une liste dont on ne
+	// montre pas le motif reviendrait à faire disparaître des choix sans dire pourquoi.
+	if m.SansFiltre {
+		return m, nil
+	}
+
 	var cmd tea.Cmd
 	m.input, cmd = m.input.Update(msg)
 	m.applyFilter()
@@ -262,12 +274,17 @@ func (m Model) View() string {
 			Key{"esc", i18n.T("popup.cancel")})
 	}
 
+	filtre := ""
+	if !m.SansFiltre {
+		filtre = filterHint.Render("› ") + m.input.View() + m.modeView()
+	}
+
 	return Frame{
 		Title:      m.title,
 		Items:      m.filtered,
 		Sel:        m.cursor,
 		Offset:     m.offset,
-		FilterView: filterHint.Render("› ") + m.input.View() + m.modeView(),
+		FilterView: filtre,
 		Empty:      i18n.T("popup.empty"),
 		Keys:       keys,
 		Focused:    true, // le sélecteur plein écran possède le clavier, par construction
