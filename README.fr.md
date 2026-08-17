@@ -39,7 +39,8 @@ il ne requiert que le gestionnaire lui-même.
   - scoop : un nom présent dans plusieurs buckets s'insère qualifié, `main/flux` ;
   - winget : un identifiant contenant des espaces s'insère entre guillemets.
 - **Popup vivant** : le cadre apparaît dès « `winget ` » et se filtre au fil de la frappe,
-  sans presser la moindre touche. `↓` fait entrer dans la liste, `⇥` insère, `^G` ferme.
+  sans presser la moindre touche. `↓` fait entrer dans la liste, `⇥` insère, `⏎` complète
+  et exécute d'une seule frappe, `^G` ferme.
 - **Focus explicite** : le popup ne prend les flèches qu'une fois qu'on y est entré. `↓`
   l'y fait entrer, `↑` en ressort dès le premier candidat — et tant qu'il n'a pas le
   clavier, `↑`/`↓` restent l'historique du shell. La ligne courante le montre : soulignée
@@ -118,10 +119,18 @@ brew install fire        → idem, côté macOS
 | Touche | Effet |
 |---|---|
 | `⇥` | insère le candidat courant (corrigé si besoin) |
+| `⏎` | complète la dernière partie **et** exécute la ligne, en une seule frappe |
 | `↓` | entre dans la liste, puis descend d'un candidat |
 | `↑` | remonte ; au premier candidat, rend le clavier au shell |
 | `^N` / `^P` | les mêmes, pour qui les préfère aux flèches |
 | `^G` | ferme le popup pour la ligne en cours (`⇥` le rouvre) |
+
+`⏎` **complète, puis exécute — dans la même frappe**, et à tous les niveaux de l'arbre :
+verbe, sous-verbe, option, nom de paquet. `winget li ⏎` lance `winget list` ; c'est `⇥`
+qu'on n'a plus à taper. Presser `⏎`, c'est dire « pars » : la ligne part, complétée si un
+candidat était désigné, telle quelle sinon — jigger ne juge pas à ta place si elle est
+correcte. `^G` ferme le popup pour la ligne en cours si tu veux exécuter exactement ce que
+tu as tapé.
 
 Tant que le popup n'a pas le clavier, `↑` et `↓` sont **l'historique du shell**, popup
 ouvert ou non : ouvrir une liste de candidats ne coûte pas l'accès à la commande
@@ -328,6 +337,43 @@ Not installed
 `upgrade`. Il n'est **jamais implicite** : sans lui, l'invite de winget s'affiche
 normalement — la sortie étant relayée, rien n'empêche d'y répondre à la main. Chez brew et
 scoop, qui n'ont pas cette notion, `--yes` ne fait rien.
+
+### Quand il faut être administrateur
+
+**Windows.** jigger ne s'interpose toujours pas : la commande part normalement, et c'est
+son **code de sortie** qui dit ce qui s'est passé. Quand winget refuse faute de droits,
+jigger le dit et propose de la relancer élevée — jamais de lui-même, et jamais sans un oui
+explicite (la ligne ouverte par défaut est *annuler*).
+
+```
+$ jg install Quelque.Chose
+jigger (winget) : cette commande demande les privilèges d'administrateur.
+╭──────────────────────────────────────────────────────────╮
+│❯ Relancer en administrateur ?               jigger 0.11.0│
+│  •  annuler                                              │
+│  •  relancer dans une fenêtre élevée                     │
+│                                                          │
+│   ↵  choisir   ^G  annuler                               │
+╰──────────────────────────────────────────────────────────╯
+```
+
+Trois choses valent d'être sues :
+
+- **Deux des codes de winget disent l'inverse** — l'installeur qui *refuse* un contexte
+  élevé, l'action interdite en administrateur sur un paquet installé pour l'utilisateur.
+  jigger ne propose rien sur ceux-là : il dit de réessayer depuis un terminal ordinaire.
+- **Par où ça passe est annoncé avant que tu répondes.** Si le `sudo` de Windows 11 est
+  activé (Paramètres → Système → Pour les développeurs), jigger l'emploie ; sinon il ouvre
+  une console élevée séparée — un processus élevé ne peut pas s'attacher à la console d'un
+  processus qui ne l'est pas, c'est une frontière du système. Dans les deux cas, jigger
+  attend la fin et rend le code là où tu as tapé.
+- **Sans terminal, aucune question.** `jg install … | tee`, un script, une tâche
+  planifiée : jigger imprime la ligne exacte à relancer et rend le code d'origine. Un
+  pipeline ne se bloque jamais sur une invite.
+
+Le raisonnement est dans [l'ADR-0004](docs/adr/0004-elevation-constatee.md) : jigger
+constate, il n'intercepte pas. **macOS et Linux** ne sont pas concernés — aucun
+gestionnaire n'y publie de code de sortie équivalent (A-22).
 
 ### La colonne PM
 

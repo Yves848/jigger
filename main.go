@@ -31,6 +31,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/term"
@@ -38,6 +39,7 @@ import (
 	"github.com/muesli/termenv"
 
 	"gitlab.yg-devworks.com/yves/jigger/internal/complete"
+	"gitlab.yg-devworks.com/yves/jigger/internal/elevate"
 	"gitlab.yg-devworks.com/yves/jigger/internal/facade"
 	"gitlab.yg-devworks.com/yves/jigger/internal/i18n"
 	"gitlab.yg-devworks.com/yves/jigger/internal/managers"
@@ -191,13 +193,97 @@ func runFacade(argv []string) int {
 		resolu[amb.Nom] = choisi
 	}
 
-	rows, code := facade.Executer(verbe, cibles, facade.Opts{JSON: o.JSON, Yes: o.Yes})
-	if len(rows) > 0 || facade.Normalise(verbe) {
-		if !afficherPagine(verbe, rows, o) {
-			fmt.Print(facade.Formater(verbe, rows, o.JSON))
+	res := facade.ExecuterAvec(verbe, cibles, facade.Opts{JSON: o.JSON, Yes: o.Yes})
+	if res.Rejeu != nil {
+		return elever(res.Rejeu, res.Code)
+	}
+	if len(res.Rows) > 0 || facade.Normalise(verbe) {
+		if !afficherPagine(verbe, res.Rows, o) {
+			fmt.Print(facade.Formater(verbe, res.Rows, o.JSON))
 		}
 	}
-	return code
+	return res.Code
+}
+
+// elever traite un échec de privilèges constaté par la façade (ADR-0004). Il ne s'appelle
+// qu'après coup : la commande a déjà tourné, relayée comme d'habitude, et elle a échoué en
+// nommant sa cause. Rien n'a été intercepté, rien n'est élevé sans un oui explicite.
+//
+// Le code rendu est celui du gestionnaire dans tous les cas où l'utilisateur n'a pas
+// rejoué — refuser une élévation ne doit pas changer ce que le shell voit de l'échec
+// d'origine.
+func elever(r *facade.Rejeu, code int) int {
+	ligne := r.Cmd + " " + strings.Join(r.Argv, " ")
+
+	// Le contre-cas : élever serait exactement le contraire de ce qu'il faut faire. On le
+	// dit, et on ne propose rien.
+	if r.Droits == pm.DroitsInterdits {
+		fmt.Fprint(os.Stderr, i18n.Tf("elev.forbidden", r.Cmd))
+		return code
+	}
+
+	fmt.Fprint(os.Stderr, i18n.Tf("elev.required", r.Cmd))
+
+	// Pas de terminal (un tube, un script, une tâche planifiée) ou pas d'élévation
+	// possible sur cette plateforme : on imprime la ligne exacte et on s'arrête. Un
+	// pipeline ne doit jamais se bloquer sur une invite.
+	if !elevate.Possible() || !demanderElevation(r) {
+		fmt.Fprint(os.Stderr, i18n.Tf("elev.manual", ligne))
+		return code
+	}
+
+	nouveau, err := elevate.Rejouer(r.Cmd, r.Argv)
+	if errors.Is(err, elevate.ErrRefuse) {
+		// L'invite du système a été refusée. C'est une réponse, pas une panne.
+		fmt.Fprint(os.Stderr, i18n.T("elev.declined"))
+		return code
+	}
+	if err != nil {
+		fmt.Fprint(os.Stderr, i18n.Tf("facade.manager_error", r.Cmd, err))
+		return code
+	}
+	return nouveau
+}
+
+// demanderElevation pose la question sur le terminal, et rend false dès qu'il n'y en a
+// pas. Même forme que trancher() — il n'y a pas lieu d'avoir deux façons de poser une
+// question — et même dégradation : sans terminal, aucune invite.
+//
+// « Annuler » est la ligne ouverte par défaut : la touche la plus facile à frapper ne doit
+// pas être celle qui élève.
+func demanderElevation(r *facade.Rejeu) bool {
+	tty, err := openTTY()
+	if err != nil {
+		return false
+	}
+	defer tty.Close()
+
+	oui := i18n.T("elev.retry_window")
+	if elevate.Prevue() == elevate.VoieSudo {
+		oui = i18n.T("elev.retry_sudo")
+	}
+
+	lipgloss.SetColorProfile(termenv.NewOutput(tty.Out).Profile)
+	model := ui.New(i18n.T("elev.title"), complete.Result{Items: []complete.Item{
+		{Name: i18n.T("popup.cancel")},
+		{Name: oui},
+	}})
+	model.Keys = []ui.Key{
+		{Key: "↵", Label: i18n.T("popup.choose")},
+		{Key: "^G", Label: i18n.T("popup.cancel")},
+	}
+	// Pas de ligne de filtre : on répond par oui ou par non, il n'y a rien à chercher.
+	model.SansFiltre = true
+
+	fmt.Fprint(tty.Out, "\r\n")
+	prog := tea.NewProgram(model, tea.WithInput(tty.In), tea.WithOutput(tty.Out))
+	final, err := prog.Run()
+	fmt.Fprint(tty.Out, "\x1b[1A\r")
+	if err != nil {
+		return false
+	}
+	m := final.(ui.Model)
+	return m.Chosen != nil && m.Chosen.Name == oui
 }
 
 

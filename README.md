@@ -40,7 +40,7 @@ nothing but the package manager itself.
   - winget: an identifier containing spaces is inserted in quotes.
 - **A popup that's alive**: the frame appears as soon as you type "`winget `" and narrows
   itself down with every keystroke, without a single key press. `↓` enters the list, `⇥`
-  inserts, `^G` closes.
+  inserts, `⏎` completes and runs in one keystroke, `^G` closes.
 - **Explicit focus**: the popup only takes the arrow keys once you've entered it. `↓`
   moves you in; `↑` moves you back out on the first candidate — and until it holds the
   keyboard, `↑`/`↓` remain the shell's history. The current line shows which is which:
@@ -120,10 +120,18 @@ brew install fire        → same thing, on macOS
 | Key | Effect |
 |---|---|
 | `⇥` | inserts the current candidate (corrected if needed) |
+| `⏎` | completes the last part **and** runs the line, in a single keystroke |
 | `↓` | enters the list, then moves down one candidate |
 | `↑` | moves up; on the first candidate, hands the keyboard back to the shell |
 | `^N` / `^P` | the same, for those who prefer them to arrow keys |
 | `^G` | closes the popup for the current line (`⇥` reopens it) |
+
+`⏎` **completes, then runs — in the same keystroke**, and at every level of the tree:
+verb, sub-verb, option, package name. `winget li ⏎` runs `winget list`; it's `⇥` you no
+longer have to type. Pressing `⏎` means "go", and the line goes: completed if a candidate
+was designated, as typed otherwise — jigger doesn't decide on your behalf whether it is
+correct. `^G` closes the popup for the current line if you want to run exactly what you
+typed.
 
 As long as the popup doesn't hold the keyboard, `↑` and `↓` remain the **shell's
 history** — whether the popup is open or not: opening a candidate list doesn't cost
@@ -322,6 +330,43 @@ Not installed
 `upgrade`. It's **never implicit**: without it, winget's prompt shows up normally — the
 output being relayed, nothing stops you from answering it by hand. For brew and scoop,
 which have no such notion, `--yes` does nothing.
+
+### When administrator privileges are needed
+
+**Windows.** jigger still doesn't get in the way: the command runs normally, and it's its
+**exit code** that says what happened. When winget refuses for lack of privileges, jigger
+says so and offers to re-run it elevated — never on its own, and never without an explicit
+yes (the line open by default is *cancel*).
+
+```
+$ jg install Some.Package
+jigger (winget): this command requires administrator privileges.
+╭──────────────────────────────────────────────────────────╮
+│❯ Run as administrator?                      jigger 0.11.0│
+│  •  cancel                                               │
+│  •  run it in an elevated window                         │
+│                                                          │
+│   ↵  choose   ^G  cancel                                 │
+╰──────────────────────────────────────────────────────────╯
+```
+
+Three things worth knowing:
+
+- **Two of winget's codes say the opposite** — an installer that *refuses* an elevated
+  context, and an action forbidden from an admin context on a user-scope package. jigger
+  offers nothing on those: it tells you to try again from an ordinary terminal.
+- **Which route it takes is announced before you answer.** If Windows 11's `sudo` is
+  enabled (Settings → System → For developers), jigger uses it; otherwise it opens a
+  separate elevated console — an elevated process cannot attach to the console of one that
+  isn't, which is a system boundary. Either way jigger waits for the end and returns the
+  code where you typed.
+- **No terminal, no question.** `jg install … | tee`, a script, a scheduled task: jigger
+  prints the exact line to re-run and returns the original code. A pipeline must never
+  block on a prompt.
+
+The reasoning lives in [ADR-0004](docs/adr/0004-elevation-constatee.md): jigger observes,
+it doesn't intercept. **macOS and Linux** are not covered — no manager there publishes an
+equivalent exit code (A-22).
 
 ### The PM column
 

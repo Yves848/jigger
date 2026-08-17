@@ -206,3 +206,125 @@ func TestVerbesNormalisesSontCaptures(t *testing.T) {
 		}
 	}
 }
+
+// ── Élévation constatée (ADR-0004) ────────────────────────────────────────────────────
+//
+// La façade ne demande rien et n'élève rien : elle constate un code de sortie et le rend.
+// Ces tests ne touchent donc ni au terminal, ni à Windows, ni à UAC.
+
+// Le cas nominal : winget refuse faute de droits, et la façade rend de quoi rejouer.
+func TestExecuterRemonteUnRejeuSurCodeAdmin(t *testing.T) {
+	simuler(t, nil, map[string]int{"winget": 0x8A150019})
+
+	res := ExecuterAvec("install", []Cible{{Mgr: winget.New(), Args: []string{"Git.Git"}}}, Opts{})
+
+	if res.Rejeu == nil {
+		t.Fatal("aucun rejeu : le code COMMAND_REQUIRES_ADMIN doit être reconnu")
+	}
+	if res.Rejeu.Droits != pm.DroitsRequis {
+		t.Fatalf("droits = %v, attendu DroitsRequis", res.Rejeu.Droits)
+	}
+	if res.Rejeu.Cmd != "winget" {
+		t.Fatalf("cmd = %q", res.Rejeu.Cmd)
+	}
+	if res.Code != 0x8A150019 {
+		t.Fatalf("code = %d : le code du gestionnaire doit passer tel quel", res.Code)
+	}
+}
+
+// L'argv rendu est celui qui a RÉELLEMENT tourné, accords compris. Rejouer autre chose que
+// ce qui a échoué serait un piège : l'utilisateur accepterait une commande, une autre
+// partirait.
+func TestLeRejeuPorteLArgvReellementLance(t *testing.T) {
+	vus := simuler(t, nil, map[string]int{"winget": 0x8A150019})
+
+	res := ExecuterAvec("install",
+		[]Cible{{Mgr: winget.New(), Args: []string{"Git.Git"}}}, Opts{Yes: true})
+
+	if res.Rejeu == nil {
+		t.Fatal("aucun rejeu")
+	}
+	if len(*vus) != 1 {
+		t.Fatalf("appels = %v", *vus)
+	}
+	lance := (*vus)[0].args
+	if len(res.Rejeu.Argv) != len(lance) {
+		t.Fatalf("argv du rejeu = %v, lancé = %v", res.Rejeu.Argv, lance)
+	}
+	for i := range lance {
+		if res.Rejeu.Argv[i] != lance[i] {
+			t.Fatalf("argv du rejeu = %v, lancé = %v", res.Rejeu.Argv, lance)
+		}
+	}
+	var accord bool
+	for _, a := range res.Rejeu.Argv {
+		if a == "--accept-package-agreements" {
+			accord = true
+		}
+	}
+	if !accord {
+		t.Fatalf("les accords de --yes manquent au rejeu : %v", res.Rejeu.Argv)
+	}
+}
+
+// Le contre-cas remonte aussi — mais marqué comme tel, pour que l'appelant dise l'inverse
+// au lieu de proposer d'élever.
+func TestExecuterRemonteLInterdictionDElevation(t *testing.T) {
+	simuler(t, nil, map[string]int{"winget": 0x8A150056})
+
+	res := ExecuterAvec("install", []Cible{{Mgr: winget.New(), Args: []string{"Git.Git"}}}, Opts{})
+
+	if res.Rejeu == nil {
+		t.Fatal("aucun rejeu : INSTALLER_PROHIBITS_ELEVATION doit être reconnu")
+	}
+	if res.Rejeu.Droits != pm.DroitsInterdits {
+		t.Fatalf("droits = %v, attendu DroitsInterdits", res.Rejeu.Droits)
+	}
+}
+
+// Un échec ordinaire ne propose rien. C'est la garde qui empêche « code non nul → propose
+// d'élever », lequel serait faux la plupart du temps et nuisible deux fois sur quatre.
+func TestPasDeRejeuSurUnEchecOrdinaire(t *testing.T) {
+	simuler(t, nil, map[string]int{"winget": 0x8A150014}) // NO_APPLICATIONS_FOUND
+
+	res := ExecuterAvec("install", []Cible{{Mgr: winget.New(), Args: []string{"Zzz.Zzz"}}}, Opts{})
+	if res.Rejeu != nil {
+		t.Fatalf("rejeu = %+v : un échec qui ne parle pas de droits ne propose rien", res.Rejeu)
+	}
+}
+
+// Un gestionnaire qui n'implémente pas le contrat ne fait rien proposer, quel que soit le
+// code — même si celui-ci vaut par coïncidence celui de winget.
+func TestPasDeRejeuSansContrat(t *testing.T) {
+	simuler(t, nil, map[string]int{"scoop": 0x8A150019})
+
+	res := ExecuterAvec("install", []Cible{{Mgr: scoop.New(), Args: []string{"fd"}}}, Opts{})
+	if res.Rejeu != nil {
+		t.Fatalf("rejeu = %+v : scoop ne déclare pas savoir lire ses codes", res.Rejeu)
+	}
+}
+
+// Une lecture qui échoue enchaîne sur le gestionnaire suivant : il n'y a rien à rejouer,
+// et proposer une élévation au milieu d'un `jg list` n'aurait aucun sens.
+func TestPasDeRejeuSurUneLecture(t *testing.T) {
+	simuler(t, nil, map[string]int{"winget": 0x8A150019})
+
+	res := ExecuterAvec("list", []Cible{{Mgr: winget.New(), Args: nil}}, Opts{})
+	if res.Rejeu != nil {
+		t.Fatalf("rejeu = %+v : une lecture ne se rejoue pas", res.Rejeu)
+	}
+}
+
+// Executer garde sa signature courte, et son comportement : c'est ce que dix sites
+// d'appel attendent.
+func TestExecuterCourtRendToujoursLeCouple(t *testing.T) {
+	simuler(t, nil, map[string]int{"winget": 0x8A150019})
+
+	rows, code := Executer("install", []Cible{{Mgr: winget.New(), Args: []string{"Git.Git"}}}, Opts{})
+	if code != 0x8A150019 {
+		t.Fatalf("code = %d", code)
+	}
+	if rows != nil {
+		t.Fatalf("rows = %v, attendu nil", rows)
+	}
+}
