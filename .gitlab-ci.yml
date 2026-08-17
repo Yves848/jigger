@@ -29,6 +29,19 @@ verifier:
     - go vet ./...
     - go test ./...
 
+# Le garde-fou du miroir GitHub (A-24). Il ne tourne que sur planification — jamais sur un
+# tag, jamais sur un push —, et c'est la seule chose qu'une planification déclenche.
+#
+# Le constat lui-même n'a besoin d'aucun jeton : les deux dépôts sont publics. GARDE_FOU_TOKEN
+# ne sert qu'à ouvrir et refermer l'issue ; sans lui, le job échoue en le disant plutôt que
+# de surveiller en silence.
+miroir:
+  stage: verifier
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+  script:
+    - go run ./tools/miroir -issue
+
 construire:
   stage: construire
   <<: *sur_tag
