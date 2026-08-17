@@ -56,7 +56,7 @@ var version = "0.11.0"
 // mot interne qui change — pas le verbe.
 var motsReserves = map[string]bool{
 	"pick": true, "render": true, "complete": true,
-	"prompt": true, "warm": true, "demo": true,
+	"prompt": true, "warm": true, "demo": true, "config": true,
 }
 
 func main() {
@@ -89,6 +89,8 @@ func main() {
 		runComplete(arg(2))
 	case "prompt":
 		os.Exit(runPrompt(os.Args[2:]))
+	case "config":
+		os.Exit(runConfig(os.Args[2:]))
 	case "warm":
 		os.Exit(runWarm(os.Args[2:]))
 	case "demo":

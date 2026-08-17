@@ -125,39 +125,6 @@ Trois points à traiter :
   compteur du prompt qui ne s'affiche jamais à zéro dit « à mettre à jour » par sa seule
   présence, sans flèche ni couleur.
 
-### A-14 — Un écran de configuration (TUI)
-
-**Priorité :** à déterminer · **Provenance :** demande du 16 août
-
-Un écran plein terminal pour régler jigger, dont la mise en page découlerait des paramètres
-**déclarés par chaque gestionnaire enregistré** — comme la table de verbes fait découler les
-capacités de la façade.
-
-Trois obstacles, dont deux sont des décisions d'architecture avant d'être du code. Ils ne
-condamnent rien, mais ils expliquent pourquoi cette entrée est plus lourde qu'elle n'en a
-l'air.
-
-- **Il n'existe aucun fichier de configuration.** Tout se règle par variables
-  d'environnement — `JIGGER_LIVE`, `JIGGER_ROWS`, `JIGGER_KEY`, `JIGGER_PROMPT`,
-  `JIGGER_LANG`… Un écran de configuration suppose de créer un fichier, donc de trancher un
-  ordre de préséance (environnement > fichier > défauts, vraisemblablement) et un
-  emplacement. C'est de niveau ADR, comme l'ont été le choix de Go et la table déclarative.
-- **La moitié des réglages n'appartient pas au binaire.** `JIGGER_ROWS`, `JIGGER_KEY`,
-  `JIGGER_LIVE` sont lus par le **greffon**, au chargement du shell, avant tout appel à
-  jigger. Un écran lancé depuis le binaire ne peut donc pas les appliquer au shell en cours :
-  il écrit un fichier que le greffon lira au prochain démarrage, ou il imprime les lignes à
-  coller. À décider explicitement, sinon l'écran promettra un effet qu'il n'a pas.
-- **Les gestionnaires ne déclarent aujourd'hui aucun paramètre.** Les réglages existants
-  sont globaux à jigger ; côté gestionnaires, il n'y a que des variables qui ne lui
-  appartiennent pas (`$SCOOP`, `$SCOOP_GLOBAL`) et des durées de cache écrites en dur. Pour
-  qu'une mise en page « claire et logique » se déduise des gestionnaires, il faut d'abord
-  que chacun **déclare** ses paramètres — une seconde table à côté de `pm.Bindings`, dans
-  l'esprit de l'ADR-0002 : ce qui est déclaré est vérifiable, ce qui est codé en dur ne
-  l'est pas.
-
-La partie visible, elle, est la moins coûteuse : Bubble Tea est déjà là, et `internal/ui`
-sait dessiner un cadre, naviguer et filtrer.
-
 ### A-15 — Détecter les demandes d'élévation et les servir dans une fenêtre
 
 **Priorité :** à déterminer · **Provenance :** demande du 16 août · **Dépend de :** A-14
@@ -374,6 +341,35 @@ ne vide pas la liste, `⇥` qui coche, `↵` qui imprime, `^G` qui n'imprime rie
 
 A-11 (regex dans le popup), A-12 (tri des colonnes) et A-13 (versions obsolètes) partent
 maintenant d'un terrain préparé.
+
+### A-14 — Un écran de configuration (TUI)
+
+**Fait le :** 2026-08-17 · **ADR :** [0003](adr/0003-fichier-de-configuration.md) ·
+**Conception :** [`docs/specs/2026-08-17-configuration-design.md`](specs/2026-08-17-configuration-design.md)
+
+`jigger config` ouvre un écran à trois groupes — ce qui prend effet tout de suite, ce qui
+attend le prochain shell, et ce que jigger voit sans le posséder. Chaque ligne affiche **sa
+provenance**, parce que l'environnement garde le dernier mot sur le fichier.
+
+Les trois obstacles que l'entrée annonçait ont été levés, chacun par une décision :
+
+- **Il n'existait aucun fichier.** Il y en a un désormais, `clé = valeur`, sans dépendance,
+  à l'emplacement que le système prévoit. Préséance **environnement > fichier > défauts**.
+- **La moitié des réglages n'appartient pas au binaire** — huit sur douze, mesurés. Les
+  greffons ne lisent pas le fichier : ils demandent au binaire de le leur dicter
+  (`config --export`), ce qui laisse **une seule implémentation de la préséance**.
+- **Les gestionnaires ne déclaraient rien.** brew et winget déclarent leur durée de
+  validité de catalogue, jusque-là écrite en dur ; l'écran les affiche sans rien savoir
+  d'eux, et la durée est désormais **lue**, pas compilée.
+
+**Un défaut trouvé en s'éprouvant soi-même** : `key = ^ ` — Ctrl-Espace, une valeur
+documentée — se relisait `^`, l'espace mangé par le nettoyage. Et mon propre test
+consacrait le bogue. Corrigé, puis verrouillé par un test qui fait traverser des valeurs à
+espaces significatifs.
+
+**Ce qui a été éprouvé par exécution, jamais par relecture** : vingt-deux valeurs hostiles —
+apostrophes, `$(...)`, backticks, accents, antislashs — passées par un vrai `zsh -c` et un
+vrai `pwsh -c`, et comparées à ce qui en ressort.
 
 ### A-11 — Filtrer le popup en regex ou en texte brut, quel que soit le gestionnaire
 

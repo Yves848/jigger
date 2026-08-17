@@ -365,6 +365,42 @@ keystroke, so jigger re-registers, one by one, the keys that modify the line. On
 AZERTY keyboard, the unshifted digit row produces "éèçàù" — hence this default
 value, and the setting for layouts it doesn't cover.
 
+### Settings that stick
+
+Environment variables vanish with the shell. Since v0.12.0, `jigger config` opens a screen
+that writes them down:
+
+```sh
+jigger config
+```
+
+Three groups, and the grouping is the point:
+
+- **What takes effect immediately** — the binary reads it on every call.
+- **What takes effect in your next shell** — eight of the twelve settings are read by the
+  plugin when your shell starts. The screen says so on the group rather than pretending
+  otherwise.
+- **What jigger sees but doesn't own** — `$SCOOP`, `$HOMEBREW_PREFIX`, the managers it
+  found. Read only: they belong to the managers, and offering to change them would be a lie.
+
+Every line shows **where its value comes from** — default, file, or environment. That
+matters because **the environment still wins**: a `JIGGER_ROWS=12` in your `~/.zshrc`
+overrides the file, and the screen tells you instead of showing a value the machine ignores.
+
+| Key | Effect |
+|---|---|
+| `↑` `↓` | move |
+| `↵` | edit the selected setting |
+| `r` | reset it to its default (it leaves the file) |
+| `q`, `esc` | save and quit |
+
+`jigger config --path` prints where the file lives; it is plain `key = value`, meant to be
+edited by hand too. `jigger config --list` prints the same table without the screen, which
+is what a script wants.
+
+**The screen never touches `~/.zshrc` or `$PROFILE`.** It writes its own file, and nothing
+else.
+
 ## 8. The prompt block (optional)
 
 jigger can also show, in your prompt, the **manager's version** and **pending

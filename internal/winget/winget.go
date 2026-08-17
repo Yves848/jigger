@@ -10,6 +10,7 @@ package winget
 
 import (
 	"errors"
+	"gitlab.yg-devworks.com/yves/jigger/internal/config"
 	"os/exec"
 	"strings"
 	"time"
@@ -21,7 +22,7 @@ import (
 const (
 	// Le catalogue winget bouge de quelques paquets par jour : le relire une fois par
 	// jour suffit largement, pour trois secondes d'un processus détaché.
-	ttlCatalogue = 24 * time.Hour
+	ttlCatalogueDefaut = 24 * time.Hour
 	// Les paquets installés, eux, changent à chaque install/uninstall. Le TTL n'est là
 	// que comme filet : le shell demande un réchauffement forcé dès qu'il voit passer
 	// une commande winget mutante.
@@ -151,7 +152,7 @@ func (Manager) InstalledOnly(sub string) bool { return installedOnly[normalise(s
 func (Manager) Load() *pm.Catalog {
 	cat := pm.NewCatalog()
 
-	noms, catalogueFrais := pm.Cached(ficCatalogue, ttlCatalogue)
+	noms, catalogueFrais := pm.Cached(ficCatalogue, ttlCatalogue())
 	for _, n := range noms {
 		cat.Add(n, pm.BadgeWinget)
 	}
@@ -194,7 +195,7 @@ func (Manager) Insert(_ *pm.Catalog, _, _, name string) string {
 func (Manager) Warm(scope pm.Scope) error {
 	var echecs []error
 
-	if _, frais := pm.Cached(ficCatalogue, ttlCatalogue); scope == pm.ScopeAll || (scope == pm.ScopeStale && !frais) {
+	if _, frais := pm.Cached(ficCatalogue, ttlCatalogue()); scope == pm.ScopeAll || (scope == pm.ScopeStale && !frais) {
 		// winget refuse de tout lister ; on interroge donc le point commun à tous les
 		// identifiants de sa source officielle : le point qui sépare l'éditeur du
 		// paquet (« Git.Git », « Microsoft.PowerShell »).
@@ -309,4 +310,17 @@ func Outdated() (int, error) {
 		}
 	}
 	return CountOutdated(out), nil
+}
+
+// ttlCatalogue rend la durée de validité du catalogue, déclarée donc réglable (A-14).
+// Lue au chargement du catalogue, pas à chaque frappe.
+func ttlCatalogue() time.Duration { return config.Duree("winget_ttl", ttlCatalogueDefaut) }
+
+// Le gestionnaire déclare ses réglages : l'écran de configuration en dérive sa mise en
+// page, sans rien savoir de winget (A-14, esprit de l'ADR-0002).
+func init() {
+	config.Declarer(config.Reglage{
+		Cle: "winget_ttl", CleI18n: "cfg.ttl", Portee: config.Binaire,
+		Type: config.TypeDuree, Defaut: "24h", PM: "winget",
+	})
 }
