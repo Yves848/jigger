@@ -401,7 +401,7 @@ jigger sait aussi afficher dans ton prompt la **version du gestionnaire** et les
 jour en attente** :
 
 ```
- yves@MacBook  ~/git/jigger   main   6.0.17   7   2 ❯      ← macOS
+ yves@MacBook  ~/git/jigger   main  🍺 6.0.17  🔬 7  📦 2 ❯      ← macOS
  PS D:\jigger  💻 1.29.280  📦 48  🥄 1 ❯                        ← Windows
 ```
 

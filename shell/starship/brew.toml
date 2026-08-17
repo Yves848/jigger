@@ -11,14 +11,20 @@
 # l'ordre où ils sont déclarés ici, et chacun s'efface tout seul quand sa variable n'est
 # pas définie — un compteur à zéro n'en est jamais une.
 #
-# Glyphes Nerd Font : bière (brew), fiole (formulae), cube (casks). Ils prennent la couleur
-# du module là où un émoji impose la sienne — mais ce n'est pas la raison du choix. Un émoji
-# postérieur à Unicode 8 n'a pas de largeur sur laquelle le shell et le terminal s'accordent :
-# le wcwidth() de macOS ne le connaît pas, zsh le compte alors pour 0 colonne quand le
-# terminal en dessine 2, et ZLE perd un caractère à l'affichage dès que la ligne atteint le
-# bord droit. L'éprouvette était exactement dans ce cas. Pour revenir à des émojis, n'en
-# prendre que d'antérieurs à Unicode 9 — et le vérifier glyphe par glyphe, en comparant
-# ${(m)#c} sous zsh à ce que le terminal dessine réellement.
+# Émojis : bière (brew), microscope (formulae), colis (casks) — aucune police particulière
+# requise. Le choix n'est pourtant pas libre : un émoji postérieur à Unicode 8 n'a pas de
+# largeur sur laquelle le shell et le terminal s'accordent. Le wcwidth() de macOS ne le
+# connaît pas, zsh le compte alors pour 0 colonne quand le terminal en dessine 2, et ZLE perd
+# un caractère à l'affichage dès que la ligne atteint le bord droit — le tampon restant
+# intact, la commande exécutée est pourtant la bonne, ce qui rend la panne très trompeuse.
+# L'éprouvette \U0001F9EA était dans ce cas. Piège symétrique, dans l'autre sens : les
+# glyphes à présentation texte par défaut (\U0001F5A5 écran, \U0001F6E0 marteau et clé),
+# que zsh compte pour 2 colonnes et que le terminal dessine sur 1.
+#
+# Avant de poser un autre émoji, le vérifier : ${(m)#c} sous zsh doit valoir ce que le
+# terminal dessine. Sur macOS 25.5, 848 des 1171 glyphes larges passent ce test. Pour
+# esquiver la question, des glyphes Nerd Font monochromes, de largeur 1 et jamais ambiguë,
+# qui prennent en prime la couleur du module : \uF0FC, \uF0C3 et \uF1B2.
 #
 # Garder la forme échappée plutôt que le caractère en clair : c'est la seule qui traverse
 # sans dommage les éditeurs, les copier-coller et les outils qui normalisent l'Unicode.
@@ -32,16 +38,16 @@
 #   format = "[$symbol$env_value]($style) "
 
 [env_var.JIGGER_BREW_VERSION]
-symbol = "\uF0FC "
+symbol = "\U0001F37A "
 style  = "#FAB387"
 format = "[$symbol$env_value]($style) "
 
 [env_var.JIGGER_BREW_FORMULAE]
-symbol = "\uF0C3 "
+symbol = "\U0001F52C "
 style  = "#F9E2AF"
 format = "[$symbol$env_value]($style) "
 
 [env_var.JIGGER_BREW_CASKS]
-symbol = "\uF1B2 "
+symbol = "\U0001F4E6 "
 style  = "#F9E2AF"
 format = "[$symbol$env_value]($style) "
