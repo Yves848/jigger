@@ -402,7 +402,7 @@ jour en attente** :
 
 ```
  yves@MacBook  ~/git/jigger   main   6.0.17   7   2 ❯      ← macOS
- PS D:\jigger  🪟 1.29.280  📦 48  🥄 1 ❯                        ← Windows
+ PS D:\jigger  💻 1.29.280  📦 48  🥄 1 ❯                        ← Windows
 ```
 
 Rien de lent n'est dans le chemin du prompt : le comptage tourne détaché et dépose son

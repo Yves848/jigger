@@ -361,11 +361,11 @@ through environment variables, so any other prompt can read them too.
 
 ```
  yves@MacBook  ~/git/jigger   main   6.0.17   7   2 ❯      ← macOS
- PS D:\jigger  🪟 1.29.280  📦 48  🥄 1 ❯                        ← Windows
+ PS D:\jigger  💻 1.29.280  📦 48  🥄 1 ❯                        ← Windows
 ```
 
 On macOS: a **beer** for brew, a **flask** for formulae, a **cube** for casks.
-On Windows: a **window** for winget's version, a **package** for winget packages to
+On Windows: a **laptop** for winget's version, a **package** for winget packages to
 upgrade, a **spoon** for scoop applications.
 
 Each counter disappears once it hits zero — ` 1.29.280  🥄 1` if only scoop remains,

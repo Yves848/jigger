@@ -13,13 +13,21 @@
 # le bloc se réduit donc à la cuillère et son compteur, là où le segment oh-my-posh, qui
 # suspend tout à la version de winget, ne montrerait rien.
 #
-# Émojis : fenêtre (version de winget), colis (paquets winget à mettre à niveau), cuillère
+# Émojis : portable (version de winget), colis (paquets winget à mettre à niveau), cuillère
 # (applications scoop) — aucune police particulière requise. Pour des glyphes Nerd Font
 # monochromes, qui prennent la couleur du module là où un émoji impose la sienne,
-# remplacer \U0001FA9F par \uE70F, \U0001F4E6 par \uF1B2 et \U0001F944 par \uF0F5. Dans
-# les deux cas, garder la forme échappée plutôt que le caractère en clair : c'est la seule
-# qui traverse sans dommage les éditeurs, les copier-coller et les outils qui normalisent
-# l'Unicode.
+# remplacer \U0001F4BB par \uE70F, \U0001F4E6 par \uF1B2 et \U0001F944 par \uF0F5.
+#
+# Le portable a remplacé la fenêtre \U0001FA9F, et ce n'est pas un choix esthétique : les
+# émojis postérieurs à Unicode 8 n'ont pas de largeur sur laquelle shell et terminal
+# s'accordent. Le wcwidth() de macOS ne les connaît pas et les rend de largeur nulle, quand
+# le terminal en dessine deux — de quoi décaler le curseur et faire disparaître un caractère
+# de la ligne de commande. Mesuré sur ce fichier : \U0001FA9F valait 0 sous zsh. À éviter
+# aussi, dans l'autre sens, les glyphes à présentation texte par défaut (\U0001F5A5 écran,
+# \U0001F6E0 outils), que zsh compte pour deux colonnes et le terminal dessine sur une.
+#
+# Garder la forme échappée plutôt que le caractère en clair : c'est la seule qui traverse
+# sans dommage les éditeurs, les copier-coller et les outils qui normalisent l'Unicode.
 #
 # Pour un seul chiffre au lieu du détail par gestionnaire, remplacer les deux derniers
 # blocs par celui-ci :
@@ -30,7 +38,7 @@
 #   format = "[$symbol$env_value]($style) "
 
 [env_var.JIGGER_WINGET_VERSION]
-symbol = "\U0001FA9F "
+symbol = "\U0001F4BB "
 style  = "#FAB387"
 format = "[$symbol$env_value]($style) "
 

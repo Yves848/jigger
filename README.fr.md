@@ -369,11 +369,11 @@ lire.
 
 ```
  yves@MacBook  ~/git/jigger   main   6.0.17   7   2 ❯      ← macOS
- PS D:\jigger  🪟 1.29.280  📦 48  🥄 1 ❯                        ← Windows
+ PS D:\jigger  💻 1.29.280  📦 48  🥄 1 ❯                        ← Windows
 ```
 
 Sur macOS : une **bière** pour brew, une **fiole** pour les formulae, un **cube**
-pour les casks. Sous Windows : une **fenêtre** pour la version de winget, un **colis**
+pour les casks. Sous Windows : un **portable** pour la version de winget, un **colis**
 pour les paquets winget à mettre à niveau, une **cuillère** pour les applications scoop.
 
 Chaque compteur disparaît quand il tombe à zéro — ` 1.29.280  🥄 1` s'il ne reste que
