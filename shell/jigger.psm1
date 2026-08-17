@@ -39,6 +39,19 @@ function Get-JiggerSetting([string]$Name, $Default) {
 }
 
 $script:Exe        = Get-JiggerSetting 'JIGGER_BIN' 'jigger'
+
+# Les réglages du fichier de configuration, dictés par le binaire (ADR-0003) : une seule
+# implémentation de la préséance existe, et elle est en Go. Le module ne lit pas le
+# fichier, il demande — et l'export n'émet que ce que le fichier a fixé, jamais un défaut,
+# jamais ce qui vient déjà de l'environnement.
+#
+# Placé AVANT les lectures ci-dessous, sans quoi elles gagneraient. Silencieux si le
+# binaire est absent ou trop ancien : les défauts s'appliquent alors.
+try {
+    $lignes = & $script:Exe config --export --shell powershell 2>$null
+    if ($LASTEXITCODE -eq 0 -and $lignes) { $lignes | ForEach-Object { Invoke-Expression $_ } }
+} catch { }
+
 $script:Live       = (Get-JiggerSetting 'JIGGER_LIVE' '1') -ne '0'
 $script:Rows       = [int](Get-JiggerSetting 'JIGGER_ROWS' 8)
 $script:MinColumns = [int](Get-JiggerSetting 'JIGGER_MIN_COLUMNS' 30)

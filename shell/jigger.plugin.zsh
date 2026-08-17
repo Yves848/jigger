@@ -23,6 +23,19 @@
 # Touche du sélecteur classique / d'insertion (par défaut Tab). Surcharge possible avant
 # le source :  JIGGER_KEY='^ '   # Ctrl-Espace
 : "${JIGGER_KEY:=^I}"
+# Le binaire à employer. Déclaré ici, avant tout appel : le reste du greffon s'en sert,
+# y compris la vérification de version.
+: "${JIGGER_BIN:=jigger}"
+
+# Les réglages du fichier de configuration, dictés par le binaire (ADR-0003). Une seule
+# implémentation de la préséance existe, et elle est en Go : le greffon ne lit pas le
+# fichier, il demande. L'export n'émet que ce que le fichier a fixé — jamais un défaut,
+# jamais ce qui vient déjà de l'environnement, qui garde le dernier mot.
+#
+# Placé AVANT les défauts ci-dessous : sans quoi ils gagneraient, et le fichier ne
+# servirait à rien. Silencieux si le binaire est absent ou trop ancien.
+eval "$(command "$JIGGER_BIN" config --export 2>/dev/null)"
+
 # Popup vivant. JIGGER_LIVE=0 revient au comportement « Tab seulement » — utile pour
 # isoler un conflit avec un autre plugin de ligne d'édition.
 : "${JIGGER_LIVE:=1}"
@@ -108,15 +121,10 @@ fi
 # l'internationalisation existe pour empêcher.
 typeset -g JIGGER_VERSION_REQUISE=0.11.0
 autoload -Uz is-at-least
-# Binaire à employer. Le module PowerShell a ce réglage depuis toujours ; le greffon zsh
-# ne l'avait pas, ce qui obligeait à jouer sur le PATH pour essayer une version en cours de
-# développement — alors que Homebrew place son bin avant ~/.local/bin.
-: "${JIGGER_BIN:=jigger}"
-
 typeset -g _jigger_v=${${(z)"$(command "$JIGGER_BIN" --version 2>/dev/null)"}[2]}
 if [[ -n $_jigger_v ]] && ! is-at-least $JIGGER_VERSION_REQUISE $_jigger_v; then
   if [[ $_jigger_lang == fr ]]; then
-    print -u2 "jigger : le binaire $(command -v jigger) est en $_jigger_v, or ce greffon en demande $JIGGER_VERSION_REQUISE. Recompile-le (« make install ») ou remplace celui du PATH. Greffon inactif."
+    print -u2 "jigger : le binaire $(command -v "$JIGGER_BIN") est en $_jigger_v, or ce greffon en demande $JIGGER_VERSION_REQUISE. Recompile-le (« make install »), désigne-en un autre par JIGGER_BIN, ou remplace celui du PATH. Greffon inactif."
   else
     # Le message nomme le binaire fautif ET les deux façons d'en changer : refaire
     # l'installation, ou désigner un autre binaire par JIGGER_BIN. Sans cette seconde
