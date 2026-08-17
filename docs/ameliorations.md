@@ -254,6 +254,32 @@ chacun change la manière de la faire.
   (`shell/jigger.psm1`) et son équivalent zsh, sans quoi la liste des installés resterait
   fausse après une réparation.
 
+### A-23 — Filtrer les secrets à la capture des prompts
+
+**Priorité :** haute · **Provenance :** incident du 17 août ([#76](https://gitlab.yg-devworks.com/yves/jigger/-/issues/76))
+
+Le hook `UserPromptSubmit` recopie **chaque** prompt dans `docs/historique/`, et rien n'y
+filtre ce qui ressemble à un secret. Le 16 août, un jeton GitHub collé dans la conversation
+pour configurer le miroir s'est retrouvé en clair dans un dépôt public ; il a fallu le
+révoquer. Ce qui a été perdu ce jour-là n'était pas le jeton — c'était le temps de le
+découvrir, un jour plus tard, par hasard.
+
+Deux traitements possibles, non exclusifs :
+
+- **Un filtre à la capture** sur les motifs connus — `ghp_`, `github_pat_`, `glpat-`,
+  `sk-`, `AKIA`, les clés privées PEM. Le prompt est écrit avec la valeur remplacée par une
+  note. Simple, mais il ne connaîtra jamais que ce qu'on lui a appris.
+- **Un journal hors du dépôt publié** — la capture brute vit ailleurs, seule la synthèse
+  entre dans `docs/`. Plus sûr par construction, au prix du va-et-vient entre deux
+  emplacements quand on écrit l'entrée du jour.
+
+Le hook vit dans `~/.claude/hooks/historiser-prompt.py`, donc **hors de ce dépôt** : la
+correction ne s'y verra pas, mais c'est ce dépôt qui en porte les conséquences.
+
+À noter pour qui reprend : GitHub, lui, a refusé le push — sa protection de secrets inspecte
+tous les commits poussés, pas seulement le sommet. GitLab n'a rien dit. Le dépôt public le
+plus exposé était donc celui qui n'avertissait pas.
+
 ---
 
 ## En cours
@@ -301,6 +327,37 @@ HN en dernier, à deux ou trois jours d'intervalle.
 ---
 
 ## Fait
+
+### A-24 — Un garde-fou qui surveille le miroir GitHub
+
+**Fait le :** 2026-08-17 · **Provenance :** panne muette du miroir, découverte le 17 août ·
+**Document :** [garde-fou du miroir](garde-fou-miroir.md) · **Fichiers :** `tools/miroir/`,
+`.gitlab-ci.yml`
+
+Le miroir GitHub est tombé le 16 août et personne ne l'a su. Deux versions ont été publiées
+entre-temps, que GitHub n'a jamais vues ; le défaut a été découvert par hasard, en allant
+vérifier tout autre chose. Une synchronisation qui échoue ne fait pas de bruit — c'est
+précisément ce qui la rend coûteuse.
+
+**Le garde-fou surveille le symptôme, pas la cause.** Il compare la tête de `main` et les
+tags des deux dépôts, tous deux publics, donc sans aucune authentification. Surveiller le
+jeton n'aurait rattrapé que la panne d'hier : celui d'aujourd'hui expirera, la protection de
+secrets de GitHub refusera un autre push, quelqu'un désactivera l'entrée de miroir. L'écart
+entre les deux dépôts, lui, dit la panne quelle qu'en soit l'origine.
+
+Il tourne comme **pipeline planifié** — indépendant des machines de l'utilisateur, qui sont
+justement éteintes quand une panne s'installe. En cas d'écart, il ouvre une issue portant le
+libellé `garde-fou::miroir`, et la referme d'elle-même au premier passage où les deux dépôts
+se sont rejoints. Une panne qui revient rouvre une issue neuve plutôt que de réanimer
+l'ancienne : ses sha doivent être ceux du jour.
+
+Un mode `-notifier` affiche une bannière macOS, pour qui veut le lancer aussi en local.
+
+**Un piège rencontré en l'écrivant :** GitLab crée une issue par `POST` sur la collection
+mais la ferme par `PUT` sur l'issue. Poster sur une issue existante rend un `404` qui se lit
+« issue introuvable » alors que c'est la méthode qui est fausse — le cycle complet
+(ouverture, non-duplication, fermeture) a été exercé pour de bon contre le projet, sans quoi
+le défaut serait passé.
 
 ### A-15 — Constater l'élévation, et proposer de rejouer (Windows)
 
