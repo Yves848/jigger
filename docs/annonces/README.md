@@ -21,6 +21,23 @@ avant le passage qui ne se rejoue pas.
 Poster le même jour partout se voit, et prive des retours qui auraient amélioré le texte
 suivant.
 
+## Quel dépôt citer
+
+**Les trois messages Reddit pointent GitLab**, pas le miroir GitHub. Deux raisons, dans cet
+ordre :
+
+1. **C'est le lien exact.** GitLab est le dépôt de référence, GitHub n'en est qu'un miroir
+   poussé. Le dire ainsi n'est pas un détour.
+2. **r/commandline fait auditer les liens GitHub par un bot** (« GitHub Guard »), qui note
+   un dépôt de moins de 30 jours 0 sur 1 et commente le post en conséquence. Le miroir a
+   été créé le 16 août 2026 : il passe la barre vers le **15 septembre**.
+
+Ne pas poster sans lien du tout pour éviter le bot, puis le déposer en commentaire : c'est
+le motif que les modérateurs guettent, et il coûte plus cher que le commentaire du bot. Si
+le sujet revient, le modmail tranche en une minute.
+
+`show-hn.md` garde GitHub — Hacker News n'a pas ce garde-fou, et son public y est habitué.
+
 ## Avant de poster, à chaque fois
 
 - [ ] Un début de journée ouvrable côté Amérique du Nord. **Jamais un vendredi ni un
