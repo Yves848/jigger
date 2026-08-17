@@ -57,8 +57,24 @@ $script:Rows       = [int](Get-JiggerSetting 'JIGGER_ROWS' 8)
 $script:MinColumns = [int](Get-JiggerSetting 'JIGGER_MIN_COLUMNS' 30)
 $script:InsertKey  = Get-JiggerSetting 'JIGGER_KEY' 'Tab'
 if ($script:InsertKey -eq '^I') { $script:InsertKey = 'Tab' }   # notation zsh, acceptée telle quelle
-$script:Commands   = (Get-JiggerSetting 'JIGGER_COMMANDS' 'winget,scoop') -split '[,\s]+' |
-                        Where-Object { $_ }
+$script:Commands   = @((Get-JiggerSetting 'JIGGER_COMMANDS' 'winget,scoop') -split '[,\s]+' |
+                        Where-Object { $_ })
+
+# La façade arme le popup au même titre que les gestionnaires — et elle l'arme
+# **toujours**, au lieu de figurer dans le défaut de JIGGER_COMMANDS. Deux raisons :
+#
+#   • une valeur posée par l'utilisateur — « winget,scoop », telle que la documentation
+#     l'a montrée pendant trois versions — éteindrait sinon la façade sans qu'il l'ait
+#     demandé, et sans qu'il puisse deviner le rapport ;
+#   • le greffon zsh code `jigger` et `jg` en dur pour la même raison. Les deux côtés
+#     doivent répondre à la même frappe.
+#
+# Et il faut bien **les deux noms** : le relais lit ce que l'utilisateur a tapé, pas
+# l'expansion de l'alias. `jg install f` arrive tel quel dans le tampon de PSReadLine —
+# c'est « jg » qu'il faut reconnaître, jamais « jigger » à sa place.
+foreach ($nom in 'jigger', 'jg') {
+    if ($script:Commands -notcontains $nom) { $script:Commands += $nom }
+}
 
 $script:Prompt     = (Get-JiggerSetting 'JIGGER_PROMPT' '0') -ne '0'
 $script:PromptTTL  = [int](Get-JiggerSetting 'JIGGER_PROMPT_TTL' 1800)
@@ -193,6 +209,24 @@ if ($version -and $version -lt $script:VersionRequise) {
         "jigger : le binaire $chemin est en $version, or ce module en demande $($script:VersionRequise). Recompile-le (« pwsh -File install-windows.ps1 ») ou remplace celui du PATH. Module inactif.")
     return
 }
+
+# ── jg, l'alias court de la façade ────────────────────────────────────────────────────
+#
+# Le pendant de l'`alias jg=jigger` du greffon zsh. Il désigne $script:Exe plutôt que le
+# mot « jigger » : quand JIGGER_BIN nomme un autre binaire — celui d'un dépôt, pendant un
+# développement —, `jg` et le popup doivent parler du même exécutable. Sans JIGGER_BIN les
+# deux se confondent, $script:Exe valant « jigger ».
+#
+# Posé APRÈS les vérifications ci-dessus, comme côté zsh : un alias vers un binaire absent
+# ou trop ancien ne rendrait service à personne. Mais AVANT celle de PSReadLine, et exporté
+# sur place : son absence n'éteint que le popup, pas la syntaxe unique — et le module rend
+# alors la main sans jamais atteindre l'Export-ModuleMember de la fin.
+#
+# `Remove-Module jigger` reprend l'alias avec le reste : c'est la porte de sortie de qui
+# tenait déjà à son propre `jg`.
+Set-Alias -Name jg -Value $script:Exe
+Export-ModuleMember -Alias jg
+
 if (-not (Get-Module PSReadLine)) {
     Import-Module PSReadLine -ErrorAction SilentlyContinue
 }

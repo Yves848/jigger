@@ -151,6 +151,7 @@ $env:JIGGER_ROWS = '12'
 $env:JIGGER_KEY  = 'Ctrl+Spacebar'   # noms de touches PSReadLine
 $env:JIGGER_LANG = 'fr'              # langue des messages : en ou fr
 $env:JIGGER_COMMANDS = 'winget,scoop'      # commandes qui déclenchent le popup
+                                           # (jigger et jg s'y ajoutent toujours)
 $env:JIGGER_KEYS_EXTRA = 'éèçàù'           # touches à relayer en plus des ASCII
 ```
 
@@ -182,7 +183,7 @@ chiffres non pressée donne « éèçàù » : d'où le réglage, et sa valeur p
 ## Une seule syntaxe
 
 Au-dessus des trois popups natifs, `jg <verbe> [paquet…]` — alias de `jigger <verbe>…`,
-posé par le greffon zsh — parle un seul vocabulaire aux trois gestionnaires. `jg install fd`
+posé par les deux greffons — parle un seul vocabulaire aux trois gestionnaires. `jg install fd`
 fait exactement ce que ferait `brew install fd` (ou `scoop install fd`, ou
 `winget install --id fd --exact`) : la façade se contente de trouver, pour `fd`, quel
 gestionnaire le connaît et comment le lui demander.
@@ -356,10 +357,6 @@ elle ne remplace rien. `jg`/`jigger` est un chemin de plus, pas un chemin oblig�
 
 **Ce qui n'est pas encore là :**
 
-- **PowerShell n'a pas encore l'alias `jg`.** Seul le greffon zsh
-  (`shell/jigger.plugin.zsh`) reconnaît `jigger`/`jg` en plus de `brew` ; `shell/jigger.psm1`
-  garde `JIGGER_COMMANDS` à `winget,scoop` par défaut, sans façade. Une passe Windows la
-  posera.
 - Les colonnes winget et scoop de la table ci-dessus restent **non vérifiées en pratique**
   (cf. l'avertissement plus haut) — seule brew a tourné pour de vrai.
 
@@ -617,8 +614,6 @@ le code Windows compile.
 
 ## Feuille de route
 
-- **L'alias `jg` sous PowerShell.** Posé côté zsh seulement (§ Une seule syntaxe) ;
-  `shell/jigger.psm1` attend encore d'ajouter `jigger`/`jg` à `JIGGER_COMMANDS`.
 - **Vérifier les colonnes winget et scoop** de la table de verbes contre les vraies CLI
   (`internal/winget/verbs.go`, `internal/scoop/verbs.go`) — écrites de mémoire, jamais
   confrontées à une machine Windows.

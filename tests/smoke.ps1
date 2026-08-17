@@ -216,11 +216,34 @@ check '↑ au premier candidat rend le clavier'       $transitions[5] 'True/0/Fa
 check 'sans popup, rien n''est pris'                $transitions[6] 'False/0/False'
 
 section 'la ligne est reconnue (ou non) comme celle d''un gestionnaire'
+# « jg » et « jigger » sont de la partie : la façade arme le popup au même titre que les
+# gestionnaires. Et c'est « jg » **tel qu'il est tapé** qui doit être reconnu — le relais
+# lit le tampon de PSReadLine, où aucun alias n'a été développé. « jgx » et « jgit » sont
+# là pour cela : reconnaître un préfixe au lieu du mot entier armerait le popup sur la
+# moitié des commandes d'un poste de développement.
 foreach ($cas in @(
     @('winget install', $true), @('scoop ', $true), @('winget', $true),
-    @('git commit', $false), @('', $false), @('echo winget install', $false))) {
+    @('jg install f', $true), @('jg ', $true), @('jg', $true),
+    @('jigger search fd', $true), @('jigger', $true),
+    @('git commit', $false), @('', $false), @('echo winget install', $false),
+    @('jgx foo', $false), @('jgit status', $false), @('echo jg install', $false))) {
     check "« $($cas[0]) »" (& $jigger { param($l) Test-JiggerLine $l } $cas[0]) $cas[1]
 }
+
+section 'l''alias jg est posé par le module'
+# L'autre moitié du mécanisme : la liste ci-dessus fait apparaître le popup sur « jg … »,
+# l'alias fait que la ligne s'exécute. Les deux sont indépendants — il faut les deux.
+#
+# Les deux champs sont relevés sous condition : en mode strict, lire une propriété sur un
+# $null lève, et une suite qui s'interrompt au premier échec cache tout ce qui la suit.
+$alias = Get-Alias jg -ErrorAction SilentlyContinue
+$def = if ($alias) { $alias.Definition } else { '' }
+$src = if ($alias) { $alias.Source } else { '' }
+check 'jg existe'                       ($null -ne $alias) $true
+# Il suit JIGGER_BIN, et non le mot « jigger » : sans quoi, sur un poste où le PATH porte
+# un autre jigger, le popup et la commande parleraient de deux binaires différents.
+check 'jg désigne le binaire du module' $def $env:JIGGER_BIN
+check 'jg vient bien du module'         $src 'jigger'
 
 section 'la sortie de `jigger render` est décodée'
 # Catalogue fabriqué : la suite ne dépend ni de winget, ni de ce qui est installé sur la

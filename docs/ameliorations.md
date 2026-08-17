@@ -24,17 +24,6 @@ porte l'inverse : ce qui n'est pas encore fait.
 
 ## À faire
 
-### A-1 — L'alias `jg` dans le greffon PowerShell
-
-**Priorité :** à déterminer · **Provenance :** réserve publiée avec la v0.8.0, confirmée en
-relecture de l'i18n
-
-Seul le greffon zsh arme la façade. Sous PowerShell, `JIGGER_COMMANDS` vaut `winget,scoop`
-et il n'y a pas d'alias : la façade s'y atteint en écrivant `jigger <verbe>` en toutes
-lettres, et le popup ne la suit pas. Le point délicat est connu : l'alias et la liste des
-commandes qui arment le popup sont **deux mécanismes distincts**, et il faut les deux — le
-widget lit ce que l'utilisateur a tapé, pas l'expansion de l'alias.
-
 ### A-2 — Prouver `cleanup *` et `bucket rm` contre scoop
 
 **Priorité :** à déterminer · **Provenance :** réserve publiée avec la v0.8.0
@@ -278,6 +267,59 @@ HN en dernier, à deux ou trois jours d'intervalle.
 ---
 
 ## Fait
+
+### A-1 — L'alias `jg` dans le greffon PowerShell
+
+**Fait le :** 2026-08-17 · **Provenance :** réserve publiée avec la v0.8.0, confirmée en
+relecture de l'i18n · **Fichiers :** `shell/jigger.psm1`, `tests/smoke.ps1`, `tests/pty.ps1`
+
+`jg` existe des deux côtés. Sous PowerShell, `Set-Alias` le pose et le module l'exporte —
+`Remove-Module jigger` le reprend, ce qui est la porte de sortie de qui tenait déjà à son
+propre `jg`.
+
+**Les deux mécanismes, comme annoncé.** L'alias fait s'exécuter la ligne ; la liste des
+commandes surveillées fait apparaître le popup. Le relais lit le tampon de PSReadLine, où
+aucun alias n'a été développé : c'est **`jg` tel qu'il est tapé** qui devait être reconnu,
+et `jigger` séparément.
+
+Trois décisions que l'entrée n'avait pas tranchées :
+
+- **La façade arme le popup *toujours*, au lieu d'entrer dans le défaut de
+  `JIGGER_COMMANDS`.** Étendre le défaut à `winget,scoop,jigger,jg` n'aurait rien changé
+  pour quiconque a recopié `winget,scoop` dans son profil — la documentation l'a montré
+  pendant trois versions —, et la façade serait restée éteinte chez lui sans qu'il puisse
+  deviner le rapport. Le greffon zsh code déjà `jigger` et `jg` en dur ; les deux côtés
+  répondent maintenant à la même frappe.
+- **L'alias désigne `$script:Exe`, pas le mot « jigger ».** Avec `JIGGER_BIN` posé sur le
+  binaire d'un dépôt, `jg` et le popup parlaient sinon de deux exécutables différents.
+- **Il est posé après les vérifications d'installation, mais avant celle de PSReadLine** —
+  et exporté sur place. Un alias vers un binaire absent ou trop ancien ne sert personne
+  (c'est aussi l'ordre du greffon zsh), mais l'absence de PSReadLine n'éteint que le
+  popup, pas la syntaxe unique — or le module rend alors la main sans jamais atteindre son
+  `Export-ModuleMember` final.
+
+**Un défaut latent corrigé au passage** : `$script:Commands` recevait le résultat d'un
+pipeline, donc une chaîne nue quand `JIGGER_COMMANDS` ne portait qu'un nom. Le `+=` qui
+ajoute la façade l'aurait concaténée — `wingetjigger` — au lieu d'allonger la liste.
+
+**Une seconde réparation, trouvée en lançant la suite Go sur cette machine** : la résolution
+de langue a une source que `t.Setenv` ne vide pas — la culture de l'utilisateur Windows,
+`GetUserDefaultLocaleName`. « Toutes les sources sont muettes » était donc un état
+inatteignable sous Windows, et les deux tests qui en dépendaient s'en accommodaient
+chacun à sa façon : `TestLangueInconnueRetombeSurAnglais` assérait en fait la langue de la
+machine d'essai (il échouait sur un Windows français, et sur lui seul),
+`TestLocaleExotiqueDonneAnglais` se dispensait de tourner là où cette culture existe —
+c'est-à-dire sur la seule plateforme où elle décide. `culture` est désormais une variable de
+paquet, comme `catalogue` l'est déjà, et les tests la posent : les sept cas de la locale
+exotique valent sur les trois plateformes, et un test neuf couvre la source elle-même —
+dernier recours, jamais avant `LANG`, et une culture inconnue qui retombe sur l'anglais.
+Éprouvé mordant par mutation (retirer la consultation fait échouer le test neuf).
+
+**Éprouvé** sur une vraie machine Windows, winget et scoop installés : `tests/smoke.ps1`
+(81 assertions, dont l'alias, sa cible et quatorze lignes reconnues ou non — `jgit` et
+`jgx` compris, un préfixe n'étant pas la façade) et `tests/pty.ps1` dans un vrai
+pseudo-terminal (26 assertions) — le cadre apparaît sur `jg ins` sous l'en-tête
+« ❯ jigger », `jigger ins` l'arme aussi, `jgit ins` non, et `⇥` écrit `jg install`.
 
 ### A-6 — Le site de présentation
 

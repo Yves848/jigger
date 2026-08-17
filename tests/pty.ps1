@@ -78,6 +78,27 @@ $e = ecran 'winget'
 check 'sous-commandes listées' $e 'uninstall'
 check 'pas de liste vide'      $e 'aucun candidat' $false
 
+Write-Host "`n→ la façade arme le popup, sous ses deux noms"
+# Les verbes proposés ici viennent des gestionnaires **disponibles** : ce cas suppose donc
+# winget ou scoop installé sur la machine d'essai. C'est le cas de toute machine Windows
+# pour winget, et c'est de toute façon la seule où cette suite tourne.
+$e = ecran 'jg ins'
+check 'cadre affiché'            $e '╭'
+check 'en-tête de la façade'     $e '❯ jigger'
+check 'candidat install'         $e 'install'
+check 'la ligne reste lisible'   $e 'PS> jg ins'
+# Le nom en toutes lettres arme le même popup : le relais lit le tampon, où « jg » n'a pas
+# été développé — les deux noms doivent donc y être reconnus séparément.
+$e = ecran 'jigger ins'
+check '« jigger » aussi'         $e '❯ jigger'
+# Et rien d'autre : un mot qui *commence* par jg n'est pas la façade.
+$e = ecran 'jgit ins'
+check 'aucun cadre sur « jgit »' $e '╭' $false
+
+Write-Host "`n→ ⇥ insère le verbe de la façade"
+$e = ecran 'jg ins\t'
+check 'ligne complétée'        $e 'PS> jg install'
+
 Write-Host "`n→ une ligne qui n'est pas un gestionnaire n'affiche rien"
 $e = ecran 'echo bonjour'
 check 'aucun cadre'            $e '╭' $false

@@ -153,6 +153,7 @@ $env:JIGGER_ROWS = '12'
 $env:JIGGER_KEY  = 'Ctrl+Spacebar'   # PSReadLine key names
 $env:JIGGER_LANG = 'fr'              # message language: en or fr
 $env:JIGGER_COMMANDS = 'winget,scoop'      # commands that trigger the popup
+                                           # (jigger and jg are always added)
 $env:JIGGER_KEYS_EXTRA = 'éèçàù'           # keys to relay in addition to ASCII
 ```
 
@@ -182,7 +183,7 @@ row, unshifted, produces "éèçàù" — hence the setting, and its default val
 ## One syntax
 
 Above the three native popups, `jg <verb> [package…]` — an alias for `jigger <verb>…`,
-set up by the zsh plugin — speaks one vocabulary to all three managers. `jg install fd`
+set up by both plugins — speaks one vocabulary to all three managers. `jg install fd`
 does exactly what `brew install fd` would (or `scoop install fd`, or
 `winget install --id fd --exact`): the facade just works out, for `fd`, which manager
 knows it and how to ask that manager for it.
@@ -349,10 +350,6 @@ replaces. `jg`/`jigger` is one more path, not a mandatory one.
 
 **What isn't there yet:**
 
-- **PowerShell doesn't have the `jg` alias yet.** Only the zsh plugin
-  (`shell/jigger.plugin.zsh`) recognizes `jigger`/`jg` in addition to `brew`;
-  `shell/jigger.psm1` keeps `JIGGER_COMMANDS` at `winget,scoop` by default, without the
-  facade. A Windows pass will add it.
 - The winget and scoop columns of the table above remain **unverified in practice**
   (see the warning above) — only brew has actually run for real.
 
@@ -611,8 +608,6 @@ from any platform, that the Windows code compiles.
 
 ## Roadmap
 
-- **The `jg` alias under PowerShell.** Set up on the zsh side only (§ One syntax);
-  `shell/jigger.psm1` still needs `jigger`/`jg` added to `JIGGER_COMMANDS`.
 - **Verify the winget and scoop columns** of the verb table against the real CLIs
   (`internal/winget/verbs.go`, `internal/scoop/verbs.go`) — written from memory, never
   checked against a Windows machine.

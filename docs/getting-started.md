@@ -209,7 +209,8 @@ jg search ripgrep
 jg info fd
 ```
 
-`jg` is an alias for `jigger`, set up by the zsh plugin; you can type either one.
+`jg` is an alias for `jigger`, set up by both plugins — the zsh one and the
+PowerShell module; you can type either one.
 **The facade only adds, it never replaces**: `brew install fd` keeps working
 exactly as before, popup included.
 
@@ -316,9 +317,6 @@ license agreements; it's never implicit.
 
 ### What isn't there yet
 
-- **PowerShell doesn't have the `jg` alias.** Only the zsh plugin sets up the
-  facade; on Windows, `jigger install …` still works when you type the full name,
-  but the popup doesn't follow it yet.
 - **The winget and scoop translations haven't been checked against the real
   CLIs** — development happened on a Mac. Only the brew column has actually run for
   real. The full table, with this warning, is in the
@@ -357,7 +355,7 @@ Two settings exist only under PowerShell, for lack of a useful zsh equivalent:
 
 | Variable | Default | Role |
 |---|---|---|
-| `JIGGER_COMMANDS` | `winget,scoop` | commands that trigger the popup |
+| `JIGGER_COMMANDS` | `winget,scoop` | commands that trigger the popup. `jigger` and `jg` are **always** added to whatever you set: the facade would otherwise go dark for anyone who once wrote the default out by hand |
 | `JIGGER_KEYS_EXTRA` | `éèêàçùâîôûëïüö°²µ§£€` | keys relayed in addition to printable ASCII |
 
 `JIGGER_KEYS_EXTRA` deserves a note: PSReadLine offers no hook called on every
