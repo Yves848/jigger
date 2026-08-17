@@ -114,47 +114,35 @@ Trois points à traiter :
   compteur du prompt qui ne s'affiche jamais à zéro dit « à mettre à jour » par sa seule
   présence, sans flèche ni couleur.
 
-### A-15 — Détecter les demandes d'élévation et les servir dans une fenêtre
+### A-22 — L'élévation côté Unix
 
-**Priorité :** à déterminer · **Provenance :** demande du 16 août · **Dépend de :** A-14
-pour le réglage de durée
+**Priorité :** à déterminer · **Provenance :** moitié restée ouverte d'**A-15**, écartée à
+la conception (cf. [spec §7](specs/2026-08-17-elevation-design.md))
 
-Repérer, tous gestionnaires confondus, le moment où l'utilisateur doit saisir un mot de
-passe `sudo` (macOS, Linux) ou s'élever en administrateur (Windows), et le lui demander dans
-une fenêtre Bubble Tea — avec mémorisation pendant une durée réglable, comme le fait
-Cocktails.
+A-15 est livrée pour Windows, où le gestionnaire **nomme la cause dans son code de
+sortie**. Rien de tel côté Unix : aucun gestionnaire n'y publie de code qui dise « il
+fallait être root ». Le mécanisme d'A-15 ne s'y transpose donc pas, et cette entrée existe
+pour ne pas laisser croire l'inverse.
 
-Quatre choses à savoir avant d'écrire quoi que ce soit. Aucune n'interdit la fonction, mais
-chacune change la manière de la faire.
+Trois choses restent vraies, et elles étaient déjà dans A-15 :
 
-- **Aujourd'hui, jigger s'efface exprès devant ces invites.** Pour tous les verbes non
-  normalisés, `internal/facade/executer.go` donne au sous-processus les entrées et sorties
-  du terminal (`relais = true`). C'est ce qui fait que les invites de winget, ses barres de
-  progression et son élévation fonctionnent « sans une ligne de code de TTY » — la spec §4
-  en fait un choix explicite. Intercepter suppose de **capturer** ce flux : on renonce alors
-  à la propriété autour de laquelle la façade a été bâtie. À rouvrir en connaissance de
-  cause, probablement par un ADR.
-- **`sudo` n'écrit pas son invite là où on l'attend.** Elle part sur le terminal, pas sur la
-  sortie standard, et le mot de passe se lit sur `/dev/tty`, pas sur l'entrée standard.
-  Analyser stdout ne verra jamais rien : il faudrait allouer un pseudo-terminal au
-  sous-processus. Le dépôt sait le faire dans ses harnais de test (`tests/zpty.zsh`,
-  `tests/conpty`), jamais à l'exécution.
-- **Sous Windows, ce n'est pas une invite console.** L'élévation passe par UAC, une fenêtre
-  du système : rien à détecter dans une sortie, rien à saisir dans un cadre. Il faut
-  relancer le processus élevé (`Start-Process -Verb RunAs`), ce qui ouvre une autre console.
-  Le mot « détecter » ne s'applique donc qu'aux deux plateformes Unix ; Windows demande un
-  autre mécanisme, à traiter comme tel.
-- **Le besoin réel est étroit.** Homebrew refuse de tourner en root et ne demande sudo que
-  marginalement ; scoop installe par utilisateur ; seul winget en a besoin, pour les
-  installations à l'échelle de la machine. L'effort mérite d'être proportionné à ça.
+- **Le besoin est étroit.** Homebrew refuse de tourner en root et ne demande `sudo` que
+  marginalement ; scoop installe par utilisateur. L'effort mérite d'être proportionné.
+- **On ne peut pas détecter une invite `sudo` sans pseudo-terminal.** Elle part sur le
+  terminal, pas sur la sortie standard, et le mot de passe se lit sur `/dev/tty`. Analyser
+  stdout ne verra jamais rien. C'est ce qui a fait choisir le constat plutôt que
+  l'interception ([ADR-0004](adr/0004-elevation-constatee.md)) — et côté Unix, il n'y a
+  rien à constater.
+- **Donc : anticiper, pas détecter.** `sudo -v` valide l'autorisation et prolonge
+  l'horodatage de sudo, dont la durée de grâce est déjà réglable par le système
+  (`timestamp_timeout`). jigger demanderait le mot de passe une fois, dans sa fenêtre, le
+  passerait à `sudo -S -v` sans jamais le conserver, et laisserait sudo mémoriser. Pas de
+  secret en mémoire à protéger, à effacer, ni à tenir hors des journaux.
 
-**Une piste qui évite de détenir le secret.** Plutôt que capturer un mot de passe et le
-garder en mémoire, `sudo -v` valide l'autorisation et prolonge l'horodatage de sudo, dont la
-durée de grâce est déjà réglable par le système (`timestamp_timeout`). jigger demanderait le
-mot de passe une fois, dans sa fenêtre, le passerait à `sudo -S -v` sans jamais le
-conserver, et laisserait sudo faire la mémorisation. Le réglage de durée d'A-14 piloterait
-alors le rafraîchissement, pas la rétention. C'est plus simple à écrire, et il n'y a pas de
-secret en mémoire à protéger, à effacer, ni à ne pas écrire dans un journal.
+Reste la question qu'A-15 n'a pas eu à trancher, et qui est le vrai coût de cette
+entrée-ci : **à quoi jigger reconnaît-il qu'une commande va exiger `sudo` ?** Anticiper
+suppose de le savoir avant de lancer. Une élévation demandée pour rien est plus pénible que
+l'invite qu'elle remplace.
 
 ### A-16 — Étudier l'intégration d'autres gestionnaires
 
@@ -220,6 +208,52 @@ Trois points à ne pas manquer :
   comportement pour ce mot précis. À trancher : soit jigger l'intercepte et le traduit pour
   chaque gestionnaire, soit il en prend un autre pour lui.
 
+### A-21 — Soigner ce que `doctor` diagnostique
+
+**Priorité :** à déterminer · **Provenance :** demande du 17 août, posée comme un
+*nice to have* · **S'appuie sur :** A-15, livrée depuis — les remèdes qui demandent une
+élévation ont désormais un chemin (`internal/elevate`) · **Recoupe :** A-17 pour la
+prévisualisation
+
+`jg doctor` dit ce qui ne va pas ; il ne sait pas le réparer. Or scoop, lui, **livre déjà
+le remède avec le diagnostic** — c'est ce qui rend l'idée réaliste :
+
+```
+WARN  '7-Zip' is not installed! It's required for unpacking most programs.
+      Please Run 'scoop install 7zip'.
+WARN  LongPaths support is not enabled. You can enable it by running:
+      sudo Set-ItemProperty 'HKLM:\SYSTEM\...\FileSystem' -Name 'LongPathsEnabled' -Value 1
+```
+
+Cinq points à connaître avant d'écrire quoi que ce soit. Aucun n'interdit la fonction,
+chacun change la manière de la faire.
+
+- **Aujourd'hui, jigger ne voit pas cette sortie.** `doctor` n'est pas dans
+  `verbesNormalises` (`internal/facade/executer.go`) : le sous-processus hérite du
+  terminal, et jigger ne lit rien. Soigner suppose de **capturer** — donc une troisième
+  catégorie de verbe, capturé *et* réémis tel quel, à côté du relais et du tableau refondu.
+  C'est la première décision, et elle touche au choix autour duquel la façade est bâtie
+  (spec §4).
+- **Deux classes de remèdes, très inégales.** Installer un paquet manquant (`7zip`,
+  `innounp`, `dark`), jigger sait déjà le faire — c'est son métier, et cela couvre 3 des 5
+  avertissements ci-dessus. Changer un réglage système (LongPaths, mode développeur)
+  demande une élévation : depuis A-15, `internal/elevate` sait la servir, mais rien ne dit
+  qu'il faille traiter les deux classes dans le même chantier.
+- **La capacité n'est pas la même d'un gestionnaire à l'autre.** `scoop checkup` nomme la
+  commande à lancer, en clair. `brew doctor` rend de la prose anglaise, souvent sans
+  commande exécutable. Le modèle de capacités s'applique tel quel : celui qui ne sait pas
+  soigner le dit, comme winget dit qu'il ne sait pas `doctor`.
+- **Analyser la sortie d'un autre outil n'est pas un contrat.** La formulation de scoop peut
+  changer à toute version, et rien ne garantit qu'elle reste anglaise. Une table de
+  vérifications connues, reconnues à un marqueur stable, vaut mieux qu'une extraction
+  générique de « la commande entre quotes » — et **ce qui n'est pas reconnu reste affiché
+  tel quel**, jamais deviné.
+- **Rien ne doit se lancer tout seul.** `doctor` est en lecture aujourd'hui ; soigner mute
+  la machine. Le geste juste est de montrer ce qui serait lancé et de demander — ce que
+  prépare A-17. Et le mot « doctor » devrait alors entrer dans `$script:Mutants`
+  (`shell/jigger.psm1`) et son équivalent zsh, sans quoi la liste des installés resterait
+  fausse après une réparation.
+
 ---
 
 ## En cours
@@ -267,6 +301,87 @@ HN en dernier, à deux ou trois jours d'intervalle.
 ---
 
 ## Fait
+
+### A-15 — Constater l'élévation, et proposer de rejouer (Windows)
+
+**Fait le :** 2026-08-17 · **Provenance :** demande du 16 août · **Documents :**
+[ADR-0004](adr/0004-elevation-constatee.md),
+[spec](specs/2026-08-17-elevation-design.md) · **Fichiers :** `internal/pm/droits.go`,
+`internal/winget/droits.go`, `internal/elevate/`, `internal/facade/executer.go`, `main.go`
+
+L'entrée demandait de **détecter** une invite d'élévation et de la servir dans une fenêtre.
+La conception l'a retournée : jigger **ne détecte rien**. Il laisse la commande tourner
+relayée — invites, barres de progression et UAC compris — et lit son code de sortie après
+coup. C'est l'ADR-0004, et c'est ce qui préserve la propriété autour de laquelle la façade
+a été bâtie : aucune capture, aucun pseudo-terminal, aucune ligne de code de TTY.
+
+**Trois mesures ont décidé de tout**, et aucune n'était devinable :
+
+- **winget nomme la cause dans son code de sortie** — mais quatre codes parlent de droits,
+  et **deux disent l'inverse des autres** (`INSTALLER_PROHIBITS_ELEVATION`,
+  `ADMIN_CONTEXT_ACTION_PROHIBITED`). Un « code non nul → propose d'élever » aurait été
+  nuisible deux fois sur quatre : il aurait poussé à refaire, élevé, ce qui venait
+  d'échouer *pour cause d'élévation*. D'où trois valeurs à `pm.Droits`, pas deux.
+- **Go ne rend pas ces codes sous la forme publiée.** Microsoft imprime la forme signée
+  (`-1978335207`) ; `exec.ExitError.ExitCode()` rend sous Windows le DWORD non signé
+  (`2316632089`). Recopier la colonne du tableau officiel aurait donné une comparaison
+  jamais vraie — et une panne parfaitement muette. Un test existe pour ce seul piège.
+- **`sudo` existe sous Windows 11, et il est désactivé.** `C:\WINDOWS\system32\sudo.exe`
+  est là (build 26200) mais éteint tant qu'on ne l'allume pas dans les paramètres
+  développeur. Il ne peut donc pas être supposé : jigger lit le registre, et se rabat sur
+  `ShellExecuteEx` + verbe `runas` — en **attendant** le processus, pour que le verdict
+  revienne là où la commande a été tapée.
+
+**Ce que jigger fait, et ne fait pas.** Il dit la cause, propose, et n'élève jamais sans un
+oui explicite — la ligne ouverte par défaut dans le cadre est *annuler*. Sans terminal
+(un tube, un script), aucune question : la ligne exacte s'imprime et le code d'origine est
+rendu. Sur les deux codes qui interdisent l'élévation, aucune proposition — un message qui
+dit l'inverse.
+
+Deux choses que l'entrée attendait et qui n'ont **pas** lieu d'être : le réglage de durée
+de grâce hérité d'A-14 — jigger ne détient aucun secret et ne mémorise aucune autorisation,
+c'est UAC ou `sudo` qui décide de ce qu'il redemande, et un réglage qui ne piloterait rien
+serait un mensonge dans l'écran de configuration —, et l'élévation anticipée, écartée parce
+qu'il faudrait deviner juste et qu'on élèverait parfois pour rien.
+
+La moitié Unix est **A-22**, et elle ne se traitera pas de cette façon.
+
+### A-20 — `⏎` complète la dernière partie, puis exécute
+
+**Fait le :** 2026-08-17 · **Provenance :** demande d'Yves à l'usage — « `winget li ⏎` :
+il faut utiliser la ligne sélectionnée et l'insérer comme si on avait fait un `⇥` », puis,
+sur la première version : « là, il faut faire 2× Entrée » · **Fichiers :**
+`shell/jigger.plugin.zsh`, `shell/jigger.psm1`, `main.go`,
+`tests/{smoke.ps1,pty.ps1,zpty.zsh}`
+
+Une frappe de moins, et la même règle partout : **`⏎` pose le candidat désigné dans la
+ligne, puis l'exécute — dans la même frappe.** `winget li ⏎` lance `winget list`.
+
+Elle vaut à **tous les niveaux de l'arbre** — verbe, sous-verbe, option, nom de paquet —
+parce qu'elle ne connaît rien de ces niveaux : elle ne compare que la ligne tapée à la
+ligne complétée, que le binaire rend déjà (`left=`) à chaque frappe. Rien à ajouter au
+protocole, rien de nouveau à décider par contexte.
+
+Trois points qu'il fallait trancher :
+
+- **Presser `⏎`, c'est dire « pars ».** La première version s'arrêtait après la
+  complétion, laissant un second `⏎` exécuter : c'était une frappe économisée d'un côté et
+  reperdue de l'autre. jigger ne juge pas à la place de l'utilisateur si la ligne complétée
+  est correcte — elle part, et le gestionnaire dira ce qu'il en pense.
+- **Le focus n'entre pas dans la règle.** `⇥` insère la ligne désignée même quand le popup
+  n'a pas le clavier (c'est ce que dit sa teinte au repos) ; `⏎` fait de même, sans quoi le
+  cas de la demande — `winget li ⏎`, sans être entré dans la liste — ne serait pas servi.
+- **`^G` est l'échappatoire**, et elle existait déjà : elle ferme le popup pour la ligne en
+  cours, donc `⏎` y exécute exactement ce qui est tapé.
+
+Le pied du cadre passe à quatre pastilles — `⇥ insérer`, `↩ exécuter`, `↓ parcourir`,
+`^G fermer` : deux gestes distincts, deux libellés, et le même vocabulaire que le sélecteur
+plein écran. Les quatre tiennent dans la largeur du cadre ; les captures de la
+documentation et du site, qui étaient à 54 colonnes, ont été reprises à la largeur réelle.
+
+Côté zsh, `⏎` est repris comme les flèches et `^R` (A-19) : `^M` et `^J` passent par
+`_jigger_accept`, qui pose le candidat puis rend la touche au widget qui la tenait avant
+nous — l'`accept-line` de zsh, ou celui qu'un autre greffon a enveloppé.
 
 ### A-1 — L'alias `jg` dans le greffon PowerShell
 
