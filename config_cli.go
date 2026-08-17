@@ -6,8 +6,14 @@ import (
 	"os"
 	"strings"
 
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/muesli/termenv"
+
 	"gitlab.yg-devworks.com/yves/jigger/internal/config"
 	"gitlab.yg-devworks.com/yves/jigger/internal/i18n"
+	"gitlab.yg-devworks.com/yves/jigger/internal/managers"
+	"gitlab.yg-devworks.com/yves/jigger/internal/ui"
 )
 
 // runConfig sert la sous-commande `jigger config`.
@@ -62,9 +68,102 @@ func runConfig(argv []string) int {
 		return 0
 	}
 
-	// Sans drapeau : la liste, tant que l'écran n'est pas là.
-	afficherReglages(fic)
+	// Sans drapeau : l'écran, s'il y a un terminal pour le porter. Sinon la liste —
+	// `jigger config | grep` doit rester utilisable.
+	if !sortieEstTerminal() {
+		afficherReglages(fic)
+		return 0
+	}
+	return ecranConfig(fic)
+}
+
+// ecranConfig ouvre l'écran, puis enregistre ce qu'il a changé. L'écran ne touche jamais au
+// fichier lui-même : il rend des modifications, et c'est ici qu'elles sont écrites.
+func ecranConfig(fic *config.Fichier) int {
+	tty, err := openTTY()
+	if err != nil {
+		afficherReglages(fic)
+		return 0
+	}
+	defer tty.Close()
+	lipgloss.SetColorProfile(termenv.NewOutput(tty.Out).Profile)
+
+	modele := ui.NouvelleConfiguration(groupesConfig(fic))
+	prog := tea.NewProgram(modele, tea.WithInput(tty.In), tea.WithOutput(tty.Out), tea.WithAltScreen())
+	final, err := prog.Run()
+	if err != nil {
+		return 1
+	}
+
+	c, ok := final.(ui.Configuration)
+	if !ok || (len(c.Modifs) == 0 && len(c.Retraits) == 0) {
+		return 0
+	}
+	for cle, valeur := range c.Modifs {
+		fic.Poser(cle, valeur)
+	}
+	for _, cle := range c.Retraits {
+		fic.Retirer(cle)
+	}
+	if err := fic.Ecrire(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 1
+	}
+	chemin, _ := config.Chemin()
+	fmt.Print(i18n.Tf("cfg.written", chemin))
 	return 0
+}
+
+// groupesConfig compose les trois groupes de la spec §2. Ils correspondent à trois
+// natures — ce qui prend effet tout de suite, ce qui attend le prochain shell, et ce que
+// jigger observe sans le posséder — et non à un classement esthétique.
+func groupesConfig(fic *config.Fichier) []ui.GroupeConfig {
+	var maintenant, shell []ui.LigneConfig
+	for _, r := range config.Declares {
+		valeur, prov := config.Resoudre(os.Getenv(r.Env()), fic.Valeur(r.Cle), r.Defaut)
+		if valeur == "" {
+			valeur = "—"
+		}
+		ligne := ui.LigneConfig{
+			Cle: r.Cle, Env: r.Env(), Valeur: valeur,
+			Provenance: provenanceLisible(prov), Description: i18n.T(r.CleI18n),
+		}
+		if r.Portee == config.Greffon {
+			shell = append(shell, ligne)
+		} else {
+			maintenant = append(maintenant, ligne)
+		}
+	}
+
+	return []ui.GroupeConfig{
+		{Titre: i18n.T("cfg.grp_now"), Note: i18n.T("cfg.now"), Lignes: maintenant},
+		{Titre: i18n.T("cfg.grp_shell"), Note: i18n.T("cfg.next_shell"), Lignes: shell},
+		{Titre: i18n.T("cfg.grp_seen"), Note: i18n.T("cfg.readonly"), Lignes: observations()},
+	}
+}
+
+// observations rend ce que jigger voit de l'installation, en lecture seule : ces valeurs
+// appartiennent aux gestionnaires, pas à jigger. Les proposer à la modification serait
+// mentir sur ce qu'un changement produirait.
+func observations() []ui.LigneConfig {
+	var out []ui.LigneConfig
+	for _, v := range []string{"SCOOP", "SCOOP_GLOBAL", "HOMEBREW_PREFIX"} {
+		valeur := os.Getenv(v)
+		if valeur == "" {
+			valeur = "—"
+		}
+		out = append(out, ui.LigneConfig{Env: v, Valeur: valeur, Provenance: "env", Fige: true})
+	}
+	var noms []string
+	for _, m := range managers.Available() {
+		noms = append(noms, m.Cmd())
+	}
+	dispo := strings.Join(noms, ", ")
+	if dispo == "" {
+		dispo = "—"
+	}
+	out = append(out, ui.LigneConfig{Env: "managers", Valeur: dispo, Provenance: "auto", Fige: true})
+	return out
 }
 
 // afficherReglages imprime chaque réglage, sa valeur effective et sa provenance. La
