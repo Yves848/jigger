@@ -360,11 +360,11 @@ separately. Ready to paste for **oh-my-posh** and for **starship**; everything g
 through environment variables, so any other prompt can read them too.
 
 ```
- yves@MacBook  ~/git/jigger   main  🍺 6.0.17  🧪 7  📦 2 ❯      ← macOS
+ yves@MacBook  ~/git/jigger   main   6.0.17   7   2 ❯      ← macOS
  PS D:\jigger  🪟 1.29.280  📦 48  🥄 1 ❯                        ← Windows
 ```
 
-On macOS: a **beer** for brew, a **test tube** for formulae, a **package** for casks.
+On macOS: a **beer** for brew, a **flask** for formulae, a **cube** for casks.
 On Windows: a **window** for winget's version, a **package** for winget packages to
 upgrade, a **spoon** for scoop applications.
 
@@ -372,9 +372,14 @@ Each counter disappears once it hits zero — ` 1.29.280  🥄 1` if only scoop 
 ` 1.29.280` alone once everything is up to date. A counter that's **never** shown at
 zero means its mere presence says "needs an update": no arrow or letter to add.
 
-These are **emoji**: no special font is required, and they show up everywhere. If you
-prefer monochrome **Nerd Font** glyphs — which take on the segment's color, where an
-emoji imposes its own —, every segment file lists the matching codes.
+The macOS block uses **Nerd Font** glyphs, the Windows one emoji. This is not a matter of
+taste: macOS's `wcwidth()` does not know the width of any emoji added after Unicode 8 and
+reports zero. zsh then counts zero columns where the terminal draws two, its cursor
+arithmetic drifts, and the command line loses a character **on screen** as soon as it
+reaches the right margin — the buffer stays intact, which makes the failure all the more
+confusing. The test tube (`\U0001F9EA`) was one of those. To go back to emoji, pick only
+pre-Unicode 9 ones, and check each glyph: `${(m)#c}` under zsh must match what the terminal
+draws.
 
 Either way, write them as **escapes** (`\u21E1`, `\U0001F37A`) rather than literally:
 it's the only form that comes through editors, copy-paste, and Unicode-normalizing

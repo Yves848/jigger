@@ -11,12 +11,17 @@
 # l'ordre où ils sont déclarés ici, et chacun s'efface tout seul quand sa variable n'est
 # pas définie — un compteur à zéro n'en est jamais une.
 #
-# Émojis : bière (brew), éprouvette (formulae), colis (casks) — aucune police particulière
-# requise. Pour des glyphes Nerd Font monochromes, qui prennent la couleur du module là où
-# un émoji impose la sienne, remplacer \U0001F37A par \uF0FC, \U0001F9EA par \uF0C3
-# et \U0001F4E6 par \uF1B2. Dans les deux cas, garder la forme échappée plutôt que le
-# caractère en clair : c'est la seule qui traverse sans dommage les éditeurs, les
-# copier-coller et les outils qui normalisent l'Unicode.
+# Glyphes Nerd Font : bière (brew), fiole (formulae), cube (casks). Ils prennent la couleur
+# du module là où un émoji impose la sienne — mais ce n'est pas la raison du choix. Un émoji
+# postérieur à Unicode 8 n'a pas de largeur sur laquelle le shell et le terminal s'accordent :
+# le wcwidth() de macOS ne le connaît pas, zsh le compte alors pour 0 colonne quand le
+# terminal en dessine 2, et ZLE perd un caractère à l'affichage dès que la ligne atteint le
+# bord droit. L'éprouvette était exactement dans ce cas. Pour revenir à des émojis, n'en
+# prendre que d'antérieurs à Unicode 9 — et le vérifier glyphe par glyphe, en comparant
+# ${(m)#c} sous zsh à ce que le terminal dessine réellement.
+#
+# Garder la forme échappée plutôt que le caractère en clair : c'est la seule qui traverse
+# sans dommage les éditeurs, les copier-coller et les outils qui normalisent l'Unicode.
 #
 # Pour un seul chiffre au lieu du détail par type, remplacer les deux derniers blocs par
 # celui-ci :
@@ -27,16 +32,16 @@
 #   format = "[$symbol$env_value]($style) "
 
 [env_var.JIGGER_BREW_VERSION]
-symbol = "\U0001F37A "
+symbol = "\uF0FC "
 style  = "#FAB387"
 format = "[$symbol$env_value]($style) "
 
 [env_var.JIGGER_BREW_FORMULAE]
-symbol = "\U0001F9EA "
+symbol = "\uF0C3 "
 style  = "#F9E2AF"
 format = "[$symbol$env_value]($style) "
 
 [env_var.JIGGER_BREW_CASKS]
-symbol = "\U0001F4E6 "
+symbol = "\uF1B2 "
 style  = "#F9E2AF"
 format = "[$symbol$env_value]($style) "

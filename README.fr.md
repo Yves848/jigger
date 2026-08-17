@@ -368,11 +368,11 @@ tout passe par des variables d'environnement, donc n'importe quel autre prompt s
 lire.
 
 ```
- yves@MacBook  ~/git/jigger   main  🍺 6.0.17  🧪 7  📦 2 ❯      ← macOS
+ yves@MacBook  ~/git/jigger   main   6.0.17   7   2 ❯      ← macOS
  PS D:\jigger  🪟 1.29.280  📦 48  🥄 1 ❯                        ← Windows
 ```
 
-Sur macOS : une **bière** pour brew, une **éprouvette** pour les formulae, un **colis**
+Sur macOS : une **bière** pour brew, une **fiole** pour les formulae, un **cube**
 pour les casks. Sous Windows : une **fenêtre** pour la version de winget, un **colis**
 pour les paquets winget à mettre à niveau, une **cuillère** pour les applications scoop.
 
@@ -380,10 +380,14 @@ Chaque compteur disparaît quand il tombe à zéro — ` 1.29.280  🥄 1` s'il 
 scoop, ` 1.29.280` tout court quand tout est à jour. Un compteur ne s'affichant **jamais**
 à zéro, sa seule présence signifie « à mettre à jour » : ni flèche ni lettre à ajouter.
 
-Ce sont des **émojis** : aucune police particulière n'est requise, et ils s'affichent
-partout. Si tu préfères des glyphes **Nerd Font** monochromes — qui prennent la couleur du
-segment, là où un émoji impose la sienne —, chaque fichier de segment indique les
-codes correspondants.
+Le bloc macOS est en glyphes **Nerd Font**, le bloc Windows en émojis. Ce n'est pas affaire
+de goût : le `wcwidth()` de macOS ignore la largeur des émojis postérieurs à Unicode 8 et la
+rend nulle. zsh compte alors zéro colonne là où le terminal en dessine deux, son calcul de
+curseur se décale, et la ligne de commande perd un caractère **à l'affichage** dès qu'elle
+atteint le bord droit — le tampon, lui, reste intact, ce qui rend la panne d'autant plus
+déroutante. L'éprouvette (`\U0001F9EA`) était dans ce cas. Pour revenir aux émojis, n'en
+prendre que d'antérieurs à Unicode 9, et le vérifier glyphe par glyphe : `${(m)#c}` sous zsh
+doit valoir ce que le terminal dessine.
 
 Dans les deux cas, écris-les en **échappements** (`\u21E1`, `\U0001F37A`) plutôt qu'en
 clair : c'est la seule forme qui traverse sans dommage les éditeurs, les copier-coller et
