@@ -22,10 +22,10 @@ const (
 type Type int
 
 const (
-	Texte   Type = iota
-	Booleen      // 0 ou 1
-	Entier       // un nombre
-	Duree        // une durée Go : 24h, 30m…
+	TypeTexte   Type = iota
+	TypeBooleen      // 0 ou 1
+	TypeEntier       // un nombre
+	TypeDuree        // une durée Go : 24h, 30m…
 )
 
 // Reglage déclare un réglage : sa clé, ce qu'il fait, qui le lit, son type et son défaut.
@@ -62,20 +62,20 @@ func majuscules(s string) string {
 // Declarer, au chargement de leur paquet.
 var Declares = []Reglage{
 	// ── Ce qui prend effet tout de suite ────────────────────────────────────────────
-	{Cle: "pager", CleI18n: "cfg.pager", Portee: Binaire, Type: Booleen, Defaut: "1"},
-	{Cle: "lang", CleI18n: "cfg.lang", Portee: LesDeux, Type: Texte, Defaut: ""},
-	{Cle: "cache_dir", CleI18n: "cfg.cache_dir", Portee: LesDeux, Type: Texte, Defaut: ""},
+	{Cle: "pager", CleI18n: "cfg.pager", Portee: Binaire, Type: TypeBooleen, Defaut: "1"},
+	{Cle: "lang", CleI18n: "cfg.lang", Portee: LesDeux, Type: TypeTexte, Defaut: ""},
+	{Cle: "cache_dir", CleI18n: "cfg.cache_dir", Portee: LesDeux, Type: TypeTexte, Defaut: ""},
 
 	// ── Ce qui prend effet au prochain shell ────────────────────────────────────────
-	{Cle: "live", CleI18n: "cfg.live", Portee: LesDeux, Type: Booleen, Defaut: "1"},
-	{Cle: "rows", CleI18n: "cfg.rows", Portee: Greffon, Type: Entier, Defaut: "8"},
-	{Cle: "key", CleI18n: "cfg.key", Portee: Greffon, Type: Texte, Defaut: "^I"},
-	{Cle: "keys_extra", CleI18n: "cfg.keys_extra", Portee: Greffon, Type: Texte, Defaut: ""},
-	{Cle: "commands", CleI18n: "cfg.commands", Portee: Greffon, Type: Texte, Defaut: ""},
-	{Cle: "min_columns", CleI18n: "cfg.min_columns", Portee: Greffon, Type: Entier, Defaut: "30"},
-	{Cle: "prompt", CleI18n: "cfg.prompt", Portee: Greffon, Type: Booleen, Defaut: "0"},
-	{Cle: "prompt_ttl", CleI18n: "cfg.prompt_ttl", Portee: Greffon, Type: Entier, Defaut: "1800"},
-	{Cle: "bin", CleI18n: "cfg.bin", Portee: Greffon, Type: Texte, Defaut: "jigger"},
+	{Cle: "live", CleI18n: "cfg.live", Portee: LesDeux, Type: TypeBooleen, Defaut: "1"},
+	{Cle: "rows", CleI18n: "cfg.rows", Portee: Greffon, Type: TypeEntier, Defaut: "8"},
+	{Cle: "key", CleI18n: "cfg.key", Portee: Greffon, Type: TypeTexte, Defaut: "^I"},
+	{Cle: "keys_extra", CleI18n: "cfg.keys_extra", Portee: Greffon, Type: TypeTexte, Defaut: ""},
+	{Cle: "commands", CleI18n: "cfg.commands", Portee: Greffon, Type: TypeTexte, Defaut: ""},
+	{Cle: "min_columns", CleI18n: "cfg.min_columns", Portee: Greffon, Type: TypeEntier, Defaut: "30"},
+	{Cle: "prompt", CleI18n: "cfg.prompt", Portee: Greffon, Type: TypeBooleen, Defaut: "0"},
+	{Cle: "prompt_ttl", CleI18n: "cfg.prompt_ttl", Portee: Greffon, Type: TypeEntier, Defaut: "1800"},
+	{Cle: "bin", CleI18n: "cfg.bin", Portee: Greffon, Type: TypeTexte, Defaut: "jigger"},
 }
 
 // Declarer ajoute un réglage à la table. Les gestionnaires l'appellent depuis leur `init`,

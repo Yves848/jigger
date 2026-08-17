@@ -360,6 +360,44 @@ frappe, jigger réenregistre donc une à une les touches qui modifient la ligne.
 clavier AZERTY, la rangée des chiffres non pressée donne « éèçàù » — d'où cette valeur par
 défaut, et le réglage pour les dispositions qu'elle ne couvre pas.
 
+### Des réglages qui restent
+
+Les variables d'environnement disparaissent avec le shell. Depuis la v0.12.0,
+`jigger config` ouvre un écran qui les inscrit :
+
+```sh
+jigger config
+```
+
+Trois groupes, et c'est le groupement qui compte :
+
+- **Ce qui prend effet tout de suite** — le binaire le lit à chaque appel.
+- **Ce qui prend effet au prochain shell** — huit des douze réglages sont lus par le
+  greffon au démarrage. L'écran le dit sur le groupe, plutôt que de laisser croire le
+  contraire.
+- **Ce que jigger voit sans le posséder** — `$SCOOP`, `$HOMEBREW_PREFIX`, les
+  gestionnaires détectés. En lecture seule : ils appartiennent aux gestionnaires, et
+  proposer de les modifier serait mentir.
+
+Chaque ligne affiche **d'où vient sa valeur** — défaut, fichier ou environnement. C'est
+important parce que **l'environnement garde le dernier mot** : un `JIGGER_ROWS=12` dans ton
+`~/.zshrc` l'emporte sur le fichier, et l'écran te le dit au lieu de montrer une valeur que
+la machine ignore.
+
+| Touche | Effet |
+|---|---|
+| `↑` `↓` | se déplacer |
+| `↵` | modifier le réglage courant |
+| `r` | le remettre à son défaut (il quitte le fichier) |
+| `q`, `esc` | enregistrer et quitter |
+
+`jigger config --path` imprime où vit le fichier ; c'est du `clé = valeur`, prévu pour être
+modifié à la main aussi. `jigger config --list` imprime le même tableau sans l'écran, ce
+qu'un script attend.
+
+**L'écran ne touche jamais à `~/.zshrc` ni à `$PROFILE`.** Il écrit son fichier, et rien
+d'autre.
+
 ## 8. Le bloc de prompt (optionnel)
 
 jigger sait aussi afficher dans ton prompt la **version du gestionnaire** et les **mises à

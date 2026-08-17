@@ -1,6 +1,7 @@
 package brew
 
 import (
+	"gitlab.yg-devworks.com/yves/jigger/internal/config"
 	"path/filepath"
 	"strings"
 	"time"
@@ -96,7 +97,9 @@ func (Manager) Warm(scope pm.Scope) error {
 		warmInstalled()
 		return nil
 	}
-	ttl := 24 * time.Hour
+	// Durée déclarée, donc réglable : qui « tap » souvent la voudra courte, qui travaille
+	// sur une liaison lente la voudra longue (A-14).
+	ttl := config.Duree("brew_ttl", 24*time.Hour)
 	if scope == pm.ScopeAll {
 		ttl = 0
 	}
@@ -104,4 +107,13 @@ func (Manager) Warm(scope pm.Scope) error {
 	cachedLines("casks", ttl, "casks")
 	warmInstalled()
 	return nil
+}
+
+// Le gestionnaire déclare ses réglages : l'écran de configuration en dérive sa mise en
+// page, sans rien savoir de brew (A-14, esprit de l'ADR-0002).
+func init() {
+	config.Declarer(config.Reglage{
+		Cle: "brew_ttl", CleI18n: "cfg.ttl", Portee: config.Binaire,
+		Type: config.TypeDuree, Defaut: "24h", PM: "brew",
+	})
 }
