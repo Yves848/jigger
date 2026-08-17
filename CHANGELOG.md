@@ -9,6 +9,67 @@ The format follows [Keep a Changelog](https://keepachangelog.com/1.1.0/) and
 [SemVer](https://semver.org/). Versions before `v0.1.6` predate this log; their detail
 lives in the git history.
 
+## [v0.12.0] — 2026-08-17
+
+### Added
+
+- **`jigger config`** — a settings screen in three groups: what takes effect right away,
+  what waits for the next shell, and what jigger reads without owning. Every line shows
+  **where its value comes from**. A configuration file in `key = value` form now lives
+  where your system expects it; `--path` prints its location, `--list` shows the table
+  without the screen (#62).
+- **Catalogue lifetimes are yours to set.** brew and winget declare theirs and the screen
+  displays them without knowing anything about either. They used to be hard-coded to 24
+  hours (#62).
+- **A command refused for lack of rights offers to replay itself elevated.** jigger
+  intercepts nothing: it lets the command run through, reads its exit code afterwards,
+  names the cause and asks. It **never elevates without an explicit yes** — the line open
+  by default is "cancel". With no terminal — a pipe, a script, a scheduled task — there is
+  no question: the exact line to replay is printed and the original exit code is returned.
+  Windows only for now (#67).
+- **The `jg` alias exists under PowerShell too.** `Remove-Module` takes it back, which is
+  the way out for anyone already attached to their own. It points at the binary the module
+  resolved, not at the word "jigger" — with `JIGGER_BIN` set to a build tree, `jg` and the
+  popup would otherwise talk about two different executables (#71).
+
+### Changed
+
+- **`↵` completes the line and runs it in one keystroke**, as long as a candidate is
+  highlighted: `winget li ↵` runs `winget list`. Pressing `↵` means "go" — the line leaves,
+  completed if something was highlighted, as typed otherwise. jigger doesn't judge whether
+  it is correct in your stead, and `^G` still runs exactly what you typed (#66).
+- The frame's footer now carries four pills — `⇥` insert, `↩` run, `↓` browse, `^G` close.
+  Two distinct gestures deserve two labels (#66).
+- **The environment still has the last word** over the configuration file. That is why the
+  screen shows provenance: without it, it would display a value your machine doesn't
+  apply. The plugins ask the binary for the settings (`config --export`) instead of reading
+  the file, so **precedence has a single implementation**, in Go (#62).
+- The PowerShell façade arms the popup for `jg` and `jigger` in all cases, instead of
+  relying on the default value of `JIGGER_COMMANDS` — extending that default would have
+  changed nothing for anyone who copied "winget,scoop" into their profile, as the
+  documentation showed them to for three versions (#71).
+- **The Homebrew prompt block is back to emojis** — beer, microscope, package — after a
+  detour through Nerd Font glyphs. The glyphs fixed the width defect below but demanded a
+  font: without it the prompt shows boxes. Only one of the three was at fault, so one
+  substitution was enough (#65).
+
+### Fixed
+
+- **The Homebrew prompt block made a character disappear from your command line** on
+  macOS. `jigger --version` showed up as `jigger -version` while the command actually run
+  was the right one — a purely visual failure, and one that only appeared when there were
+  formulae to upgrade. The cause was the glyph jigger shipped, not jigger: macOS's
+  `wcwidth()` predates Unicode 11 and reports zero columns for the test tube `U+1F9EA`,
+  which the terminal draws on two. zsh's cursor arithmetic drifted by two columns and ZLE
+  wrote in the wrong place at the right edge (#63).
+- **The Windows prompt block carried the same defect** — the window `U+1FA9F` counted for
+  zero, drawn on two. It becomes a laptop. Not observed under PowerShell, whose width
+  arithmetic differs from ZLE's, but the segment is text nothing stops you from pasting
+  into another prompt (#64).
+- `$script:Commands` was fed a pipeline in the PowerShell module, so a bare string when
+  `JIGGER_COMMANDS` held a single name — the façade's `+=` would have concatenated it
+  instead of extending the list (#71).
+
 ## [v0.11.0] — 2026-08-17
 
 ### Added
