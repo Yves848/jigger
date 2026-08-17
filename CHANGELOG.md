@@ -9,6 +9,43 @@ The format follows [Keep a Changelog](https://keepachangelog.com/1.1.0/) and
 [SemVer](https://semver.org/). Versions before `v0.1.6` predate this log; their detail
 lives in the git history.
 
+## [v0.11.0] — 2026-08-17
+
+### Added
+
+- **Long listings became navigable.** `list`, `outdated`, `search` and `source` now open
+  in a paged view when the output is a terminal **and** the rows don't fit on screen.
+  Type to filter, `⇥` to select a row, `^A` to select everything the filter leaves, `↵` to
+  print what you picked, `^G` to leave with nothing (#56, #60).
+- **`--select`** opens that view even when the output goes down a pipe, drawing on the
+  terminal and sending only the chosen names — one per line. `jg install $(jg search fd
+  --select)` works the way you would hope. `JIGGER_PAGER=0` turns the automatic view off
+  (#56).
+- **A regex filter, on `^R`.** Every surface that filters — the live popup, the
+  full-screen picker, the paged view — switches between plain-text and regular-expression
+  matching on `^R`, and shows which mode it is in (#58, #61).
+
+  The key is **not taken away from your shell**: outside a package-manager line, `^R`
+  still runs your shell's reverse history search. That is the same rule the arrow keys
+  have always followed.
+- **`JIGGER_BIN`** tells the zsh plugin which binary to call — the PowerShell module has
+  always had it. Homebrew's `bin` usually comes before `~/.local/bin`, so without this a
+  freshly built jigger could never be the one that runs (#60).
+
+### Changed
+
+- **The plugins now require a 0.11.0 binary.** They pass `render --regex`, which older
+  binaries reject — a popup would vanish without a word. Plugin and binary go together:
+  upgrade both, or the plugin says so at shell startup and stands down.
+- Nothing changes when the output isn't a terminal. `jg list | grep` prints the same plain
+  table it always has, byte for byte, and `--json` is never paged — it is a machine
+  contract.
+- **Windows installs through scoop.** `scoop bucket add jigger …` then
+  `scoop install jigger` — a prebuilt binary, nothing to compile. The documentation used
+  to say no scoop package existed; it does now (#52).
+- The captured frames in the README and the guide show the version actually published
+  (#51).
+
 ## [v0.10.0] — 2026-08-16
 
 ### Added
