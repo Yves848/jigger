@@ -23,20 +23,34 @@ suivant.
 
 ## Quel dépôt citer
 
-**Les trois messages Reddit pointent GitLab**, pas le miroir GitHub. Deux raisons, dans cet
-ordre :
+**Les quatre messages citent GitHub**, et c'est le fruit d'un essai raté plutôt que d'une
+préférence.
 
-1. **C'est le lien exact.** GitLab est le dépôt de référence, GitHub n'en est qu'un miroir
-   poussé. Le dire ainsi n'est pas un détour.
-2. **r/commandline fait auditer les liens GitHub par un bot** (« GitHub Guard »), qui note
-   un dépôt de moins de 30 jours 0 sur 1 et commente le post en conséquence. Le miroir a
-   été créé le 16 août 2026 : il passe la barre vers le **15 septembre**.
+Le 17 août, le lien du code a été basculé sur GitLab — le dépôt de référence, GitHub n'en
+étant qu'un miroir poussé — pour éviter le bot d'audit de r/commandline. **Le post a été
+rejeté sans motif.** Un domaine personnel sans réputation (`gitlab.yg-devworks.com`) tombe
+sous les filtres d'automod, quand ce n'est pas sous celui de Reddit lui-même, et cela se
+fait en silence.
 
-Ne pas poster sans lien du tout pour éviter le bot, puis le déposer en commentaire : c'est
-le motif que les modérateurs guettent, et il coûte plus cher que le commentaire du bot. Si
-le sujet revient, le modmail tranche en une minute.
+Le choix est donc entre deux désagréments inégaux :
 
-`show-hn.md` garde GitHub — Hacker News n'a pas ce garde-fou, et son public y est habitué.
+| Lien | Ce qui arrive | Coût |
+|---|---|---|
+| GitHub | « GitHub Guard » commente : 0 sur 1, dépôt de moins de 30 jours | cosmétique, le post tient |
+| GitLab auto-hébergé | suppression automatique, sans explication | le post entier |
+
+Le miroir GitHub a été créé le 16 août 2026 : il passe la barre des 30 jours vers le
+**15 septembre**, après quoi la question ne se pose plus.
+
+Deux choses à savoir avant de retenter GitLab :
+
+- **Les commandes d'installation portent le domaine de toute façon.** `brew tap` et
+  `scoop bucket add` pointent `gitlab.yg-devworks.com` dans le corps des messages r/zsh et
+  r/PowerShell. Si un automod filtre le domaine où qu'il apparaisse, changer le lien du code
+  ne suffit pas.
+- **Ne pas poster sans lien pour le déposer ensuite en commentaire.** C'est le motif que les
+  modérateurs guettent, et il coûte plus cher que le commentaire d'un bot. Le modmail, lui,
+  tranche en une minute et lève souvent une suppression automatique.
 
 ## Avant de poster, à chaque fois
 

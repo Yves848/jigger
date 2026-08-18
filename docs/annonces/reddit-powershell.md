@@ -65,8 +65,7 @@ Limits: PowerShell 7 recommended, PSReadLine required; no winget package for jig
 itself yet; scoop's `Format-Table` output is parsed by column position, which I had to
 rewrite once already when a colour escape moved a header.
 
-Apache-2.0. https://jigger.yg-devworks.com/ · https://gitlab.yg-devworks.com/yves/jigger
-(self-hosted GitLab; mirrored on GitHub as well)
+Apache-2.0. https://jigger.yg-devworks.com/ · https://github.com/Yves848/jigger
 
 What I'd like to know: **is the ListView handling the right call?** Tucking someone's
 prediction view away and restoring it is a liberty I wasn't entirely comfortable taking,

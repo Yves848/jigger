@@ -62,8 +62,7 @@ What it does *not* do, so nobody wastes their evening:
 Apache-2.0, single static binary, no daemon, nothing phoning home.
 
 Site: https://jigger.yg-devworks.com/
-Code: https://gitlab.yg-devworks.com/yves/jigger (self-hosted GitLab — there's a GitHub
-mirror too, if that's where you'd rather read it)
+Code: https://github.com/Yves848/jigger
 
 The question I'd actually like an answer to: **which manager would you want next?** I've
 been going back and forth between apt, pacman and npm, and they're not the same amount of
