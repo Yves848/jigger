@@ -141,6 +141,43 @@ Then reload: `. $PROFILE`, or open a new tab.
 One ordering constraint, and this one's real: if you use oh-my-posh or starship,
 import jigger **after** it (see § 8).
 
+And one thing to know about keys: PSReadLine keeps only the **last** handler bound to a
+chord. A profile that binds `^R` after the import — an fzf history search, typically —
+takes the key back, and the regex toggle becomes unreachable. Offer it the key first;
+it says whether it wants it:
+
+```powershell
+Set-PSReadLineKeyHandler -Chord Ctrl+r -ScriptBlock {
+    # $true on a winget/scoop line: the popup switched to regex. $false everywhere
+    # else — nothing was touched, and the key is yours.
+    if (Invoke-JiggerRegex) { return }
+    Invoke-FzfHistory
+}
+```
+
+The module can't do this by itself: PSReadLine hands back a script-block binding's
+description, never the block, so jigger has no way to call yours. Under zsh, where
+`bindkey` names the widget, the plugin picks `^R` up before taking it and gives it back
+on its own — nothing to do there.
+
+The same goes for the keys that take over the screen and hand the line back — a file
+explorer on `^U`, a drive picker on `^D`. Their handler replaces ours too, and the frame
+is left behind, stale or orphaned. `Update-JiggerPopup` puts it back in agreement with
+the line:
+
+```powershell
+Set-PSReadLineKeyHandler -Chord Ctrl+u -ScriptBlock {
+    yazi
+    [Microsoft.PowerShell.PSConsoleReadLine]::InvokePrompt()
+    Update-JiggerPopup
+}
+```
+
+Call it with no precaution whatsoever: off a package-manager line it erases the frame and
+returns, and it never throws — a keystroke is not allowed to paint the screen red.
+Handlers that end on `AcceptLine()` want it too, right before that call: otherwise the
+command's output cuts the frame in two.
+
 ## 4. Check that it works
 
 ```sh
@@ -181,7 +218,7 @@ scoop uninstall 7z
 | `↑` | moves up; on the first candidate, hands the keyboard back to the shell |
 | `^N` / `^P` | the same, for those who prefer them to arrow keys |
 | `^G` | closes the popup for the current line (`⇥` reopens it) |
-| `^R` | switches the filter between plain text and regex. The frame's title shows `[regex]` while it is on, and the key goes back to the shell's reverse history search whenever the popup isn't up |
+| `^R` | switches the filter between plain text and regex. The frame's title shows `[regex]` while it is on, and the key goes back to the shell's reverse history search whenever the popup isn't up. Under PowerShell, a profile that binds `^R` after the import takes it back — see § 3 |
 
 Three things worth knowing, most of what makes this comfortable:
 
@@ -480,6 +517,8 @@ the exposed variables are described in the
 | `jg`: "unknown verb" | it isn't one of the twelve — `jg ⇥` lists them. The native command, though, is always spelled out in full: `brew tap`, not `jg tap` |
 | `jg`: "unknown to brew" on a package that exists | the cached catalog is older than the package. `jg … --pm brew <name>` bypasses it, `jigger warm --all` refreshes the cache |
 | `jg`: "manager unavailable for this verb" | the requested `--pm` isn't installed, or doesn't support this verb; the message names which ones do |
+| `^R` doesn't switch to regex under PowerShell | your profile binds `^R` after the import and takes the key. `Get-PSReadLineKeyHandler -Bound` shows who holds it: `jigger:regex` means us. Have that handler call `Invoke-JiggerRegex` first (§ 3) |
+| a frame left behind after some other key | same cause: a handler bound after the import took a key we relay. End it with `Update-JiggerPopup` (§ 3) |
 
 To isolate a conflict with another line-editing plugin, `JIGGER_LIVE=0` turns off
 everything tied to keystrokes: only ⇥ remains, and it opens the full-screen picker.

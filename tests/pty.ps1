@@ -166,6 +166,67 @@ $sansPopup = (& $harnais -rc $rcListe -rows 20 -cols 70 -keys '\r\r\recho G' `
 check 'aucun cadre sur une autre ligne' $sansPopup '╭' $false
 Remove-Item -Force $rcListe -ErrorAction SilentlyContinue
 
+Write-Host "`n→ ^R bascule le filtre en regex"
+$e = ecran 'winget install Git.\x12'
+check 'le titre annonce le mode' $e '[regex]'
+$e = ecran 'winget install Git.\x12\x12'
+check 'une seconde fois, retour' $e '[regex]' $false
+
+Write-Host "`n→ un profil qui reprend ^R après nous garde la bascule"
+# Le cas réel : un profil lie ^R à sa propre recherche d'historique **après** l'import,
+# et le relais du module est écrasé — la bascule devenait injoignable. La touche se
+# récupère en appelant Invoke-JiggerRegex, exportée pour ça : elle prend la touche sur
+# une ligne de gestionnaire et la rend partout ailleurs.
+$rcApres = Join-Path ([IO.Path]::GetTempPath()) 'jigger-pty-rc-apres.ps1'
+@"
+function global:prompt { "``nPS> " }
+Set-PSReadLineOption -PredictionSource None
+`$env:JIGGER_BIN = '$binaire'
+`$env:JIGGER_LANG = 'fr'
+Import-Module '$racine\shell\jigger.psm1' -Force
+Set-PSReadLineKeyHandler -Chord Ctrl+r -BriefDescription 'test:histoire' -ScriptBlock {
+    if (Invoke-JiggerRegex) { return }
+    [Microsoft.PowerShell.PSConsoleReadLine]::Insert('REPLI')
+}
+"@ | Set-Content -Path $rcApres
+
+$apres = (& $harnais -rc $rcApres -rows 16 -cols 66 -keys '\r\r\r\rwinget install Git.\x12' `
+    -settle 3s -pause 250ms -last 1500ms -screen 2>$null) -join "`n"
+check 'la bascule reste jointe'  $apres '[regex]'
+check 'le repli ne s''en mêle pas' $apres 'REPLI' $false
+
+$ailleurs = (& $harnais -rc $rcApres -rows 16 -cols 66 -keys '\r\r\r\recho bonjour\x12' `
+    -settle 3s -pause 250ms -last 1500ms -screen 2>$null) -join "`n"
+check 'hors gestionnaire, la touche est rendue' $ailleurs 'REPLI'
+Remove-Item -Force $rcApres -ErrorAction SilentlyContinue
+
+Write-Host "`n→ un relais tiers peut remettre le cadre d'accord avec la ligne"
+# L'autre moitié du même défaut : une touche reprise après nous — ^U vers un explorateur
+# de fichiers, typiquement — modifie la ligne (ou l'écran) sans que notre relais soit
+# passé, et le cadre reste là, périmé. Le cas se juge à l'œil : le relais efface la ligne,
+# donc le cadre doit disparaître. Sans Update-JiggerPopup, il survivrait à une ligne vide.
+$rcRedessin = Join-Path ([IO.Path]::GetTempPath()) 'jigger-pty-rc-redessin.ps1'
+@"
+function global:prompt { "``nPS> " }
+Set-PSReadLineOption -PredictionSource None
+`$env:JIGGER_BIN = '$binaire'
+`$env:JIGGER_LANG = 'fr'
+Import-Module '$racine\shell\jigger.psm1' -Force
+Set-PSReadLineKeyHandler -Chord Ctrl+u -BriefDescription 'test:explorateur' -ScriptBlock {
+    [Microsoft.PowerShell.PSConsoleReadLine]::RevertLine()
+    Update-JiggerPopup
+}
+"@ | Set-Content -Path $rcRedessin
+
+$avant = (& $harnais -rc $rcRedessin -rows 16 -cols 66 -keys '\r\r\r\rwinget ins' `
+    -settle 3s -pause 250ms -last 1500ms -screen 2>$null) -join "`n"
+check 'le cadre est là avant'    $avant '╭'
+$apresU = (& $harnais -rc $rcRedessin -rows 16 -cols 66 -keys '\r\r\r\rwinget ins\x15' `
+    -settle 3s -pause 250ms -last 1500ms -screen 2>$null) -join "`n"
+check 'le cadre suit la ligne'   $apresU '╭' $false
+check 'la ligne est bien vidée'  $apresU 'winget ins' $false
+Remove-Item -Force $rcRedessin -ErrorAction SilentlyContinue
+
 Write-Host "`n→ ^C efface le cadre avant de rendre la ligne"
 $e = ecran 'winget ins\x03'
 check 'cadre effacé'           $e '╭' $false

@@ -158,6 +158,7 @@ check 'Retour arrière aussi'  (($handlers | Where-Object { $_.Key -eq 'Backspac
 check 'le prompt est enveloppé' ((Get-Command prompt).ScriptBlock -match 'jigger:prompt-hook') $true
 
 check 'Ctrl+c est repris'     (($handlers | Where-Object { $_.Key -ceq 'Ctrl+c' }).Function) 'jigger:cancel'
+check 'Ctrl+r est repris'     (($handlers | Where-Object { $_.Key -ceq 'Ctrl+r' }).Function) 'jigger:regex'
 
 # Le repli d'une touche doit être **une** fonction PSReadLine, pas deux collées : `Ctrl+C`
 # (copier) et `Ctrl+c` (abandonner la ligne) sont deux liaisons distinctes, et le `-eq` de
@@ -192,6 +193,50 @@ foreach ($k in 'UpArrow', 'DownArrow') {
     $repli = $global:JiggerFallbacks[$k]
     check "repli de $k" ($repli -and -not $repli.StartsWith('jigger:')) $true
 }
+
+section 'la bascule regex est offerte au shell'
+# Le relais ^R du module ne suffit pas : un profil qui lie ^R *après* notre import — un
+# fzf d'historique, par exemple — reprend la touche, et la bascule devient injoignable.
+# Elle est donc aussi une fonction exportée, que ce profil-là appelle avant son propre
+# repli. Le greffon zsh obtient la même chose autrement, en relevant le widget lié avant
+# lui : dans un sens comme dans l'autre, la touche n'est confisquée par personne (A-19).
+check 'la bascule est exportée' ($jigger.ExportedFunctions.ContainsKey('Invoke-JiggerRegex')) $true
+
+# Hors ligne de gestionnaire, elle ne bascule rien et rend $false : à l'appelant de faire
+# ce qu'il aurait fait sans nous. Sur une ligne surveillée, elle prend la touche et le dit.
+# La ligne est passée en argument — sans console, PSReadLine n'a pas de tampon à lire.
+$bascule = & $jigger {
+    $etat = @{ regex = $script:Regex; live = $script:Live; echecs = $script:Failures }
+    $hors = Invoke-JiggerRegex 'git status'
+    $regexHors = $script:Regex
+    $sur = Invoke-JiggerRegex 'scoop install fi'
+    $regexSur = $script:Regex
+    $script:Regex = $etat.regex; $script:Live = $etat.live; $script:Failures = $etat.echecs
+    @{ hors = $hors; regexHors = $regexHors; sur = $sur; regexSur = $regexSur }
+}
+check 'hors gestionnaire : la touche est rendue' $bascule.hors $false
+check 'hors gestionnaire : le mode ne bouge pas' $bascule.regexHors $false
+check 'sur gestionnaire : la touche est prise'   $bascule.sur $true
+check 'sur gestionnaire : le mode bascule'       $bascule.regexSur $true
+
+section 'le redessin du popup est offert au shell'
+# Même raison, autres touches : ^U, ^D, ^E sont souvent reliées après nous à quelque chose
+# qui prend l'écran puis rend la ligne — un explorateur de fichiers, un sélecteur de
+# lecteur. Notre relais est alors écrasé, et le cadre reste derrière, périmé. Un appel en
+# fin de relais le remet d'accord avec la ligne : c'est tout ce qu'il manquait.
+check 'le redessin est exporté' ($jigger.ExportedFunctions.ContainsKey('Update-JiggerPopup')) $true
+
+# Et il s'appelle sans précaution : sans console, PSReadLine n'a pas de tampon et tout
+# échoue — mais rien ne remonte, une frappe ne peut pas se mettre à barrer l'écran de
+# rouge. Ce que ce cas vérifie, c'est le silence.
+$redessin = & $jigger {
+    $etat = @{ live = $script:Live; echecs = $script:Failures }
+    $leve = $false
+    try { Update-JiggerPopup } catch { $leve = $true }
+    $script:Live = $etat.live; $script:Failures = $etat.echecs
+    $leve
+}
+check 'sans console, il ne lève pas' $redessin $false
 
 section 'le focus décide qui prend les flèches'
 # La règle : ↓ fait entrer dans la liste, ↑ en ressort et rend l'historique. Hors focus,

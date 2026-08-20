@@ -419,6 +419,22 @@ function Move-JiggerAnchor([int]$Lignes) {
 # Update-JiggerPopup fait vivre le popup : appelé après chaque touche qui modifie la
 # ligne ou déplace le curseur. On ne relance le binaire que si la ligne, la sélection ou
 # la géométrie ont bougé — le reste du temps, on réaffiche le cadre déjà rendu.
+#
+# Elle est **exportée**, pour la même raison qu'Invoke-JiggerRegex : nos relais ne tiennent
+# que les touches que personne ne relie après notre import. Un profil qui pose la sienne
+# sur ^U, ^D, ^E — un explorateur de fichiers, un sélecteur de lecteur, tout ce qui prend
+# l'écran puis rend la ligne — laisse le cadre derrière lui, périmé ou orphelin. Un appel
+# en fin de relais le remet d'accord avec la ligne :
+#
+#     Set-PSReadLineKeyHandler -Chord Ctrl+u -ScriptBlock {
+#         y
+#         [Microsoft.PowerShell.PSConsoleReadLine]::InvokePrompt()
+#         Update-JiggerPopup
+#     }
+#
+# Aucune précaution à prendre à l'appel : hors ligne de gestionnaire, popup éteint ou
+# refermé, elle efface le cadre et rend la main. Et elle n'échoue jamais — une frappe ne
+# peut pas se mettre à barrer l'écran de rouge (cf. le catch, plus bas).
 function Update-JiggerPopup {
     if (-not $script:Live) { return }
     try {
@@ -708,6 +724,41 @@ function Register-JiggerKey([string]$Chord, [scriptblock]$Relais, [string]$Defau
         -BriefDescription $Etiquette -Description 'Relays the key, then refreshes the jigger popup.'
 }
 
+# Invoke-JiggerRegex bascule le mode de filtre, mais seulement quand le popup vaut pour
+# la ligne courante : c'est justement quand la liste est vide qu'on veut changer de mode,
+# donc le critère est « la ligne est surveillée », pas « il y a des candidats ». Rend
+# $true si elle a pris la touche, $false si elle l'a laissée — à l'appelant, alors, de
+# faire ce qu'il aurait fait sans nous.
+#
+# Elle est **exportée**, et c'est le point : le relais ^R posé plus bas ne vit que tant
+# que personne ne relie ^R après notre import. Un profil qui y met sa propre recherche
+# d'historique — fzf, typiquement — reprend la touche, et la bascule devient injoignable.
+# Une fonction publique lui rend la main dans l'autre sens :
+#
+#     Set-PSReadLineKeyHandler -Chord Ctrl+r -ScriptBlock {
+#         if (-not (Invoke-JiggerRegex)) { Invoke-FzfHistory }
+#     }
+#
+# Le module ne peut pas s'en charger seul : PSReadLine ne rend d'un bloc de script que sa
+# description, pas le bloc — Invoke-JiggerFallback ne sait donc rappeler que des
+# *fonctions* PSReadLine, jamais le handler d'un tiers. Côté zsh, où `bindkey` rend le nom
+# du widget, le greffon relève ^R avant de le prendre et le lui rend lui-même (A-19).
+#
+# La ligne est un paramètre pour que les tests puissent l'exercer sans console : par
+# défaut, c'est le tampon de PSReadLine, comme partout ailleurs.
+function Invoke-JiggerRegex([string]$Buffer = (Get-JiggerBuffer)) {
+    if (-not $script:Live -or $script:Dismissed -or -not (Test-JiggerLine $Buffer)) {
+        return $false
+    }
+    $script:Regex = -not $script:Regex
+    $script:Sel = 0
+    # Le cadre mémorisé porte l'ancien mode : on le jette pour forcer un rendu.
+    $script:Frame = ''
+    # `$null =` : la valeur de retour est un contrat, rien ne doit s'y ajouter.
+    $null = Update-JiggerPopup
+    return $true
+}
+
 if ($script:Live) {
     # Caractères imprimables : ils s'insèrent, puis le popup se refiltre.
     $imprimables = 33..126 | ForEach-Object { [char]$_ }
@@ -742,14 +793,14 @@ if ($script:Live) {
     # ^R bascule le mode de filtre quand le popup vaut pour cette ligne — et retourne à
     # la recherche inverse dans l'historique sinon. C'est la règle générale de jigger
     # (A-19) : prendre une touche tant qu'on a le clavier, et la rendre autrement.
+    #
+    # Le repli est la recherche native, et pas Invoke-JiggerFallback : ^R est le plus
+    # souvent lié à un bloc de script (un fzf d'historique), que PSReadLine ne sait pas
+    # nous rendre. Un profil qui tient au sien lie ^R lui-même, après notre import, en
+    # appelant Invoke-JiggerRegex d'abord — c'est pour lui qu'elle est exportée.
     Set-PSReadLineKeyHandler -Chord 'Ctrl+r' -BriefDescription 'jigger:regex' `
         -Description 'Toggles the jigger filter between plain text and regex.' -ScriptBlock {
-        if ($script:Live -and -not $script:Dismissed -and (Test-JiggerLine (Get-JiggerBuffer))) {
-            $script:Regex = -not $script:Regex
-            $script:Sel = 0
-            $script:Frame = ''
-            Update-JiggerPopup
-        } else {
+        if (-not (Invoke-JiggerRegex)) {
             [Microsoft.PowerShell.PSConsoleReadLine]::ReverseSearchHistory()
         }
     }
@@ -996,4 +1047,5 @@ Set-Item -Path function:global:prompt -Value {
 # décide lui-même s'il y a quelque chose à faire.
 Start-JiggerBackground @('warm')
 
-Export-ModuleMember -Function Update-JiggerPrompt, Test-JiggerMutating
+Export-ModuleMember -Function Update-JiggerPrompt, Test-JiggerMutating, Invoke-JiggerRegex, `
+                              Update-JiggerPopup

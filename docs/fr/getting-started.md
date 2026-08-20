@@ -141,6 +141,43 @@ Puis recharge : `. $PROFILE`, ou ouvre un nouvel onglet.
 Une seule contrainte d'ordre, celle-ci réelle : si tu utilises oh-my-posh ou starship,
 importe jigger **après** lui (cf. § 8).
 
+Et une chose à savoir sur les touches : PSReadLine ne garde que le **dernier** relais lié
+à un raccourci. Un profil qui lie `^R` après l'import — une recherche d'historique via
+fzf, typiquement — reprend la touche, et la bascule regex devient injoignable.
+Propose-la-lui d'abord : elle dit elle-même si elle la veut.
+
+```powershell
+Set-PSReadLineKeyHandler -Chord Ctrl+r -ScriptBlock {
+    # $true sur une ligne winget/scoop : le popup est passé en regex. $false partout
+    # ailleurs — rien n'a été touché, la touche est à toi.
+    if (Invoke-JiggerRegex) { return }
+    Invoke-FzfHistory
+}
+```
+
+Le module ne peut pas s'en charger seul : d'un relais écrit en bloc de script, PSReadLine
+ne rend que la description, jamais le bloc — jigger n'a aucun moyen d'appeler le tien.
+Côté zsh, où `bindkey` rend le nom du widget, le greffon relève `^R` avant de le prendre
+et le lui rend de lui-même : rien à faire.
+
+Il en va de même des touches qui prennent l'écran puis rendent la ligne — un explorateur
+de fichiers sur `^U`, un sélecteur de lecteur sur `^D`. Leur relais remplace le nôtre tout
+autant, et le cadre reste derrière, périmé ou orphelin. `Update-JiggerPopup` le remet
+d'accord avec la ligne :
+
+```powershell
+Set-PSReadLineKeyHandler -Chord Ctrl+u -ScriptBlock {
+    yazi
+    [Microsoft.PowerShell.PSConsoleReadLine]::InvokePrompt()
+    Update-JiggerPopup
+}
+```
+
+Elle s'appelle sans la moindre précaution : hors ligne de gestionnaire, elle efface le
+cadre et rend la main, et elle ne lève jamais — une frappe n'a pas le droit de barrer
+l'écran de rouge. Les relais qui finissent sur `AcceptLine()` la veulent aussi, juste
+avant cet appel : sinon la sortie de la commande coupe le cadre en deux.
+
 ## 4. Vérifier que ça marche
 
 ```sh
@@ -181,7 +218,7 @@ scoop uninstall 7z
 | `↑` | remonte ; au premier candidat, rend le clavier au shell |
 | `^N` / `^P` | les mêmes, pour qui les préfère aux flèches |
 | `^G` | ferme le popup pour la ligne en cours (`⇥` le rouvre) |
-| `^R` | bascule le filtre entre texte brut et expression rationnelle. Le titre du cadre affiche `[regex]` tant que c'est actif, et la touche retourne à la recherche inverse du shell dès que le popup n'est pas là |
+| `^R` | bascule le filtre entre texte brut et expression rationnelle. Le titre du cadre affiche `[regex]` tant que c'est actif, et la touche retourne à la recherche inverse du shell dès que le popup n'est pas là. Sous PowerShell, un profil qui lie `^R` après l'import la reprend — cf. § 3 |
 
 Trois choses à savoir, qui font l'essentiel du confort :
 
@@ -476,6 +513,8 @@ comptage n'est pas terminé. Les réglages associés (`JIGGER_PROMPT_TTL`,
 | `jg` : « verbe inconnu » | ce n'est pas un des douze — `jg ⇥` les liste. La commande native, elle, s'écrit toujours en entier : `brew tap`, pas `jg tap` |
 | `jg` : « inconnu de brew » sur un paquet qui existe | le catalogue en cache est plus vieux que le paquet. `jg … --pm brew <nom>` passe outre, `jigger warm --all` remet le cache à jour |
 | `jg` : « gestionnaire indisponible pour ce verbe » | le `--pm` demandé n'est pas installé, ou ne sait pas faire ce verbe ; le message dit lesquels le savent |
+| `^R` ne bascule pas en regex sous PowerShell | ton profil lie `^R` après l'import et reprend la touche. `Get-PSReadLineKeyHandler -Bound` dit qui la tient : `jigger:regex`, c'est nous. Fais appeler `Invoke-JiggerRegex` par ce relais-là d'abord (§ 3) |
+| un cadre resté derrière après une autre touche | même cause : un relais lié après l'import a pris une touche que nous relayons. Termine-le par `Update-JiggerPopup` (§ 3) |
 
 Pour isoler un conflit avec un autre greffon de ligne d'édition, `JIGGER_LIVE=0` éteint
 tout ce qui touche à la frappe : seul ⇥ reste, et ouvre le sélecteur plein écran.
