@@ -159,8 +159,8 @@ $env:JIGGER_LIVE = '0'
 $env:JIGGER_ROWS = '12'
 $env:JIGGER_KEY  = 'Ctrl+Spacebar'   # noms de touches PSReadLine
 $env:JIGGER_LANG = 'fr'              # langue des messages : en ou fr
-$env:JIGGER_COMMANDS = 'winget,scoop'      # commandes qui déclenchent le popup
-                                           # (jigger et jg s'y ajoutent toujours)
+$env:JIGGER_COMMANDS = 'winget,scoop,ssh,scp,sftp'  # commandes qui déclenchent le popup
+                                                     # (jigger et jg s'y ajoutent toujours)
 $env:JIGGER_KEYS_EXTRA = 'éèçàù'           # touches à relayer en plus des ASCII
 ```
 

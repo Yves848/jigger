@@ -166,7 +166,7 @@ typeset -g _jigger_accept_widget=''                    # ce que ⏎ faisait
 # s'ajoutent à « brew » : l'expansion d'alias n'a pas encore eu lieu tant que la ligne
 # n'est pas exécutée, $LBUFFER contient donc « jg » tel quel — c'est lui qu'il faut
 # reconnaître, pas « jigger ».
-typeset -ga _jigger_commands=( brew jigger jg )
+typeset -ga _jigger_commands=( brew jigger jg ssh scp sftp )
 
 _jigger_is_watched() {
   local c
