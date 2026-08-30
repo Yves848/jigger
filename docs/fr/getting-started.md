@@ -394,7 +394,6 @@ Import-Module C:\chemin\vers\jigger\shell\jigger.psm1
 | `JIGGER_BIN` | `jigger` | le binaire que le greffon appelle. Utile en développement : le `bin` de Homebrew précède d'ordinaire `~/.local/bin`, si bien qu'un jigger fraîchement compilé ne serait jamais celui qui tourne |
 | `JIGGER_PAGER` | `1` | `0` désarme la vue paginée : les verbes qui listent impriment toujours la table brute |
 | `JIGGER_LANG` | la langue de ta locale | messages : `en` ou `fr`. Lu avant `LC_ALL`, `LC_MESSAGES` et `LANG` — c'est lui qui rend le français à un shell qui tourne en anglais. Ce que jigger ne sait pas traduire retombe sur l'anglais |
-
 | `JIGGER_COMMANDS` | zsh : `brew ssh scp sftp` · PowerShell : `winget,scoop,ssh,scp,sftp` | commandes qui déclenchent le popup, séparées par des espaces ou des virgules. `jigger` et `jg` s'ajoutent **toujours** à ce que tu poses : ce sont les commandes de jigger, les éteindre serait un défaut. `ssh`, `scp` et `sftp` figurent dans le défaut, pas dans la liste toujours-armée : ce sont des commandes tierces, et ce réglage existe justement pour que tu choisisses ce qui est intercepté. Les deux défauts diffèrent parce que les machines diffèrent — `brew` d'un côté, `winget` et `scoop` de l'autre |
 
 `JIGGER_COMMANDS` est aussi ce par quoi on éteint le **sélecteur SSH** :

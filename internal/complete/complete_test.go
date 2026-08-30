@@ -469,15 +469,18 @@ func TestFournisseurSansVerbesDisponibleNeSeTaitPas(t *testing.T) {
 }
 
 func TestGestionnaireAVerbesIndisponibleNeSeTaitPas(t *testing.T) {
-	// La regle ne vise que ce qui n'a RIEN a proposer. brew garde ses sous-commandes sur
-	// une machine sans Homebrew : c'est le comportement que pm.Manager.Available()
-	// promet, et le faire taire serait une regression sur les trois gestionnaires.
-	res := CompleteWith("brew ins", fauxAVerbesIndisponible{fauxManagerSansSub{"brew"}}, pm.NewCatalog())
-	if len(res.Items) != 1 || res.Items[0].Name != "install" {
-		t.Fatalf("Items = %v, attendu [install]", res.Items)
+	// Le cas qui compte est celui ou la liste est VIDE : c'est la seule facon d'atteindre
+	// la condition, donc la seule ou le garde-fou garde quelque chose. « brew zzz » ne
+	// correspond a aucune sous-commande, et brew est indisponible — si la regle oubliait
+	// d'exiger sansVerbes, le popup disparaitrait ici. Sur une machine sans Homebrew, un
+	// « winget zzz » sous Windows doit continuer d'afficher son cadre « aucune
+	// correspondance » plutot que de s'evanouir sous les doigts.
+	res := CompleteWith("brew zzz", fauxAVerbesIndisponible{fauxManagerSansSub{"brew"}}, pm.NewCatalog())
+	if len(res.Items) != 0 {
+		t.Fatalf("Items = %v, attendu aucune correspondance", res.Items)
 	}
 	if res.Silencieux {
-		t.Error("Silencieux = true pour un gestionnaire qui a des sous-commandes")
+		t.Error("Silencieux = true pour un gestionnaire a verbes : le cadre disparaitrait")
 	}
 }
 

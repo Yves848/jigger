@@ -130,6 +130,12 @@ le fournisseur se tait plutôt que de proposer une liste vide.
 
 Une ligne : `_jigger_commands=( brew jigger jg ssh scp sftp )`.
 
+> **Corrigé à la revue finale.** Cette liste était posée en dur, alors que tous les
+> autres réglages du greffon suivent l'idiome `: "${JIGGER_X:=…}"`. Sans surcharge
+> possible, un utilisateur ne pouvait pas éteindre l'interception. `JIGGER_COMMANDS`
+> suit désormais le même idiome sous zsh que sous PowerShell — une dizaine de lignes,
+> non pas une seule.
+
 Rien d'autre ne change côté zsh. La popup, les flèches, le rattrapage des frappes, la
 fermeture sur ⏎ — tout est déjà écrit et ne connaît pas la nature de ce qu'il affiche.
 
