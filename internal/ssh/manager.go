@@ -4,8 +4,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
-	"time"
 
 	"gitlab.yg-devworks.com/yves/jigger/internal/pm"
 )
@@ -38,7 +36,12 @@ func (Manager) InstalledOnly(string) bool { return false }
 // le fournisseur se tait plutôt que de proposer une liste vide.
 func (Manager) Available() bool { return disponible(cheminConfig()) }
 
-func (Manager) Load() *pm.Catalog { return catalogue() }
+// Load relit ~/.ssh/config à chaque appel. Pas de mémoïsation : jigger render tourne
+// dans un processus par frappe (cf. shell/jigger.plugin.zsh), donc Load() n'est jamais
+// appelée deux fois dans le même processus — un cache de paquet ne survivrait à aucune
+// frappe et ne protégerait rien. La spec (§4, « Pas de réchauffement ») l'annonce déjà :
+// lire ces quelques fragments coûte une milliseconde.
+func (Manager) Load() *pm.Catalog { return catalogueDe(cheminConfig()) }
 
 // Insert colle le deux-points qu'attend scp. `scp fichier archlight /tmp` copierait vers
 // un fichier LOCAL nommé archlight, en écrasant peut-être quelque chose — l'erreur est
@@ -71,32 +74,7 @@ func disponible(chemin string) bool {
 	return err == nil && !st.IsDir()
 }
 
-// Le catalogue est mémorisé et réévalué quand le fichier change. Load() est sur le
-// chemin du rendu : le relire à chaque frappe serait gaspiller, et le figer pour la
-// session ferait mentir le popup après un `reseau-outil rendre`.
-var (
-	mémo      *pm.Catalog
-	mémoQuand time.Time
-	mémoMu    sync.Mutex
-)
-
-func catalogue() *pm.Catalog {
-	chemin := cheminConfig()
-	mémoMu.Lock()
-	defer mémoMu.Unlock()
-
-	st, err := os.Stat(chemin)
-	if err != nil {
-		return pm.NewCatalog()
-	}
-	if mémo != nil && st.ModTime().Equal(mémoQuand) {
-		return mémo
-	}
-	mémo, mémoQuand = catalogueDe(chemin), st.ModTime()
-	return mémo
-}
-
-// catalogueDe construit le catalogue d'un fichier donné. Séparé de catalogue() pour être
+// catalogueDe construit le catalogue d'un fichier donné. Séparé de Load() pour être
 // testable sans toucher au ~/.ssh/config réel de la machine.
 func catalogueDe(chemin string) *pm.Catalog {
 	cat := pm.NewCatalog()

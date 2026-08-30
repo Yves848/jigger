@@ -58,6 +58,13 @@ func TestCatalogueDepuisUnFichier(t *testing.T) {
 	if got := cat.Badge("pve"); got != "" {
 		t.Errorf("Badge(pve) = %q, attendu vide", got)
 	}
+	// MarkInstalled poserait Installed[nom] = true sans toucher ni Badge ni
+	// Version : la substitution passerait toutes les autres assertions, et
+	// chaque hote gagnerait une pastille. Un serveur n'est ni installe ni
+	// absent — cette garde est la pour ca.
+	if len(cat.Installed) != 0 {
+		t.Errorf("Installed = %v, attendu vide", cat.Installed)
+	}
 }
 
 func TestInsertColleUnDeuxPointsPourScp(t *testing.T) {
