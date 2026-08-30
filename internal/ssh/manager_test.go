@@ -138,3 +138,21 @@ func TestAvailableSuitLExistenceDuFichier(t *testing.T) {
 		t.Error("disponible() = false sur un fichier présent")
 	}
 }
+
+func TestAvailablePasseParLeVraiCheminDeLaMachine(t *testing.T) {
+	// disponible() était testée, jamais Available() : la mutation « return true »
+	// survivait donc à toute la suite, et avec elle la promesse de la spec §4 — « sur
+	// une machine sans configuration SSH, le fournisseur se tait ». Ce test ferme le
+	// chemin complet, cheminConfig() compris.
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home) // os.UserHomeDir() sous Windows
+
+	if New("ssh").Available() {
+		t.Error("Available() = true sur un HOME sans .ssh/config")
+	}
+	ecrire(t, home, ".ssh/config", "Host x\n")
+	if !New("ssh").Available() {
+		t.Error("Available() = false alors que ~/.ssh/config existe")
+	}
+}

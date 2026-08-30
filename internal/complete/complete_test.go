@@ -2,6 +2,8 @@ package complete
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"gitlab.yg-devworks.com/yves/jigger/internal/brew"
@@ -378,13 +380,13 @@ func BenchmarkCompleteFacade(b *testing.B) {
 // fauxManagerSansSub est un fournisseur de complétion sans verbes, comme ssh.
 type fauxManagerSansSub struct{ cmd string }
 
-func (f fauxManagerSansSub) Cmd() string                              { return f.cmd }
-func (fauxManagerSansSub) Subcommands() []string                      { return nil }
-func (fauxManagerSansSub) Options(string) []string                    { return nil }
-func (fauxManagerSansSub) InstalledOnly(string) bool                  { return false }
-func (fauxManagerSansSub) Available() bool                            { return true }
-func (fauxManagerSansSub) Load() *pm.Catalog                          { return nil }
-func (fauxManagerSansSub) Warm(pm.Scope) error                        { return nil }
+func (f fauxManagerSansSub) Cmd() string                               { return f.cmd }
+func (fauxManagerSansSub) Subcommands() []string                       { return nil }
+func (fauxManagerSansSub) Options(string) []string                     { return nil }
+func (fauxManagerSansSub) InstalledOnly(string) bool                   { return false }
+func (fauxManagerSansSub) Available() bool                             { return true }
+func (fauxManagerSansSub) Load() *pm.Catalog                           { return nil }
+func (fauxManagerSansSub) Warm(pm.Scope) error                         { return nil }
 func (fauxManagerSansSub) Insert(_ *pm.Catalog, _, _, n string) string { return n }
 
 func catalogueHotes() *pm.Catalog {
@@ -425,5 +427,84 @@ func TestSansSousCommandeNEstJamaisExecutable(t *testing.T) {
 	res := CompleteWith("ssh arch", fauxManagerSansSub{"ssh"}, catalogueHotes())
 	if res.Executable {
 		t.Error("Executable = true pour un fournisseur sans verbes")
+	}
+}
+
+// fauxIndisponible est le meme fournisseur sans verbes, mais sur une machine qui n'a pas
+// sa configuration : c'est ce qu'est ssh sans ~/.ssh/config.
+type fauxIndisponible struct{ fauxManagerSansSub }
+
+func (fauxIndisponible) Available() bool { return false }
+
+// fauxAVerbesIndisponible a des sous-commandes et n'est pas installe : c'est brew sur une
+// machine sans Homebrew, cas que pm.Manager.Available() documente comme devant rester
+// complete (« la completion repond pour tous »).
+type fauxAVerbesIndisponible struct{ fauxManagerSansSub }
+
+func (fauxAVerbesIndisponible) Subcommands() []string { return []string{"install", "search"} }
+func (fauxAVerbesIndisponible) Available() bool       { return false }
+
+func TestFournisseurSansVerbesIndisponibleSeTait(t *testing.T) {
+	// Sans cette regle, chaque frappe d'une ligne ssh sur une machine sans
+	// ~/.ssh/config dessinait un cadre « aucun candidat » sous le prompt.
+	res := CompleteWith("ssh serv", fauxIndisponible{fauxManagerSansSub{"ssh"}}, pm.NewCatalog())
+	if len(res.Items) != 0 {
+		t.Fatalf("Items = %v, attendu aucun", res.Items)
+	}
+	if !res.Silencieux {
+		t.Error("Silencieux = false : le popup dessinerait une boite vide a chaque frappe")
+	}
+}
+
+func TestFournisseurSansVerbesDisponibleNeSeTaitPas(t *testing.T) {
+	// Une liste vide n'est pas un silence quand le fournisseur est la : « ssh zzz » sur
+	// une vraie configuration doit dire « aucun candidat », pas disparaitre.
+	res := CompleteWith("ssh zzz", fauxManagerSansSub{"ssh"}, catalogueHotes())
+	if len(res.Items) != 0 {
+		t.Fatalf("Items = %v, attendu aucun", res.Items)
+	}
+	if res.Silencieux {
+		t.Error("Silencieux = true alors que le fournisseur est disponible")
+	}
+}
+
+func TestGestionnaireAVerbesIndisponibleNeSeTaitPas(t *testing.T) {
+	// La regle ne vise que ce qui n'a RIEN a proposer. brew garde ses sous-commandes sur
+	// une machine sans Homebrew : c'est le comportement que pm.Manager.Available()
+	// promet, et le faire taire serait une regression sur les trois gestionnaires.
+	res := CompleteWith("brew ins", fauxAVerbesIndisponible{fauxManagerSansSub{"brew"}}, pm.NewCatalog())
+	if len(res.Items) != 1 || res.Items[0].Name != "install" {
+		t.Fatalf("Items = %v, attendu [install]", res.Items)
+	}
+	if res.Silencieux {
+		t.Error("Silencieux = true pour un gestionnaire qui a des sous-commandes")
+	}
+}
+
+func TestSshSeTaitSansConfigurationSSH(t *testing.T) {
+	// Le vrai chemin, de bout en bout : Complete → managers.Detect → ssh.Manager. C'est
+	// le test qui tombe si ssh.Available() est mutee en « return true », mutation a
+	// laquelle toute la suite survivait jusqu'ici.
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home) // os.UserHomeDir() sous Windows
+
+	if res := Complete("ssh serv"); !res.Silencieux {
+		t.Errorf("Silencieux = false sans ~/.ssh/config (Items = %v)", res.Items)
+	}
+
+	if err := os.MkdirAll(filepath.Join(home, ".ssh"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	cfg := filepath.Join(home, ".ssh", "config")
+	if err := os.WriteFile(cfg, []byte("Host serveur\n    HostName 10.0.0.1\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	res := Complete("ssh serv")
+	if res.Silencieux {
+		t.Error("Silencieux = true alors que ~/.ssh/config existe")
+	}
+	if len(res.Items) != 1 || res.Items[0].Name != "serveur" {
+		t.Fatalf("Items = %v, attendu [serveur]", res.Items)
 	}
 }

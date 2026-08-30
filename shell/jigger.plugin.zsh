@@ -162,11 +162,31 @@ typeset -gi _jigger_focused=0   # le popup a-t-il le clavier ? (cf. _jigger_step
 typeset -g _jigger_up_widget='' _jigger_down_widget='' # ce que les flèches faisaient
 typeset -g _jigger_accept_widget=''                    # ce que ⏎ faisait
 
-# Commandes qui arment le popup vivant. « jigger » et son alias « jg » (posé plus haut)
-# s'ajoutent à « brew » : l'expansion d'alias n'a pas encore eu lieu tant que la ligne
-# n'est pas exécutée, $LBUFFER contient donc « jg » tel quel — c'est lui qu'il faut
-# reconnaître, pas « jigger ».
-typeset -ga _jigger_commands=( brew jigger jg ssh scp sftp )
+# Commandes qui arment le popup vivant. Même réglage et même idiome que les autres —
+# posé avant le `source`, il gagne — et mêmes règles que sous PowerShell, où
+# JIGGER_COMMANDS existe depuis la façade. Les noms se séparent par des espaces ou des
+# virgules, indifféremment : le module PowerShell accepte les deux, ce greffon aussi.
+#
+# `ssh`, `scp` et `sftp` sont dans le DÉFAUT, pas dans la liste toujours armée du bloc
+# suivant. Ce n'est pas un oubli : ce sont des commandes TIERCES, que l'utilisateur peut
+# légitimement ne pas vouloir voir interceptées — c'est justement à quoi sert ce réglage
+# (ADR-0005). Jusqu'ici la liste était figée par un `typeset -ga` inconditionnel : une
+# valeur posée dans ~/.zshrc était écrasée, et le seul recours était ^G, ligne par ligne.
+#
+# La liste diffère de celle de PowerShell parce que les machines diffèrent : `brew` ici,
+# `winget` et `scoop` là-bas.
+: "${JIGGER_COMMANDS:=brew ssh scp sftp}"
+typeset -ga _jigger_commands=( ${=JIGGER_COMMANDS//,/ } )
+
+# « jigger » et son alias « jg » (posé plus haut) s'ajoutent TOUJOURS à ce que
+# l'utilisateur a posé : ce sont les commandes DE jigger, les éteindre serait un défaut,
+# et le module PowerShell les force de la même façon. L'expansion d'alias n'a pas encore
+# eu lieu tant que la ligne n'est pas exécutée, $LBUFFER contient donc « jg » tel quel —
+# c'est lui qu'il faut reconnaître, pas « jigger ».
+for _jigger_cmd in jigger jg; do
+  (( ${_jigger_commands[(I)$_jigger_cmd]} )) || _jigger_commands+=( $_jigger_cmd )
+done
+unset _jigger_cmd
 
 _jigger_is_watched() {
   local c

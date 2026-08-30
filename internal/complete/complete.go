@@ -29,6 +29,13 @@ type Result struct {
 	Executable bool   // contexte paquet → accepter complète une commande exécutable
 	Note       string // message à afficher à la place de « aucun candidat »
 
+	// Silencieux dit que le fournisseur n'a rien à dire du tout — pas même « aucun
+	// candidat ». `jigger render` n'émet alors aucun cadre, et les deux greffons
+	// effacent ce qui restait à l'écran. C'est ce qui évite qu'une boîte vide clignote
+	// sous le prompt à chaque frappe d'une ligne `ssh` sur une machine sans
+	// ~/.ssh/config.
+	Silencieux bool
+
 	mgr pm.Manager
 	cat *pm.Catalog
 
@@ -295,6 +302,24 @@ func completeWith(line string, m pm.Manager, cat *pm.Catalog, regex bool) Result
 		if len(res.Items) == 0 {
 			res.Note = cat.Note
 		}
+	}
+
+	// Un fournisseur sans verbes qui n'est pas disponible n'a rien à proposer : ni
+	// sous-commande, ni option, ni catalogue. Plutôt que de dessiner « aucun candidat »
+	// à chaque frappe, il se tait — c'est la promesse de la spec du 30 août (§4) :
+	// « sur une machine sans configuration SSH, le fournisseur se tait plutôt que de
+	// proposer une liste vide ».
+	//
+	// La règle ne touche pas brew, winget ni scoop : tous trois déclarent des
+	// sous-commandes, donc `brew inst` reste complété sur une machine sans Homebrew —
+	// ce que pm.Manager.Available() documente (« la complétion répond pour tous »). Ce
+	// qui se tait ici, c'est le fournisseur qui n'a littéralement rien d'autre à dire.
+	//
+	// La question n'est posée QUE sur une liste vide : dans le cas nominal — des hôtes à
+	// proposer — Available() n'est jamais appelée, et la correction n'ajoute donc aucun
+	// accès disque par frappe.
+	if sansVerbes && len(res.Items) == 0 && !m.Available() {
+		res.Silencieux = true
 	}
 	return res
 }

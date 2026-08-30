@@ -535,6 +535,17 @@ func runRender(args []string) int {
 
 	res := complete.CompleteAvec(*line, *regex)
 
+	// Un fournisseur qui se tait ne fait dessiner aucun cadre : on n'émet que la ligne
+	// de métadonnées. C'est le protocole que les deux greffons connaissent déjà — une
+	// sortie d'une seule ligne vaut « rien à afficher », et ils effacent ce qui restait
+	// (`_jigger_fetch` de jigger.plugin.zsh, `Get-JiggerFrame` de jigger.psm1). Sans
+	// cela, une machine sans ~/.ssh/config voyait une boîte « aucun candidat »
+	// apparaître sous chaque frappe d'une ligne ssh, scp ou sftp.
+	if res.Silencieux {
+		fmt.Printf("count=0\tsel=-1\texec=%s\tleft=%s\n", boolField(false), *line)
+		return 0
+	}
+
 	// Le pied dit où ira la prochaine flèche : sans le focus, ↓ sert à entrer dans la
 	// liste (↑ reste l'historique) ; avec, les deux parcourent les candidats.
 	navigation := ui.Key{Key: "↓", Label: i18n.T("popup.browse")}
