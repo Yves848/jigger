@@ -11,14 +11,22 @@ shell: the moment you type a package-manager command, a **popup**
 offering the right candidates for the context. ⇥ inserts the current candidate into the
 line — you never have to ask for it.
 
-| Platform | Shell | Managers |
+| Platform | Shell | Completed commands |
 |---|---|---|
 | macOS, Linux | zsh (`shell/jigger.plugin.zsh`) | [Homebrew](https://brew.sh) |
 | Windows | PowerShell (`shell/jigger.psm1`) | [winget](https://learn.microsoft.com/windows/package-manager/), [scoop](https://scoop.sh) |
+| both | both | `ssh`, `scp`, `sftp` — the servers of your `~/.ssh/config` |
 
-The **first word of the line** decides: `brew`, `winget`, or `scoop`. Each one brings its
-own subcommands, options, and catalog; everything else — the popup, the keys, the prompt
+The **first word of the line** decides: `brew`, `winget`, `scoop` — and `ssh`, `scp` or
+`sftp`, whose candidates are servers rather than packages. Each one brings its own
+subcommands, options, and catalog; everything else — the popup, the keys, the prompt
 block — is shared.
+
+jigger never *runs* `ssh`: it completes the line you will run yourself, and stays out of
+the way when there's nothing to say — no `~/.ssh/config`, no popup. Which commands get
+intercepted is yours to choose, in both shells, through `JIGGER_COMMANDS`
+([settings](#settings)). See [ADR-0005](docs/adr/0005-completion-sans-facade.md): the
+completion contract is not reserved for package managers.
 
 Command-line companion to the **Cocktails** GUI app, but **fully independent**: it needs
 nothing but the package manager itself.
@@ -31,6 +39,12 @@ nothing but the package manager itself.
   - after `uninstall`, `upgrade`, `pin`… → only **installed** packages;
   - after `-` → the subcommand's **options** (`winget install --exact`,
     `brew list --versions`…).
+- **An SSH server picker**: type `ssh `, `scp ` or `sftp ` and the popup offers the hosts
+  declared in `~/.ssh/config` — `Include` directives followed, `Host *` and other patterns
+  left out — each one showing its `HostName` alongside. A command with no verb puts its
+  operand right after the command name, so the catalog comes straight away. `scp` inserts
+  `host:`, colon attached, because `scp file host /tmp` would silently copy to a *local*
+  file named `host`. On a machine with no `~/.ssh/config`, nothing shows up at all.
 - **Badges** and an **"installed" indicator** in the picker: ◆ for the ordinary case
   (formula, catalog package on winget, `main` bucket), ▣ for the other one (cask,
   application detected outside the catalog, third-party bucket).
@@ -153,6 +167,9 @@ JIGGER_LIVE=0     # disables the live popup: ⇥ opens the full-screen picker
 JIGGER_ROWS=12    # candidates shown (default 8; reduced if the terminal is short)
 JIGGER_KEY='^ '   # insertion key (default Tab)
 JIGGER_LANG=fr    # message language: en or fr
+JIGGER_COMMANDS='brew ssh'   # commands that trigger the popup (default
+                             # 'brew ssh scp sftp'; jigger and jg are always added).
+                             # This is how you turn the SSH picker off.
 ```
 
 ```powershell
