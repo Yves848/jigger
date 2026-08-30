@@ -127,9 +127,9 @@ var catalogue = map[string][nbLangues]string{
 	// « tout » plutôt que « tout cocher » : le pied du cadre a une largeur à tenir, et
 	// la touche est à côté de son libellé.
 	"table.toggleall": {"all", "tout"},
-	"table.confirm": {"confirm", "valider"},
-	"table.page":    {"page", "page"},
-	"table.regex":   {"regex", "regex"},
+	"table.confirm":   {"confirm", "valider"},
+	"table.page":      {"page", "page"},
+	"table.regex":     {"regex", "regex"},
 	// Le mode courant, affiché en permanence : « texte » est le mode par défaut, celui
 	// que le sélecteur a toujours eu.
 	"table.modetexte": {"text", "texte"},
@@ -164,9 +164,9 @@ var catalogue = map[string][nbLangues]string{
 	// « interroge brew » depuis toujours ; faux depuis la façade multi-gestionnaires, qui
 	// interroge aussi bien winget et scoop. Aide de drapeau : hors du banc de
 	// non-régression, le français peut donc être corrigé.
-	"cli.flag_refresh":  {"query the manager and rewrite the cache (slow)", "interroge le gestionnaire et réécrit le cache (lent)"},
-	"cli.flag_wait":     {"with --refresh: wait for the lock instead of giving up", "avec --refresh : attend le verrou au lieu de renoncer"},
-	"cli.flag_path":     {"print the cache file path", "imprime le chemin du fichier de cache"},
+	"cli.flag_refresh":     {"query the manager and rewrite the cache (slow)", "interroge le gestionnaire et réécrit le cache (lent)"},
+	"cli.flag_wait":        {"with --refresh: wait for the lock instead of giving up", "avec --refresh : attend le verrou au lieu de renoncer"},
+	"cli.flag_path":        {"print the cache file path", "imprime le chemin du fichier de cache"},
 	"cli.flag_export":      {"print the lines the shell plugin evaluates", "imprime les lignes que le greffon évalue"},
 	"cli.flag_shell":       {"which shell the export targets: zsh or powershell", "shell visé par l'export : zsh ou powershell"},
 	"cli.flag_config_path": {"print the configuration file path", "imprime le chemin du fichier de configuration"},
@@ -205,7 +205,7 @@ var catalogue = map[string][nbLangues]string{
 	"cfg.grp_shell":  {"Shell plugin", "Greffon du shell"},
 	"cfg.grp_seen":   {"Your installation", "Ton installation"},
 	// %s est le chemin du fichier.
-	"cfg.written": {"written to %s\n", "écrit dans %s\n"},
+	"cfg.written":       {"written to %s\n", "écrit dans %s\n"},
 	"cli.flag_regex":    {"filter package names as a regular expression", "filtre les noms de paquets en expression rationnelle"},
 	"cli.flag_line":     {"line to complete (up to the cursor)", "ligne à compléter (jusqu'au curseur)"},
 	"cli.flag_sel":      {"index of the current candidate", "index du candidat courant"},

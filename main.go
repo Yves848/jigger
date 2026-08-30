@@ -34,8 +34,8 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/x/term"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/term"
 	"github.com/muesli/termenv"
 
 	"gitlab.yg-devworks.com/yves/jigger/internal/complete"
@@ -285,7 +285,6 @@ func demanderElevation(r *facade.Rejeu) bool {
 	m := final.(ui.Model)
 	return m.Chosen != nil && m.Chosen.Name == oui
 }
-
 
 // afficherPagine ouvre la vue paginée si les conditions sont réunies, et dit si elle
 // s'en est chargée. Un « false » renvoie l'appelant à la table brute — le comportement
