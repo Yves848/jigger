@@ -80,8 +80,31 @@ fonctionnalité.
 | Champ | Contenu |
 |---|---|
 | `Names` | les motifs `Host` sans joker, triés |
-| `Badges` | le `HostName` du bloc, quand il diffère du nom |
-| `Installed`, `Versions`, `Qualified` | vides — ces notions n'ont pas de sens ici |
+| `Versions` | le `HostName` du bloc, quand il diffère du nom |
+| `Badges` | vide — le glyphe `•` en découle, et il convient |
+| `Installed`, `Qualified` | vides — ces notions n'ont pas de sens ici |
+
+### Pourquoi `Versions` porte une adresse
+
+`Badge` n'est pas du texte libre : `glyphe()` le traduit en `◆` (formula, winget, bucket
+main), `▣` (cask, autre) ou `•` par défaut. Un hôte n'appartient à aucune des deux classes
+de paquets — le `•` est donc exactement juste, sans qu'on ait rien à déclarer.
+
+Le seul champ rendu en **texte libre à droite de la ligne** est `Versions` :
+
+```go
+if it.Version != "" {
+    right = verStylePkg.Render(it.Version)
+}
+```
+
+C'est donc lui qui porte le `HostName`, et le popup affiche `archlight   192.168.50.207`.
+
+**Le nom du champ ment, et c'est assumé.** L'alternative — renommer `Version` en `Detail`
+dans `pm.Item` — toucherait les trois gestionnaires, l'UI et les tests de rendu pour un
+gain de vocabulaire, bien au-delà du périmètre d'un sélecteur SSH. Le code qui remplit ce
+champ porte un commentaire disant ce qu'il y met et pourquoi ; c'est le prix de ne pas
+refactoriser un projet qui marche pour y greffer une fonctionnalité.
 
 ### Ce qu'on lit, et ce qu'on écarte
 
