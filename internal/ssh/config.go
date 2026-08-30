@@ -1,9 +1,9 @@
 // Package ssh lit ~/.ssh/config pour en tirer les serveurs connus, et les propose
 // comme catalogue de complétion.
 //
-// Ce fournisseur n'exécute rien : il implémente pm.Manager et jamais pm.Bindings.
-// C'est la décision de l'ADR-0005 — le contrat de complétion n'est pas réservé aux
-// gestionnaires de paquets.
+// Ce fournisseur n'exécutera rien : il servira de catalogue de complétion en
+// implémentant pm.Manager, jamais pm.Bindings. C'est la décision de l'ADR-0005 — le
+// contrat de complétion n'est pas réservé aux gestionnaires de paquets.
 package ssh
 
 import (
@@ -93,7 +93,7 @@ func lireDans(chemin string, vus map[string]string, visites map[string]bool) {
 			}
 		case "include":
 			for _, motif := range champs[1:] {
-				for _, p := range résoudreInclude(motif, base) {
+				for _, p := range fichiersInclus(motif, base) {
 					lireDans(p, vus, visites)
 				}
 			}
@@ -107,10 +107,11 @@ func estMotif(s string) bool {
 	return strings.ContainsAny(s, "*?!")
 }
 
-// résoudreInclude rend les fichiers désignés. OpenSSH résout un chemin relatif depuis
-// ~/.ssh/ pour la configuration utilisateur ; on prend le répertoire du fichier qui
-// inclut, ce qui revient au même dans le cas ordinaire et reste juste pour les tests.
-func résoudreInclude(motif, base string) []string {
+// fichiersInclus rend les fichiers désignés par un motif Include. OpenSSH résout un
+// chemin relatif depuis ~/.ssh/ pour la configuration utilisateur ; on prend le
+// répertoire du fichier qui inclut, ce qui revient au même dans le cas ordinaire et
+// reste juste pour les tests.
+func fichiersInclus(motif, base string) []string {
 	if strings.HasPrefix(motif, "~/") {
 		if home, err := os.UserHomeDir(); err == nil {
 			motif = filepath.Join(home, motif[2:])

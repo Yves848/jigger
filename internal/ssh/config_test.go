@@ -146,7 +146,8 @@ func TestLireUnFichierAbsentRendVide(t *testing.T) {
 }
 
 func TestLireHostSansHostName(t *testing.T) {
-	// Un bloc peut n'avoir que son nom : c'est valide, HostName vaut alors le nom.
+	// Un bloc peut n'avoir que son nom : c'est valide, HostName reste alors vide,
+	// et c'est au consommateur de decider quoi en faire.
 	d := t.TempDir()
 	p := ecrire(t, d, "config", "Host solo\n    User root\n")
 	hotes := Lire(p)
