@@ -63,13 +63,9 @@ func lireDans(chemin string, vus map[string]string, visites map[string]bool) {
 
 	sc := bufio.NewScanner(f)
 	for sc.Scan() {
-		ligne := strings.TrimSpace(sc.Text())
-		if ligne == "" || strings.HasPrefix(ligne, "#") {
-			continue
-		}
 		// OpenSSH accepte « Host x », « Host=x » et est insensible à la casse.
-		ligne = strings.ReplaceAll(ligne, "=", " ")
-		champs := strings.Fields(ligne)
+		ligne := strings.ReplaceAll(strings.TrimSpace(sc.Text()), "=", " ")
+		champs := champsUtiles(ligne)
 		if len(champs) < 2 {
 			continue
 		}
@@ -85,6 +81,19 @@ func lireDans(chemin string, vus map[string]string, visites map[string]bool) {
 					vus[motif] = ""
 				}
 			}
+		case "match":
+			// Un bloc Match ferme le bloc Host précédent : ses mots-clés ne s'appliquent
+			// à aucun des motifs de celui-ci. Sans cette remise à zéro, « Host web »
+			// suivi de « Match host *.interne / HostName bastion.example.com » affichait
+			// l'adresse du bastion en regard de web, alors que `ssh -G web` répond
+			// « hostname web ». L'asymétrie était le défaut : `case "host"` remettait
+			// bien `courants` à nil, `match` non.
+			//
+			// jigger n'évalue PAS les conditions du Match — réimplémenter la logique
+			// d'OpenSSH (host, exec, final, canonical…) n'est pas son objet. Il lui
+			// suffit de cesser d'attribuer à tort : les mots-clés d'un Match ne
+			// concernent aucun candidat du popup.
+			courants = nil
 		case "hostname":
 			for _, n := range courants {
 				if vus[n] == "" {
@@ -99,6 +108,27 @@ func lireDans(chemin string, vus map[string]string, visites map[string]bool) {
 			}
 		}
 	}
+}
+
+// champsUtiles découpe une ligne en mots, amputée de son commentaire de fin de ligne.
+//
+// OpenSSH ne voit un commentaire que là où le « # » OUVRE un mot : « Host pve  # le
+// proxmox du salon » ne déclare que le motif « pve », tandis que « Host a#b » déclare
+// bien le motif « a#b » — les deux vérifiés à l'`ssh -G` de la machine (OpenSSH 10.2p1).
+// Sans cette coupe, chaque mot du commentaire devenait un candidat du popup, porteur de
+// l'adresse du bloc : ⇥ posait alors un nom qui ne résoudrait jamais.
+//
+// Le cas du commentaire en pleine ligne (« # ceci est un titre ») passe par le même
+// chemin : les mots restants sont vides, et l'appelant écarte toute ligne de moins de
+// deux mots.
+func champsUtiles(ligne string) []string {
+	champs := strings.Fields(ligne)
+	for i, c := range champs {
+		if strings.HasPrefix(c, "#") {
+			return champs[:i]
+		}
+	}
+	return champs
 }
 
 // estMotif dit si un mot est un gabarit plutôt qu'un serveur. `Host *` est un bloc de
