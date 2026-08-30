@@ -398,7 +398,7 @@ Two settings exist only under PowerShell, for lack of a useful zsh equivalent:
 
 | Variable | Default | Role |
 |---|---|---|
-| `JIGGER_COMMANDS` | `winget,scoop` | commands that trigger the popup. `jigger` and `jg` are **always** added to whatever you set: the facade would otherwise go dark for anyone who once wrote the default out by hand |
+| `JIGGER_COMMANDS` | `winget,scoop,ssh,scp,sftp` | commands that trigger the popup. `jigger` and `jg` are **always** added to whatever you set — they're jigger's own commands, and turning them off would be a bug. `ssh`, `scp` and `sftp` live in the default instead, not among the always-on ones: they're third-party commands, and `JIGGER_COMMANDS` exists precisely so you can choose whether they get intercepted |
 | `JIGGER_KEYS_EXTRA` | `éèêàçùâîôûëïüö°²µ§£€` | keys relayed in addition to printable ASCII |
 
 `JIGGER_KEYS_EXTRA` deserves a note: PSReadLine offers no hook called on every

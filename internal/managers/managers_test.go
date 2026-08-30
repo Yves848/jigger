@@ -12,7 +12,7 @@ func TestAllContientLesTroisCommandesSSH(t *testing.T) {
 			t.Errorf("%q absent de All()", c)
 		}
 	}
-	// Les trois gestionnaires de paquets restent la.
+	// Les trois gestionnaires de paquets restent là.
 	for _, c := range []string{"brew", "winget", "scoop"} {
 		if !vus[c] {
 			t.Errorf("%q disparu de All()", c)

@@ -58,6 +58,12 @@ $script:Rows       = [int](Get-JiggerSetting 'JIGGER_ROWS' 8)
 $script:MinColumns = [int](Get-JiggerSetting 'JIGGER_MIN_COLUMNS' 30)
 $script:InsertKey  = Get-JiggerSetting 'JIGGER_KEY' 'Tab'
 if ($script:InsertKey -eq '^I') { $script:InsertKey = 'Tab' }   # notation zsh, acceptée telle quelle
+# `ssh`, `scp` et `sftp` sont dans le DÉFAUT ci-dessous, pas dans la liste toujours-armée
+# du bloc qui suit (`jigger`, `jg`). Ce n'est pas un oubli : `jigger` et `jg` sont les
+# commandes DE jigger, les armer d'office va de soi et les éteindre serait un défaut
+# (raison A-1 ci-dessous). `ssh`/`scp`/`sftp` sont des commandes TIERCES, que
+# l'utilisateur peut légitimement ne pas vouloir voir interceptées — c'est justement ce à
+# quoi sert JIGGER_COMMANDS. Les forcer lui retirerait ce choix. Voir l'ADR-0005.
 $script:Commands   = @((Get-JiggerSetting 'JIGGER_COMMANDS' 'winget,scoop,ssh,scp,sftp') -split '[,\s]+' |
                         Where-Object { $_ })
 

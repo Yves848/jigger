@@ -392,7 +392,7 @@ Deux réglages n'existent que sous PowerShell, faute d'équivalent utile côté 
 
 | Variable | Défaut | Rôle |
 |---|---|---|
-| `JIGGER_COMMANDS` | `winget,scoop` | commandes qui déclenchent le popup. `jigger` et `jg` s'ajoutent **toujours** à ce que tu poses : sans quoi la façade s'éteindrait chez quiconque a un jour recopié le défaut à la main |
+| `JIGGER_COMMANDS` | `winget,scoop,ssh,scp,sftp` | commandes qui déclenchent le popup. `jigger` et `jg` s'ajoutent **toujours** à ce que tu poses : ce sont les commandes de jigger, les éteindre serait un défaut. `ssh`, `scp` et `sftp` figurent dans le défaut, pas dans la liste toujours-armée : ce sont des commandes tierces, et `JIGGER_COMMANDS` existe justement pour que tu choisisses ce qui est intercepté |
 | `JIGGER_KEYS_EXTRA` | `éèêàçùâîôûëïüö°²µ§£€` | touches relayées en plus des ASCII imprimables |
 
 `JIGGER_KEYS_EXTRA` mérite un mot : PSReadLine n'offre aucun crochet appelé à chaque
