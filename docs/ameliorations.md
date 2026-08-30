@@ -24,6 +24,22 @@ porte l'inverse : ce qui n'est pas encore fait.
 
 ## À faire
 
+### A-25 — Un sélecteur de serveurs SSH
+
+**Priorité :** à déterminer · **Provenance :** demande du 30 août
+
+Proposer les serveurs connus dès qu'on tape `ssh`, comme jigger propose déjà les formules
+dès qu'on tape `brew` — même popup, mêmes touches, même greffon. `scp` et `sftp` suivent, à
+ceci près que leur cible s'écrit `hôte:`.
+
+Ce n'est pas un gestionnaire de paquets, et c'est tout l'intérêt de l'entrée :
+[l'ADR-0005](adr/0005-completion-sans-facade.md) tranche que le contrat de complétion
+`pm.Manager` n'est pas réservé aux gestionnaires, et qu'un fournisseur peut l'implémenter
+sans jamais implémenter `pm.Bindings`. La façade reste un vocabulaire de gestion de
+paquets ; la complétion, non.
+
+Conception complète : [spec du 30 août](specs/2026-08-30-selecteur-ssh-design.md).
+
 ### A-2 — Prouver `cleanup *` et `bucket rm` contre scoop
 
 **Priorité :** à déterminer · **Provenance :** réserve publiée avec la v0.8.0
