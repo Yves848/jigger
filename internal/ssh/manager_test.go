@@ -2,6 +2,7 @@ package ssh
 
 import (
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"gitlab.yg-devworks.com/yves/jigger/internal/pm"
@@ -65,6 +66,42 @@ func TestCatalogueDepuisUnFichier(t *testing.T) {
 	if len(cat.Installed) != 0 {
 		t.Errorf("Installed = %v, attendu vide", cat.Installed)
 	}
+}
+
+func TestLesNomsPassentAvantLesAdresses(t *testing.T) {
+	d := t.TempDir()
+	// Trois motifs sur la meme ligne Host, comme le genere le fragment reseau du
+	// depot config : le nom, un alias, et l'adresse elle-meme en motif.
+	p := ecrire(t, d, "config", "Host zzz archlight 192.168.50.207\n")
+	cat := catalogueDe(p)
+
+	// Sans repousserLesAdresses, cat.Sort() (alphabetique) placerait l'adresse en
+	// tete : les chiffres precedent les lettres. « archlight » et « zzz » d'abord,
+	// dans leur ordre alphabetique habituel ; l'adresse ensuite.
+	egal(t, cat.Names, []string{"archlight", "zzz", "192.168.50.207"})
+}
+
+func TestLesAdressesSontTrieesNumeriquement(t *testing.T) {
+	d := t.TempDir()
+	p := ecrire(t, d, "config", "Host a 192.168.50.10\nHost b 192.168.50.8\n")
+	cat := catalogueDe(p)
+
+	// Un tri lexicographique placerait .10 avant .8 (« 1 » < « 8 »). Ce test rate si
+	// le tri numerique est absent ou inverse.
+	egal(t, cat.Names, []string{"a", "b", "192.168.50.8", "192.168.50.10"})
+}
+
+func TestUneAdresseResteUnCandidat(t *testing.T) {
+	d := t.TempDir()
+	p := ecrire(t, d, "config", "Host archlight 192.168.50.207\n")
+	cat := catalogueDe(p)
+
+	for _, n := range cat.Names {
+		if strings.HasPrefix(n, "192.") {
+			return
+		}
+	}
+	t.Errorf("aucune adresse dans %v, attendu 192.168.50.207 conservee comme candidat", cat.Names)
 }
 
 func TestInsertColleUnDeuxPointsPourScp(t *testing.T) {

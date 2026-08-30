@@ -1,8 +1,11 @@
 package ssh
 
 import (
+	"bytes"
+	"net"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"gitlab.yg-devworks.com/yves/jigger/internal/pm"
@@ -91,5 +94,40 @@ func catalogueDe(chemin string) *pm.Catalog {
 		}
 	}
 	cat.Sort()
+	repousserLesAdresses(cat)
 	return cat
+}
+
+// repousserLesAdresses pousse après les noms les motifs qui sont eux-mêmes des adresses.
+// Un fragment généré peut écrire « Host archlight aquarium 192.168.50.207 » pour que
+// `ssh 192.168.50.207` profite du même bloc que `ssh archlight` (cf. le générateur du
+// dépôt config, tools/reseau) : le parseur retient les trois motifs, comme la spec le
+// demande (§4). Sans ce tri, cat.Sort() range les adresses en tête — les chiffres
+// précèdent les lettres — et le popup s'ouvrait sur une poignée d'adresses avant le
+// premier nom lisible, qui est ce qu'un humain cherche en général. L'adresse reste un
+// candidat à part entière : filtrer sur « 192. » la retrouve toujours, elle ne passe
+// simplement plus devant à l'ouverture.
+//
+// Entre elles, les adresses reviennent à un ordre numérique plutôt qu'alphabétique :
+// cat.Sort() placerait 192.168.50.10 avant 192.168.50.8, ce qui saute aux yeux dès qu'on
+// parcourt la liste. net.ParseIP().To16() rend une représentation à largeur fixe,
+// comparable octet à octet — IPv4 et IPv6 compris, sans expression régulière à tenir.
+func repousserLesAdresses(cat *pm.Catalog) {
+	noms := make([]string, 0, len(cat.Names))
+	adresses := make([]string, 0)
+	for _, n := range cat.Names {
+		if net.ParseIP(n) != nil {
+			adresses = append(adresses, n)
+		} else {
+			noms = append(noms, n)
+		}
+	}
+	if len(adresses) == 0 {
+		return
+	}
+	sort.Slice(adresses, func(i, j int) bool {
+		a, b := net.ParseIP(adresses[i]).To16(), net.ParseIP(adresses[j]).To16()
+		return bytes.Compare(a, b) < 0
+	})
+	cat.Names = append(noms, adresses...)
 }

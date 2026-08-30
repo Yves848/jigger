@@ -969,7 +969,7 @@ Expected : un cadre contenant les hôtes dont le nom commence par `arch`, chacun
 - [ ] **Step 2 : La complétion, sur les trois commandes**
 
 ```bash
-for c in ssh scp sftp; do echo "--- $c"; /tmp/jigger-ssh complete --line "$c " ; done
+for c in ssh scp sftp; do echo "--- $c"; /tmp/jigger-ssh complete "$c " ; done
 ```
 
 Expected : les mêmes hôtes pour les trois. Vérifier que `scp` insère bien `hôte:` — visible dans la sortie de `complete` si elle rend l'insertion, sinon par le test unitaire de la tâche 2.
@@ -977,8 +977,8 @@ Expected : les mêmes hôtes pour les trois. Vérifier que `scp` insère bien `h
 - [ ] **Step 3 : Vérifier qu'aucun gestionnaire n'a changé**
 
 ```bash
-/tmp/jigger-ssh complete --line "brew ins"
-/tmp/jigger-ssh complete --line "brew install fire"
+/tmp/jigger-ssh complete "brew ins"
+/tmp/jigger-ssh complete "brew install fire"
 ```
 
 Expected : les sous-commandes pour la première, les formules pour la seconde — exactement comme avant.
@@ -1044,5 +1044,5 @@ Puis ouvrir la merge request sur GitLab, comme le demande le CONTRIBUTING.
 
 - **`pm.Catalog.Versions` : vérifié.** Le champ est exporté et initialisé par `NewCatalog()` ; l'affectation directe fonctionne. Et il ne faut **pas** passer par `MarkInstalled`, qui poserait `Installed[nom] = true` — donc une pastille ● sur chaque hôte, alors qu'un serveur n'est ni installé ni absent.
 - **La liste PowerShell : localisée et traitée** (`shell/jigger.psm1:61`). Elle a fait changer le plan — voir la tâche 4, étape 6.
-- **`complete --line` rend-il l'insertion ?** Non vérifié. Si la sous-commande n'expose pas ce que `Insert()` produirait, l'étape 2 de la tâche 5 se limite aux tests unitaires — ce qui suffit, mais autant le savoir avant.
+- **`complete` rend-il l'insertion ?** Non vérifié. Si la sous-commande n'expose pas ce que `Insert()` produirait, l'étape 2 de la tâche 5 se limite aux tests unitaires — ce qui suffit, mais autant le savoir avant.
 - **L'étape 4 de la tâche 5 n'est pas automatisable.** Constater la popup dans un vrai zsh demande une frappe humaine ; c'est pourtant la seule preuve que le greffon marche. Un exécuteur en sous-agent doit rendre la main plutôt que de la simuler.
