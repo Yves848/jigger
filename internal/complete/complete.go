@@ -246,12 +246,20 @@ func completeWith(line string, m pm.Manager, cat *pm.Catalog, regex bool) Result
 		prefix, word = word+" ", ""
 	}
 
+	// Un fournisseur qui ne déclare aucune sous-commande n'a pas de verbe entre la
+	// commande et son opérande : `ssh archlight` met l'hôte là où `brew install` met un
+	// verbe. Le catalogue vient donc dès le premier mot (ADR-0005).
+	subs := m.Subcommands()
+	sansVerbes := len(subs) == 0
+
 	isOption := strings.HasPrefix(word, "-")
-	isPackage := !isOption && !firstWord
+	isPackage := !isOption && (!firstWord || sansVerbes)
 
 	res := Result{
 		Prefix: prefix, Word: word, Cmd: m.Cmd(), Sub: sub,
-		Executable: isPackage, mgr: m, cat: cat,
+		// Un fournisseur sans verbes n'a pas de pm.Bindings : rien à exécuter. Le
+		// sélecteur plein écran doit insérer, pas lancer.
+		Executable: isPackage && !sansVerbes, mgr: m, cat: cat,
 	}
 	lw := strings.ToLower(word)
 	filtre := NouveauFiltre(word, regex)
@@ -263,8 +271,8 @@ func completeWith(line string, m pm.Manager, cat *pm.Catalog, regex bool) Result
 				res.Items = append(res.Items, Item{Name: o})
 			}
 		}
-	case firstWord:
-		for _, s := range m.Subcommands() {
+	case firstWord && !sansVerbes:
+		for _, s := range subs {
 			if strings.HasPrefix(s, lw) {
 				res.Items = append(res.Items, Item{Name: s})
 			}

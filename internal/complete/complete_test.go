@@ -374,3 +374,56 @@ func BenchmarkCompleteFacade(b *testing.B) {
 		CompleteFacade("jg install g", dispo, cats)
 	}
 }
+
+// fauxManagerSansSub est un fournisseur de complétion sans verbes, comme ssh.
+type fauxManagerSansSub struct{ cmd string }
+
+func (f fauxManagerSansSub) Cmd() string                              { return f.cmd }
+func (fauxManagerSansSub) Subcommands() []string                      { return nil }
+func (fauxManagerSansSub) Options(string) []string                    { return nil }
+func (fauxManagerSansSub) InstalledOnly(string) bool                  { return false }
+func (fauxManagerSansSub) Available() bool                            { return true }
+func (fauxManagerSansSub) Load() *pm.Catalog                          { return nil }
+func (fauxManagerSansSub) Warm(pm.Scope) error                        { return nil }
+func (fauxManagerSansSub) Insert(_ *pm.Catalog, _, _, n string) string { return n }
+
+func catalogueHotes() *pm.Catalog {
+	c := pm.NewCatalog()
+	c.Add("archlight", "")
+	c.Add("pve", "")
+	c.Versions["pve"] = "192.168.50.8"
+	c.Sort()
+	return c
+}
+
+func TestSansSousCommandeLeCatalogueVientDesLePremierMot(t *testing.T) {
+	// C'est la regle de l'ADR-0005. « ssh arch » n'a pas de verbe : arch est deja
+	// l'operande.
+	res := CompleteWith("ssh arch", fauxManagerSansSub{"ssh"}, catalogueHotes())
+	if len(res.Items) != 1 || res.Items[0].Name != "archlight" {
+		t.Fatalf("Items = %v, attendu [archlight]", res.Items)
+	}
+}
+
+func TestSansSousCommandeLaCommandeSeuleProposeTout(t *testing.T) {
+	res := CompleteWith("ssh ", fauxManagerSansSub{"ssh"}, catalogueHotes())
+	if len(res.Items) != 2 {
+		t.Fatalf("Items = %v, attendu les deux hotes", res.Items)
+	}
+}
+
+func TestSansSousCommandeLAdresseSuitDansVersion(t *testing.T) {
+	res := CompleteWith("ssh pve", fauxManagerSansSub{"ssh"}, catalogueHotes())
+	if len(res.Items) != 1 || res.Items[0].Version != "192.168.50.8" {
+		t.Fatalf("Items = %+v, attendu pve avec son adresse", res.Items)
+	}
+}
+
+func TestSansSousCommandeNEstJamaisExecutable(t *testing.T) {
+	// Executable commande si ⏎ EXECUTE dans le selecteur plein ecran. Un fournisseur
+	// sans pm.Bindings n'a rien a executer : le picker doit inserer, pas lancer.
+	res := CompleteWith("ssh arch", fauxManagerSansSub{"ssh"}, catalogueHotes())
+	if res.Executable {
+		t.Error("Executable = true pour un fournisseur sans verbes")
+	}
+}
