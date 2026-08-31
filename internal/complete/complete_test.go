@@ -456,15 +456,31 @@ func TestFournisseurSansVerbesIndisponibleSeTait(t *testing.T) {
 	}
 }
 
-func TestFournisseurSansVerbesDisponibleNeSeTaitPas(t *testing.T) {
-	// Une liste vide n'est pas un silence quand le fournisseur est la : « ssh zzz » sur
-	// une vraie configuration doit dire « aucun candidat », pas disparaitre.
-	res := CompleteWith("ssh zzz", fauxManagerSansSub{"ssh"}, catalogueHotes())
+func TestFournisseurSansVerbesQuiProposeNeSeTaitPas(t *testing.T) {
+	// Le cas nominal : des hotes correspondent, donc rien ne se tait. C'est la borne
+	// haute de la regle — sans ce test, faire taire le fournisseur en toute
+	// circonstance passerait inapercu.
+	res := CompleteWith("ssh arch", fauxManagerSansSub{"ssh"}, catalogueHotes())
+	if len(res.Items) == 0 {
+		t.Fatal("Items vide : le catalogue devait rendre au moins un hote")
+	}
+	if res.Silencieux {
+		t.Error("Silencieux = true alors que des candidats sont proposes")
+	}
+}
+
+func TestFournisseurSansVerbesSeTaitSurUnCatalogueVideMemeSiDisponible(t *testing.T) {
+	// Le critere est le CATALOGUE vide, pas l'absence de fichier (ADR-0006). Le cas qui
+	// a impose ce choix est le ~/.ssh/config que la documentation d'Apple fait ecrire
+	// sur macOS : un seul bloc « Host * ». Le fichier existe, donc Available() rend
+	// vrai ; mais « * » est un motif, aucun candidat n'en sort, et l'ancien critere
+	// redessinait un cadre vide a chaque frappe.
+	res := CompleteWith("ssh serv", fauxManagerSansSub{"ssh"}, pm.NewCatalog())
 	if len(res.Items) != 0 {
 		t.Fatalf("Items = %v, attendu aucun", res.Items)
 	}
-	if res.Silencieux {
-		t.Error("Silencieux = true alors que le fournisseur est disponible")
+	if !res.Silencieux {
+		t.Error("Silencieux = false : le cadre vide reviendrait a chaque frappe")
 	}
 }
 
@@ -481,6 +497,28 @@ func TestGestionnaireAVerbesIndisponibleNeSeTaitPas(t *testing.T) {
 	}
 	if res.Silencieux {
 		t.Error("Silencieux = true pour un gestionnaire a verbes : le cadre disparaitrait")
+	}
+}
+
+func TestSshSeTaitSurUnConfigQuiNaQueHostEtoile(t *testing.T) {
+	// Le vrai chemin, avec un vrai fichier : Complete -> managers.Detect -> ssh.Manager.
+	// « Host * » est ce que la documentation d'Apple fait ecrire sur macOS. Le fichier
+	// existe, donc l'ancien critere (Available()) laissait un cadre vide se redessiner a
+	// chaque frappe de toute ligne ssh. ADR-0006.
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home) // os.UserHomeDir() sous Windows
+
+	if err := os.MkdirAll(filepath.Join(home, ".ssh"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	conf := "Host *\n  ServerAliveInterval 60\n  AddKeysToAgent yes\n"
+	if err := os.WriteFile(filepath.Join(home, ".ssh", "config"), []byte(conf), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	if res := Complete("ssh serv"); !res.Silencieux {
+		t.Errorf("Silencieux = false sur un config sans bloc nomme (Items = %v)", res.Items)
 	}
 }
 

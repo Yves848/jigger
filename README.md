@@ -23,8 +23,9 @@ subcommands, options, and catalog; everything else — the popup, the keys, the 
 block — is shared.
 
 jigger never *runs* `ssh`: it completes the line you will run yourself, and stays out of
-the way when there's nothing to say — no `~/.ssh/config`, no popup. Which commands get
-intercepted is yours to choose, in both shells, through `JIGGER_COMMANDS`
+the way when it has **no host to offer** — no `~/.ssh/config`, or nothing matching what
+you typed: no popup. Which commands get intercepted is yours to choose, in both shells,
+through `JIGGER_COMMANDS`
 ([settings](#settings)). See [ADR-0005](docs/adr/0005-completion-sans-facade.md): the
 completion contract is not reserved for package managers.
 

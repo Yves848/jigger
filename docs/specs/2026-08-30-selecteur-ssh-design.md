@@ -126,6 +126,13 @@ tenir. C'est le seul fournisseur de jigger dans ce cas, et c'est ce qui le rend 
 `Available()` rend vrai si `~/.ssh/config` existe. Sur une machine sans configuration SSH,
 le fournisseur se tait plutôt que de proposer une liste vide.
 
+> **Amendé le 31 août — [ADR-0006](../adr/0006-silence-sur-catalogue-vide.md).** Le critère
+> du silence n'est pas `Available()` mais le **catalogue vide**. Un `~/.ssh/config` qui ne
+> contient qu'un bloc `Host *` — ce que la documentation d'Apple fait écrire sur macOS —
+> existe bel et bien, mais `*` est un motif : aucun candidat n'en sort, et la règle écrite
+> ci-dessus laissait alors un cadre vide se redessiner à chaque frappe. C'est la seule
+> affirmation de cette conception que l'implémentation a contredite.
+
 ## §5 — Le greffon
 
 Une ligne : `_jigger_commands=( brew jigger jg ssh scp sftp )`.

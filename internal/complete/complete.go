@@ -304,21 +304,22 @@ func completeWith(line string, m pm.Manager, cat *pm.Catalog, regex bool) Result
 		}
 	}
 
-	// Un fournisseur sans verbes qui n'est pas disponible n'a rien à proposer : ni
+	// Un fournisseur sans verbes qui ne propose rien n'a littéralement rien à dire : ni
 	// sous-commande, ni option, ni catalogue. Plutôt que de dessiner « aucun candidat »
-	// à chaque frappe, il se tait — c'est la promesse de la spec du 30 août (§4) :
-	// « sur une machine sans configuration SSH, le fournisseur se tait plutôt que de
-	// proposer une liste vide ».
+	// à chaque frappe, il se tait.
+	//
+	// Le critère est le CATALOGUE VIDE, pas l'absence du fichier de configuration. La
+	// première rédaction interrogeait Available(), et manquait le cas que la
+	// documentation d'Apple fait écrire sur macOS : un ~/.ssh/config qui ne contient
+	// qu'un bloc « Host * ». Le fichier existe — Available() rend vrai — mais « * » est
+	// un motif, donc aucun candidat n'en sort et le cadre vide revenait à chaque frappe.
+	// Voir l'ADR-0006.
 	//
 	// La règle ne touche pas brew, winget ni scoop : tous trois déclarent des
-	// sous-commandes, donc `brew inst` reste complété sur une machine sans Homebrew —
-	// ce que pm.Manager.Available() documente (« la complétion répond pour tous »). Ce
-	// qui se tait ici, c'est le fournisseur qui n'a littéralement rien d'autre à dire.
-	//
-	// La question n'est posée QUE sur une liste vide : dans le cas nominal — des hôtes à
-	// proposer — Available() n'est jamais appelée, et la correction n'ajoute donc aucun
-	// accès disque par frappe.
-	if sansVerbes && len(res.Items) == 0 && !m.Available() {
+	// sous-commandes, donc sansVerbes est faux et « winget zzz » garde son cadre
+	// « aucune correspondance » sur une machine sans winget — ce que pm.Manager
+	// documente (« la complétion répond pour tous »).
+	if sansVerbes && len(res.Items) == 0 {
 		res.Silencieux = true
 	}
 	return res

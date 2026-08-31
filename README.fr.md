@@ -23,8 +23,9 @@ ses sous-commandes, ses options et son catalogue ; tout le reste — le popup, l
 le bloc de prompt — est commun.
 
 jigger n'*exécute* jamais `ssh` : il complète la ligne que tu lanceras toi-même, et se
-tait quand il n'a rien à dire — pas de `~/.ssh/config`, pas de popup. Ce qui est
-intercepté reste ton choix, dans les deux shells, par `JIGGER_COMMANDS`
+tait quand il n'a **aucun hôte à proposer** — pas de `~/.ssh/config`, ou rien qui
+corresponde à ce que tu tapes : pas de popup. Ce qui est intercepté reste ton choix,
+dans les deux shells, par `JIGGER_COMMANDS`
 ([réglages](#réglages)). Voir l'[ADR-0005](docs/adr/0005-completion-sans-facade.md) : le
 contrat de complétion n'est pas réservé aux gestionnaires de paquets.
 
