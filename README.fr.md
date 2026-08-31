@@ -11,14 +11,23 @@ shell : dès que tu tapes une commande de gestionnaire de paquets, un **sélecte
 bons candidats selon le contexte. ⇥ insère le candidat courant dans la ligne ; tu n'as
 jamais à demander.
 
-| Plateforme | Shell | Gestionnaires |
+| Plateforme | Shell | Commandes complétées |
 |---|---|---|
 | macOS, Linux | zsh (`shell/jigger.plugin.zsh`) | [Homebrew](https://brew.sh) |
 | Windows | PowerShell (`shell/jigger.psm1`) | [winget](https://learn.microsoft.com/windows/package-manager/), [scoop](https://scoop.sh) |
+| les deux | les deux | `ssh`, `scp`, `sftp` — les serveurs de ton `~/.ssh/config` |
 
-C'est le **premier mot de la ligne** qui décide : `brew`, `winget` ou `scoop`. Chacun
-apporte ses sous-commandes, ses options et son catalogue ; tout le reste — le popup, les
-touches, le bloc de prompt — est commun.
+C'est le **premier mot de la ligne** qui décide : `brew`, `winget`, `scoop` — et `ssh`,
+`scp` ou `sftp`, dont les candidats sont des serveurs et non des paquets. Chacun apporte
+ses sous-commandes, ses options et son catalogue ; tout le reste — le popup, les touches,
+le bloc de prompt — est commun.
+
+jigger n'*exécute* jamais `ssh` : il complète la ligne que tu lanceras toi-même, et se
+tait quand il n'a **aucun hôte à proposer** — pas de `~/.ssh/config`, ou rien qui
+corresponde à ce que tu tapes : pas de popup. Ce qui est intercepté reste ton choix,
+dans les deux shells, par `JIGGER_COMMANDS`
+([réglages](#réglages)). Voir l'[ADR-0005](docs/adr/0005-completion-sans-facade.md) : le
+contrat de complétion n'est pas réservé aux gestionnaires de paquets.
 
 Compagnon en ligne de commande de l'app GUI **Cocktails**, mais **totalement indépendant** :
 il ne requiert que le gestionnaire lui-même.
@@ -31,6 +40,13 @@ il ne requiert que le gestionnaire lui-même.
   - après `uninstall`, `upgrade`, `pin`… → seulement les paquets **installés** ;
   - après `-` → les **options** de la sous-commande (`winget install --exact`,
     `brew list --versions`…).
+- **Un sélecteur de serveurs SSH** : tape `ssh `, `scp ` ou `sftp ` et le popup propose
+  les hôtes déclarés dans `~/.ssh/config` — les `Include` sont suivis, `Host *` et les
+  autres gabarits écartés —, chacun avec son `HostName` en regard. Une commande sans
+  verbe place son opérande juste après son nom : le catalogue vient donc dès le premier
+  mot. `scp` insère `hôte:`, deux-points collés, parce que `scp fichier hôte /tmp`
+  copierait en silence vers un fichier **local** nommé `hôte`. Sur une machine sans
+  `~/.ssh/config`, rien ne s'affiche du tout.
 - **Badges** et **indicateur « installé »** dans le sélecteur : ◆ pour le cas ordinaire
   (formula, paquet du catalogue winget, bucket `main`), ▣ pour l'autre (cask, application
   détectée hors catalogue, bucket tiers).
@@ -152,6 +168,9 @@ JIGGER_LIVE=0     # désactive le popup vivant : ⇥ ouvre le sélecteur plein �
 JIGGER_ROWS=12    # candidats affichés (défaut 8 ; réduit si le terminal est court)
 JIGGER_KEY='^ '   # touche d'insertion (défaut Tab)
 JIGGER_LANG=fr    # langue des messages : en ou fr
+JIGGER_COMMANDS='brew ssh'   # commandes qui déclenchent le popup (défaut
+                             # 'brew ssh scp sftp' ; jigger et jg s'y ajoutent
+                             # toujours). C'est par là qu'on éteint le sélecteur SSH.
 ```
 
 ```powershell
@@ -159,8 +178,8 @@ $env:JIGGER_LIVE = '0'
 $env:JIGGER_ROWS = '12'
 $env:JIGGER_KEY  = 'Ctrl+Spacebar'   # noms de touches PSReadLine
 $env:JIGGER_LANG = 'fr'              # langue des messages : en ou fr
-$env:JIGGER_COMMANDS = 'winget,scoop'      # commandes qui déclenchent le popup
-                                           # (jigger et jg s'y ajoutent toujours)
+$env:JIGGER_COMMANDS = 'winget,scoop,ssh,scp,sftp'  # commandes qui déclenchent le popup
+                                                     # (jigger et jg s'y ajoutent toujours)
 $env:JIGGER_KEYS_EXTRA = 'éèçàù'           # touches à relayer en plus des ASCII
 ```
 

@@ -26,10 +26,17 @@ gestionnaire de paquets, un cadre s'affiche sous le prompt et suit ta frappe.
 Et, par-dessus les trois gestionnaires, **une seule syntaxe** : `jg install fd` s'adresse à
 celui qui connaît `fd`, sans que tu aies à savoir lequel (§ 6).
 
-| Plateforme | Shell | Gestionnaires |
+| Plateforme | Shell | Commandes complétées |
 |---|---|---|
 | macOS, Linux | zsh | [Homebrew](https://brew.sh) |
 | Windows | PowerShell 7 | [winget](https://learn.microsoft.com/windows/package-manager/), [scoop](https://scoop.sh) |
+| les deux | les deux | `ssh`, `scp`, `sftp` — les serveurs de ton `~/.ssh/config` |
+
+Cette dernière ligne n'est pas un gestionnaire de paquets, et jigger ne l'exécute jamais :
+taper `ssh ` propose les hôtes déclarés dans `~/.ssh/config`, chacun avec son `HostName`
+en regard, et ⇥ insère celui qu'on vise. `scp` insère `hôte:`, deux-points collés. Sur une
+machine sans `~/.ssh/config`, rien ne s'affiche du tout ; `JIGGER_COMMANDS` (§ 7) décide
+de ce qui est intercepté.
 
 ## 1. Prérequis
 
@@ -387,12 +394,17 @@ Import-Module C:\chemin\vers\jigger\shell\jigger.psm1
 | `JIGGER_BIN` | `jigger` | le binaire que le greffon appelle. Utile en développement : le `bin` de Homebrew précède d'ordinaire `~/.local/bin`, si bien qu'un jigger fraîchement compilé ne serait jamais celui qui tourne |
 | `JIGGER_PAGER` | `1` | `0` désarme la vue paginée : les verbes qui listent impriment toujours la table brute |
 | `JIGGER_LANG` | la langue de ta locale | messages : `en` ou `fr`. Lu avant `LC_ALL`, `LC_MESSAGES` et `LANG` — c'est lui qui rend le français à un shell qui tourne en anglais. Ce que jigger ne sait pas traduire retombe sur l'anglais |
+| `JIGGER_COMMANDS` | zsh : `brew ssh scp sftp` · PowerShell : `winget,scoop,ssh,scp,sftp` | commandes qui déclenchent le popup, séparées par des espaces ou des virgules. `jigger` et `jg` s'ajoutent **toujours** à ce que tu poses : ce sont les commandes de jigger, les éteindre serait un défaut. `ssh`, `scp` et `sftp` figurent dans le défaut, pas dans la liste toujours-armée : ce sont des commandes tierces, et ce réglage existe justement pour que tu choisisses ce qui est intercepté. Les deux défauts diffèrent parce que les machines diffèrent — `brew` d'un côté, `winget` et `scoop` de l'autre |
 
-Deux réglages n'existent que sous PowerShell, faute d'équivalent utile côté zsh :
+`JIGGER_COMMANDS` est aussi ce par quoi on éteint le **sélecteur SSH** :
+`JIGGER_COMMANDS='brew'` sous zsh, `$env:JIGGER_COMMANDS = 'winget,scoop'` sous
+PowerShell. Le besoin est rare : sur une machine sans `~/.ssh/config`, le fournisseur se
+tait et aucun cadre n'est dessiné.
+
+Un réglage n'existe que sous PowerShell, faute d'équivalent utile côté zsh :
 
 | Variable | Défaut | Rôle |
 |---|---|---|
-| `JIGGER_COMMANDS` | `winget,scoop` | commandes qui déclenchent le popup. `jigger` et `jg` s'ajoutent **toujours** à ce que tu poses : sans quoi la façade s'éteindrait chez quiconque a un jour recopié le défaut à la main |
 | `JIGGER_KEYS_EXTRA` | `éèêàçùâîôûëïüö°²µ§£€` | touches relayées en plus des ASCII imprimables |
 
 `JIGGER_KEYS_EXTRA` mérite un mot : PSReadLine n'offre aucun crochet appelé à chaque

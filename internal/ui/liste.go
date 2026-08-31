@@ -245,14 +245,14 @@ func (l *Liste) Visibles() ([]Ligne, int) {
 }
 
 // Accesseurs de lecture, pour les rendus et les tests.
-func (l *Liste) Filtrees() []Ligne  { return l.filtrees }
-func (l *Liste) Curseur() int       { return l.curseur }
-func (l *Liste) Offset() int        { return l.offset }
-func (l *Liste) Mode() ModeFiltre   { return l.mode }
-func (l *Liste) Valide() bool       { return l.valide }
-func (l *Liste) NbCochees() int     { return len(l.cochees) }
-func (l *Liste) Total() int         { return len(l.toutes) }
-func (l *Liste) Hauteur() int       { return l.hauteur }
+func (l *Liste) Filtrees() []Ligne { return l.filtrees }
+func (l *Liste) Curseur() int      { return l.curseur }
+func (l *Liste) Offset() int       { return l.offset }
+func (l *Liste) Mode() ModeFiltre  { return l.mode }
+func (l *Liste) Valide() bool      { return l.valide }
+func (l *Liste) NbCochees() int    { return len(l.cochees) }
+func (l *Liste) Total() int        { return len(l.toutes) }
+func (l *Liste) Hauteur() int      { return l.hauteur }
 func (l *Liste) DefinirHauteur(h int) {
 	if h < 1 {
 		h = 1

@@ -328,6 +328,52 @@ HN en dernier, à deux ou trois jours d'intervalle.
 
 ## Fait
 
+### A-25 — Un sélecteur de serveurs SSH
+
+**Fait le :** 2026-08-30 · **Provenance :** demande du 30 août · **ADR :**
+[0005](adr/0005-completion-sans-facade.md) · **Documents :**
+[spec](specs/2026-08-30-selecteur-ssh-design.md), [plan](plans/2026-08-30-selecteur-ssh.md) ·
+**Commits :** `fe1be81` → `d66740a` (branche `feat/selecteur-ssh`) · **Fichiers :**
+`internal/ssh/`, `internal/managers/managers.go`, `internal/complete/complete.go`,
+`shell/jigger.plugin.zsh`, `shell/jigger.psm1`
+
+Taper `ssh`, `scp` ou `sftp` propose désormais les hôtes de `~/.ssh/config` — même popup,
+mêmes touches, même greffon que `brew` pour ses formules. `scp` insère `hôte:`, deux-points
+collé, plutôt que le nom nu qui copierait vers un fichier local du même nom.
+
+**Ce n'est pas un gestionnaire de paquets**, et c'est tout l'intérêt de l'entrée :
+[l'ADR-0005](adr/0005-completion-sans-facade.md) tranche que le contrat de complétion
+`pm.Manager` n'est pas réservé aux gestionnaires, et que `ssh` peut l'implémenter sans
+jamais implémenter `pm.Bindings`. `internal/complete` a appris une règle générale à cette
+occasion : un fournisseur qui ne déclare **aucune** sous-commande propose son catalogue dès
+le premier mot, au lieu d'attendre un verbe qui n'existera jamais — vérifié : les trois
+gestionnaires existants, qui déclarent tous des sous-commandes, n'ont pas changé de
+comportement.
+
+Deux décisions à connaître avant d'y toucher :
+
+- **`ssh`, `scp` et `sftp` entrent dans le défaut de `JIGGER_COMMANDS`, pas dans la liste
+  toujours-armée.** Conséquence assumée : qui a épinglé `winget,scoop` dans son profil ne
+  verra pas le sélecteur tant qu'il n'aura pas allongé son réglage. A-1 avait tranché
+  l'inverse pour la façade (`jigger`/`jg` toujours armés), parce que ce sont des commandes
+  *de jigger* ; `ssh` est une commande **tierce**, et `JIGGER_COMMANDS` existe pour que
+  l'utilisateur choisisse ce qui l'intercepte.
+- **Pas de mémoïsation du catalogue.** Le plan en prévoyait une ; la revue a montré que
+  `jigger render` tourne dans un processus par frappe, donc `Load()` n'est jamais appelée
+  deux fois dans le même processus — un cache de paquet ne protégeait rien de mesurable.
+  Retirée avant la fin du chantier (`internal/ssh/manager.go`).
+
+**Éprouvé de bout en bout** (tâche 5) : `jigger render --line "ssh arch" --cols 80` dessine
+le cadre avec `archlight` et son adresse ; `jigger complete "ssh "`, `"scp "` et `"sftp "`
+rendent les mêmes hôtes ; `jigger complete "brew ins"` et `"brew install fire"` se
+comportent exactement comme avant — non-régression confirmée. `make test` passe sans
+qu'aucun test existant n'ait été modifié. Ces commandes ont lu le vrai `~/.ssh/config` de
+la machine, seul endroit du lot à éprouver l'intégration plutôt que des fichiers de test.
+
+La popup dans un vrai zsh (⇥ insère, ⎋ ferme, sur `ssh arch`) reste à constater par Yves :
+c'est la seule étape qui exige une frappe humaine, et la seule preuve que le greffon
+fonctionne pour de vrai.
+
 ### A-24 — Un garde-fou qui surveille le miroir GitHub
 
 **Fait le :** 2026-08-17 · **Provenance :** panne muette du miroir, découverte le 17 août ·

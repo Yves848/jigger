@@ -2,6 +2,8 @@ package complete
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"gitlab.yg-devworks.com/yves/jigger/internal/brew"
@@ -372,5 +374,178 @@ func BenchmarkCompleteFacade(b *testing.B) {
 	b.ResetTimer()
 	for b.Loop() {
 		CompleteFacade("jg install g", dispo, cats)
+	}
+}
+
+// fauxManagerSansSub est un fournisseur de complétion sans verbes, comme ssh.
+type fauxManagerSansSub struct{ cmd string }
+
+func (f fauxManagerSansSub) Cmd() string                               { return f.cmd }
+func (fauxManagerSansSub) Subcommands() []string                       { return nil }
+func (fauxManagerSansSub) Options(string) []string                     { return nil }
+func (fauxManagerSansSub) InstalledOnly(string) bool                   { return false }
+func (fauxManagerSansSub) Available() bool                             { return true }
+func (fauxManagerSansSub) Load() *pm.Catalog                           { return nil }
+func (fauxManagerSansSub) Warm(pm.Scope) error                         { return nil }
+func (fauxManagerSansSub) Insert(_ *pm.Catalog, _, _, n string) string { return n }
+
+func catalogueHotes() *pm.Catalog {
+	c := pm.NewCatalog()
+	c.Add("archlight", "")
+	c.Add("pve", "")
+	c.Versions["pve"] = "192.168.50.8"
+	c.Sort()
+	return c
+}
+
+func TestSansSousCommandeLeCatalogueVientDesLePremierMot(t *testing.T) {
+	// C'est la regle de l'ADR-0005. « ssh arch » n'a pas de verbe : arch est deja
+	// l'operande.
+	res := CompleteWith("ssh arch", fauxManagerSansSub{"ssh"}, catalogueHotes())
+	if len(res.Items) != 1 || res.Items[0].Name != "archlight" {
+		t.Fatalf("Items = %v, attendu [archlight]", res.Items)
+	}
+}
+
+func TestSansSousCommandeLaCommandeSeuleProposeTout(t *testing.T) {
+	res := CompleteWith("ssh ", fauxManagerSansSub{"ssh"}, catalogueHotes())
+	if len(res.Items) != 2 {
+		t.Fatalf("Items = %v, attendu les deux hotes", res.Items)
+	}
+}
+
+func TestSansSousCommandeLAdresseSuitDansVersion(t *testing.T) {
+	res := CompleteWith("ssh pve", fauxManagerSansSub{"ssh"}, catalogueHotes())
+	if len(res.Items) != 1 || res.Items[0].Version != "192.168.50.8" {
+		t.Fatalf("Items = %+v, attendu pve avec son adresse", res.Items)
+	}
+}
+
+func TestSansSousCommandeNEstJamaisExecutable(t *testing.T) {
+	// Executable commande si ⏎ EXECUTE dans le selecteur plein ecran. Un fournisseur
+	// sans pm.Bindings n'a rien a executer : le picker doit inserer, pas lancer.
+	res := CompleteWith("ssh arch", fauxManagerSansSub{"ssh"}, catalogueHotes())
+	if res.Executable {
+		t.Error("Executable = true pour un fournisseur sans verbes")
+	}
+}
+
+// fauxIndisponible est le meme fournisseur sans verbes, mais sur une machine qui n'a pas
+// sa configuration : c'est ce qu'est ssh sans ~/.ssh/config.
+type fauxIndisponible struct{ fauxManagerSansSub }
+
+func (fauxIndisponible) Available() bool { return false }
+
+// fauxAVerbesIndisponible a des sous-commandes et n'est pas installe : c'est brew sur une
+// machine sans Homebrew, cas que pm.Manager.Available() documente comme devant rester
+// complete (« la completion repond pour tous »).
+type fauxAVerbesIndisponible struct{ fauxManagerSansSub }
+
+func (fauxAVerbesIndisponible) Subcommands() []string { return []string{"install", "search"} }
+func (fauxAVerbesIndisponible) Available() bool       { return false }
+
+func TestFournisseurSansVerbesIndisponibleSeTait(t *testing.T) {
+	// Sans cette regle, chaque frappe d'une ligne ssh sur une machine sans
+	// ~/.ssh/config dessinait un cadre « aucun candidat » sous le prompt.
+	res := CompleteWith("ssh serv", fauxIndisponible{fauxManagerSansSub{"ssh"}}, pm.NewCatalog())
+	if len(res.Items) != 0 {
+		t.Fatalf("Items = %v, attendu aucun", res.Items)
+	}
+	if !res.Silencieux {
+		t.Error("Silencieux = false : le popup dessinerait une boite vide a chaque frappe")
+	}
+}
+
+func TestFournisseurSansVerbesQuiProposeNeSeTaitPas(t *testing.T) {
+	// Le cas nominal : des hotes correspondent, donc rien ne se tait. C'est la borne
+	// haute de la regle — sans ce test, faire taire le fournisseur en toute
+	// circonstance passerait inapercu.
+	res := CompleteWith("ssh arch", fauxManagerSansSub{"ssh"}, catalogueHotes())
+	if len(res.Items) == 0 {
+		t.Fatal("Items vide : le catalogue devait rendre au moins un hote")
+	}
+	if res.Silencieux {
+		t.Error("Silencieux = true alors que des candidats sont proposes")
+	}
+}
+
+func TestFournisseurSansVerbesSeTaitSurUnCatalogueVideMemeSiDisponible(t *testing.T) {
+	// Le critere est le CATALOGUE vide, pas l'absence de fichier (ADR-0006). Le cas qui
+	// a impose ce choix est le ~/.ssh/config que la documentation d'Apple fait ecrire
+	// sur macOS : un seul bloc « Host * ». Le fichier existe, donc Available() rend
+	// vrai ; mais « * » est un motif, aucun candidat n'en sort, et l'ancien critere
+	// redessinait un cadre vide a chaque frappe.
+	res := CompleteWith("ssh serv", fauxManagerSansSub{"ssh"}, pm.NewCatalog())
+	if len(res.Items) != 0 {
+		t.Fatalf("Items = %v, attendu aucun", res.Items)
+	}
+	if !res.Silencieux {
+		t.Error("Silencieux = false : le cadre vide reviendrait a chaque frappe")
+	}
+}
+
+func TestGestionnaireAVerbesIndisponibleNeSeTaitPas(t *testing.T) {
+	// Le cas qui compte est celui ou la liste est VIDE : c'est la seule facon d'atteindre
+	// la condition, donc la seule ou le garde-fou garde quelque chose. « brew zzz » ne
+	// correspond a aucune sous-commande, et brew est indisponible — si la regle oubliait
+	// d'exiger sansVerbes, le popup disparaitrait ici. Sur une machine sans Homebrew, un
+	// « winget zzz » sous Windows doit continuer d'afficher son cadre « aucune
+	// correspondance » plutot que de s'evanouir sous les doigts.
+	res := CompleteWith("brew zzz", fauxAVerbesIndisponible{fauxManagerSansSub{"brew"}}, pm.NewCatalog())
+	if len(res.Items) != 0 {
+		t.Fatalf("Items = %v, attendu aucune correspondance", res.Items)
+	}
+	if res.Silencieux {
+		t.Error("Silencieux = true pour un gestionnaire a verbes : le cadre disparaitrait")
+	}
+}
+
+func TestSshSeTaitSurUnConfigQuiNaQueHostEtoile(t *testing.T) {
+	// Le vrai chemin, avec un vrai fichier : Complete -> managers.Detect -> ssh.Manager.
+	// « Host * » est ce que la documentation d'Apple fait ecrire sur macOS. Le fichier
+	// existe, donc l'ancien critere (Available()) laissait un cadre vide se redessiner a
+	// chaque frappe de toute ligne ssh. ADR-0006.
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home) // os.UserHomeDir() sous Windows
+
+	if err := os.MkdirAll(filepath.Join(home, ".ssh"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	conf := "Host *\n  ServerAliveInterval 60\n  AddKeysToAgent yes\n"
+	if err := os.WriteFile(filepath.Join(home, ".ssh", "config"), []byte(conf), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	if res := Complete("ssh serv"); !res.Silencieux {
+		t.Errorf("Silencieux = false sur un config sans bloc nomme (Items = %v)", res.Items)
+	}
+}
+
+func TestSshSeTaitSansConfigurationSSH(t *testing.T) {
+	// Le vrai chemin, de bout en bout : Complete → managers.Detect → ssh.Manager. C'est
+	// le test qui tombe si ssh.Available() est mutee en « return true », mutation a
+	// laquelle toute la suite survivait jusqu'ici.
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home) // os.UserHomeDir() sous Windows
+
+	if res := Complete("ssh serv"); !res.Silencieux {
+		t.Errorf("Silencieux = false sans ~/.ssh/config (Items = %v)", res.Items)
+	}
+
+	if err := os.MkdirAll(filepath.Join(home, ".ssh"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	cfg := filepath.Join(home, ".ssh", "config")
+	if err := os.WriteFile(cfg, []byte("Host serveur\n    HostName 10.0.0.1\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	res := Complete("ssh serv")
+	if res.Silencieux {
+		t.Error("Silencieux = true alors que ~/.ssh/config existe")
+	}
+	if len(res.Items) != 1 || res.Items[0].Name != "serveur" {
+		t.Fatalf("Items = %v, attendu [serveur]", res.Items)
 	}
 }

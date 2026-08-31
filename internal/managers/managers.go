@@ -16,6 +16,7 @@ import (
 	"gitlab.yg-devworks.com/yves/jigger/internal/brew"
 	"gitlab.yg-devworks.com/yves/jigger/internal/pm"
 	"gitlab.yg-devworks.com/yves/jigger/internal/scoop"
+	"gitlab.yg-devworks.com/yves/jigger/internal/ssh"
 	"gitlab.yg-devworks.com/yves/jigger/internal/winget"
 )
 
@@ -23,7 +24,13 @@ import (
 // présence du mot dans la ligne qui compte, pas celle du binaire. Un `brew` tapé sous
 // Windows (WSL, Git Bash…) reste ainsi complété — au pire sur un catalogue vide.
 func All() []pm.Manager {
-	return []pm.Manager{brew.New(), winget.New(), scoop.New()}
+	return []pm.Manager{
+		brew.New(), winget.New(), scoop.New(),
+		// Trois fournisseurs plutôt qu'un à trois noms : Manager.Cmd() ne rend qu'un
+		// mot, et l'élargir obligerait brew, winget et scoop à répondre à une question
+		// qu'ils ne se posent pas. Ils partagent implémentation et catalogue.
+		ssh.New("ssh"), ssh.New("scp"), ssh.New("sftp"),
+	}
 }
 
 // Available rend les gestionnaires réellement installés sur la machine. C'est la liste

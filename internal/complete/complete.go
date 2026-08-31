@@ -29,6 +29,13 @@ type Result struct {
 	Executable bool   // contexte paquet → accepter complète une commande exécutable
 	Note       string // message à afficher à la place de « aucun candidat »
 
+	// Silencieux dit que le fournisseur n'a rien à dire du tout — pas même « aucun
+	// candidat ». `jigger render` n'émet alors aucun cadre, et les deux greffons
+	// effacent ce qui restait à l'écran. C'est ce qui évite qu'une boîte vide clignote
+	// sous le prompt à chaque frappe d'une ligne `ssh` sur une machine sans
+	// ~/.ssh/config.
+	Silencieux bool
+
 	mgr pm.Manager
 	cat *pm.Catalog
 
@@ -246,12 +253,20 @@ func completeWith(line string, m pm.Manager, cat *pm.Catalog, regex bool) Result
 		prefix, word = word+" ", ""
 	}
 
+	// Un fournisseur qui ne déclare aucune sous-commande n'a pas de verbe entre la
+	// commande et son opérande : `ssh archlight` met l'hôte là où `brew install` met un
+	// verbe. Le catalogue vient donc dès le premier mot (ADR-0005).
+	subs := m.Subcommands()
+	sansVerbes := len(subs) == 0
+
 	isOption := strings.HasPrefix(word, "-")
-	isPackage := !isOption && !firstWord
+	isPackage := !isOption && (!firstWord || sansVerbes)
 
 	res := Result{
 		Prefix: prefix, Word: word, Cmd: m.Cmd(), Sub: sub,
-		Executable: isPackage, mgr: m, cat: cat,
+		// Un fournisseur sans verbes n'a pas de pm.Bindings : rien à exécuter. Le
+		// sélecteur plein écran doit insérer, pas lancer.
+		Executable: isPackage && !sansVerbes, mgr: m, cat: cat,
 	}
 	lw := strings.ToLower(word)
 	filtre := NouveauFiltre(word, regex)
@@ -263,8 +278,8 @@ func completeWith(line string, m pm.Manager, cat *pm.Catalog, regex bool) Result
 				res.Items = append(res.Items, Item{Name: o})
 			}
 		}
-	case firstWord:
-		for _, s := range m.Subcommands() {
+	case firstWord && !sansVerbes:
+		for _, s := range subs {
 			if strings.HasPrefix(s, lw) {
 				res.Items = append(res.Items, Item{Name: s})
 			}
@@ -287,6 +302,25 @@ func completeWith(line string, m pm.Manager, cat *pm.Catalog, regex bool) Result
 		if len(res.Items) == 0 {
 			res.Note = cat.Note
 		}
+	}
+
+	// Un fournisseur sans verbes qui ne propose rien n'a littéralement rien à dire : ni
+	// sous-commande, ni option, ni catalogue. Plutôt que de dessiner « aucun candidat »
+	// à chaque frappe, il se tait.
+	//
+	// Le critère est le CATALOGUE VIDE, pas l'absence du fichier de configuration. La
+	// première rédaction interrogeait Available(), et manquait le cas que la
+	// documentation d'Apple fait écrire sur macOS : un ~/.ssh/config qui ne contient
+	// qu'un bloc « Host * ». Le fichier existe — Available() rend vrai — mais « * » est
+	// un motif, donc aucun candidat n'en sort et le cadre vide revenait à chaque frappe.
+	// Voir l'ADR-0006.
+	//
+	// La règle ne touche pas brew, winget ni scoop : tous trois déclarent des
+	// sous-commandes, donc sansVerbes est faux et « winget zzz » garde son cadre
+	// « aucune correspondance » sur une machine sans winget — ce que pm.Manager
+	// documente (« la complétion répond pour tous »).
+	if sansVerbes && len(res.Items) == 0 {
+		res.Silencieux = true
 	}
 	return res
 }
