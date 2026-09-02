@@ -3,17 +3,17 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>jigger — one syntax for Homebrew, winget and scoop</title>
-  <meta name="description" content="A live package picker in your shell, and one syntax across Homebrew, winget and scoop. A small Go binary wired into zsh and PowerShell.">
+  <title>jigger — one syntax for Homebrew, winget, scoop and pacman</title>
+  <meta name="description" content="A live package picker in your shell, and one syntax across Homebrew, winget, scoop and pacman. A small Go binary wired into zsh and PowerShell.">
   <meta name="theme-color" content="#07090e">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="jigger — one syntax for Homebrew, winget and scoop">
-  <meta property="og:description" content="A live package picker in your shell, and one syntax across three package managers. A small Go binary wired into zsh and PowerShell.">
+  <meta property="og:title" content="jigger — one syntax for Homebrew, winget, scoop and pacman">
+  <meta property="og:description" content="A live package picker in your shell, and one syntax across four package managers. A small Go binary wired into zsh and PowerShell.">
   <meta property="og:url" content="https://jigger.yg-devworks.com/">
   <meta property="og:image" content="https://jigger.yg-devworks.com/og.png">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="jigger — one syntax for Homebrew, winget and scoop">
-  <meta name="twitter:description" content="A live package picker in your shell, and one syntax across three package managers.">
+  <meta name="twitter:title" content="jigger — one syntax for Homebrew, winget, scoop and pacman">
+  <meta name="twitter:description" content="A live package picker in your shell, and one syntax across four package managers.">
   <meta name="twitter:image" content="https://jigger.yg-devworks.com/og.png">
   <link rel="icon" href="/jigger-icon.svg">
   <link rel="stylesheet" href="/styles.css">
@@ -26,6 +26,7 @@
       <nav aria-label="Main navigation">
         <a href="#popup" data-i18n="nav.popup">The popup</a>
         <a href="#facade" data-i18n="nav.facade">One syntax</a>
+        <a href="#fonctionnement" data-i18n="nav.how">How it works</a>
         <a href="#install" data-i18n="nav.install">Install</a>
       </nav>
       <div class="lang-toggle" role="group" aria-label="Language">
@@ -42,7 +43,7 @@
         <h1 data-i18n="hero.h1">Your package manager,<br><em>as you type.</em></h1>
         <p class="lede" data-i18n="hero.lede">
           A frame appears under your prompt and follows every keystroke. And across
-          Homebrew, winget and scoop, one syntax instead of three.
+          Homebrew, winget, scoop and pacman, one syntax instead of four.
         </p>
 
         <!-- capture : jigger render --line "brew install fire" --cols 60 -->
@@ -86,16 +87,26 @@
           the keyboard, <kbd>↑</kbd> and <kbd>↓</kbd> stay your shell history — where
           they belong.
         </p>
+
+        <p data-i18n="popup.ssh">
+          <strong>Not only package managers.</strong> Type <span class="mono">ssh</span>,
+          <span class="mono">scp</span> or <span class="mono">sftp</span> and the popup
+          offers the hosts of your <span class="mono">~/.ssh/config</span>, each with its
+          <span class="mono">HostName</span> alongside. jigger never opens the connection
+          — it completes the line you will run yourself, and shows nothing at all when it
+          has no host to offer.
+        </p>
       </div>
     </section>
 
     <section id="facade">
       <div class="wrap">
         <span class="eyebrow" data-i18n="facade.eyebrow">One syntax</span>
-        <h2 data-i18n="facade.h2">Three managers, one vocabulary.</h2>
+        <h2 data-i18n="facade.h2">Four dialects, one vocabulary.</h2>
         <p class="lede" data-i18n="facade.lede">
-          <span class="mono">jg install fd</span> reaches whichever of Homebrew, winget
-          or scoop knows <span class="mono">fd</span> — without you having to know which.
+          <span class="mono">jg install fd</span> reaches whichever of Homebrew, winget,
+          scoop or pacman knows <span class="mono">fd</span> — without you having to know
+          which.
         </p>
 
         <!-- capture : jigger render --line "jg " --cols 60 -->
@@ -119,9 +130,10 @@
           <li class="mono">cleanup</li><li class="mono">doctor</li>
         </ul>
         <p class="muted-note" data-i18n="facade.verbs">
-          The first seven work everywhere. The others exist only where the manager does
-          — asking winget for <span class="mono">cleanup</span> fails cleanly, naming
-          who would know how to do it.
+          The first seven work everywhere. The others exist only where the manager knows
+          them — asking winget for <span class="mono">cleanup</span>, or pacman for
+          <span class="mono">source</span>, fails cleanly, naming who would know how to
+          do it.
         </p>
 
         <p data-i18n="facade.choice">
@@ -131,8 +143,147 @@
           changes that; <span class="mono">--pm</span> is the way to settle it in a
           script.
         </p>
+
+        <p class="muted-note" data-i18n="facade.arch">
+          On Arch, <span class="mono">pacman</span> and <span class="mono">yay</span> are
+          two doors onto the same database: yay drives, pacman reads. Whichever one you
+          have, <span class="mono">jg</span> lists your packages once — never twice.
+        </p>
       </div>
     </section>
+
+    <section id="fonctionnement">
+      <div class="wrap">
+        <span class="eyebrow" data-i18n="dia.eyebrow">How it works</span>
+        <h2 data-i18n="dia.h2">Three channels, one binary.</h2>
+        <p class="lede" data-i18n="dia.lede">
+          jigger sits between your shell and your package managers by three separate
+          paths: it reads their catalogs to complete what you type, translates one
+          vocabulary into each of their dialects, and counts pending upgrades in the
+          background for your prompt.
+        </p>
+
+        <div class="diagram">
+          <svg viewBox="0 0 1240 740" role="img" aria-labelledby="dia-title">
+            <title id="dia-title" data-i18n="dia.alt">Three bands: your shell on top, jigger in the middle, the six package managers at the bottom, linked by three channels — completion reading catalogs, the facade running a translated command, and the prompt counting upgrades in the background.</title>
+            <defs>
+              <marker id="dia-ar-read" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path class="mk-read" d="M0 0 L10 5 L0 10 z"/></marker>
+              <marker id="dia-ar-run" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path class="mk-run" d="M0 0 L10 5 L0 10 z"/></marker>
+              <marker id="dia-ar-state" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path class="mk-state" d="M0 0 L10 5 L0 10 z"/></marker>
+            </defs>
+
+            <!-- bande 1 : le shell -->
+            <text class="dia-eyebrow" x="70" y="44" data-i18n="dia.shell">YOUR SHELL</text>
+            <text class="dia-note" x="1170" y="44" text-anchor="end">jigger.plugin.zsh · jigger.psm1</text>
+            <rect class="dia-band" x="70" y="60" width="1100" height="100" rx="10"/>
+
+            <rect class="dia-term" x="120" y="88" width="300" height="44" rx="6"/>
+            <text class="dia-mono" x="136" y="115">❯ winget install Git.</text>
+            <rect class="dia-caret" x="340" y="98" width="8" height="24"/>
+
+            <rect class="dia-term" x="470" y="88" width="300" height="44" rx="6"/>
+            <text class="dia-mono" x="486" y="115">❯ jg install fd</text>
+
+            <rect class="dia-term" x="820" y="88" width="300" height="44" rx="6"/>
+            <text class="dia-mono" x="836" y="115">🍺 6.0.17 🔬 7 ❯</text>
+
+            <!-- liaisons shell / jigger -->
+            <line class="dia-flow f-read" x1="150" y1="168" x2="150" y2="240" marker-end="url(#dia-ar-read)"/>
+            <line class="dia-flow f-read" x1="390" y1="240" x2="390" y2="168" marker-end="url(#dia-ar-read)"/>
+            <text class="dia-label" x="270" y="199" text-anchor="middle" data-i18n="dia.a1">↓ every keystroke, relayed</text>
+            <text class="dia-label" x="270" y="219" text-anchor="middle" data-i18n="dia.a2">↑ one frame to draw</text>
+
+            <line class="dia-flow f-run" x1="500" y1="168" x2="500" y2="240" marker-end="url(#dia-ar-run)"/>
+            <line class="dia-flow f-run" x1="740" y1="240" x2="740" y2="168" marker-end="url(#dia-ar-run)"/>
+            <text class="dia-label" x="620" y="199" text-anchor="middle" data-i18n="dia.b1">↓ one verb, some names</text>
+            <text class="dia-label" x="620" y="219" text-anchor="middle" data-i18n="dia.b2">↑ the output, as is</text>
+
+            <line class="dia-flow f-state plain" x1="850" y1="168" x2="850" y2="240" marker-end="url(#dia-ar-state)"/>
+            <line class="dia-flow f-state plain" x1="1090" y1="240" x2="1090" y2="168" marker-end="url(#dia-ar-state)"/>
+            <text class="dia-label" x="970" y="199" text-anchor="middle" data-i18n="dia.c1">↓ the hook reads one line</text>
+            <text class="dia-label" x="970" y="219" text-anchor="middle" data-i18n="dia.c2">↑ version + counters</text>
+
+            <!-- bande 2 : jigger -->
+            <rect class="dia-core" x="70" y="250" width="1100" height="200" rx="10"/>
+            <text class="dia-title" x="96" y="288">jigger</text>
+            <text class="dia-sub" x="180" y="288" data-i18n="dia.sub">a self-contained Go binary, near-instant startup</text>
+            <text class="dia-eyebrow" x="1144" y="288" text-anchor="end" data-i18n="dia.nodaemon">NO DAEMON · NO NETWORK</text>
+
+            <rect class="dia-box" x="120" y="306" width="300" height="118" rx="8"/>
+            <text class="dia-tag c-read" x="140" y="332" data-i18n="dia.read">READ</text>
+            <text class="dia-mono" x="140" y="358">jigger render --line</text>
+            <text class="dia-t on" x="140" y="384" data-i18n="dia.read1">The first word decides who speaks.</text>
+            <text class="dia-t" x="140" y="406" data-i18n="dia.read2">Stateless: the index stays in the shell.</text>
+
+            <rect class="dia-box" x="470" y="306" width="300" height="118" rx="8"/>
+            <text class="dia-tag c-run" x="490" y="332" data-i18n="dia.run">RUN</text>
+            <text class="dia-mono" x="490" y="358">jg &lt;verb&gt; [--pm] [--json]</text>
+            <text class="dia-t on" x="490" y="384" data-i18n="dia.run1">Twelve verbs into four dialects.</text>
+            <text class="dia-t" x="490" y="406" data-i18n="dia.run2">Routed by catalog, never by setting.</text>
+
+            <rect class="dia-box" x="820" y="306" width="300" height="118" rx="8"/>
+            <text class="dia-tag c-state" x="840" y="332" data-i18n="dia.state">STATE</text>
+            <text class="dia-mono" x="840" y="358">jigger prompt --refresh</text>
+            <text class="dia-t on" x="840" y="384" data-i18n="dia.state1">Counts what is waiting, in the background.</text>
+            <text class="dia-t" x="840" y="406" data-i18n="dia.state2">Never on the prompt's critical path.</text>
+
+            <!-- liaisons jigger / gestionnaires -->
+            <line class="dia-flow f-read" x1="150" y1="458" x2="150" y2="552" marker-end="url(#dia-ar-read)"/>
+            <line class="dia-flow f-read" x1="390" y1="552" x2="390" y2="458" marker-end="url(#dia-ar-read)"/>
+            <text class="dia-label" x="270" y="490" text-anchor="middle" data-i18n="dia.a3">↓ reads catalog + installed</text>
+            <text class="dia-label" x="270" y="510" text-anchor="middle" data-i18n="dia.a4">↑ candidates, badges, fixes</text>
+
+            <line class="dia-flow f-run" x1="500" y1="458" x2="500" y2="552" marker-end="url(#dia-ar-run)"/>
+            <line class="dia-flow f-run" x1="740" y1="552" x2="740" y2="458" marker-end="url(#dia-ar-run)"/>
+            <text class="dia-label" x="620" y="490" text-anchor="middle" data-i18n="dia.b3">↓ the translated command</text>
+            <text class="dia-label" x="620" y="510" text-anchor="middle" data-i18n="dia.b4">↑ raw stream, exit code</text>
+
+            <line class="dia-flow f-state" x1="850" y1="458" x2="850" y2="552" marker-end="url(#dia-ar-state)"/>
+            <line class="dia-flow f-state" x1="1090" y1="552" x2="1090" y2="458" marker-end="url(#dia-ar-state)"/>
+            <text class="dia-label" x="970" y="490" text-anchor="middle" data-i18n="dia.c3">↓ queried in the background</text>
+            <text class="dia-label" x="970" y="510" text-anchor="middle" data-i18n="dia.c4">↑ version + how many waiting</text>
+
+            <!-- bande 3 : les gestionnaires -->
+            <rect class="dia-band" x="70" y="560" width="1100" height="150" rx="10"/>
+            <text class="dia-eyebrow" x="96" y="590" data-i18n="dia.mgrs">THE PACKAGE MANAGERS</text>
+            <text class="dia-sub" x="1144" y="590" text-anchor="end" data-i18n="dia.mgrsnote">each answers its own way — jigger adapts, they don't change</text>
+
+            <rect class="dia-box" x="90" y="608" width="168" height="82" rx="8"/>
+            <text class="dia-name" x="174" y="642" text-anchor="middle">brew</text>
+            <text class="dia-note" x="174" y="668" text-anchor="middle" data-i18n="dia.m1">catalog cached 24 h</text>
+
+            <rect class="dia-box" x="268" y="608" width="168" height="82" rx="8"/>
+            <text class="dia-name" x="352" y="642" text-anchor="middle">pacman</text>
+            <text class="dia-note" x="352" y="668" text-anchor="middle" data-i18n="dia.m2">it reads, yay drives</text>
+
+            <rect class="dia-box" x="446" y="608" width="168" height="82" rx="8"/>
+            <text class="dia-name" x="530" y="642" text-anchor="middle">yay</text>
+            <text class="dia-note" x="530" y="668" text-anchor="middle" data-i18n="dia.m3">repositories + AUR</text>
+
+            <rect class="dia-box" x="624" y="608" width="168" height="82" rx="8"/>
+            <text class="dia-name" x="708" y="642" text-anchor="middle">winget</text>
+            <text class="dia-note" x="708" y="668" text-anchor="middle" data-i18n="dia.m4">14,401 ids, cached</text>
+
+            <rect class="dia-box" x="802" y="608" width="168" height="82" rx="8"/>
+            <text class="dia-name" x="886" y="642" text-anchor="middle">scoop</text>
+            <text class="dia-note" x="886" y="668" text-anchor="middle" data-i18n="dia.m5">all on disk, no cache</text>
+
+            <rect class="dia-box" x="980" y="608" width="168" height="82" rx="8"/>
+            <text class="dia-name" x="1064" y="642" text-anchor="middle">ssh scp sftp</text>
+            <text class="dia-note" x="1064" y="668" text-anchor="middle" data-i18n="dia.m6">never run by jigger</text>
+          </svg>
+        </div>
+
+        <p class="muted-note" data-i18n="dia.caption">
+          <strong>Blue</strong> — completion reads, it never runs anything.
+          <strong>Amber</strong> — the facade translates a verb, then lets the manager do
+          the work and relays its output untouched. <strong>Green</strong> — the prompt:
+          dashed where it runs in the background, solid where the hook only reads one
+          line and costs nothing.
+        </p>
+      </div>
+    </section>
+
     <section id="garanties">
       <div class="wrap">
         <span class="eyebrow" data-i18n="guar.eyebrow">What it guarantees</span>
@@ -160,10 +311,11 @@
     <section id="prompt">
       <div class="wrap">
         <span class="eyebrow" data-i18n="prompt.eyebrow">In your prompt</span>
-        <h2 data-i18n="prompt.h2">A Homebrew block, if you want one.</h2>
+        <h2 data-i18n="prompt.h2">A block in your prompt, if you want one.</h2>
         <p class="lede" data-i18n="prompt.lede">
-          Ready-made segments for oh-my-posh and starship: the brew version, and how many
-          formulae and casks are waiting.
+          Ready-made segments for oh-my-posh and starship: your manager's version, and how
+          many packages are waiting — counted apart, and never on the prompt's critical
+          path.
         </p>
 
         <!-- capture : STARSHIP_CONFIG=shell/starship/brew.toml starship prompt -->
@@ -172,7 +324,8 @@
 
         <p data-i18n="prompt.how">
           Set <span class="mono">JIGGER_PROMPT=1</span> before loading the plugin, then
-          paste the segment for your prompt — both ship with jigger.
+          paste the segment for your prompt and your manager — brew, pacman and Windows
+          versions all ship with jigger.
         </p>
       </div>
     </section>

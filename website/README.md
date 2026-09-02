@@ -36,6 +36,21 @@ Une entrée par ligne, de la forme `'cle.sous': 'texte',` : `verifier.sh` lit ce
 Le vocabulaire de la ligne de commande ne se traduit pas — les noms des douze verbes, les
 drapeaux, les noms de gestionnaires restent tels quels dans les deux langues.
 
+## Le schéma de fonctionnement
+
+La section `#fonctionnement` porte un SVG écrit à la main — ni image, ni script :
+
+- il est **stylé par classes** (`.dia-*` dans `styles.css`), jamais par attribut `style` :
+  la CSP du vhost pose `style-src 'self'`, qui interdit aussi le style en ligne ;
+- ses libellés se traduisent **comme le reste de la page**, un `data-i18n` par élément
+  `<text>` — y compris le `<title>` qui sert de description accessible. `verifier.sh`
+  contrôle donc ces clés-là comme les autres ;
+- les noms de gestionnaires et les commandes ne se traduisent pas, comme partout ailleurs.
+
+Les coordonnées suivent une grille : trois bandes (shell, jigger, gestionnaires) et trois
+canaux, l'aller sur x = 150/500/850, le retour sur 390/740/1090. Déplacer une bande
+demande de bouger les extrémités des flèches en regard.
+
 ## Les captures
 
 Toutes les sorties de terminal affichées sont **de vraies sorties**. Chaque bloc porte en

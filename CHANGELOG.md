@@ -9,6 +9,34 @@ The format follows [Keep a Changelog](https://keepachangelog.com/1.1.0/) and
 [SemVer](https://semver.org/). Versions before `v0.1.6` predate this log; their detail
 lives in the git history.
 
+## [Unreleased]
+
+### Added
+
+- **The site now shows how jigger works.** A `#fonctionnement` section on
+  <https://jigger.yg-devworks.com/> carries a hand-written SVG: the shell on top, jigger
+  in the middle, the six managers at the bottom, and the three channels that link them —
+  completion reading catalogues, the facade running a translated command, the prompt
+  counting upgrades in the background. Every arrow is labelled, the colour says which
+  channel, and the dashes say what is asynchronous. No image, no script: it is styled by
+  classes rather than by attribute, because the vhost's CSP sets `style-src 'self'`, and
+  every label carries a `data-i18n` key — so `verifier.sh` checks the diagram's French
+  exactly as it checks the prose.
+
+- **The SSH picker reached the site**, one version after reaching the binary: a
+  paragraph in the popup section says that `ssh`, `scp` and `sftp` offer the hosts of
+  `~/.ssh/config`, that jigger never opens the connection, and that it shows nothing at
+  all when it has no host to offer.
+
+### Changed
+
+- **The site had stayed at three managers.** It now names pacman alongside Homebrew,
+  winget and scoop — page title, social metadata, hero — and the facade section becomes
+  "four dialects, one vocabulary", with a line on [ADR-0007](docs/adr/0007-pacman-lit-yay-pilote.md):
+  pacman and yay are two doors onto the same database, so `jg` lists your packages once,
+  never twice. The prompt section stops promising a Homebrew block alone, now that brew,
+  pacman and Windows segments all ship.
+
 ## [v0.14.0] — 2026-09-02
 
 ### Added
