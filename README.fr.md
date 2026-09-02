@@ -34,6 +34,11 @@ contrat de complétion n'est pas réservé aux gestionnaires de paquets.
 Compagnon en ligne de commande de l'app GUI **Cocktails**, mais **totalement indépendant** :
 il ne requiert que le gestionnaire lui-même.
 
+![jigger complétant une ligne brew install, le popup se resserrant à chaque lettre](docs/media/out/macos-01-gestionnaire-natif.gif)
+
+*Prise sur macOS. Le [même popup sur les trois plateformes](docs/fr/getting-started.md#le-même-popup-sur-les-trois),
+et [comment les captures sont produites](docs/captures.md).*
+
 ## Ce qu'il fait
 
 - **Complétion contextuelle**
@@ -49,6 +54,7 @@ il ne requiert que le gestionnaire lui-même.
   mot. `scp` insère `hôte:`, deux-points collés, parce que `scp fichier hôte /tmp`
   copierait en silence vers un fichier **local** nommé `hôte`. Sur une machine sans
   `~/.ssh/config`, rien ne s'affiche du tout.
+  [Le sélecteur SSH](docs/fr/ssh.md) le traite en entier.
 - **Badges** et **indicateur « installé »** dans le sélecteur : ◆ pour le cas ordinaire
   (formula, paquet du catalogue winget, bucket `main`), ▣ pour l'autre (cask, application
   détectée hors catalogue, bucket tiers).
@@ -68,6 +74,8 @@ il ne requiert que le gestionnaire lui-même.
   pour **oh-my-posh** et **starship**.
 
 ## Installation
+
+Clé en main, un bloc à coller par plateforme : **[Installer jigger, de bout en bout](docs/fr/installation.md)**.
 
 De bout en bout, pas à pas : **[Premiers pas](docs/fr/getting-started.md)** — installer,
 brancher dans le shell, régler, dépanner. Ce qui suit en est le résumé.

@@ -23,6 +23,10 @@ command, a frame appears under the prompt and tracks your keystrokes.
 ╰──────────────────────────────────────────────────────────╯
 ```
 
+Or, as it actually behaves — nothing pressed, the list narrowing with every letter:
+
+![jigger completing a brew install line, on macOS](media/out/macos-01-gestionnaire-natif.gif)
+
 And, across every manager, **one syntax**: `jg install fd` reaches whichever one
 knows `fd`, without you having to know which (§ 6).
 
@@ -39,6 +43,11 @@ one you're after. `scp` inserts `host:`, colon attached. On a machine with no
 `~/.ssh/config`, nothing shows up at all; `JIGGER_COMMANDS` (§ 7) decides which commands
 get intercepted.
 
+![The SSH picker offering the hosts of a ~/.ssh/config](media/out/macos-03-ssh.gif)
+
+[The SSH picker](ssh.md) covers it in full — `Include` directives, the patterns it leaves
+out, and the colon `scp` gets.
+
 ## 1. Prerequisites
 
 - **The manager itself** — and nothing else. jigger depends on no service, makes no
@@ -52,6 +61,9 @@ get intercepted.
   is genuinely required (§ 2).
 
 ## 2. Install the binary
+
+> **In a hurry?** [Installation, end to end](installation.md) gives the same thing as a
+> single copy-paste block per platform, with nothing to read in between.
 
 ### macOS and Linux — via Homebrew (recommended)
 
@@ -244,6 +256,25 @@ winget install Git.       same idea, on Windows
 scoop uninstall 7z
 ```
 
+### The same popup, on all three
+
+One frame, one set of keys, three catalogues. What changes from one image to the next is
+the manager answering — nothing else. All three are captured in the same decor, and
+[how](captures.md) is written down.
+
+**macOS — `brew install fire`**
+
+![The popup on macOS, completing a brew install line](media/out/macos-01-gestionnaire-natif.png)
+
+**Omarchy — `yay -S visual-studio`**
+
+*Not captured yet — `./docs/media/capturer.sh` on the Arch machine produces it.*
+
+**Windows — `winget install fire`**
+
+*Not captured yet — `pwsh -File docs\media\capturer.ps1 -Preparer` on the Windows machine
+produces it.*
+
 The same frame on Arch, `yay` answering for both catalogues at once:
 
 ```
@@ -315,6 +346,8 @@ jg info fd
 PowerShell module; you can type either one.
 **The facade only adds, it never replaces**: `brew install fd` keeps working
 exactly as before, popup included.
+
+![jg install fd, the facade answering for whichever manager knows the package](media/out/macos-02-jg.gif)
 
 ### The twelve verbs
 
@@ -644,6 +677,9 @@ The facade's verbs are called the same way without the plugin — `jg` being onl
 alias, `jigger outdated --json` works anywhere, including in a script or a CI where
 no interactive shell is loaded.
 
+- [Installation, end to end](installation.md) — the turnkey procedure, per platform.
+- [The SSH picker](ssh.md) — what it reads, what it never does.
+- [Capturing jigger](captures.md) — how the images and recordings above are produced.
 - [README](../README.md) — what jigger does, and why each choice was made this way.
 - [CHANGELOG](../CHANGELOG.md) — what changed from one version to the next.
 - `docs/` — architecture decisions (ADRs), designs in progress, and the project's

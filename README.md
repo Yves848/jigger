@@ -33,6 +33,11 @@ completion contract is not reserved for package managers.
 Command-line companion to the **Cocktails** GUI app, but **fully independent**: it needs
 nothing but the package manager itself.
 
+![jigger completing a brew install line, the popup narrowing with every letter](docs/media/out/macos-01-gestionnaire-natif.gif)
+
+*Captured on macOS. The [same popup on the three platforms](docs/getting-started.md#the-same-popup-on-all-three),
+and [how the captures are produced](docs/captures.md).*
+
 ## What it does
 
 - **Context-aware completion**
@@ -47,6 +52,7 @@ nothing but the package manager itself.
   operand right after the command name, so the catalog comes straight away. `scp` inserts
   `host:`, colon attached, because `scp file host /tmp` would silently copy to a *local*
   file named `host`. On a machine with no `~/.ssh/config`, nothing shows up at all.
+  [The SSH picker](docs/ssh.md) covers it in full.
 - **Badges** and an **"installed" indicator** in the picker: ◆ for the ordinary case
   (formula, catalog package on winget, `main` bucket), ▣ for the other one (cask,
   application detected outside the catalog, third-party bucket).
@@ -66,6 +72,8 @@ nothing but the package manager itself.
   **oh-my-posh** and **starship**.
 
 ## Installation
+
+Turnkey, one copy-paste block per platform: **[Installation, end to end](docs/installation.md)**.
 
 Start to finish, step by step: **[Getting started](docs/getting-started.md)** —
 install, wire into the shell, configure, troubleshoot. What follows is the summary.
