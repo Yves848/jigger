@@ -23,14 +23,15 @@ command, a frame appears under the prompt and tracks your keystrokes.
 ╰──────────────────────────────────────────────────────────╯
 ```
 
-And, across all three managers, **one syntax**: `jg install fd` reaches whichever one
+And, across every manager, **one syntax**: `jg install fd` reaches whichever one
 knows `fd`, without you having to know which (§ 6).
 
 | Platform | Shell | Completed commands |
 |---|---|---|
 | macOS, Linux | zsh | [Homebrew](https://brew.sh) |
+| Arch Linux | zsh | [pacman](https://wiki.archlinux.org/title/Pacman), [yay](https://github.com/Jguer/yay) — repositories and the [AUR](https://aur.archlinux.org) |
 | Windows | PowerShell 7 | [winget](https://learn.microsoft.com/windows/package-manager/), [scoop](https://scoop.sh) |
-| both | both | `ssh`, `scp`, `sftp` — the servers of your `~/.ssh/config` |
+| all | both | `ssh`, `scp`, `sftp` — the servers of your `~/.ssh/config` |
 
 That last row isn't a package manager, and jigger never runs it: typing `ssh ` offers the
 hosts declared in `~/.ssh/config`, each with its `HostName` alongside, and ⇥ inserts the
@@ -41,10 +42,14 @@ get intercepted.
 ## 1. Prerequisites
 
 - **The manager itself** — and nothing else. jigger depends on no service, makes no
-  network calls, and works only with what `brew`, `winget`, or `scoop` already has on
-  disk.
-- **zsh** (ships with macOS) or **PowerShell 7** with PSReadLine (ships with Windows).
-- **Go ≥ 1.26**, only to compile — the Homebrew package handles that on its own.
+  network calls, and works only with what `brew`, `pacman`, `yay`, `winget`, or `scoop`
+  already has on disk. On Arch, that means the sync databases pacman has already
+  downloaded and yay's AUR cache: jigger never reaches for the network on their behalf.
+- **zsh** (ships with macOS and with most Arch setups) or **PowerShell 7** with
+  PSReadLine (ships with Windows).
+- **Go ≥ 1.26**, only to compile — the Homebrew package handles that on its own, and so
+  does the scoop bucket, which ships a prebuilt binary. On Arch there is neither, so Go
+  is genuinely required (§ 2).
 
 ## 2. Install the binary
 
@@ -62,6 +67,16 @@ dependency), installs the zsh plugin under `share/`, and along the way sets up
 `brew-jigger` — which makes `brew jigger …` usable like any other brew command.
 
 To upgrade later: `brew upgrade jigger`.
+
+### Arch Linux — via Go, or from source
+
+There is **no jigger package** in the repositories or in the AUR, and Homebrew isn't the
+way in here: take the [Go route](#any-platform--via-go) or the
+[source route](#from-source) below. Both are a few seconds' work — `go` itself is one
+`pacman -S go` away, and jigger has no runtime dependency beyond pacman and yay.
+
+The plugin then comes from wherever you put the repository. The `$(brew --prefix jigger)`
+paths § 3 uses have no equivalent on Arch; point the `source` at the clone instead.
 
 ### Windows — via scoop (recommended)
 
@@ -126,12 +141,19 @@ winget package. Either way, the PowerShell plugin comes from the cloned reposito
 ### zsh
 
 ```sh
-# in ~/.zshrc
+# in ~/.zshrc — installed through the Homebrew tap
 source "$(brew --prefix jigger)/share/jigger/jigger.plugin.zsh"
 ```
 
-From source, replace the path with `/path/to/jigger/shell/jigger.plugin.zsh`.
+```sh
+# in ~/.zshrc — from a clone, which is the route on Arch
+source ~/git/jigger/shell/jigger.plugin.zsh
+```
+
 Then reload: `exec zsh`.
+
+One line covers every manager the machine has: the plugin doesn't need to be told
+whether it is facing brew or pacman, it looks.
 
 The order of `source` calls in `~/.zshrc` doesn't matter — the plugin places itself
 wherever it needs to in zsh's hooks.
@@ -191,8 +213,9 @@ command's output cuts the frame in two.
 jigger --version        # → jigger 0.10.0, or newer
 ```
 
-Open a fresh shell and type `brew ins` (or `winget ins`) **without pressing Enter**.
-The frame should appear under the prompt and narrow down with every letter.
+Open a fresh shell and type `brew ins` (`pacman ins` on Arch, `winget ins` on Windows)
+**without pressing Enter**. The frame should appear under the prompt and narrow down
+with every letter.
 
 Nothing shows up? The plugin says so when it refuses to load: a message, at shell
 startup, reports that the binary is missing from the `PATH` — or that it's too old
@@ -213,6 +236,10 @@ Just type a command. The popup lives on its own:
 brew install fire         packages named "fire…", updated with every letter
 brew uninstall ␣          installed packages only
 brew list --              list's own options
+pacman -S ripg            same idea, on Arch: the flag is the verb
+pacman -R rip             -R, -Rns… → installed packages only
+pacman -Q --              the options of -Q
+yay -S visual             repositories *and* the AUR, in a single list
 winget install Git.       same idea, on Windows
 scoop uninstall 7z
 ```
@@ -240,20 +267,23 @@ Three things worth knowing, most of what makes this comfortable:
   doesn't.
 - **jigger corrects what it inserts** whenever the command would otherwise be wrong:
   `--cask` added in front of a Homebrew cask, the qualified name `main/flux` for a
-  scoop package present in several buckets, quotes around a winget identifier that
-  contains spaces.
+  scoop package present in several buckets, `extra/rustup` for a name carried by both
+  an Arch repository and the AUR — otherwise `yay -S rustup` would stop and ask which
+  one you meant, right in the middle of what jigger had just inserted — and quotes
+  around a winget identifier that contains spaces.
 
 The badges in front of the names distinguish the two kinds of packages: ◆ for the
-ordinary case (formula, catalog package on winget, `main` bucket), ▣ for the other
-one (cask, application outside the catalog, third-party bucket).
+ordinary case (formula, repository package under pacman and yay, catalog package on
+winget, `main` bucket), ▣ for the other one (cask, AUR package, application outside
+the catalog, third-party bucket).
 
 ## 6. One syntax: `jg`
 
 Everything above speaks the language of each manager. `jg` speaks a single one for
-all three:
+all of them:
 
 ```sh
-jg install fd            # brew, winget, or scoop — whichever knows "fd"
+jg install fd            # brew, yay, winget, or scoop — whichever knows "fd"
 jg outdated              # what's due for an upgrade, everywhere
 jg search ripgrep
 jg info fd
@@ -283,10 +313,24 @@ packages:
 ```
 
 `install`, `uninstall`, `upgrade`, `list`, `outdated`, `search`, `info` — the seven
-that all three managers know how to do. Then `source` (brew's `tap`, scoop's
+brew, winget, scoop and yay all know how to do. Then `source` (brew's `tap`, scoop's
 `bucket`), `pin`, `unpin`, `cleanup`, and `doctor`, which don't exist everywhere.
 Asking winget for a verb it doesn't have — `cleanup`, `doctor` — fails cleanly,
 naming who would know how to do it.
+
+**On Arch, `yay` is the one that drives.** `pacman` and `yay` aren't two managers that
+happen to coexist, they're two doors onto the same alpm database: declaring both would
+list every installed package twice and make `jg install fd` ambiguous between two routes
+to the same thing. So when yay is installed, it answers for both — repositories *and*
+AUR — and pacman declares no verb at all. On an Arch machine **without** yay, pacman
+takes over the four **read** verbs it can serve without root: `list`, `outdated`,
+`search`, `info`. The mutating ones stay out, because pacman needs root for them and
+jigger elevates nothing.
+
+The price, and it's deliberate: `jg install --pm pacman` does not exist while yay is
+there. Installing through pacman is `pacman -S` — which jigger completes, and that's the
+module's main job anyway. The reasoning is in
+[ADR-0007](adr/0007-pacman-lit-yay-pilote.md).
 
 `source` comes in three forms: `jg source` lists, `jg source add <repo>` adds,
 `jg source rm <repo>` removes.
@@ -396,7 +440,7 @@ Import-Module C:\path\to\jigger\shell\jigger.psm1
 | `JIGGER_ROWS` | `8` | candidates shown — lower it on a short terminal |
 | `JIGGER_KEY` | `^I` (Tab) | insertion key. `'^ '` for Ctrl-Space; under PowerShell, a PSReadLine name (`Ctrl+Spacebar`) |
 | `JIGGER_MIN_COLUMNS` | `30` | below this width, the frame stops making sense: nothing shows up |
-| `JIGGER_CACHE_DIR` | `~/Library/Caches/jigger`, `%LOCALAPPDATA%\jigger` | cache location |
+| `JIGGER_CACHE_DIR` | `~/Library/Caches/jigger`, `${XDG_CACHE_HOME:-~/.cache}/jigger`, `%LOCALAPPDATA%\jigger` | cache location — macOS, Linux, Windows. `jigger prompt --path` prints the file it actually uses |
 | `JIGGER_BIN` | `jigger` | which binary the plugin calls. Handy while developing: Homebrew's `bin` usually comes before `~/.local/bin`, so a freshly built jigger would otherwise never be the one that runs |
 | `JIGGER_PAGER` | `1` | `0` disables the paged view: listing verbs always print the plain table |
 | `JIGGER_LANG` | your locale's language | messages: `en` or `fr`. Read before `LC_ALL`, `LC_MESSAGES` and `LANG` — and this is how you get French back in an English-speaking shell. Anything jigger can't translate falls back to English |
@@ -461,6 +505,7 @@ upgrades**:
 
 ```
  yves@MacBook  ~/git/jigger   main  🍺 6.0.17  🔬 7  📦 2 ❯      ← macOS
+ yves@omarchy  ~/git/jigger   main  🐧 7.1.0  📦 12  🌐 3 ❯       ← Arch Linux
  PS D:\jigger  💻 1.29.280  📦 48  🥄 1 ❯                        ← Windows
 ```
 
@@ -468,17 +513,31 @@ Nothing slow sits on the prompt's path: the count runs detached and drops its re
 into a one-line file, which the hook reads back using only shell primitives. Each
 counter disappears once it hits zero.
 
+On Arch the two counters don't count the same thing, and that's the whole point of
+splitting them: 📦 is the repository updates, a download, and 🌐 is what yay will have
+to *rebuild* from the AUR. Seeing them apart is knowing whether `yay -Syu` will take ten
+seconds or ten minutes.
+
 **Enable the hook** — before the plugin loads:
 
 ```sh
 JIGGER_PROMPT=1                                    # ~/.zshrc
 source "$(brew --prefix jigger)/share/jigger/jigger.plugin.zsh"
+#   from a clone:  source ~/git/jigger/shell/jigger.plugin.zsh
 ```
 
 ```powershell
 $env:JIGGER_PROMPT = '1'                           # $PROFILE, AFTER oh-my-posh/starship
 Import-Module C:\path\to\jigger\shell\jigger.psm1
 ```
+
+The **names of the exported variables follow the machine**, and they're settled once,
+when the shell loads: `JIGGER_BREW_VERSION`, `JIGGER_BREW_FORMULAE`, `JIGGER_BREW_CASKS`
+where brew is in charge — `JIGGER_PACMAN_VERSION`, `JIGGER_PACMAN_REPOS`,
+`JIGGER_PACMAN_AUR` on a machine with pacman. Calling a repository count "formulae"
+would be a lie sitting in someone's prompt; that's why there is one segment file per
+manager below. `JIGGER_<manager>_OUTDATED` carries the total, for whoever prefers a
+single number.
 
 **Add the segment** — a file ready to paste, per prompt and per platform.
 
@@ -492,7 +551,8 @@ cp "$(brew --prefix oh-my-posh)/themes/catppuccin_mocha.omp.json" \
 ```
 
 Paste the content of [`shell/oh-my-posh/brew.segment.json`](../shell/oh-my-posh/brew.segment.json)
-— or of [`windows.segment.json`](../shell/oh-my-posh/windows.segment.json) — into
+— or of [`pacman.segment.json`](../shell/oh-my-posh/pacman.segment.json), or of
+[`windows.segment.json`](../shell/oh-my-posh/windows.segment.json) — into
 the `segments` array of the block you want, then point your profile at your copy:
 
 ```sh
@@ -500,11 +560,13 @@ eval "$(oh-my-posh init zsh --config ~/.config/oh-my-posh/my-theme.omp.json)"
 ```
 
 *starship*: nothing to copy beforehand, there's only one config file —
-append [`shell/starship/brew.toml`](../shell/starship/brew.toml), or
+append [`shell/starship/brew.toml`](../shell/starship/brew.toml),
+[`pacman.toml`](../shell/starship/pacman.toml), or
 [`windows.toml`](../shell/starship/windows.toml):
 
 ```sh
-cat /path/to/jigger/shell/starship/brew.toml >> ~/.config/starship.toml
+cat /path/to/jigger/shell/starship/brew.toml   >> ~/.config/starship.toml
+cat /path/to/jigger/shell/starship/pacman.toml >> ~/.config/starship.toml   # on Arch
 ```
 
 These are `env_var` modules, which starship's default format already shows: there's
@@ -529,6 +591,7 @@ the exposed variables are described in the
 | `jg`: "unknown verb" | it isn't one of the twelve — `jg ⇥` lists them. The native command, though, is always spelled out in full: `brew tap`, not `jg tap` |
 | `jg`: "unknown to brew" on a package that exists | the cached catalog is older than the package. `jg … --pm brew <name>` bypasses it, `jigger warm --all` refreshes the cache |
 | `jg`: "manager unavailable for this verb" | the requested `--pm` isn't installed, or doesn't support this verb; the message names which ones do |
+| on Arch, `jg install` says no manager can do it | yay isn't installed. Without it, pacman only declares the four read verbs — it would need root for the rest, and jigger elevates nothing (§ 6). `pacman -S` still gets completed |
 | `^R` doesn't switch to regex under PowerShell | your profile binds `^R` after the import and takes the key. `Get-PSReadLineKeyHandler -Bound` shows who holds it: `jigger:regex` means us. Have that handler call `Invoke-JiggerRegex` first (§ 3) |
 | a frame left behind after some other key | same cause: a handler bound after the import took a key we relay. End it with `Update-JiggerPopup` (§ 3) |
 
@@ -546,6 +609,7 @@ way to understand what's happening.
 
 ```sh
 jigger complete "brew install fire" # candidates, one per line
+jigger complete "pacman -S ripg"    # … the same, on Arch
 jigger complete "jg "               # … and the facade's verbs
 jigger render --line "brew ins" --cols 80   # one popup frame, metadata included
 jigger pick "brew uninstall 7z"     # the full-screen picker

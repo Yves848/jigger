@@ -80,17 +80,27 @@ STUB
 
   cat > $rc <<RC
 setopt prompt_subst
-PS1='jf=\${JIGGER_BREW_FORMULAE:-vide} %% '
 # Le pty hérite de l'environnement de celui qui lance les tests — lequel a fort bien pu
 # ouvrir son terminal avec le bloc activé. Sans ce nettoyage, on lirait ses compteurs à
-# lui et le test passerait sans rien prouver.
+# lui et le test passerait sans rien prouver. Les DEUX familles : le greffon choisit la
+# sienne selon la machine, et celle qu'on ne nettoie pas est justement celle qu'on lit.
 unset JIGGER_BREW_VERSION JIGGER_BREW_FORMULAE JIGGER_BREW_CASKS JIGGER_BREW_OUTDATED
+unset JIGGER_PACMAN_VERSION JIGGER_PACMAN_REPOS JIGGER_PACMAN_AUR JIGGER_PACMAN_OUTDATED
 PATH="$dir/bin:\$PATH"
 brew() { print -r -- "CMD:[\$*]" }
 JIGGER_LIVE=0
 JIGGER_PROMPT=1
 JIGGER_CACHE_DIR=$dir
 source $root/shell/jigger.plugin.zsh
+# PS1 APRÈS le source, et bâti sur le choix du greffon plutôt que sur un nom en dur.
+# Les noms exportés par le bloc dépendent du gestionnaire présent (_jigger_pm,
+# _jigger_c1) : JIGGER_PACMAN_REPOS sur une machine à pacman, JIGGER_BREW_FORMULAE sur
+# un Mac. Un « jf=\${JIGGER_BREW_FORMULAE} » en dur lisait donc une variable vide sous
+# Arch, et les deux assertions du bloc échouaient sans qu'aucune régression n'ait eu
+# lieu. Même règle que pour la langue plus haut : c'est la CONCORDANCE avec le greffon
+# qu'on assère, jamais une valeur choisie d'avance.
+typeset -g _jigger_test_compteur="JIGGER_\${_jigger_pm}_\${_jigger_c1}"
+PS1='jf=\${(P)\${_jigger_test_compteur}:-vide} %% '
 RC
 }
 
@@ -376,7 +386,8 @@ suite() {
   check "brew cité ne compte pas"       "$(cat $dir/appels)" 'refresh' non
 
   if (( failed )); then
-    print -r -- "\n$failed assertion(s) en échec"
+    print -r -- ""
+    print -r -- "$failed assertion(s) en échec"
     return 1
   fi
   print -r -- ""
