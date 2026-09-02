@@ -6,6 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"gitlab.yg-devworks.com/yves/jigger/internal/managers"
+	"gitlab.yg-devworks.com/yves/jigger/internal/pm"
 )
 
 // Les six mots réservés ne doivent jamais devenir des verbes de façade. Contrainte
@@ -140,5 +143,67 @@ func TestRenderDessineUnCadreQuandLaConfigurationExiste(t *testing.T) {
 	}
 	if !strings.HasPrefix(lignes[0], "count=1\t") {
 		t.Errorf("métadonnées = %q, attendu un candidat", lignes[0])
+	}
+}
+
+// L'aperçu doit parler du gestionnaire qu'on lui nomme, et de lui seul.
+//
+// Le défaut que ce test ferme : runDemo testait `runtime.GOOS == "windows"` et retombait
+// sur brew partout ailleurs. `jigger demo` annonçait donc « brew install », et listait des
+// formules Homebrew, sur une machine Arch qui n'a pas de brew — le module pacman l'a rendu
+// faux sans jamais le toucher, et rien ne le disait.
+//
+// L'assertion porte sur la CONCORDANCE — le titre commence par le mot de commande, les
+// pastilles appartiennent au gestionnaire — et jamais sur une valeur choisie d'avance :
+// c'est ce qui la rend vraie pour les trois plateformes, depuis n'importe laquelle.
+func TestApercuSuitLeGestionnaire(t *testing.T) {
+	pastilles := map[string][]string{
+		"brew":   {pm.BadgeFormula, pm.BadgeCask},
+		"winget": {pm.BadgeWinget, pm.BadgeOther},
+		"pacman": {pm.BadgeRepo, pm.BadgeAUR},
+		"yay":    {pm.BadgeRepo, pm.BadgeAUR},
+	}
+	for cmd, permises := range pastilles {
+		titre, items := apercu(cmd)
+		if !strings.HasPrefix(titre, cmd+" ") {
+			t.Errorf("apercu(%q) : titre = %q, attendu qu'il commence par le mot de commande", cmd, titre)
+		}
+		if len(items) == 0 {
+			t.Errorf("apercu(%q) : aucun candidat", cmd)
+			continue
+		}
+		for _, it := range items {
+			ok := false
+			for _, b := range permises {
+				if it.Badge == b {
+					ok = true
+					break
+				}
+			}
+			if !ok {
+				t.Errorf("apercu(%q) : « %s » porte la pastille %q, étrangère à ce gestionnaire",
+					cmd, it.Name, it.Badge)
+			}
+		}
+	}
+}
+
+// Un mot que l'aperçu ne connaît pas ne doit pas rendre un cadre vide : brew reste le
+// repli, comme chez managers.Default().
+func TestApercuReplieSurBrew(t *testing.T) {
+	titre, items := apercu("ssh")
+	if titre != "brew install" || len(items) == 0 {
+		t.Errorf("apercu(\"ssh\") = %q, %d candidat(s) ; attendu le repli brew", titre, len(items))
+	}
+}
+
+// Le câblage, qui est l'endroit exact où le défaut se trouvait : runDemo doit montrer le
+// gestionnaire de LA MACHINE. Comparé à managers.Default() et non à « brew » ou
+// « pacman » — la valeur dépend de la machine qui lance les tests, la concordance non.
+func TestDemoMontreLeGestionnaireDeLaMachine(t *testing.T) {
+	attendu, _ := apercu(managers.Default().Cmd())
+	sortie := capturerStdout(t, runDemo)
+	if !strings.Contains(sortie, attendu) {
+		t.Errorf("demo n'annonce pas « %s » :\n%s", attendu, sortie)
 	}
 }

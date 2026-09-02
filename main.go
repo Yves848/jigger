@@ -30,7 +30,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"runtime"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -695,18 +694,26 @@ func runPick(line string) int {
 func runDemo() {
 	lipgloss.SetColorProfile(termenv.TrueColor) // aperçu toujours coloré
 
-	titre := "brew install"
-	items := []complete.Item{
-		{Name: "git", Badge: pm.BadgeFormula, Installed: true, Version: "2.55.0"},
-		{Name: "gitui", Badge: pm.BadgeFormula},
-		{Name: "gh", Badge: pm.BadgeFormula, Installed: true, Version: "2.62.0"},
-		{Name: "git-delta", Badge: pm.BadgeFormula},
-		{Name: "google-chrome", Badge: pm.BadgeCask},
-		{Name: "firefox", Badge: pm.BadgeCask},
-	}
-	if runtime.GOOS == "windows" {
-		titre = "winget install"
-		items = []complete.Item{
+	titre, items := apercu(managers.Default().Cmd())
+	fmt.Println(ui.New(titre, complete.Result{Executable: true, Items: items}).View())
+}
+
+// apercu rend la ligne de titre et les candidats d'un aperçu, pour un mot de commande.
+//
+// Le mot vient de managers.Default() — le gestionnaire que la façade retiendrait pour une
+// ligne qui ne nomme personne —, et non d'un test sur runtime.GOOS. La distinction n'est
+// pas cosmétique : un `runtime.GOOS == "windows"` en `else` de brew faisait annoncer
+// « brew install », et lister des formules Homebrew, sur une machine Arch qui n'a pas de
+// brew. Le module pacman a rendu cet aperçu faux sans jamais le toucher. Demander la règle
+// là où elle est écrite est aussi ce qui fera suivre l'aperçu au prochain gestionnaire,
+// sans qu'on ait à y repenser.
+//
+// Découpée de runDemo pour être éprouvable sur les trois branches depuis n'importe quelle
+// machine : la sortie de runDemo, elle, dépend de ce qui est installé.
+func apercu(cmd string) (string, []complete.Item) {
+	switch cmd {
+	case "winget":
+		return "winget install", []complete.Item{
 			{Name: "Git.Git", Badge: pm.BadgeWinget, Installed: true, Version: "2.55.0"},
 			{Name: "GitHub.cli", Badge: pm.BadgeWinget, Installed: true, Version: "2.62.0"},
 			{Name: "GitHub.GitHubDesktop", Badge: pm.BadgeWinget},
@@ -714,7 +721,25 @@ func runDemo() {
 			{Name: "Google.Chrome", Badge: pm.BadgeWinget},
 			{Name: "Canon.PrinterDriver", Badge: pm.BadgeOther, Installed: true, Version: "1.02"},
 		}
+	case "pacman", "yay":
+		// « -S » et non « install » : chez pacman l'opération est un drapeau, et un aperçu
+		// qui montrerait une autre grammaire que celle du popup mentirait deux fois.
+		// Versions au format alpm, avec leur numéro de version du paquet (pkgrel).
+		return cmd + " -S", []complete.Item{
+			{Name: "git", Badge: pm.BadgeRepo, Installed: true, Version: "2.55.0-1"},
+			{Name: "gitui", Badge: pm.BadgeRepo},
+			{Name: "github-cli", Badge: pm.BadgeRepo, Installed: true, Version: "2.62.0-1"},
+			{Name: "git-delta", Badge: pm.BadgeRepo},
+			{Name: "google-chrome", Badge: pm.BadgeAUR},
+			{Name: "visual-studio-code-bin", Badge: pm.BadgeAUR},
+		}
 	}
-
-	fmt.Println(ui.New(titre, complete.Result{Executable: true, Items: items}).View())
+	return "brew install", []complete.Item{
+		{Name: "git", Badge: pm.BadgeFormula, Installed: true, Version: "2.55.0"},
+		{Name: "gitui", Badge: pm.BadgeFormula},
+		{Name: "gh", Badge: pm.BadgeFormula, Installed: true, Version: "2.62.0"},
+		{Name: "git-delta", Badge: pm.BadgeFormula},
+		{Name: "google-chrome", Badge: pm.BadgeCask},
+		{Name: "firefox", Badge: pm.BadgeCask},
+	}
 }
