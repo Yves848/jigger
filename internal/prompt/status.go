@@ -24,6 +24,7 @@ import (
 
 	"gitlab.yg-devworks.com/yves/jigger/internal/brew"
 	"gitlab.yg-devworks.com/yves/jigger/internal/i18n"
+	"gitlab.yg-devworks.com/yves/jigger/internal/pacman"
 	"gitlab.yg-devworks.com/yves/jigger/internal/pm"
 	"gitlab.yg-devworks.com/yves/jigger/internal/scoop"
 	"gitlab.yg-devworks.com/yves/jigger/internal/winget"
@@ -58,12 +59,13 @@ const (
 
 // Status est l'état affiché — et mis en cache. Les deux compteurs sont ceux du prompt ;
 // ce qui les sépare dépend de la plateforme : formulae et casks obsolètes pour
-// Homebrew, paquets winget et scoop obsolètes sous Windows. Le format du cache, lui, ne
-// change pas : le hook du shell découpe la même ligne des deux côtés.
+// Homebrew, paquets winget et scoop obsolètes sous Windows, dépôts et AUR sous pacman. Le
+// format du cache, lui, ne change pas : le hook du shell découpe la même ligne des trois
+// côtés.
 type Status struct {
 	Version   string    // version du gestionnaire, sans suffixe : « 6.0.17 », « 1.29.280 »
-	Primary   int       // obsolètes du premier compteur (formulae / winget)
-	Secondary int       // obsolètes du second (casks / scoop)
+	Primary   int       // obsolètes du premier compteur (formulae / winget / dépôts)
+	Secondary int       // obsolètes du second (casks / scoop / AUR)
 	At        time.Time // instant du calcul, pour la péremption du cache
 }
 
@@ -200,13 +202,46 @@ func refresh(dir string, sonde Sonde, attente time.Duration) (Status, error) {
 	return s, ecrire(dir, s)
 }
 
-// SondePlateforme rend la sonde de la machine : Homebrew là où il règne, winget et
-// scoop sous Windows.
+// SondePlateforme rend la sonde de la machine : winget et scoop sous Windows, pacman et
+// yay là où pacman règne, Homebrew partout ailleurs.
+//
+// Le test porte sur la présence de pacman, pas sur GOOS : le greffon zsh tourne aussi sur
+// les Linux qui n'ont que Homebrew (cf. README), et ceux-là doivent garder leur bloc.
 func SondePlateforme() Sonde {
-	if runtime.GOOS == "windows" {
+	switch {
+	case runtime.GOOS == "windows":
 		return SondeWindows
+	case pacman.Present("pacman"):
+		return SondePacman
 	}
 	return SondeBrew(brewReel)
+}
+
+// SondePacman interroge pacman, et yay s'il est là. La répartition primaire/secondaire
+// garde le sens qu'elle a partout ailleurs — formulae/casks, winget/scoop : ici, **dépôts
+// et AUR**. Le format du cache d'une ligne ne bouge donc pas, et ni le hook zsh ni les
+// segments oh-my-posh et starship n'ont à changer.
+//
+// Comme SondeWindows, elle ne renonce que si la machine n'a rien à dire : un compteur AUR
+// injoignable (pas de yay, ou pas de réseau) laisse le compteur des dépôts s'afficher seul.
+func SondePacman() (Status, error) {
+	// La version d'abord : si pacman est injoignable, on renonce tout de suite.
+	v, err := pacman.Version()
+	if err != nil {
+		return Status{}, err
+	}
+	s := Status{Version: v}
+
+	depots, errDepots := pacman.Outdated()
+	if errDepots != nil {
+		return Status{}, errDepots
+	}
+	s.Primary = depots
+
+	if aur, err := pacman.OutdatedAUR(); err == nil {
+		s.Secondary = aur
+	}
+	return s, nil
 }
 
 // SondeBrew interroge Homebrew : sa version, puis ses obsolètes répartis en formulae et

@@ -1,4 +1,5 @@
-# jigger.plugin.zsh — assistance Homebrew dans zsh.
+# jigger.plugin.zsh — assistance aux gestionnaires de paquets dans zsh (Homebrew,
+# pacman, yay).
 #
 # Deux modes, complémentaires :
 #
@@ -173,9 +174,11 @@ typeset -g _jigger_accept_widget=''                    # ce que ⏎ faisait
 # (ADR-0005). Jusqu'ici la liste était figée par un `typeset -ga` inconditionnel : une
 # valeur posée dans ~/.zshrc était écrasée, et le seul recours était ^G, ligne par ligne.
 #
-# La liste diffère de celle de PowerShell parce que les machines diffèrent : `brew` ici,
-# `winget` et `scoop` là-bas.
-: "${JIGGER_COMMANDS:=brew ssh scp sftp}"
+# La liste diffère de celle de PowerShell parce que les machines diffèrent : `brew`,
+# `pacman` et `yay` ici, `winget` et `scoop` là-bas. Elle ne dépend pas de la
+# distribution : un `pacman` tapé sur macOS reste complété — au pire sur un catalogue
+# vide —, exactement comme un `brew` tapé sous Windows (cf. managers.All).
+: "${JIGGER_COMMANDS:=brew pacman yay ssh scp sftp}"
 typeset -ga _jigger_commands=( ${=JIGGER_COMMANDS//,/ } )
 
 # « jigger » et son alias « jg » (posé plus haut) s'ajoutent TOUJOURS à ce que
@@ -598,7 +601,7 @@ if (( JIGGER_LIVE )); then
   add-zle-hook-widget line-finish _jigger_line_finish
 fi
 
-# ── Après une commande brew qui change l'état ─────────────────────────────────────────
+# ── Après une commande qui change l'état ──────────────────────────────────────────────
 #
 # Deux choses vieillissent quand une commande brew passe, et une seule des deux regarde
 # le bloc de prompt :
@@ -640,26 +643,68 @@ typeset -ga _jigger_brew_mutants=(
 # un paquet que le catalogue connaissait déjà — et les installés, eux, se lisent dans
 # Cellar et Caskroom, donc sans cache à refaire.
 typeset -ga _jigger_brew_catalog_mutants=( update tap untap )
+
+# pacman et ses assistants AUR. Leur « sous-commande » est un DRAPEAU — `pacman -Syu`, pas
+# `pacman upgrade` —, donc la reconnaissance ne peut pas passer par une liste de mots comme
+# celle de brew : c'est une lecture des lettres de l'opération.
+typeset -ga _jigger_pacman_cmds=( pacman yay paru )
+
+# _jigger_pacman_mutant rend vrai si l'opération change ce que `pacman -Qu` répondra.
+#
+#   -R…  retrait          -U…  installation d'un fichier local     -D…  base de données
+#   -S…  installation, SAUF les lectures pures : -Ss (recherche), -Si (info), -Sl (liste),
+#        -Sg (groupe), -Sp (chemins), -Sw (téléchargement seul), -Sc (nettoyage du cache).
+#        Mais dès qu'un `y` ou un `u` apparaît — -Sy, -Syu — la base de synchronisation
+#        change, donc la liste des obsolètes aussi.
+_jigger_pacman_mutant() {
+  local op=${1#-}
+  [[ $op == -* ]] && return 1        # option longue (--noconfirm) : pas une opération
+  case $op in
+    (R*|U*|D*) return 0 ;;
+    (S*)
+      [[ $op == *[yu]* ]] && return 0
+      [[ $op == S[silgpwc]* ]] && return 1
+      return 0
+      ;;
+  esac
+  return 1
+}
 # Mots qui précèdent une commande sans en être une : la commande brew reste à venir.
 typeset -ga _jigger_prefixes=(
   ';' '&' '&&' '||' '|' '|&' '(' ')' '{' '}' '!' then do else elif
   sudo command env exec nohup time arch
 )
 
-# _jigger_preexec repère `brew <mutant>` dans la ligne sur le point de s'exécuter. On ne
-# lit que des mots — rien n'est évalué — et on n'accepte `brew` qu'en tête de commande :
-# « git commit -m 'brew upgrade' » ne déclenche donc rien.
+# _jigger_preexec repère `brew <mutant>` et `pacman <opération mutante>` dans la ligne sur
+# le point de s'exécuter. On ne lit que des mots — rien n'est évalué — et on n'accepte le
+# nom du gestionnaire qu'en tête de commande : « git commit -m 'brew upgrade' » ne
+# déclenche donc rien.
 _jigger_preexec() {
-  local mot
-  local -i debut=1 brew=0
+  local mot gest=''
+  local -i debut=1
   # ${(z)…} découpe comme le ferait le shell, sans rien exécuter.
   for mot in ${(z)${3:-$1}}; do
-    if (( brew )); then
-      [[ $mot == -* ]] && continue   # « brew --quiet upgrade » compte pour un upgrade
-      (( ${_jigger_brew_mutants[(Ie)$mot]} ))         && _jigger_prompt_dirty=1
-      (( ${_jigger_brew_catalog_mutants[(Ie)$mot]} )) && _jigger_catalog_dirty=1
-      # Le premier mot nu est la sous-commande : ce qui suit ne nous apprend plus rien.
-      brew=0 debut=0
+    if [[ -n $gest ]]; then
+      if [[ $gest == brew ]]; then
+        [[ $mot == -* ]] && continue  # « brew --quiet upgrade » compte pour un upgrade
+        (( ${_jigger_brew_mutants[(Ie)$mot]} ))         && _jigger_prompt_dirty=1
+        (( ${_jigger_brew_catalog_mutants[(Ie)$mot]} )) && _jigger_catalog_dirty=1
+      else
+        # `yay <mot>` sans opération ouvre le menu « chercher puis installer » : c'est
+        # une installation, même sans drapeau.
+        if [[ $mot != -* ]]; then
+          [[ $gest != pacman ]] && _jigger_prompt_dirty=1
+        else
+          _jigger_pacman_mutant "$mot" && _jigger_prompt_dirty=1
+          # Seule la synchronisation renouvelle la liste des NOMS connus. Installer un
+          # paquet ne la change pas, et les installés se lisent dans /var/lib/pacman/local
+          # — donc sans cache à refaire.
+          [[ ${mot#-} == S*y* ]] && _jigger_catalog_dirty=1
+        fi
+      fi
+      # Le premier mot retenu est la sous-commande (ou l'opération) : ce qui suit ne nous
+      # apprend plus rien.
+      gest='' debut=0
       continue
     fi
     if (( ${_jigger_prefixes[(Ie)$mot]} )); then
@@ -672,11 +717,18 @@ _jigger_preexec() {
       continue
     fi
     if (( debut )) && [[ ${mot:t} == brew ]]; then
-      brew=1
+      gest=brew
+      continue
+    fi
+    if (( debut )) && (( ${_jigger_pacman_cmds[(Ie)${mot:t}]} )); then
+      gest=${mot:t}
       continue
     fi
     debut=0
   done
+  # `yay` tout seul vaut `yay -Syu` : la ligne s'achève sans qu'on ait vu d'opération.
+  [[ -n $gest && $gest != pacman && $gest != brew ]] && _jigger_prompt_dirty=1
+  return 0
 }
 
 # _jigger_precmd tourne avant chaque prompt, que le bloc oh-my-posh soit activé ou non :
@@ -733,6 +785,17 @@ if (( JIGGER_PROMPT )); then
     fi
   }
 
+  # Le fichier d'état ne nomme pas le gestionnaire : ses quatre champs sont les mêmes
+  # partout (cf. prompt.Status — version, compteur primaire, compteur secondaire, date).
+  # Ce sont les NOMS des variables exportées qui changent, et ils se décident une fois, au
+  # chargement : sur une machine à pacman, appeler « formulae » un compte de dépôts serait
+  # un mensonge dans le prompt de quelqu'un.
+  if [[ -x /usr/bin/pacman ]]; then
+    typeset -g _jigger_pm=PACMAN _jigger_c1=REPOS _jigger_c2=AUR
+  else
+    typeset -g _jigger_pm=BREW _jigger_c1=FORMULAE _jigger_c2=CASKS
+  fi
+
   _jigger_prompt_precmd() {
     local line
     local -a champs
@@ -760,13 +823,13 @@ if (( JIGGER_PROMPT )); then
       # `<->` = suite de chiffres : une ligne bricolée à la main ne doit pas se
       # retrouver dans une expansion arithmétique.
       if (( $#champs == 4 )) && [[ "$champs[2]$champs[3]$champs[4]" == <-> ]]; then
-        export JIGGER_BREW_VERSION="$champs[1]"
+        export "JIGGER_${_jigger_pm}_VERSION=$champs[1]"
         # Un compteur n'est exporté que s'il a quelque chose à signaler : le template
         # oh-my-posh se réduit alors à « {{ if .Env.JIGGER_BREW_FORMULAE }} », sans
         # comparaison de chaînes. Le total reste exposé pour qui préfère un seul chiffre.
-        _jigger_export_compteur JIGGER_BREW_FORMULAE $champs[2]
-        _jigger_export_compteur JIGGER_BREW_CASKS    $champs[3]
-        _jigger_export_compteur JIGGER_BREW_OUTDATED $(( champs[2] + champs[3] ))
+        _jigger_export_compteur "JIGGER_${_jigger_pm}_${_jigger_c1}" $champs[2]
+        _jigger_export_compteur "JIGGER_${_jigger_pm}_${_jigger_c2}" $champs[3]
+        _jigger_export_compteur "JIGGER_${_jigger_pm}_OUTDATED" $(( champs[2] + champs[3] ))
         age=$(( EPOCHSECONDS - champs[4] ))
       fi
     fi

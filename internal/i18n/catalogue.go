@@ -22,6 +22,7 @@ var catalogue = map[string][nbLangues]string{
 	"popup.filter_hint":    {"type to filter… (%d packages)", "tapez pour filtrer… (%d paquets)"},
 	"popup.catalog_brew":   {"building the Homebrew catalog…", "catalogue Homebrew en préparation…"},
 	"popup.catalog_winget": {"building the winget catalog…", "catalogue winget en préparation…"},
+	"popup.catalog_pacman": {"building the pacman catalog…", "catalogue pacman en préparation…"},
 	// Titre du popup de désambiguïsation ouvert par trancher() (main.go) : fuite
 	// assemblée trouvée hors des lignes citées par le brief — un fmt.Sprintf qui
 	// fabriquait ce titre en français, y compris à JIGGER_LANG=en. Préfixée popup. (et
@@ -193,6 +194,7 @@ var catalogue = map[string][nbLangues]string{
 	"cfg.prompt_ttl":  {"seconds before the prompt block is refreshed", "secondes avant rafraîchissement du bloc d'invite"},
 	"cfg.bin":         {"which jigger binary the plugin calls", "binaire jigger appelé par le greffon"},
 	"cfg.ttl":         {"how long the catalog stays fresh", "durée de validité du catalogue"},
+	"cfg.ttl_aur":     {"how long the AUR name list stays fresh", "durée de validité de la liste AUR"},
 
 	"cfg.title":      {"jigger — settings", "jigger — réglages"},
 	"cfg.edit":       {"edit", "modifier"},

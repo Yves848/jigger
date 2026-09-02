@@ -1,10 +1,10 @@
 // jigger — assistance aux gestionnaires de paquets dans le terminal : complétion
 // contextuelle et sélecteur interactif (Bubble Tea), pensés pour être branchés dans zsh
-// (Homebrew) ou PowerShell (winget, scoop).
+// (Homebrew, pacman, yay) ou PowerShell (winget, scoop).
 //
-// C'est le premier mot de la ligne qui désigne le gestionnaire : `brew`, `winget` ou
-// `scoop`. Toutes les sous-commandes ci-dessous s'emploient de la même façon quel que
-// soit celui-ci.
+// C'est le premier mot de la ligne qui désigne le gestionnaire : `brew`, `winget`,
+// `scoop`, `pacman` ou `yay`. Toutes les sous-commandes ci-dessous s'emploient de la même
+// façon quel que soit celui-ci.
 //
 // Sous-commandes :
 //

@@ -146,7 +146,19 @@ l'invite qu'elle remplace.
 
 ### A-16 — Étudier l'intégration d'autres gestionnaires
 
-**Priorité :** à déterminer · **Provenance :** demande du 16 août
+**Priorité :** à déterminer · **Provenance :** demande du 16 août ·
+**pacman : fait le 2026-09-02** ([conception](specs/2026-09-02-pacman-design.md),
+[ADR-0007](adr/0007-pacman-lit-yay-pilote.md))
+
+> **pacman et yay sont livrés.** La grille ci-dessous a été remplie pour eux — et le
+> verdict, « faisable, bon marché », était assez net pour que l'implémentation suive dans
+> la foulée plutôt qu'une note. La conception porte les mesures. Deux enseignements pour
+> les suivants : la grille manquait une question, **« les opérations sont-elles des
+> verbes ou des drapeaux ? »** — pacman écrit `-S` là où brew écrit `install`, et c'est ce
+> qui a demandé le plus de conception ; et elle en manquait une seconde, **« combien de
+> noms ? »** — les 118 000 de l'AUR ont sorti la fusion du catalogue du chemin de la
+> frappe. **apt, dnf et npm restent à étudier**, et npm garde toute la réserve écrite
+> plus bas.
 
 apt, pacman, npm, et les suivants. **Une étude par gestionnaire**, dans `docs/analyse/`,
 concluant sur la faisabilité et le coût — pas une implémentation.

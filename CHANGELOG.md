@@ -9,6 +9,47 @@ The format follows [Keep a Changelog](https://keepachangelog.com/1.1.0/) and
 [SemVer](https://semver.org/). Versions before `v0.1.6` predate this log; their detail
 lives in the git history.
 
+## [Unreleased]
+
+### Added
+
+- **pacman and yay are completed — repositories and the AUR.** jigger's first Linux
+  package manager. Type `pacman ` or `yay ` and the popup offers the operations (`-S`,
+  `-Syu`, `-Rns`, `-Qu`…); type one and the packages follow — the whole catalogue behind
+  `-S`, only what is installed behind `-R` and `-Q`. A diamond marks a repository
+  package, a square an AUR one. `yay -S` on a name that both a repository and the AUR
+  carry inserts it qualified — `extra/rustup` — which is what keeps yay from opening its
+  "repo or AUR?" menu in the middle of what jigger just inserted.
+
+  pacman is the only manager whose operations are **flags**, so the provider declares the
+  same list on both sides of the engine's `-` test: `pacman ⇥` and `pacman -⇥` open the
+  same list. Installed packages are read straight from `/var/lib/pacman/local` — no
+  subprocess on the keystroke path, the same trick as Homebrew's Cellar.
+
+- **`jg install`, `jg outdated`, `jg list`, `jg search` work on Arch.** Where yay is
+  installed it drives everything, including the mutating verbs — it handles its own
+  `sudo`. Where it is not, pacman declares the four read verbs, the ones that do not need
+  root. jigger still elevates nothing. See
+  [ADR-0007](docs/adr/0007-pacman-lit-yay-pilote.md).
+
+- **The prompt block counts repository and AUR upgrades separately** —
+  `JIGGER_PACMAN_VERSION`, `JIGGER_PACMAN_REPOS`, `JIGGER_PACMAN_AUR`. The split is the
+  point: AUR upgrades are rebuilt from source, repository ones are downloaded, and seeing
+  them apart tells you whether `yay -Syu` will take ten seconds or ten minutes. Ready-made
+  segments in `shell/oh-my-posh/pacman.segment.json` and `shell/starship/pacman.toml`.
+  Counting is done by `checkupdates` when it exists — never by `pacman -Sy`, which would
+  leave an Arch install in the state that breaks the next install.
+
+### Changed
+
+- `JIGGER_COMMANDS` now defaults to `brew pacman yay ssh scp sftp` in zsh.
+- The catalogue is merged, deduplicated and sorted **at warm time** rather than on every
+  keystroke, and `pm.NewCatalogDe` sizes the tables up front. On a machine with the AUR
+  catalogue loaded — 134 000 names — this takes `jigger render` from 70 ms to 28 ms per
+  keystroke; `warm --all` drops from 1 058 ms to 710 ms. Nothing changes for brew, winget
+  or scoop.
+- Subcommand completion now matches case-insensitively, as option completion already did.
+
 ## [v0.13.0] — 2026-09-02
 
 ### Added
