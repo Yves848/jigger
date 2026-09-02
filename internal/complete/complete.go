@@ -36,6 +36,13 @@ type Result struct {
 	// ~/.ssh/config.
 	Silencieux bool
 
+	// subBrut est la sous-commande telle qu'elle a été TAPÉE. Sub, lui, est minusculé —
+	// c'est ce que les tables des gestionnaires attendent. La distinction ne servait à
+	// rien tant que toutes les sous-commandes étaient en minuscules ; elle est devenue
+	// visible avec pacman, dont les opérations sont des drapeaux à casse significative :
+	// le cadre annonçait « pacman -rns », qui n'est pas une commande pacman valide.
+	subBrut string
+
 	mgr pm.Manager
 	cat *pm.Catalog
 
@@ -65,12 +72,18 @@ func (r Result) InsertItem(it Item) string {
 	return mgr.Insert(cat, r.Sub, r.Prefix, it.Name)
 }
 
-// Title résume le contexte, en tête du popup : « winget install ».
+// Title résume le contexte, en tête du popup : « winget install », « pacman -Rns ». La
+// sous-commande y figure telle qu'elle a été tapée : le titre montre la ligne qu'on est en
+// train d'écrire, pas la clé minusculée avec laquelle jigger interroge ses tables.
 func (r Result) Title() string {
-	if r.Sub == "" {
+	sub := r.subBrut
+	if sub == "" {
+		sub = r.Sub
+	}
+	if sub == "" {
 		return r.Cmd
 	}
-	return r.Cmd + " " + r.Sub
+	return r.Cmd + " " + sub
 }
 
 // estFacade dit si le premier mot d'une ligne désigne jigger lui-même — « jigger » ou son
@@ -237,9 +250,10 @@ func completeWith(line string, m pm.Manager, cat *pm.Catalog, regex bool) Result
 	if len(before) > 0 && strings.EqualFold(motCommande(before[0]), m.Cmd()) {
 		before = before[1:]
 	}
-	sub := ""
+	sub, subBrut := "", ""
 	if len(before) > 0 {
-		sub = strings.ToLower(before[0])
+		subBrut = before[0]
+		sub = strings.ToLower(subBrut)
 	}
 
 	firstWord := len(before) == 0
@@ -263,7 +277,7 @@ func completeWith(line string, m pm.Manager, cat *pm.Catalog, regex bool) Result
 	isPackage := !isOption && (!firstWord || sansVerbes)
 
 	res := Result{
-		Prefix: prefix, Word: word, Cmd: m.Cmd(), Sub: sub,
+		Prefix: prefix, Word: word, Cmd: m.Cmd(), Sub: sub, subBrut: subBrut,
 		// Un fournisseur sans verbes n'a pas de pm.Bindings : rien à exécuter. Le
 		// sélecteur plein écran doit insérer, pas lancer.
 		Executable: isPackage && !sansVerbes, mgr: m, cat: cat,
@@ -280,7 +294,11 @@ func completeWith(line string, m pm.Manager, cat *pm.Catalog, regex bool) Result
 		}
 	case firstWord && !sansVerbes:
 		for _, s := range subs {
-			if strings.HasPrefix(s, lw) {
+			// Minusculé des deux côtés, comme la branche des options juste au-dessus.
+			// Les sous-commandes de brew, winget et scoop sont déjà en minuscules ; les
+			// opérations de pacman, elles, ne le sont pas — « -S » ne peut pas se
+			// retrouver par un mot que complete a minusculé en « -s ».
+			if strings.HasPrefix(strings.ToLower(s), lw) {
 				res.Items = append(res.Items, Item{Name: s})
 			}
 		}

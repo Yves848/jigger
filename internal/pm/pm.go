@@ -65,6 +65,8 @@ const (
 	BadgeWinget  = "W" // winget : paquet du catalogue
 	BadgeOther   = "X" // winget : installé hors catalogue (ARP/MSIX) ; scoop : autre bucket
 	BadgeScoop   = "S" // scoop : bucket main
+	BadgeRepo    = "R" // pacman : paquet d'un dépôt binaire (core, extra, multilib…)
+	BadgeAUR     = "A" // pacman/yay : paquet de l'AUR, ou installé hors dépôts
 )
 
 // Catalog rassemble tout ce que la complétion doit savoir des paquets d'un
@@ -83,9 +85,21 @@ type Catalog struct {
 }
 
 // NewCatalog rend un catalogue vide, prêt à être rempli.
-func NewCatalog() *Catalog {
+func NewCatalog() *Catalog { return NewCatalogDe(0) }
+
+// NewCatalogDe est NewCatalog dimensionné d'avance pour `n` paquets.
+//
+// Ce n'est pas une micro-optimisation : une table de hachage Go qui reçoit cent mille
+// entrées sans indication de taille les réalloue une vingtaine de fois en chemin, en
+// recopiant tout à chaque fois. Sur le catalogue de l'AUR — 118 000 noms, lus à CHAQUE
+// frappe (cf. la règle d'ouverture de ce paquet) — la différence se voit à l'œil nu.
+// Names est dimensionné pour la même raison.
+//
+// n est une estimation : trop bas, on retombe simplement sur le comportement d'avant.
+func NewCatalogDe(n int) *Catalog {
 	return &Catalog{
-		Badges:    map[string]string{},
+		Names:     make([]string, 0, n),
+		Badges:    make(map[string]string, n),
 		Installed: map[string]bool{},
 		Versions:  map[string]string{},
 		Qualified: map[string]string{},

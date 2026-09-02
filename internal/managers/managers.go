@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"gitlab.yg-devworks.com/yves/jigger/internal/brew"
+	"gitlab.yg-devworks.com/yves/jigger/internal/pacman"
 	"gitlab.yg-devworks.com/yves/jigger/internal/pm"
 	"gitlab.yg-devworks.com/yves/jigger/internal/scoop"
 	"gitlab.yg-devworks.com/yves/jigger/internal/ssh"
@@ -26,6 +27,9 @@ import (
 func All() []pm.Manager {
 	return []pm.Manager{
 		brew.New(), winget.New(), scoop.New(),
+		// pacman et yay : deux portes sur la même base alpm, donc deux fournisseurs qui
+		// partagent tout sauf le catalogue AUR et la table des verbes (ADR-0007).
+		pacman.New("pacman"), pacman.New("yay"),
 		// Trois fournisseurs plutôt qu'un à trois noms : Manager.Cmd() ne rend qu'un
 		// mot, et l'élargir obligerait brew, winget et scoop à répondre à une question
 		// qu'ils ne se posent pas. Ils partagent implémentation et catalogue.
@@ -60,8 +64,11 @@ func For(cmd string) (pm.Manager, bool) {
 // Default rend le gestionnaire retenu quand la ligne ne nomme personne — c'est le cas
 // de `jigger complete "install fire"`, appelé sans le mot de commande.
 func Default() pm.Manager {
-	if runtime.GOOS == "windows" {
+	switch {
+	case runtime.GOOS == "windows":
 		return winget.New()
+	case runtime.GOOS == "linux" && pacman.Present("pacman"):
+		return pacman.New("pacman")
 	}
 	return brew.New()
 }

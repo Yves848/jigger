@@ -239,9 +239,9 @@ func (f Frame) renderRow(it complete.Item, selected bool, avecPM bool) string {
 // puce discrète.
 func glyphe(badge string) string {
 	switch badge {
-	case pm.BadgeFormula, pm.BadgeWinget, pm.BadgeScoop:
+	case pm.BadgeFormula, pm.BadgeWinget, pm.BadgeScoop, pm.BadgeRepo:
 		return "◆"
-	case pm.BadgeCask, pm.BadgeOther:
+	case pm.BadgeCask, pm.BadgeOther, pm.BadgeAUR:
 		return "▣"
 	}
 	return "•"
@@ -249,9 +249,9 @@ func glyphe(badge string) string {
 
 func couleur(badge string) lipgloss.Style {
 	switch badge {
-	case pm.BadgeFormula, pm.BadgeWinget, pm.BadgeScoop:
+	case pm.BadgeFormula, pm.BadgeWinget, pm.BadgeScoop, pm.BadgeRepo:
 		return formulaStyle
-	case pm.BadgeCask, pm.BadgeOther:
+	case pm.BadgeCask, pm.BadgeOther, pm.BadgeAUR:
 		return caskStyle
 	}
 	return bulletStyle
