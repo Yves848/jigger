@@ -6,3 +6,8 @@ internal/winget/testdata/* -text
 # commité doit être exactement ce que le gestionnaire a écrit.
 internal/scoop/testdata/* -text
 tests/captures/* -text
+
+# Les images et les enregistrements de la documentation. Binaires : ni normalisation de
+# fins de ligne, ni tentative de diff — un GIF de 180 ko affiché en texte dans une revue
+# n'aide personne. Ils sont produits par docs/media/capturer.sh (cf. docs/captures.md).
+docs/media/out/* binary
