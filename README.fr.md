@@ -370,7 +370,7 @@ explicite (la ligne ouverte par défaut est *annuler*).
 $ jg install Quelque.Chose
 jigger (winget) : cette commande demande les privilèges d'administrateur.
 ╭──────────────────────────────────────────────────────────╮
-│❯ Relancer en administrateur ?               jigger 0.14.1│
+│❯ Relancer en administrateur ?               jigger 0.15.0│
 │  •  annuler                                              │
 │  •  relancer dans une fenêtre élevée                     │
 │                                                          │

@@ -12,7 +12,7 @@ command, a frame appears under the prompt and tracks your keystrokes.
 ```
 ❯ brew install fire
 ╭──────────────────────────────────────────────────────────╮
-│❯ brew install                               jigger 0.14.1│
+│❯ brew install                               jigger 0.15.0│
 │  ▣  firealpaca                                           │
 │  ▣  firebase-admin                                       │
 │  ◆  firebase-cli                                         │
@@ -210,7 +210,7 @@ command's output cuts the frame in two.
 ## 4. Check that it works
 
 ```sh
-jigger --version        # → jigger 0.14.1, or newer
+jigger --version        # → jigger 0.15.0, or newer
 ```
 
 Open a fresh shell and type `brew ins` (`pacman ins` on Arch, `winget ins` on Windows)
@@ -249,7 +249,7 @@ The same frame on Arch, `yay` answering for both catalogues at once:
 ```
 ❯ yay -S visual-studio
 ╭──────────────────────────────────────────────────────────╮
-│❯ yay -S                                     jigger 0.14.1│
+│❯ yay -S                                     jigger 0.15.0│
 │  ◆  visual-studio-code-bin                 1.135.0-1  ●  │
 │  ▣  visual-studio-code-cli-bin                           │
 │  ▣  visual-studio-code-electron-bin                      │
@@ -324,7 +324,7 @@ packages:
 ```
 ❯ jg
 ╭──────────────────────────────────────────────────────────╮
-│❯ jigger                                     jigger 0.14.1│
+│❯ jigger                                     jigger 0.15.0│
 │  •  cleanup                                              │
 │  •  doctor                                               │
 │  •  info                                                 │

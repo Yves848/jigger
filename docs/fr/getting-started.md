@@ -12,7 +12,7 @@ gestionnaire de paquets, un cadre s'affiche sous le prompt et suit ta frappe.
 ```
 ❯ brew install fire
 ╭──────────────────────────────────────────────────────────╮
-│❯ brew install                               jigger 0.14.1│
+│❯ brew install                               jigger 0.15.0│
 │  ▣  firealpaca                                           │
 │  ▣  firebase-admin                                       │
 │  ◆  firebase-cli                                         │
@@ -211,7 +211,7 @@ avant cet appel : sinon la sortie de la commande coupe le cadre en deux.
 ## 4. Vérifier que ça marche
 
 ```sh
-jigger --version        # → jigger 0.14.1, ou plus récent
+jigger --version        # → jigger 0.15.0, ou plus récent
 ```
 
 Ouvre un shell neuf et tape `brew ins` (`pacman ins` sous Arch, `winget ins` sous Windows)
@@ -249,7 +249,7 @@ Le même cadre sous Arch, `yay` répondant pour les deux catalogues à la fois :
 ```
 ❯ yay -S visual-studio
 ╭──────────────────────────────────────────────────────────╮
-│❯ yay -S                                     jigger 0.14.1│
+│❯ yay -S                                     jigger 0.15.0│
 │  ◆  visual-studio-code-bin                 1.135.0-1  ●  │
 │  ▣  visual-studio-code-cli-bin                           │
 │  ▣  visual-studio-code-electron-bin                      │
@@ -318,7 +318,7 @@ de marcher exactement comme avant, popup compris.
 ```
 ❯ jg
 ╭──────────────────────────────────────────────────────────╮
-│❯ jigger                                     jigger 0.14.1│
+│❯ jigger                                     jigger 0.15.0│
 │  •  cleanup                                              │
 │  •  doctor                                               │
 │  •  info                                                 │

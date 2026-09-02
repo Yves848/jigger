@@ -9,7 +9,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/1.1.0/) and
 [SemVer](https://semver.org/). Versions before `v0.1.6` predate this log; their detail
 lives in the git history.
 
-## [Unreleased]
+## [v0.15.0] — 2026-09-02
 
 ### Added
 
@@ -21,12 +21,12 @@ lives in the git history.
   channel, and the dashes say what is asynchronous. No image, no script: it is styled by
   classes rather than by attribute, because the vhost's CSP sets `style-src 'self'`, and
   every label carries a `data-i18n` key — so `verifier.sh` checks the diagram's French
-  exactly as it checks the prose.
+  exactly as it checks the prose. (#99)
 
 - **The SSH picker reached the site**, one version after reaching the binary: a
   paragraph in the popup section says that `ssh`, `scp` and `sftp` offer the hosts of
   `~/.ssh/config`, that jigger never opens the connection, and that it shows nothing at
-  all when it has no host to offer.
+  all when it has no host to offer. (#99)
 
 ### Changed
 
@@ -35,7 +35,32 @@ lives in the git history.
   "four dialects, one vocabulary", with a line on [ADR-0007](docs/adr/0007-pacman-lit-yay-pilote.md):
   pacman and yay are two doors onto the same database, so `jg` lists your packages once,
   never twice. The prompt section stops promising a Homebrew block alone, now that brew,
-  pacman and Windows segments all ship.
+  pacman and Windows segments all ship. (#99)
+
+### Fixed
+
+- **The frames in the documentation and on the site show the current version.** They
+  announced `jigger 0.10.0`, and the Open Graph image `jigger 0.9.0` — a lag reported but
+  left alone at v0.13.0, v0.14.0 and v0.14.1, each time on the same grounds: a real
+  recapture, not a touch-up of the number. That held as long as nobody knew whether the
+  frame itself had moved. It was measured: rendered at the documents' exact width
+  (`--cols 60`), `jigger render` produces a frame *identical to the byte* to the 0.10.0
+  one — border, title line, badge column, blank row, footer. Only the banner was wrong, so
+  only the banner changed. § 5 of both guides also gains a frame genuinely captured on an
+  Arch machine, `yay -S visual-studio`: ◆ a repository package with its version and the ●
+  that says it is installed, ▣ an AUR one, and the **qualified** insert
+  `omarchy/visual-studio-code-bin`. The `brew install fire` and `jg` frames still want a
+  Mac — brew has to be installed for one, and the twelve verbs have to be declared for the
+  other. (#95)
+
+- **`jigger demo` shows the machine's manager, not the operating system's.** On Arch it
+  announced "brew install" and listed six Homebrew formulae — a manager that is not there.
+  `runDemo` picked between two previews on `runtime.GOOS == "windows"` and fell back to
+  brew everywhere else; the v0.14.0 pacman module made that preview wrong **without ever
+  touching one of its lines**. The rule already existed elsewhere: `managers.Default()`
+  answers exactly the question `runDemo` was asking, so the preview now asks it instead of
+  restating it. pacman's title is `pacman -S`, not `pacman install` — its operations are
+  flags, and a preview showing a grammar the popup does not show would lie twice. (#97)
 
 ## [v0.14.1] — 2026-09-02
 
