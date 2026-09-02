@@ -9,6 +9,65 @@ The format follows [Keep a Changelog](https://keepachangelog.com/1.1.0/) and
 [SemVer](https://semver.org/). Versions before `v0.1.6` predate this log; their detail
 lives in the git history.
 
+## [v0.13.0] — 2026-09-02
+
+### Added
+
+- **The popup now offers the servers of your `~/.ssh/config`.** Type `ssh`, `scp` or
+  `sftp` and the hosts appear, with the address to the right of the name — where package
+  managers show the version. `Include` fragments are followed. Names come before
+  addresses, and addresses are ordered numerically among themselves. `scp` appends the
+  colon on insert: without it, `scp file archlight` would silently copy to a **local**
+  file named `archlight`. jigger never *runs* `ssh` — it completes the line you will run
+  yourself. See [ADR-0005](docs/adr/0005-completion-sans-facade.md): the completion
+  contract is not reserved for package managers (#82).
+- **A PowerShell profile can take `^R` back without losing the regex toggle.**
+  `Invoke-JiggerRegex` switches the popup to regex mode **and says whether it took the
+  key**, so a profile that binds `^R` after the import — an fzf history search,
+  typically — offers it the key first and keeps its own fallback for every other line.
+  `Update-JiggerPopup` puts the frame back in agreement with the line, or clears it:
+  that is what the keys which take over the screen and hand the line back (`^U` to a file
+  explorer, `^D` to a drive picker) were missing — their handler replaced ours and the
+  frame stayed behind. Both are safe to call unconditionally and never throw. The module
+  cannot do this by itself: PSReadLine keeps only the **last** handler bound to a chord,
+  and hands back a script block's description, never the block. Under zsh, where
+  `bindkey` names the widget, the plugin has always given `^R` back on its own — this
+  closes the asymmetry, and with it the A-19 promise that nothing is confiscated from
+  your shell (#85).
+
+### Changed
+
+- **`JIGGER_COMMANDS` now includes `ssh`, `scp` and `sftp` in its default value.** If you
+  override the variable in your profile, nothing changes until you lengthen it yourself —
+  the same rule the `jg` alias followed in v0.12.0. Under zsh the list of intercepted
+  commands also moved to the `: "${JIGGER_COMMANDS:=…}"` idiom of the other settings; it
+  used to be hard-coded, and nothing could turn interception off (#83).
+
+### Fixed
+
+- **A `~/.ssh/config` reduced to a single `Host *` block** — what Apple's documentation
+  has you write on macOS — left a "no match" frame redrawing on **every keystroke** of
+  any `ssh`, `scp` or `sftp` line. Silence was decided on the file existing; it is now
+  decided on the catalog being empty ([ADR-0006](docs/adr/0006-silence-sur-catalogue-vide.md))
+  (#84).
+- **A `Match` block gave its `HostName` to the preceding `Host` block**, so the popup
+  could name one machine for another (#84).
+- **An end-of-line comment** — `Host pve  # the living-room proxmox` — offered `living`,
+  `room`, `proxmox`, `the` and `#` as hosts. OpenSSH 10.2p1's behaviour was measured with
+  `ssh -G` before the fix: `#` opens a comment only where it **opens a word** (#84).
+
+### Security
+
+- **A GitHub token was committed in clear** in `docs/historique/2026-08-16.md`, in a
+  public repository — `repo` and `workflow` scopes on the `Yves848` account. The
+  `UserPromptSubmit` hook copies every prompt into the day's journal, and the token,
+  pasted into the conversation on 16 August to set the GitHub mirror up, was written
+  there as-is. It was found while preparing the mirror sync, which was suspended rather
+  than carry the token to GitHub. **The token is revoked**, and removed from the file by
+  an ordinary commit. It remains reachable in `955e60f`, the only commit that introduces
+  it: published history is not rewritten — revocation is what makes a token harmless, not
+  its removal. Nothing filters secrets at capture time yet; that is A-23 (#76).
+
 ## [v0.12.0] — 2026-08-17
 
 ### Added
