@@ -1,0 +1,56 @@
+# Bloc pacman pour starship — mode d'emploi dans le README de jigger, § « Bloc de
+# prompt ». Les variables sont posées par le hook de jigger.plugin.zsh (JIGGER_PROMPT=1)
+# sur une machine à pacman ; sans elles, les modules disparaissent.
+#
+# Colle ces trois blocs à la fin de ~/.config/starship.toml. Rien d'autre à faire : le
+# format par défaut de starship (« $all ») contient déjà $env_var. Pour placer le bloc
+# ailleurs, écris un `format` explicite et pose-y ${env_var} — ou, module par module,
+# ${env_var.JIGGER_PACMAN_VERSION}.
+#
+# La clé de section *est* le nom de la variable lue ; les trois modules s'affichent dans
+# l'ordre où ils sont déclarés ici, et chacun s'efface tout seul quand sa variable n'est
+# pas définie — un compteur à zéro n'en est jamais une.
+#
+# Les deux compteurs ne comptent pas la même chose, et c'est le tout de ce bloc : REPOS
+# sont les mises à jour des dépôts binaires, AUR celles que yay ira reconstruire. Les
+# secondes coûtent du temps de compilation, les premières un téléchargement ; les voir
+# séparées, c'est savoir si `yay -Syu` prendra dix secondes ou dix minutes.
+#
+# Émojis : manchot (pacman), colis (dépôts), globe (AUR) — aucune police particulière
+# requise. Le choix n'est pourtant pas libre : un émoji postérieur à Unicode 8 n'a pas de
+# largeur sur laquelle le shell et le terminal s'accordent, zsh le compte alors pour 0
+# colonne quand le terminal en dessine 2, et ZLE perd un caractère à l'affichage dès que la
+# ligne atteint le bord droit. Piège symétrique : les glyphes à présentation texte par
+# défaut, comptés pour 2 et dessinés sur 1. Ces trois-là sont d'Unicode 6.0, à présentation
+# émoji par défaut : les deux côtés s'accordent sur 2 colonnes.
+#
+# Avant de poser un autre émoji, le vérifier : ${(m)#c} sous zsh doit valoir ce que le
+# terminal dessine. Pour esquiver la question, des glyphes Nerd Font monochromes, de
+# largeur 1 et jamais ambiguë, qui prennent en prime la couleur du module :  (logo
+# Arch),  et .
+#
+# Garder la forme échappée plutôt que le caractère en clair : c'est la seule qui traverse
+# sans dommage les éditeurs, les copier-coller et les outils qui normalisent l'Unicode.
+#
+# Pour un seul chiffre au lieu du détail par source, remplacer les deux derniers blocs par
+# celui-ci :
+#
+#   [env_var.JIGGER_PACMAN_OUTDATED]
+#   symbol = "\u21E1 "
+#   style  = "#F9E2AF"
+#   format = "[$symbol$env_value]($style) "
+
+[env_var.JIGGER_PACMAN_VERSION]
+symbol = "\U0001F427 "
+style  = "#FAB387"
+format = "[$symbol$env_value]($style) "
+
+[env_var.JIGGER_PACMAN_REPOS]
+symbol = "\U0001F4E6 "
+style  = "#F9E2AF"
+format = "[$symbol$env_value]($style) "
+
+[env_var.JIGGER_PACMAN_AUR]
+symbol = "\U0001F310 "
+style  = "#F9E2AF"
+format = "[$symbol$env_value]($style) "

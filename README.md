@@ -14,11 +14,12 @@ line — you never have to ask for it.
 | Platform | Shell | Completed commands |
 |---|---|---|
 | macOS, Linux | zsh (`shell/jigger.plugin.zsh`) | [Homebrew](https://brew.sh) |
+| Arch Linux | zsh | [pacman](https://wiki.archlinux.org/title/Pacman), [yay](https://github.com/Jguer/yay) — repositories and the [AUR](https://aur.archlinux.org) |
 | Windows | PowerShell (`shell/jigger.psm1`) | [winget](https://learn.microsoft.com/windows/package-manager/), [scoop](https://scoop.sh) |
-| both | both | `ssh`, `scp`, `sftp` — the servers of your `~/.ssh/config` |
+| all | both | `ssh`, `scp`, `sftp` — the servers of your `~/.ssh/config` |
 
-The **first word of the line** decides: `brew`, `winget`, `scoop` — and `ssh`, `scp` or
-`sftp`, whose candidates are servers rather than packages. Each one brings its own
+The **first word of the line** decides: `brew`, `winget`, `scoop`, `pacman`, `yay` — and
+`ssh`, `scp` or `sftp`, whose candidates are servers rather than packages. Each one brings its own
 subcommands, options, and catalog; everything else — the popup, the keys, the prompt
 block — is shared.
 
@@ -168,7 +169,7 @@ JIGGER_LIVE=0     # disables the live popup: ⇥ opens the full-screen picker
 JIGGER_ROWS=12    # candidates shown (default 8; reduced if the terminal is short)
 JIGGER_KEY='^ '   # insertion key (default Tab)
 JIGGER_LANG=fr    # message language: en or fr
-JIGGER_COMMANDS='brew ssh'   # commands that trigger the popup (default
+JIGGER_COMMANDS='brew pacman ssh'  # commands that trigger the popup (default
                              # 'brew ssh scp sftp'; jigger and jg are always added).
                              # This is how you turn the SSH picker off.
 ```
@@ -506,7 +507,8 @@ cp "$(brew --prefix oh-my-posh)/themes/catppuccin_mocha.omp.json" \
 ```
 
 Paste the content of [`shell/oh-my-posh/brew.segment.json`](shell/oh-my-posh/brew.segment.json)
-— or of [`windows.segment.json`](shell/oh-my-posh/windows.segment.json) — into the
+— or of [`pacman.segment.json`](shell/oh-my-posh/pacman.segment.json) or
+[`windows.segment.json`](shell/oh-my-posh/windows.segment.json) — into the
 `segments` array of the block you want, then point your profile at your copy:
 
 ```sh
@@ -516,6 +518,7 @@ eval "$(oh-my-posh init zsh --config ~/.config/oh-my-posh/my-theme.omp.json)"
 **2b. The starship segment** — nothing to copy beforehand: starship has only one
 config file, yours. Append the content of
 [`shell/starship/brew.toml`](shell/starship/brew.toml) — or of
+[`pacman.toml`](shell/starship/pacman.toml) or
 [`windows.toml`](shell/starship/windows.toml) — to the end of
 `~/.config/starship.toml`:
 
@@ -558,6 +561,10 @@ JIGGER_CACHE_DIR=…     # cache location (default ~/Library/Caches/jigger on ma
 | `JIGGER_WINGET_VERSION` | winget's version: `1.29.280` |
 | `JIGGER_WINGET_OUTDATED` | winget packages to upgrade |
 | `JIGGER_SCOOP_OUTDATED` | scoop applications to upgrade |
+| `JIGGER_PACMAN_VERSION` | pacman's version: `7.1.0` |
+| `JIGGER_PACMAN_REPOS` | repository packages to upgrade |
+| `JIGGER_PACMAN_AUR` | AUR packages to upgrade |
+| `JIGGER_PACMAN_OUTDATED` | total of the two |
 | `JIGGER_OUTDATED` | total of the two |
 
 A counter is **left unset** when it's zero. On the oh-my-posh side, the template
