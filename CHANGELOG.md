@@ -9,6 +9,25 @@ The format follows [Keep a Changelog](https://keepachangelog.com/1.1.0/) and
 [SemVer](https://semver.org/). Versions before `v0.1.6` predate this log; their detail
 lives in the git history.
 
+## [v0.14.1] — 2026-09-02
+
+### Fixed
+
+- **The "Getting started" guide documents pacman and yay.** v0.14.0 shipped the module
+  and updated both READMEs, but not the guide: a reader on Arch still found a
+  "macOS, Linux → Homebrew" table, an installation section that did not apply to them,
+  and not a word about the two managers jigger was in fact completing on their machine.
+  Both languages are back in step, and four things the guide had never said are now in
+  it. **There is no jigger package on Arch** — neither in the repositories nor in the
+  AUR — so the route is Go or the sources, and the `$(brew --prefix jigger)` paths have
+  no equivalent there. **yay drives, pacman only reads**
+  ([ADR-0007](docs/adr/0007-pacman-lit-yay-pilote.md)) — which is what explains, from the
+  user's side, why `jg install --pm pacman` does not exist while yay is installed.
+  **`shell/oh-my-posh/pacman.segment.json` and `shell/starship/pacman.toml`** shipped in
+  v0.14.0 without a single document pointing at them, along with the `JIGGER_PACMAN_*`
+  naming they depend on. And **`JIGGER_CACHE_DIR` announced no path on Linux** at all.
+  (#93)
+
 ## [v0.14.0] — 2026-09-02
 
 ### Added
