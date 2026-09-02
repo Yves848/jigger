@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -205,5 +206,49 @@ func TestDemoMontreLeGestionnaireDeLaMachine(t *testing.T) {
 	sortie := capturerStdout(t, runDemo)
 	if !strings.Contains(sortie, attendu) {
 		t.Errorf("demo n'annonce pas « %s » :\n%s", attendu, sortie)
+	}
+}
+
+// Les bannières des cadres doivent annoncer la version du binaire.
+//
+// Elles sont treize, dans six fichiers, et elles ont fait mentir la documentation quatre
+// versions de suite : les deux guides et le site sont restés à « jigger 0.10.0 » de la
+// v0.11.0 à la v0.14.1, l'image Open Graph à « jigger 0.9.0 ». Le retard était connu et
+// signalé à chaque release ; il n'a jamais fait échouer quoi que ce soit, alors il a duré.
+// C'est exactement ce qu'un contrôle vaut mieux qu'une bonne intention.
+//
+// Le test ne recopie pas le numéro : il le lit dans `version`, l'unique source de vérité,
+// quelques centaines de lignes plus haut. Poser une nouvelle version dans main.go sans
+// repasser sur les cadres fait donc échouer `make test`, en nommant chaque fichier resté
+// en arrière.
+func TestLesBannieresSuiventLaVersion(t *testing.T) {
+	fichiers := []string{
+		"README.md", "README.fr.md",
+		"docs/getting-started.md", "docs/fr/getting-started.md",
+		"website/index.html", "website/og.html",
+	}
+	// Le motif attrape n'importe quel numéro, pas seulement le bon : c'est ce qui permet
+	// de DIRE ce qu'on a trouvé plutôt que de rendre un « 0 occurrence » muet.
+	banniere := regexp.MustCompile(`jigger \d+\.\d+\.\d+`)
+	attendu := "jigger " + version
+
+	for _, f := range fichiers {
+		contenu, err := os.ReadFile(f)
+		if err != nil {
+			t.Errorf("%s : %v", f, err)
+			continue
+		}
+		trouvees := banniere.FindAllString(string(contenu), -1)
+		if len(trouvees) == 0 {
+			// Pas une broutille : un fichier qui perd ses cadres perd la capture qui
+			// montre à quoi jigger ressemble, et le test ne le dirait plus jamais.
+			t.Errorf("%s : plus aucune bannière de cadre", f)
+			continue
+		}
+		for _, v := range trouvees {
+			if v != attendu {
+				t.Errorf("%s : « %s » au lieu de « %s » — capture à reprendre", f, v, attendu)
+			}
+		}
 	}
 }
