@@ -12,7 +12,7 @@ command, a frame appears under the prompt and tracks your keystrokes.
 ```
 ❯ brew install fire
 ╭──────────────────────────────────────────────────────────╮
-│❯ brew install                               jigger 0.10.0│
+│❯ brew install                               jigger 0.14.1│
 │  ▣  firealpaca                                           │
 │  ▣  firebase-admin                                       │
 │  ◆  firebase-cli                                         │
@@ -210,7 +210,7 @@ command's output cuts the frame in two.
 ## 4. Check that it works
 
 ```sh
-jigger --version        # → jigger 0.10.0, or newer
+jigger --version        # → jigger 0.14.1, or newer
 ```
 
 Open a fresh shell and type `brew ins` (`pacman ins` on Arch, `winget ins` on Windows)
@@ -243,6 +243,28 @@ yay -S visual             repositories *and* the AUR, in a single list
 winget install Git.       same idea, on Windows
 scoop uninstall 7z
 ```
+
+The same frame on Arch, `yay` answering for both catalogues at once:
+
+```
+❯ yay -S visual-studio
+╭──────────────────────────────────────────────────────────╮
+│❯ yay -S                                     jigger 0.14.1│
+│  ◆  visual-studio-code-bin                 1.135.0-1  ●  │
+│  ▣  visual-studio-code-cli-bin                           │
+│  ▣  visual-studio-code-electron-bin                      │
+│  ▣  visual-studio-code-insiders-bin                      │
+│  ▣  visual-studio-code-live-bin                          │
+│                                                          │
+│   ⇥  insert   ↩  execute   ↓  browse   ^G  close         │
+╰──────────────────────────────────────────────────────────╯
+```
+
+◆ is a repository package — with its version, and the ● that says it is already
+installed — and ▣ an AUR one. ⇥ on the first row inserts
+`yay -S omarchy/visual-studio-code-bin`, **qualified**: that name is carried by a
+repository *and* the AUR, and an unqualified `yay -S` would stop to ask which one you
+meant.
 
 | Key | Effect |
 |---|---|
@@ -302,7 +324,7 @@ packages:
 ```
 ❯ jg
 ╭──────────────────────────────────────────────────────────╮
-│❯ jigger                                     jigger 0.10.0│
+│❯ jigger                                     jigger 0.14.1│
 │  •  cleanup                                              │
 │  •  doctor                                               │
 │  •  info                                                 │

@@ -12,7 +12,7 @@ gestionnaire de paquets, un cadre s'affiche sous le prompt et suit ta frappe.
 ```
 ❯ brew install fire
 ╭──────────────────────────────────────────────────────────╮
-│❯ brew install                               jigger 0.10.0│
+│❯ brew install                               jigger 0.14.1│
 │  ▣  firealpaca                                           │
 │  ▣  firebase-admin                                       │
 │  ◆  firebase-cli                                         │
@@ -211,7 +211,7 @@ avant cet appel : sinon la sortie de la commande coupe le cadre en deux.
 ## 4. Vérifier que ça marche
 
 ```sh
-jigger --version        # → jigger 0.10.0, ou plus récent
+jigger --version        # → jigger 0.14.1, ou plus récent
 ```
 
 Ouvre un shell neuf et tape `brew ins` (`pacman ins` sous Arch, `winget ins` sous Windows)
@@ -243,6 +243,27 @@ yay -S visual             les dépôts *et* l'AUR, dans une seule liste
 winget install Git.       idem, côté Windows
 scoop uninstall 7z
 ```
+
+Le même cadre sous Arch, `yay` répondant pour les deux catalogues à la fois :
+
+```
+❯ yay -S visual-studio
+╭──────────────────────────────────────────────────────────╮
+│❯ yay -S                                     jigger 0.14.1│
+│  ◆  visual-studio-code-bin                 1.135.0-1  ●  │
+│  ▣  visual-studio-code-cli-bin                           │
+│  ▣  visual-studio-code-electron-bin                      │
+│  ▣  visual-studio-code-insiders-bin                      │
+│  ▣  visual-studio-code-live-bin                          │
+│                                                          │
+│   ⇥  insérer   ↩  exécuter   ↓  parcourir   ^G  fermer   │
+╰──────────────────────────────────────────────────────────╯
+```
+
+◆ est un paquet de dépôt — avec sa version, et le ● qui dit qu'il est déjà installé —,
+▣ un paquet de l'AUR. ⇥ sur la première ligne insère
+`yay -S omarchy/visual-studio-code-bin`, **qualifié** : ce nom est porté par un dépôt
+*et* par l'AUR, et un `yay -S` non qualifié s'arrêterait pour demander lequel.
 
 | Touche | Effet |
 |---|---|
@@ -297,7 +318,7 @@ de marcher exactement comme avant, popup compris.
 ```
 ❯ jg
 ╭──────────────────────────────────────────────────────────╮
-│❯ jigger                                     jigger 0.10.0│
+│❯ jigger                                     jigger 0.14.1│
 │  •  cleanup                                              │
 │  •  doctor                                               │
 │  •  info                                                 │
