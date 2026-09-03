@@ -268,7 +268,7 @@ the manager answering — nothing else. All three are captured in the same decor
 
 **Omarchy — `yay -S visual-studio`**
 
-*Not captured yet — `./docs/media/capturer.sh` on the Arch machine produces it.*
+![The popup on Omarchy, completing a yay -S line](media/out/omarchy-01-gestionnaire-natif.png)
 
 **Windows — `winget install fire`**
 
@@ -278,23 +278,9 @@ Same frame, same keys, same 1000 × 530 px — and a different catalogue: these 
 package identifiers, `Publisher.Package`, where brew shows bare formula names. Nothing
 else moved.
 
-The same frame on Arch, `yay` answering for both catalogues at once:
-
-```
-❯ yay -S visual-studio
-╭──────────────────────────────────────────────────────────╮
-│❯ yay -S                                     jigger 0.15.0│
-│  ◆  visual-studio-code-bin                 1.135.0-1  ●  │
-│  ▣  visual-studio-code-cli-bin                           │
-│  ▣  visual-studio-code-electron-bin                      │
-│  ▣  visual-studio-code-insiders-bin                      │
-│  ▣  visual-studio-code-live-bin                          │
-│                                                          │
-│   ⇥  insert   ↩  execute   ↓  browse   ^G  close         │
-╰──────────────────────────────────────────────────────────╯
-```
-
-◆ is a repository package — with its version, and the ● that says it is already
+The middle image is the one that carries two catalogues in a single list: on Arch, `yay`
+answers for the repositories **and** for the AUR, and the badge column is what tells them
+apart. ◆ is a repository package — with its version, and the ● that says it is already
 installed — and ▣ an AUR one. ⇥ on the first row inserts
 `yay -S omarchy/visual-studio-code-bin`, **qualified**: that name is carried by a
 repository *and* the AUR, and an unqualified `yay -S` would stop to ask which one you
@@ -346,10 +332,14 @@ By prefix, `fire` keeps the names that *begin* with it. `^R`, and `arrayfire` jo
 them — the pattern is not anchored, so the list gets **wider** before it gets narrower.
 Then `(bird|fly)` keeps four.
 
-**Omarchy**
+**Omarchy — `yay -S fire`, then `^R`**
 
-*Not captured yet — the tape that plays it, `omarchy-04-regex`, is written and waiting
-for a reachable machine.*
+![The same line filtered by prefix, then as a regex after ^R, on Omarchy](media/out/omarchy-04-regex.gif)
+
+Same demonstration, over a far larger catalogue: by prefix, `fire` keeps the names that
+begin with it; `^R`, and names carrying `fire` in the middle join them — the list gets
+wider first, exactly as on macOS. `(bird|fly)` then narrows it to `firebird*` and
+`firefly*`, repositories and AUR mixed in one list.
 
 **Windows — `winget install fire`, then `^R`**
 
@@ -386,6 +376,11 @@ PowerShell module; you can type either one.
 exactly as before, popup included.
 
 ![jg install fd, the facade answering for whichever manager knows the package](media/out/macos-02-jg.gif)
+
+The same line on Arch, where pacman and yay are two doors onto one database — the facade
+lists your packages **once**, never twice:
+
+![jg install fd on Omarchy, the facade listing repository and AUR packages once](media/out/omarchy-02-jg.gif)
 
 On Windows, where two managers are installed side by side, the same line shows the facade
 doing the one thing a single manager cannot — the right-hand column names who answers for

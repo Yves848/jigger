@@ -7,8 +7,10 @@ adresse en regard. `⇥` insère celui qu'on visait.
 
 ![Le sélecteur SSH, montrant les hôtes d'un ~/.ssh/config](../media/out/macos-03-ssh.png)
 
-La même liste, le même `~/.ssh/config`, sous Windows — où rien de ce qui touche à SSH
-n'est propre à la plateforme non plus :
+La même liste, le même `~/.ssh/config`, sous Omarchy et sous Windows — où rien de ce qui
+touche à SSH n'est propre à la plateforme non plus :
+
+![Le sélecteur SSH sous Omarchy, montrant les mêmes hôtes](../media/out/omarchy-03-ssh.png)
 
 ![Le sélecteur SSH sous Windows, montrant les mêmes hôtes](../media/out/windows-03-ssh.png)
 

@@ -1,7 +1,8 @@
 # Le site de jigger
 
 Un site statique, bilingue, sans build : trois pages servies telles quelles, avec quatre
-schémas SVG écrits à la main, dix-huit médias et un vérificateur à huit contrôles.
+schémas SVG écrits à la main, vingt-huit médias — quatorze enregistrements et leurs
+affiches, macOS, Omarchy et Windows — et un vérificateur à huit contrôles.
 La conception est dans [`docs/specs/2026-09-03-site-jigger-refonte-design.md`](../docs/specs/2026-09-03-site-jigger-refonte-design.md).
 
 ## Prévisualiser

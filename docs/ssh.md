@@ -7,8 +7,10 @@ address alongside. `⇥` inserts the one you're after.
 
 ![The SSH picker, showing the hosts of a ~/.ssh/config](media/out/macos-03-ssh.png)
 
-The same list, the same `~/.ssh/config`, on Windows — where nothing about SSH is
-platform-specific either:
+The same list, the same `~/.ssh/config`, on Omarchy and on Windows — where nothing about
+SSH is platform-specific either:
+
+![The SSH picker on Omarchy, showing the same hosts](media/out/omarchy-03-ssh.png)
 
 ![The SSH picker on Windows, showing the same hosts](media/out/windows-03-ssh.png)
 
