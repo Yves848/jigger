@@ -106,6 +106,27 @@ else
     ok "toutes les couleurs de styles.css viennent des jetons"
 fi
 
+# --- 6. Médias ------------------------------------------------------------
+# website/media/ est une COPIE de docs/media/out/. La duplication est assumée
+# — un lien symbolique ne survit pas à un git checkout sous Windows —, mais
+# elle est vérifiée : une capture refaite et non recopiée échoue ici, elle ne
+# part pas en ligne en silence.
+source_medias="$RACINE/docs/media/out"
+if ! compgen -G 'media/*.mp4' > /dev/null; then
+    echec "aucun média dans website/media/"
+else
+    for f in media/*.mp4 media/*.png; do
+        nom="$(basename "$f")"
+        if [ ! -f "$source_medias/$nom" ]; then
+            echec "média sans original dans docs/media/out : $nom"
+        elif cmp -s "$f" "$source_medias/$nom"; then
+            ok "média identique à son original : $nom"
+        else
+            echec "média différent de docs/media/out : $nom"
+        fi
+    done
+fi
+
 if [ "$echecs" -gt 0 ]; then
     printf '\n%d contrôle(s) en échec.\n' "$echecs" >&2
     exit 1
