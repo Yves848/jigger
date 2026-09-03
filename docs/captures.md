@@ -12,7 +12,8 @@ qui n'est pas le sujet.
 
 ## Ce qui est produit
 
-Trois scénarios, les mêmes partout — c'est le catalogue qui change, jamais le geste.
+Trois scénarios communs aux trois plateformes — c'est le catalogue qui change, jamais
+le geste — et trois autres, propres à Windows, que la voie zsh ne sait pas jouer.
 
 | Scénario | macOS | Omarchy | Windows |
 |---|---|---|---|
@@ -27,6 +28,28 @@ déplaceraient rien. `jg install node` en trouve quatre, **répartis entre scoop
 winget** — la colonne de droite le dit —, ce qui est précisément la démonstration
 attendue de `jg`. Le catalogue change d'une plateforme à l'autre ; la ligne tapée s'ajuste
 pour que le geste, lui, ne change pas.
+
+### Les trois scénarios propres à Windows
+
+| Scénario | Ce qu'il montre |
+|---|---|
+| `04-regex` | la même ligne filtrée en texte simple, puis en expression régulière après `^R` |
+| `05-installation` | la complétion, puis l'exécution : `jg install hexy` ⇥ ⏎, et scoop installe |
+| `06-upgrade` | le même geste, autre verbe : `jg upgrade hyperf` ⇥ ⏎, et scoop passe de 1.16.1 à 1.20.0 |
+
+Ils ne sont pas dans la voie zsh, et ce n'est pas un oubli : VHS pilote une frappe, pas
+une session. `04-regex` demande de taper, presser `^R`, puis retaper — deux temps de
+frappe séparés par une touche, qu'un tape exprimerait mal ; `05` et `06` **exécutent
+vraiment** une commande dont la durée n'est pas connue d'avance. Les produire sur macOS
+demanderait d'installer et de mettre à jour de vrais paquets sur la machine de qui les
+produit ; sous Windows, la machine est une VM dédiée, et le script y range derrière lui.
+
+**Ce que ces deux scénarios font à la machine, en toutes lettres.** `05` installe puis
+désinstalle `hexyl` ; `06` installe `hyperfine` en 1.16.1, le laisse se mettre à jour en
+1.20.0, puis le retire. Aucun paquet que la machine avait déjà n'est touché, et l'état
+de départ est posé par le script lui-même — sans quoi un second passage filmerait « déjà
+installé » au lieu d'une installation. C'est le prix d'une capture qui prouve quelque
+chose : une exécution jouée ne prouverait rien.
 
 Chacun rend trois fichiers dans `docs/media/out/` :
 
@@ -135,8 +158,8 @@ sur Arch que les `omarchy-*`. Il ouvre un serveur tmux sur un **socket dédié**
 winget install Gyan.FFmpeg          # ffmpeg et ffprobe
 # MesloLGL Nerd Font installée, jigger sur le PATH, Windows Terminal présent
 
-pwsh -NoProfile -File docs\media\capturer.ps1                    # les trois
-pwsh -NoProfile -File docs\media\capturer.ps1 -Scenario 03-ssh   # ou un seul
+pwsh -NoProfile -File docs\media\capturer.ps1                    # les six
+pwsh -NoProfile -File docs\media\capturer.ps1 -Scenario 04-regex # ou un seul
 pwsh -NoProfile -File docs\media\capturer.ps1 -Preparer          # le décor, sans filmer
 ```
 
@@ -147,13 +170,20 @@ enregistrer à la main. Ce sont les instruments qui changent, pas la partition.
 |---|---|---|
 | VHS + ttyd + `xterm.js` | Windows Terminal | ttyd n'a pas d'équivalent Windows utilisable |
 | tmux | *rien* | le module lit le curseur par PSReadLine, jamais par le terminal |
-| la frappe de VHS | `SendKeys`, cadencé sur une horloge absolue | |
+| la frappe de VHS | `SendInput` en Unicode, cadencé sur une horloge absolue | une disposition de clavier ne doit pas décider du contenu de l'image |
+| les touches de VHS | `SendKeys` (`{TAB}`, `{DOWN}`, `^r`…) | ce sont des touches virtuelles, pas des caractères |
 | l'encodeur de VHS | `ffmpeg -f gdigrab` sur le rectangle client | |
+
+**Où s'arrête l'enregistrement.** Les quatre premiers scénarios ont un minutage exact :
+la somme de leurs étapes. Les deux qui exécutent une commande, non — la leur télécharge.
+On leur laisse donc une minute, puis on coupe la queue morte : `freezedetect` de ffmpeg
+dit à quels instants l'image cesse de bouger, et le dernier d'entre eux est la fin de la
+commande. Le GIF rendu dure ce que la commande a duré, plus deux secondes.
 
 Tout ce que le script change sur la machine — les réglages de Windows Terminal — est
 sauvegardé avant et rendu après, y compris si la capture échoue (`finally`).
 
-#### Les quatre pièges, et ce qu'ils coûtent
+#### Les six pièges, et ce qu'ils coûtent
 
 Ils ne se voient pas dans le résultat : chacun produit une image plausible et fausse.
 Ils sont notés ici parce que les retrouver a pris plus de temps que d'écrire le script.
@@ -186,6 +216,20 @@ Ils sont notés ici parce que les retrouver a pris plus de temps que d'écrire l
    lancement du processus et la première image il s'écoule une seconde variable, et tout
    décalage là décale l'image fixe d'autant. Le script attend donc la première ligne
    d'état (`frame=`) avant de lancer son horloge.
+
+5. **`SendKeys` ne sait pas taper `|` sur un clavier AZERTY.** Il traduit chaque
+   caractère en touche selon la disposition courante ; `|` y est un `AltGr+6` qu'il ne
+   sait pas former, et il l'avale **sans rien dire**. La première prise du scénario regex
+   a filmé `fire(birdblade)` et un franc « no matches ». La frappe passe donc par
+   `SendInput` en mode Unicode, qui envoie le caractère lui-même : la capture ne dépend
+   plus de la disposition de la machine qui la produit.
+
+6. **scoop ne compare pas au bucket une version demandée à la main.** `scoop install
+   hyperfine@1.16.1` engendre un manifeste et range l'application sous
+   `<auto-generated>` ; `scoop status` cesse alors de la comparer au bucket, et
+   `jg upgrade hyperfine` répond « latest version ». La première prise du scénario de
+   mise à jour ne montrait donc aucune mise à jour. La préparation rattache l'application
+   à son bucket d'origine avant de filmer.
 
 Deux détails plus petits, du même genre : `adjustIndistinguishableColors` doit être mis à
 `never`, sans quoi Windows Terminal retouche les couleurs de jigger et la capture ne
@@ -225,12 +269,18 @@ secondes —, et il redonne bien les valeurs qu'annoncent les tapes (4,5 s, 4,0 
 - **Le prompt** (`jigger prompt`) n'a pas de scénario : il tient en une ligne de texte,
   que les documents citent mieux qu'une image.
 - **Le sélecteur plein écran** (`JIGGER_LIVE=0`, puis `⇥`) non plus. Il mériterait un
-  quatrième scénario ; personne ne l'a écrit.
+  septième scénario ; personne ne l'a écrit.
+- **Le sélecteur de routage** — celui qui s'ouvre quand deux gestionnaires connaissent le
+  même nom — n'en a pas davantage : le déclencher demande de lancer une vraie
+  installation ambiguë, et les READMEs s'en tiennent pour l'instant à un exemple
+  illustratif.
 - **Les captures d'Omarchy** ne sont pas dans le dépôt à ce jour : le tape est prêt, la
   machine n'était pas joignable. Les produire demande de lancer `./docs/media/capturer.sh`
-  sur elle, et rien d'autre.
+  sur elle, et rien d'autre. Les trois scénarios `04` à `06` n'y ont pas d'équivalent, et
+  n'en auront pas tant qu'ils supposeront d'installer pour de vrai sur une machine de
+  travail.
 
 Les captures **macOS et Windows**, elles, sont dans le dépôt et ont été produites par les
 scripts ci-dessus. Celles de Windows viennent d'une machine ARM64 sous Windows 11 26200,
-Windows Terminal 1.23.12811, PowerShell 7.5.4 — une machine virtuelle Parallels, ce qui ne change
-rien à l'image : le popup ne sait pas où il tourne.
+Windows Terminal 1.23.12811, PowerShell 7.5.4 — une machine virtuelle Parallels, ce qui
+ne change rien à l'image : le popup ne sait pas où il tourne.

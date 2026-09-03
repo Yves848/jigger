@@ -333,6 +333,17 @@ ordinary case (formula, repository package under pacman and yay, catalog package
 winget, `main` bucket), ▣ for the other one (cask, AUR package, application outside
 the catalog, third-party bucket).
 
+### Regex, on the same line
+
+`^R` switches the filter, and only the filter: the line, the frame and the keys don't
+move. The title says which mode is on.
+
+![The same line filtered as plain text, then as a regex, after ^R](media/out/windows-04-regex.gif)
+
+`winget install fire` offers twenty-one candidates by prefix. `^R`, then
+`(bird|blade)`, keeps four — an alternation no prefix search can express. `^R` again
+goes back, and outside the popup the key remains your shell's reverse history search.
+
 ## 6. One syntax: `jg`
 
 Everything above speaks the language of each manager. `jg` speaks a single one for
@@ -357,6 +368,23 @@ doing the one thing a single manager cannot — the right-hand column names who 
 each candidate:
 
 ![jg install node on Windows, scoop and winget answering in one list](media/out/windows-02-jg.png)
+
+### Completing, then running
+
+`⏎` completes the last part **and** runs the line. From that point on jigger does
+nothing at all: what scrolls by is the manager's own output, relayed as is —
+progress bars, prompts and elevation included.
+
+An installation, from the empty line to the installed binary:
+
+![jg install hexy, completed to hexyl, then run](media/out/windows-05-installation.gif)
+
+And an upgrade, same gesture, different verb — scoop replacing 1.16.1 with 1.20.0:
+
+![jg upgrade hyperf, completed to hyperfine, then run](media/out/windows-06-upgrade.gif)
+
+Both were recorded against real managers: they install and upgrade for real, and
+[the capture protocol](captures.md) says how the machine is put back afterwards.
 
 ### The twelve verbs
 

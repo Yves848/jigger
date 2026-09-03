@@ -24,7 +24,7 @@
   sauvegardé avant et rendu après, y compris si la capture échoue.
 
 .PARAMETER Scenario
-  Un ou plusieurs scénarios. Par défaut : les trois.
+  Un ou plusieurs scénarios. Par défaut : les six.
 
 .PARAMETER Preparer
   Ouvre le décor et l'y laisse une minute, sans enregistrer. Sert à vérifier de
@@ -32,21 +32,28 @@
 
 .EXAMPLE
   pwsh -NoProfile -File docs\media\capturer.ps1
-  # les trois scénarios, de bout en bout
+  # les six scénarios, de bout en bout
 
 .EXAMPLE
-  pwsh -NoProfile -File docs\media\capturer.ps1 -Scenario 03-ssh
+  pwsh -NoProfile -File docs\media\capturer.ps1 -Scenario 04-regex
   # un seul
 
 .NOTES
   Prérequis : PowerShell 7, Windows Terminal, ffmpeg et ffprobe sur le PATH, le
   binaire jigger sur le PATH, et la police MesloLGL Nerd Font installée.
+
+  ATTENTION : les scénarios 05 et 06 installent et mettent à jour de VRAIS
+  paquets scoop (hexyl, hyperfine) — c'est tout leur intérêt, une exécution
+  jouée ne prouverait rien. Le script pose l'état attendu avant et le défait
+  après : la machine est rendue telle qu'elle était, et aucun paquet qu'elle
+  avait déjà n'est touché.
+
   Voir docs/captures.md.
 #>
 [CmdletBinding()]
 param(
-  [ValidateSet('01-gestionnaire-natif','02-jg','03-ssh')]
-  [string[]]$Scenario = @('01-gestionnaire-natif','02-jg','03-ssh'),
+  [ValidateSet('01-gestionnaire-natif','02-jg','03-ssh','04-regex','05-installation','06-upgrade')]
+  [string[]]$Scenario = @('01-gestionnaire-natif','02-jg','03-ssh','04-regex','05-installation','06-upgrade'),
   [switch]$Preparer
 )
 
@@ -90,30 +97,122 @@ $MsParCar = 90
 $LargeurFinale = 1000 ; $HauteurFinale = 530 ; $Marge = 24
 $RatioContenu  = ($LargeurFinale - 2*$Marge) / ($HauteurFinale - 2*$Marge)
 
-# La ligne à taper, scénario par scénario. Les deux autres sont celles des tapes
-# zsh ; « 02-jg » fait exception et docs/captures.md dit pourquoi : sur Windows,
-# un seul paquet s'appelle « fd », et le popup n'aurait qu'une ligne.
+# ── Les scénarios, en étapes ───────────────────────────────────────────────────
 #
-# « Gestes » reprend, milliseconde pour milliseconde, les Sleep du tape zsh
-# correspondant : ce ne sont pas les mêmes d'un scénario à l'autre — 02-jg n'a
-# qu'une flèche, 03-ssh n'attend que 2,5 s avant la première. Les décalages sont
-# comptés depuis la FIN de la frappe, et « Fin » dit quand l'enregistrement
-# s'arrête. Toucher un tape demande donc de revoir ces valeurs-ci.
-$Scenarios = @{
+# Une étape est l'une de ces cinq choses :
+#
+#   @{ Taper   = '…'   }   frappe, un caractère toutes les 90 ms
+#   @{ Touche  = '…'   }   une touche, syntaxe SendKeys ({TAB}, {DOWN}, ^r…)
+#   @{ Pause   = 1500  }   attente, en millisecondes
+#   @{ Photo   = $true }   l'instant où l'image fixe est prise
+#   @{ Attente = 60000 }   attente d'une commande qui tourne (voir « Où couper »)
+#
+# Les trois premiers scénarios reprennent, milliseconde pour milliseconde, les
+# Sleep du tape zsh du même nom : ce ne sont pas les mêmes d'un scénario à
+# l'autre, et toucher un tape demande de revoir ces étapes-ci.
+#
+# « Preparer » et « Ranger » encadrent la capture, hors caméra : ils posent
+# l'état que le scénario suppose, puis le défont. Sans eux, un second passage
+# filmerait « déjà installé » au lieu d'une installation.
+$Scenarios = [ordered]@{
+
+  # 01 · Le gestionnaire natif. La démonstration qu'on attend en premier : on tape
+  # la commande qu'on tapait déjà, et le cadre arrive tout seul.
   '01-gestionnaire-natif' = @{
-    Ligne = 'winget install fire'
-    Gestes = @(@{ A = 3000; T = '{DOWN}' }, @{ A = 4000; T = '{DOWN}' }, @{ A = 5000; T = '{TAB}' })
-    Fin = 7500
+    Etapes = @(
+      @{ Taper = 'winget install fire' }
+      @{ Pause = 2000 }, @{ Photo = $true }, @{ Pause = 1000 }
+      @{ Touche = '{DOWN}' }, @{ Pause = 1000 }
+      @{ Touche = '{DOWN}' }, @{ Pause = 1000 }
+      @{ Touche = '{TAB}'  }, @{ Pause = 2500 }
+    )
   }
+
+  # 02 · La syntaxe unique. « node » plutôt que le « fd » des tapes zsh : sous
+  # Windows, « fd » n'est connu que d'un seul catalogue et le cadre n'aurait
+  # qu'une ligne. « node » en donne quatre, répartis entre scoop et winget — la
+  # colonne de droite le dit, et c'est la démonstration attendue de jg.
   '02-jg' = @{
-    Ligne = 'jg install node'
-    Gestes = @(@{ A = 3000; T = '{DOWN}' }, @{ A = 4200; T = '{TAB}' })
-    Fin = 6700
+    Etapes = @(
+      @{ Taper = 'jg install node' }
+      @{ Pause = 2000 }, @{ Photo = $true }, @{ Pause = 1000 }
+      @{ Touche = '{DOWN}' }, @{ Pause = 1200 }
+      @{ Touche = '{TAB}'  }, @{ Pause = 2500 }
+    )
   }
+
+  # 03 · Le sélecteur SSH. Une commande sans verbe : le catalogue vient dès
+  # l'espace. Les hôtes sont ceux du fixture, donc les mêmes partout.
   '03-ssh' = @{
-    Ligne = 'ssh '
-    Gestes = @(@{ A = 2500; T = '{DOWN}' }, @{ A = 3500; T = '{DOWN}' }, @{ A = 4500; T = '{TAB}' })
-    Fin = 7000
+    Etapes = @(
+      @{ Taper = 'ssh ' }
+      @{ Pause = 2000 }, @{ Photo = $true }, @{ Pause = 500 }
+      @{ Touche = '{DOWN}' }, @{ Pause = 1000 }
+      @{ Touche = '{DOWN}' }, @{ Pause = 1000 }
+      @{ Touche = '{TAB}'  }, @{ Pause = 2500 }
+    )
+  }
+
+  # 04 · La recherche par expression régulière. Le scénario montre les DEUX modes
+  # dans la même prise : la même ligne, filtrée en texte simple puis en regex.
+  # « fire » donne vingt-et-un candidats ; « ^R » bascule, le titre du cadre
+  # affiche « [regex] », et « (bird|blade) » n'en garde que quatre — une
+  # alternance qu'aucune recherche par préfixe ne sait exprimer.
+  '04-regex' = @{
+    Etapes = @(
+      @{ Taper = 'winget install fire' }
+      @{ Pause = 2500 }
+      @{ Touche = '^r' }, @{ Pause = 1500 }
+      @{ Taper = '(bird|blade)' }
+      @{ Pause = 2000 }, @{ Photo = $true }, @{ Pause = 1000 }
+      @{ Touche = '{TAB}' }, @{ Pause = 2500 }
+    )
+  }
+
+  # 05 · Une installation, pour de vrai. Le cadre complète, ⇥ insère, ⏎ part — et
+  # à partir de là jigger ne fait plus rien : la sortie est celle de scoop,
+  # relayée telle quelle, barre de progression comprise.
+  #
+  # « hexy » et non « hex » : le second laisse quatorze candidats, dont le premier
+  # est hex-editor-neo — la capture installerait alors un éditeur graphique de
+  # 30 Mo au lieu de l'outil de deux méga-octets qu'on voulait montrer. Une
+  # complétion qui exécute se choisit sans ambiguïté.
+  '05-installation' = @{
+    Etapes = @(
+      @{ Taper = 'jg install hexy' }
+      @{ Pause = 2000 }, @{ Photo = $true }, @{ Pause = 1500 }
+      @{ Touche = '{TAB}'   }, @{ Pause = 1200 }
+      @{ Touche = '{ENTER}' }, @{ Attente = 60000 }
+    )
+    Preparer = { scoop uninstall hexyl 2>&1 | Out-Null }
+    Ranger   = { scoop uninstall hexyl 2>&1 | Out-Null }
+  }
+
+  # 06 · Une mise à jour, pour de vrai. Même geste, autre verbe. La préparation
+  # installe une vieille version de hyperfine pour qu'il y ait quelque chose à
+  # mettre à jour, et le rangement la retire : aucun paquet que la machine avait
+  # déjà n'est touché.
+  '06-upgrade' = @{
+    Etapes = @(
+      @{ Taper = 'jg upgrade hyperf' }
+      @{ Pause = 2000 }, @{ Photo = $true }, @{ Pause = 1500 }
+      @{ Touche = '{TAB}'   }, @{ Pause = 1200 }
+      @{ Touche = '{ENTER}' }, @{ Attente = 60000 }
+    )
+    Preparer = {
+      scoop uninstall hyperfine 2>&1 | Out-Null
+      scoop install hyperfine@1.16.1 2>&1 | Out-Null
+      # scoop range une version demandée à la main sous « auto-generated » et cesse
+      # alors de la comparer au bucket : « jg upgrade » répondrait « latest version »
+      # et le scénario ne montrerait rien du tout — c'est ce qu'a filmé la première
+      # prise. On rattache donc l'application à son bucket d'origine.
+      $j = Join-Path $env:USERPROFILE 'scoop\apps\hyperfine\current\install.json'
+      $o = Get-Content $j -Raw | ConvertFrom-Json
+      $o | Add-Member -NotePropertyName bucket -NotePropertyValue 'main' -Force
+      $o.PSObject.Properties.Remove('url')
+      $o | ConvertTo-Json -Compress | Set-Content $j -Encoding utf8
+    }
+    Ranger   = { scoop uninstall hyperfine 2>&1 | Out-Null }
   }
 }
 
@@ -142,6 +241,37 @@ public class Fenetres {
       return true;
     }, IntPtr.Zero);
     return l;
+  }
+}
+'@
+
+# ── Le clavier : de l'Unicode, jamais une disposition ─────────────────────────
+#
+# SendKeys traduit chaque caractère en touche selon la disposition COURANTE. Sur
+# un clavier AZERTY, « | » est un AltGr+6 qu'il ne sait pas former : il l'avale
+# en silence, et « fire(bird|blade) » devient « fire(birdblade) » — donc « no
+# matches ». SendInput en mode KEYEVENTF_UNICODE envoie le caractère lui-même,
+# sans passer par une touche : la capture ne dépend plus de la disposition de la
+# machine qui la produit. Les touches de navigation, elles, restent à SendKeys —
+# ⇥, ↓, ⏎ et ^R sont des touches virtuelles, pas des caractères.
+Add-Type @'
+using System; using System.Runtime.InteropServices;
+public class Clavier {
+  [StructLayout(LayoutKind.Explicit, Size = 40)]
+  public struct INPUT {
+    [FieldOffset(0)]  public uint type;
+    [FieldOffset(8)]  public ushort wVk;
+    [FieldOffset(10)] public ushort wScan;
+    [FieldOffset(12)] public uint dwFlags;
+    [FieldOffset(16)] public uint time;
+    [FieldOffset(24)] public IntPtr dwExtraInfo;
+  }
+  [DllImport("user32.dll")] static extern uint SendInput(uint n, INPUT[] p, int taille);
+  public static void Caractere(char c) {
+    var i = new INPUT[2];
+    i[0].type = 1; i[0].wScan = c; i[0].dwFlags = 0x0004;            // KEYEVENTF_UNICODE
+    i[1].type = 1; i[1].wScan = c; i[1].dwFlags = 0x0004 | 0x0002;   // + KEYUP
+    SendInput(2, i, Marshal.SizeOf(typeof(INPUT)));
   }
 }
 '@
@@ -235,7 +365,8 @@ function Ecrire-Amorce([string]$Nom) {
   # (internal/ssh/manager.go passe par os.UserHomeDir, soit %USERPROFILE% ici). On
   # lui donne la copie locale du HOME de fixture : la capture montre les serveurs
   # inventés du dépôt, les mêmes que sur macOS et Omarchy, jamais l'infrastructure
-  # de la machine.
+  # de la machine. Les scénarios qui installent, eux, gardent le vrai profil —
+  # c'est là que scoop range ses paquets.
   if ($Nom -eq '03-ssh') {
     $lignes += "`$env:USERPROFILE = '$Travail\home'"
     $lignes += "`$env:HOME        = '$Travail\home'"
@@ -246,11 +377,29 @@ function Ecrire-Amorce([string]$Nom) {
   return $fichier
 }
 
+# ── Le minutage d'un scénario, déduit de ses étapes ────────────────────────────
+function Minutage($Etapes) {
+  $t = 0.0 ; $photo = 0.0 ; $attente = $false
+  foreach ($e in $Etapes) {
+    if ($e.Photo)   { $photo = $t ; continue }
+    if ($e.Taper)   { $t += $e.Taper.Length * $MsParCar / 1000.0 ; continue }
+    if ($e.Pause)   { $t += $e.Pause / 1000.0 ; continue }
+    if ($e.Attente) { $t += $e.Attente / 1000.0 ; $attente = $true ; continue }
+    # une touche est instantanée
+  }
+  [pscustomobject]@{ Duree = $t; Photo = $photo; Attente = $attente }
+}
+
 # ── Une capture ────────────────────────────────────────────────────────────────
 function Capturer([string]$Nom) {
   $sc     = $Scenarios[$Nom]
-  $ligne  = $sc.Ligne
   $amorce = Ecrire-Amorce $Nom
+  $m      = Minutage $sc.Etapes
+
+  if ($sc.Preparer) {
+    Write-Host '  mise en place…' -ForegroundColor DarkGray
+    & $sc.Preparer
+  }
 
   # Première passe : mesurer la cellule. Sa taille dépend de la police, du DPI et
   # de la version de Windows Terminal — on ne peut pas la supposer, et c'est elle
@@ -280,7 +429,7 @@ function Capturer([string]$Nom) {
   # ffmpeg s'arrête tout seul, sur « -t ». Lui envoyer « q » par un tuyau ne
   # fonctionne pas — il ne lit le clavier que depuis une vraie console — et le
   # tuer laisse un conteneur inachevé que ffprobe refuse ensuite de mesurer.
-  $duree = [math]::Round(0.8 + $ligne.Length * $MsParCar / 1000.0 + $sc.Fin / 1000.0 + 1.0, 2)
+  $duree = [math]::Round(0.8 + $m.Duree + 1.0, 2)
   $brut  = Join-Path $Travail "brut-$Nom.mkv"
   Remove-Item $brut -ErrorAction SilentlyContinue
 
@@ -311,26 +460,45 @@ function Capturer([string]$Nom) {
   # de moitié sur une ligne de vingt caractères, et l'image fixe tombe alors en
   # pleine frappe — c'est exactement ce qu'a montré la première passe.
   $horloge = [System.Diagnostics.Stopwatch]::StartNew()
-  function Attendre([int]$ms) { while ($horloge.ElapsedMilliseconds -lt $ms) { Start-Sleep -Milliseconds 5 } }
+  function Attendre([double]$ms) { while ($horloge.ElapsedMilliseconds -lt $ms) { Start-Sleep -Milliseconds 5 } }
 
-  $i = 0
-  foreach ($c in $ligne.ToCharArray()) {
-    Attendre ($i * $MsParCar)
-    $t = [string]$c
-    if ('+^%~(){}[]'.Contains($t)) { $t = "{$t}" }   # la syntaxe de SendKeys
-    [System.Windows.Forms.SendKeys]::SendWait($t)
-    $i++
+  $t = 0.0
+  foreach ($e in $sc.Etapes) {
+    if ($e.Photo) { continue }
+    if ($e.Taper) {
+      foreach ($c in $e.Taper.ToCharArray()) {
+        Attendre $t
+        [Clavier]::Caractere($c)
+        $t += $MsParCar
+      }
+      continue
+    }
+    if ($e.Touche)  { Attendre $t ; [System.Windows.Forms.SendKeys]::SendWait($e.Touche) ; continue }
+    if ($e.Pause)   { $t += $e.Pause   ; continue }
+    if ($e.Attente) { $t += $e.Attente ; continue }
   }
-  # Les mêmes gestes et les mêmes attentes que le tape zsh du même scénario.
-  $fin = $ligne.Length * $MsParCar
-  foreach ($g in $sc.Gestes) {
-    Attendre ($fin + $g.A)
-    [System.Windows.Forms.SendKeys]::SendWait($g.T)
-  }
-  Attendre ($fin + $sc.Fin)
+  Attendre $t
 
-  if (-not $ff.WaitForExit(30000)) { $ff.Kill() }
+  if (-not $ff.WaitForExit(180000)) { $ff.Kill() }
   Fermer-Terminal $hwnd
+  if ($sc.Ranger) { Write-Host '  rangement…' -ForegroundColor DarkGray ; & $sc.Ranger }
+
+  # ── Où couper ───────────────────────────────────────────────────────────────
+  #
+  # Un scénario qui exécute une commande ne peut pas savoir d'avance combien de
+  # temps elle durera : la sienne télécharge. On lui laisse donc une minute, puis
+  # on coupe la queue morte — ffmpeg sait dire quand l'image cesse de bouger, et
+  # le dernier de ces instants est la fin de la commande. Les scénarios qui ne
+  # font qu'ouvrir un cadre gardent, eux, leur minutage exact.
+  $coupe = $duree
+  if ($m.Attente) {
+    $journal = (& ffmpeg -hide_banner -nostats -i $brut -vf 'freezedetect=n=-60dB:d=1.5' `
+                  -map 0:v -f null - 2>&1) -join "`n"
+    $gels = @([regex]::Matches($journal, 'freeze_start:\s*([0-9.]+)') |
+              ForEach-Object { [double]$_.Groups[1].Value })
+    if ($gels.Count -gt 0) { $coupe = [math]::Min($gels[-1] + 2.0, $duree) }
+    Write-Host ("  commande terminée vers {0} s (sur {1} s filmées)" -f [math]::Round($coupe,1), $duree)
+  }
 
   # ── Les trois fichiers, au format exact des captures VHS ────────────────────
   New-Item -ItemType Directory -Force -Path $Out | Out-Null
@@ -338,16 +506,14 @@ function Capturer([string]$Nom) {
   # 952 px de contenu, puis 24 px de marge de chaque côté : 1000 × 530, comme VHS.
   $filtre = "fps=$Freq,scale=$($LargeurFinale - 2*$Marge):-2:flags=lanczos," +
             "pad=${LargeurFinale}:${HauteurFinale}:(ow-iw)/2:(oh-ih)/2:color=0x1E1E2E"
-  ffmpeg -y -loglevel error -i $brut `
+  ffmpeg -y -loglevel error -t $coupe -i $brut `
     -vf "$filtre,split[a][b];[a]palettegen[p];[b][p]paletteuse" (Join-Path $Out "$sortie.gif")
-  ffmpeg -y -loglevel error -i $brut -vf $filtre -pix_fmt yuv420p -an (Join-Path $Out "$sortie.mp4")
+  ffmpeg -y -loglevel error -t $coupe -i $brut -vf $filtre -pix_fmt yuv420p -an (Join-Path $Out "$sortie.mp4")
 
-  # L'image fixe est prise deux secondes après la fin de la frappe : popup ouvert,
-  # complet, aucune flèche encore pressée. C'est le calcul même des tapes — 800 ms
-  # d'attente, la frappe, puis deux secondes — et il redonne les instants qu'elles
-  # annoncent (4,5 s, 4,0 s, 3,0 s). Elle est extraite du GIF, comme sur Unix :
-  # l'image fixe ne peut donc pas montrer autre chose que l'enregistrement.
-  $instant = [math]::Round(0.8 + $ligne.Length * $MsParCar / 1000.0 + 2.0, 2)
+  # L'image fixe est prise à l'étape « Photo » : cadre ouvert, complet, aucune
+  # touche de navigation encore pressée. Elle est extraite du GIF, comme sur Unix
+  # — l'image fixe ne peut donc pas montrer autre chose que l'enregistrement.
+  $instant = [math]::Round(0.8 + $m.Photo, 2)
   ffmpeg -y -loglevel error -ss $instant -i (Join-Path $Out "$sortie.gif") `
     -vframes 1 (Join-Path $Out "$sortie.png")
   Write-Host "  → $sortie.gif  $sortie.mp4  $sortie.png  (image fixe à $instant s)"
