@@ -23,6 +23,11 @@ gestionnaire de paquets, un cadre s'affiche sous le prompt et suit ta frappe.
 ╰──────────────────────────────────────────────────────────╯
 ```
 
+Ou, tel qu'il se comporte réellement — rien n'est pressé, la liste se resserre à chaque
+lettre :
+
+![jigger complétant une ligne brew install, sur macOS](../media/out/macos-01-gestionnaire-natif.gif)
+
 Et, par-dessus tous les gestionnaires, **une seule syntaxe** : `jg install fd` s'adresse à
 celui qui connaît `fd`, sans que tu aies à savoir lequel (§ 6).
 
@@ -39,6 +44,11 @@ en regard, et ⇥ insère celui qu'on vise. `scp` insère `hôte:`, deux-points 
 machine sans `~/.ssh/config`, rien ne s'affiche du tout ; `JIGGER_COMMANDS` (§ 7) décide
 de ce qui est intercepté.
 
+![Le sélecteur SSH proposant les hôtes d'un ~/.ssh/config](../media/out/macos-03-ssh.gif)
+
+[Le sélecteur SSH](ssh.md) le traite en entier — les `Include`, les motifs qu'il écarte,
+et le deux-points que reçoit `scp`.
+
 ## 1. Prérequis
 
 - **Le gestionnaire lui-même** — et rien d'autre. jigger ne dépend d'aucun service, ne
@@ -52,6 +62,9 @@ de ce qui est intercepté.
   réellement nécessaire (§ 2).
 
 ## 2. Installer le binaire
+
+> **Pressé ?** [Installer jigger, de bout en bout](installation.md) donne la même chose en
+> un seul bloc à coller par plateforme, sans rien à lire entre les lignes.
 
 ### macOS et Linux — par Homebrew (recommandé)
 
@@ -244,6 +257,25 @@ winget install Git.       idem, côté Windows
 scoop uninstall 7z
 ```
 
+### Le même popup, sur les trois
+
+Un cadre, un jeu de touches, trois catalogues. Ce qui change d'une image à l'autre, c'est
+le gestionnaire qui répond — rien d'autre. Les trois sont prises dans le même décor, et
+[la façon de les prendre](../captures.md) est écrite.
+
+**macOS — `brew install fire`**
+
+![Le popup sur macOS, complétant une ligne brew install](../media/out/macos-01-gestionnaire-natif.png)
+
+**Omarchy — `yay -S visual-studio`**
+
+*Pas encore capturé — `./docs/media/capturer.sh` sur la machine Arch la produit.*
+
+**Windows — `winget install fire`**
+
+*Pas encore capturé — `pwsh -File docs\media\capturer.ps1 -Preparer` sur la machine
+Windows la produit.*
+
 Le même cadre sous Arch, `yay` répondant pour les deux catalogues à la fois :
 
 ```
@@ -310,6 +342,8 @@ jg info fd
 `jg` est un alias de `jigger`, posé par les deux greffons — celui de zsh et le module
 PowerShell ; les deux s'écrivent indifféremment. **La façade s'ajoute, elle ne remplace rien** : `brew install fd` continue
 de marcher exactement comme avant, popup compris.
+
+![jg install fd, la façade répondant pour le gestionnaire qui connaît le paquet](../media/out/macos-02-jg.gif)
 
 ### Les douze verbes
 
@@ -638,6 +672,9 @@ Les verbes de la façade s'appellent de la même façon sans le greffon — `jg`
 alias, `jigger outdated --json` marche partout, y compris dans un script ou une CI où
 aucun shell interactif n'est chargé.
 
+- [Installer jigger, de bout en bout](installation.md) — la procédure clé en main, par plateforme.
+- [Le sélecteur SSH](ssh.md) — ce qu'il lit, ce qu'il ne fait jamais.
+- [Capturer jigger](../captures.md) — comment les images et les enregistrements ci-dessus sont produits.
 - [README](../../README.fr.md) — ce que fait jigger, et pourquoi chaque choix a été fait ainsi.
 - [CHANGELOG](../../CHANGELOG.md) — ce qui a changé d'une version à l'autre.
 - `docs/` — les décisions d'architecture (ADR), les conceptions en cours et le journal du

@@ -48,7 +48,22 @@ test-pty: build
 
 test-all: test $(TEST_SHELL)
 
+# Les images et les enregistrements de la documentation. Demande vhs, ffmpeg et tmux —
+# tmux n'est pas un confort ici : sans lui le popup ne s'affiche pas du tout sous un
+# enregistreur, faute de réponse assez rapide à l'interrogation du curseur. Voir
+# docs/captures.md.
+#
+# La plateforme est déduite d'uname : cette cible ne produit que ce que la machine
+# courante peut produire. Windows a son propre script, docs/media/capturer.ps1.
+media:
+	./docs/media/capturer.sh
+
+# Réécrit les tapes VHS à partir du générateur. À lancer après avoir touché un
+# scénario, jamais pour corriger un tape à la main.
+media-tapes:
+	./docs/media/generer-tapes.sh
+
 clean:
 	rm -f jigger jigger.exe conpty-test.exe
 
-.PHONY: build install test test-shell test-golden test-shell-ps test-pty test-all clean
+.PHONY: build install test test-shell test-golden test-shell-ps test-pty test-all clean media media-tapes

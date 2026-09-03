@@ -1,0 +1,7 @@
+# Le temps d'une capture SSH, capturer.sh pose HOME sur ce répertoire — et jigger y écrit
+# son cache de catalogues, comme il le ferait dans n'importe quel foyer. Ce cache est un
+# déchet de la prise de vue : il porte le catalogue Homebrew de la machine qui a capturé,
+# il pèse, et il n'apprend rien. Seul le ~/.ssh/config du fixture est du décor.
+Library/
+.cache/
+AppData/

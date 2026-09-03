@@ -9,6 +9,65 @@ The format follows [Keep a Changelog](https://keepachangelog.com/1.1.0/) and
 [SemVer](https://semver.org/). Versions before `v0.1.6` predate this log; their detail
 lives in the git history.
 
+## [Unreleased]
+
+### Added
+
+- **The documentation shows jigger instead of describing it.** Until now every frame in
+  the guides was ASCII art, hand-kept in step with the binary. There are now real
+  recordings and real screenshots, produced by a protocol that is written down and
+  reproducible: `docs/captures.md`. Three scenarios — the native manager, the `jg`
+  facade, the SSH picker — captured in a decor frozen down to the palette, so the macOS
+  image and the Arch one differ by the manager answering and by nothing else. One pass
+  renders the GIF for the guides, the MP4 for the site, and the still frame extracted
+  from the recording itself, at an instant computed from the script rather than chosen
+  by hand.
+
+- **The capture protocol is executable, not prose.** `docs/media/generer-tapes.sh` writes
+  the nine VHS tapes from a single preamble — the three platforms cannot drift apart by a
+  manual copy — and the tapes it produces are standalone: one file to carry onto the
+  target machine, no `Source` directive, nothing but VHS to install. `make media` and
+  `make media-tapes` drive it; `docs/media/capturer.sh` deduces the platform from
+  `uname`, and `docs/media/capturer.ps1` covers Windows.
+
+  The one surprise is documented where it bites: **the live popup does not survive a
+  recorder.** It asks the terminal for the cursor position (`ESC[6n`) and waits 150 ms;
+  after two misses `_jigger_row` turns the live popup off for the session. VHS goes
+  through ttyd and an `xterm.js` in a headless Chrome, and the round trip does not fit.
+  A capture made naively therefore shows a terminal with **no popup at all**, and reads
+  as jigger doing nothing. The fix is to stack `VHS → tmux → zsh`: tmux is a real local
+  emulator and answers from its own state. Windows needs none of this — the PowerShell
+  module reads the cursor through PSReadLine's `GetBufferState`, never through the
+  terminal.
+
+- **A turnkey installation page**, [`docs/installation.md`](docs/installation.md) and its
+  French mirror: three self-contained procedures, one per platform, from a machine that
+  has never heard of jigger to a popup that answers. No cross-references — that is what
+  makes them turnkey — and each ends on how to remove it again. The guides keep the
+  explanations and point at it for readers in a hurry.
+
+- **A page for the SSH picker**, [`docs/ssh.md`](docs/ssh.md) and its French mirror. It
+  was scattered across a table row, a README bullet and a paragraph of § 7; it now has
+  the `Include` resolution, the patterns left out (`*`, `?`, `!`), what a `Match` block
+  does to the `Host` block before it, why `scp` gets a colon and the other two don't, and
+  a list of what the picker deliberately does not do — no `known_hosts`, no remote paths,
+  no options, and never a connection opened.
+
+- **The SSH captures show invented servers.** A picture of the SSH picker is a picture of
+  someone's `~/.ssh/config`, hence of their infrastructure.
+  `docs/media/fixtures/home/.ssh/config` carries six fictional hosts and `capturer.sh`
+  points `HOME` at it for the duration. The fixture doubles as a test: the host `atelier`
+  comes from an `Include` and must appear, `Host *.exemple.net` and `Host *` are patterns
+  and must not.
+
+### Fixed
+
+- **The `brew install fire` and `jg` frames were finally captured on a Mac.** v0.15.0
+  recorded that both were still wanting one — brew had to be installed for the first, the
+  twelve verbs declared for the second — and updated only the version banner on the
+  grounds that a real recapture was owed. It is done, and they are photographs now rather
+  than drawings.
+
 ## [v0.15.0] — 2026-09-02
 
 ### Added

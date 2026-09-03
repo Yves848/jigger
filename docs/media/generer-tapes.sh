@@ -1,0 +1,156 @@
+#!/usr/bin/env bash
+# Génère les tapes VHS des trois plateformes.
+#
+# Le préambule — police, taille, dimensions, thème, vitesse de frappe — est écrit
+# ici UNE fois et recopié tel quel dans chaque tape. C'est ce qui garantit que la
+# capture de macOS, celle d'Omarchy et celle de Windows sont comparables : rien de
+# ce qui décide de l'image ne peut diverger par recopie manuelle.
+#
+# Les tapes produits sont pour autant AUTONOMES : aucune directive « Source », rien
+# à installer d'autre que VHS. On copie un fichier sur la machine cible et on le
+# lance. C'est le sens de « instructions réutilisables » : le script est
+# l'instruction.
+#
+#   ./docs/media/generer-tapes.sh      # réécrit docs/media/tapes/*.tape
+set -euo pipefail
+cd "$(dirname "$0")"
+mkdir -p tapes
+
+# Catppuccin Mocha, la palette de la charte. Posée en JSON dans chaque tape plutôt
+# que choisie parmi les 348 thèmes intégrés de VHS : la liste varie d'une version à
+# l'autre, la palette écrite ne varie pas.
+THEME='{ "background": "#1e1e2e", "foreground": "#cdd6f4", "cursor": "#f5e0dc", "selection": "#585b70", "black": "#45475a", "red": "#f38ba8", "green": "#a6e3a1", "yellow": "#f9e2af", "blue": "#89b4fa", "magenta": "#f5c2e7", "cyan": "#94e2d5", "white": "#bac2de", "brightBlack": "#585b70", "brightRed": "#f38ba8", "brightGreen": "#a6e3a1", "brightYellow": "#f9e2af", "brightBlue": "#89b4fa", "brightMagenta": "#f5c2e7", "brightCyan": "#94e2d5", "brightWhite": "#a6adc8" }'
+
+preambule() { # $1 = nom de sortie
+  cat <<EOF
+Output out/$1.gif
+Output out/$1.mp4
+
+# --- décor figé : identique sur macOS, Omarchy et Windows ------------------
+Set FontFamily "MesloLGL Nerd Font"
+Set FontSize 22
+Set Width 1000
+Set Height 530
+Set Padding 24
+Set TypingSpeed 90ms
+Set Framerate 24
+Set Theme $THEME
+EOF
+}
+
+# Le shell capturé. Sur zsh il tourne dans tmux — sans quoi le popup ne s'affiche
+# pas du tout (DSR, cf. docs/captures.md). Sur PowerShell il n'en a pas besoin :
+# le module lit la position du curseur par PSReadLine, pas par le terminal.
+amorce_zsh() {
+  cat <<'EOF'
+Set Shell "zsh"
+Hide
+Type "tmux -L jiggercap -f $JIGGER_MEDIA/fixtures/tmux.conf new-session -A -s capture zsh" Enter
+Sleep 2s
+Type "clear" Enter
+Sleep 1s
+Show
+Sleep 800ms
+EOF
+}
+amorce_pwsh() {
+  cat <<'EOF'
+Set Shell "pwsh"
+Hide
+Type "Clear-Host" Enter
+Sleep 1500ms
+Show
+Sleep 800ms
+EOF
+}
+
+ecrire() { # $1=plateforme  $2=nom  $3=amorce  $4=corps
+  local f="tapes/$1-$2.tape"
+  { preambule "$1-$2"; echo; $3; echo; printf '%s\n' "$4"; } > "$f"
+  echo "  $f"
+}
+
+echo "Tapes générés :"
+
+# --- 01 · le gestionnaire natif ---------------------------------------------
+# La démonstration que l'utilisateur attend en premier : on tape la commande
+# qu'on tapait déjà, et le popup arrive tout seul. Aucune touche pressée.
+ecrire macos   01-gestionnaire-natif amorce_zsh  'Type "brew install fire"
+Sleep 3s
+Down
+Sleep 1s
+Down
+Sleep 1s
+Tab
+Sleep 2500ms'
+
+ecrire omarchy 01-gestionnaire-natif amorce_zsh  'Type "yay -S visual-studio"
+Sleep 3s
+Down
+Sleep 1s
+Down
+Sleep 1s
+Tab
+Sleep 2500ms'
+
+ecrire windows 01-gestionnaire-natif amorce_pwsh 'Type "winget install fire"
+Sleep 3s
+Down
+Sleep 1s
+Down
+Sleep 1s
+Tab
+Sleep 2500ms'
+
+# --- 02 · la syntaxe unique « jg » ------------------------------------------
+# Le même geste, mais sans avoir à savoir quel gestionnaire connaît le paquet.
+ecrire macos   02-jg amorce_zsh  'Type "jg install fd"
+Sleep 3s
+Down
+Sleep 1200ms
+Tab
+Sleep 2500ms'
+
+ecrire omarchy 02-jg amorce_zsh  'Type "jg install fd"
+Sleep 3s
+Down
+Sleep 1200ms
+Tab
+Sleep 2500ms'
+
+ecrire windows 02-jg amorce_pwsh 'Type "jg install fd"
+Sleep 3s
+Down
+Sleep 1200ms
+Tab
+Sleep 2500ms'
+
+# --- 03 · le sélecteur SSH ---------------------------------------------------
+# Une commande sans verbe : le catalogue vient dès l'espace. Les hôtes sont ceux
+# du fixture, donc les mêmes sur les trois plateformes.
+ecrire macos   03-ssh amorce_zsh  'Type "ssh "
+Sleep 2500ms
+Down
+Sleep 1s
+Down
+Sleep 1s
+Tab
+Sleep 2500ms'
+
+ecrire omarchy 03-ssh amorce_zsh  'Type "ssh "
+Sleep 2500ms
+Down
+Sleep 1s
+Down
+Sleep 1s
+Tab
+Sleep 2500ms'
+
+ecrire windows 03-ssh amorce_pwsh 'Type "ssh "
+Sleep 2500ms
+Down
+Sleep 1s
+Down
+Sleep 1s
+Tab
+Sleep 2500ms'
