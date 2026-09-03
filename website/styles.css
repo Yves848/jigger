@@ -34,8 +34,18 @@
 }
 
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
-@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+/* Pas de `scroll-behavior: smooth` sur `html`, et ce n'est pas un oubli.
+   La règle ne se contente pas d'adoucir les ancres : elle rend animé TOUT
+   défilement programmé, y compris ceux que le navigateur déclenche pour le
+   clavier et la molette. Or chaque nouvelle impulsion annule l'animation en
+   cours. En remontant une page longue, où les impulsions s'enchaînent, la
+   position n'avance donc que par à-coups — mesuré sur l'accueil : vingt
+   remontées successives laissaient la page exactement où elle était, quand la
+   même page sans la règle passait de 5855 à 0.
+
+   L'adoucissement des ancres ne valait pas un défilement qu'on ne peut pas
+   remonter. Les lecteurs en « mouvement réduit » avaient d'ailleurs déjà ce
+   comportement-ci, et personne ne l'a jamais tenu pour dégradé. */
 
 /* Pas d'`overflow-x: hidden` sur `body`. Il n'y servait à rien — mesuré à 1400,
    900 et 500 px sur les trois pages, le document ne déborde jamais : les seuls
