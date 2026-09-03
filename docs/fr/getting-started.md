@@ -335,12 +335,36 @@ ordinaire (formula, paquet de dépôt sous pacman et yay, catalogue winget, buck
 `^R` change le filtre, et rien que le filtre : la ligne, le cadre et les touches ne
 bougent pas. Le titre dit quel mode est actif.
 
+**macOS — `brew install fire`, puis `^R`**
+
+![La même ligne filtrée par préfixe, puis en regex après ^R, sur macOS](../media/out/macos-04-regex.gif)
+
+Par préfixe, `fire` retient les noms qui *commencent* par lui. `^R`, et `arrayfire` les
+rejoint — le motif n'est pas ancré, la liste s'**élargit** donc avant qu'on la resserre.
+Puis `(bird|fly)` n'en garde que quatre.
+
+**Omarchy**
+
+*Pas encore capturé — le tape qui le joue, `omarchy-04-regex`, est écrit et attend une
+machine joignable.*
+
+**Windows — `winget install fire`, puis `^R`**
+
 ![La même ligne filtrée en texte simple, puis en regex, après ^R](../media/out/windows-04-regex.gif)
 
 `winget install fire` propose vingt-et-un candidats par préfixe. `^R`, puis
 `(bird|blade)`, n'en garde que quatre — une alternance qu'aucune recherche par préfixe
 ne sait exprimer. `^R` à nouveau revient en arrière, et hors du popup la touche reste la
 recherche arrière dans l'historique du shell.
+
+#### Ce que la bascule ne dit pas d'elle-même
+
+| | |
+|---|---|
+| **Le motif n'est pas ancré** | il correspond n'importe où dans un nom, si bien que basculer *élargit* souvent la liste avant qu'on la resserre — c'est `arrayfire` qui apparaît ci-dessus |
+| **La casse est ignorée** | dans les deux modes. Basculer ne change jamais la sensibilité en douce |
+| **Les noms de paquets seulement** | les verbes, les sous-commandes et les options gardent le filtre par préfixe : ce sont des vocabulaires de quelques dizaines d'entrées, où une expression rationnelle n'apprendrait rien et surprendrait |
+| **Un motif qui ne compile pas ne retient rien** | le cadre le dit, plutôt que d'afficher 16 000 entrées parce qu'il manque une parenthèse. Le sélecteur plein écran (`JIGGER_LIVE=0`) fait le choix **inverse** : là, un motif fautif garde toutes les lignes et la ligne de filtre porte l'avertissement |
 
 ## 6. Une seule syntaxe : `jg`
 

@@ -338,11 +338,35 @@ the catalog, third-party bucket).
 `^R` switches the filter, and only the filter: the line, the frame and the keys don't
 move. The title says which mode is on.
 
+**macOS — `brew install fire`, then `^R`**
+
+![The same line filtered by prefix, then as a regex after ^R, on macOS](media/out/macos-04-regex.gif)
+
+By prefix, `fire` keeps the names that *begin* with it. `^R`, and `arrayfire` joins
+them — the pattern is not anchored, so the list gets **wider** before it gets narrower.
+Then `(bird|fly)` keeps four.
+
+**Omarchy**
+
+*Not captured yet — the tape that plays it, `omarchy-04-regex`, is written and waiting
+for a reachable machine.*
+
+**Windows — `winget install fire`, then `^R`**
+
 ![The same line filtered as plain text, then as a regex, after ^R](media/out/windows-04-regex.gif)
 
 `winget install fire` offers twenty-one candidates by prefix. `^R`, then
 `(bird|blade)`, keeps four — an alternation no prefix search can express. `^R` again
 goes back, and outside the popup the key remains your shell's reverse history search.
+
+#### What the toggle does not say out loud
+
+| | |
+|---|---|
+| **The pattern is not anchored** | it matches anywhere in a name, so switching often *widens* the list before you narrow it — that is `arrayfire` appearing above |
+| **The case is ignored** | in both modes. Switching never changes the sensitivity quietly |
+| **Package names only** | verbs, subcommands and flags keep prefix matching: they are vocabularies of a few dozen entries, where a regex would teach nothing and surprise |
+| **A pattern that doesn't compile matches nothing** | the frame says so, rather than showing 16 000 entries because a bracket is missing. The full-screen picker (`JIGGER_LIVE=0`) makes the **opposite** choice: there an invalid pattern keeps every line, and the filter line carries the warning |
 
 ## 6. One syntax: `jg`
 

@@ -149,6 +149,7 @@ brew install fire        → same thing, on macOS
 | `↑` | moves up; on the first candidate, hands the keyboard back to the shell |
 | `^N` / `^P` | the same, for those who prefer them to arrow keys |
 | `^G` | closes the popup for the current line (`⇥` reopens it) |
+| `^R` | switches the filter between plain text and regex; the frame's title shows `[regex]` while it is on |
 
 `⏎` **completes, then runs — in the same keystroke**, and at every level of the tree:
 verb, sub-verb, option, package name. `winget li ⏎` runs `winget list`; it's `⇥` you no
@@ -164,6 +165,13 @@ access to the previous command. What they'll do is shown in the frame — footer
 an underlined line once it does. And jigger always hands the key back to whatever it
 was doing before: if another plugin already holds your arrow keys (prefix search in
 history, for example), that one keeps control.
+
+`^R` switches the **filter**, and only the filter: the line, the frame and the keys
+don't move. Three things worth knowing — the pattern is not anchored, so `fire` in regex
+mode also matches `arrayfire`; the case is ignored in both modes; and it applies to
+**package names only**, verbs, subcommands and flags keeping prefix matching. A pattern
+that doesn't compile matches nothing, and the frame says so rather than listing the whole
+catalog. Outside the popup, `^R` remains your shell's reverse history search.
 
 After `winget install`, the word is empty and the catalog holds thousands of entries:
 the frame then invites you to type at least one letter rather than listing everything.

@@ -150,6 +150,7 @@ brew install fire        → idem, côté macOS
 | `↑` | remonte ; au premier candidat, rend le clavier au shell |
 | `^N` / `^P` | les mêmes, pour qui les préfère aux flèches |
 | `^G` | ferme le popup pour la ligne en cours (`⇥` le rouvre) |
+| `^R` | bascule le filtre entre texte brut et regex ; le titre du cadre affiche `[regex]` tant que c'est actif |
 
 `⏎` **complète, puis exécute — dans la même frappe**, et à tous les niveaux de l'arbre :
 verbe, sous-verbe, option, nom de paquet. `winget li ⏎` lance `winget list` ; c'est `⇥`
@@ -165,6 +166,14 @@ courante au repos tant qu'il n'a pas le focus, `↑↓ naviguer` et ligne soulig
 qu'il l'a. Et jigger rend toujours la touche à ce qu'elle faisait avant lui : si un autre
 greffon tient déjà tes flèches (recherche par préfixe dans l'historique, par exemple),
 c'est lui qui reprend la main.
+
+`^R` bascule le **filtre**, et rien que le filtre : la ligne, le cadre et les touches ne
+bougent pas. Trois choses à savoir — le motif n'est pas ancré, si bien que `fire` en mode
+regex retient aussi `arrayfire` ; la casse est ignorée dans les deux modes ; et cela ne
+vaut que pour les **noms de paquets**, les verbes, les sous-commandes et les options
+gardant le filtre par préfixe. Un motif qui ne compile pas ne retient rien, et le cadre le
+dit plutôt que d'égrener le catalogue entier. Hors du popup, `^R` reste la recherche
+arrière dans l'historique de ton shell.
 
 Après `winget install`, le mot est vide et le catalogue compte des milliers d'entrées :
 le cadre invite alors à taper au moins une lettre plutôt que d'égrener la liste.

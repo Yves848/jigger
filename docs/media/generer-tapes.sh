@@ -125,3 +125,34 @@ Sleep 1s
 Tab
 Sleep 2500ms'
 
+
+# --- 04 · la bascule regex ---------------------------------------------------
+# Le seul scénario où l'on presse une touche pour changer quelque chose, et le
+# seul qui montre le mode regex : le reste de la documentation l'énonce, aucune
+# image ne le montrait hors de Windows.
+#
+# La bascule est jouée sur une saisie DÉJÀ filtrée, parce que c'est là qu'elle
+# apprend le plus : « fire » en préfixe ne retient que les noms qui commencent
+# par « fire », en regex il retient aussi « arrayfire » — le motif n'est pas
+# ancré. Une capture qui basculerait sur une ligne vide ne montrerait que le
+# « [regex] » du titre, pas ce qu'il change.
+#
+# Vient ensuite l'alternance, qu'aucune recherche par préfixe ne sait exprimer.
+ecrire macos   04-regex amorce_zsh  'Type "brew install fire"
+Sleep 3s
+Ctrl+R
+Sleep 2s
+Type "(bird|fly)"
+Sleep 3s
+Tab
+Sleep 2500ms'
+
+ecrire omarchy 04-regex amorce_zsh  'Type "yay -S fire"
+Sleep 3s
+Ctrl+R
+Sleep 2s
+Type "(bird|fly)"
+Sleep 3s
+Tab
+Sleep 2500ms'
+

@@ -238,10 +238,19 @@
 
         <h3 data-i18n="use.now.regexh">Regex, on the same line</h3>
         <p data-i18n="use.now.regex"><kbd>^R</kbd> switches the filter, and only the filter: the line, the frame and the keys don't move. The title says which mode is on, and outside the popup the key remains your shell's reverse history search.</p>
+        <p class="note" data-i18n="use.now.regexhow">Four things the toggle doesn't say out loud. The pattern is <strong>not anchored</strong>: it matches anywhere in a name, so switching often widens the list before you narrow it. The case is ignored in both modes — switching never changes that quietly. It applies to <strong>package names only</strong>: verbs, subcommands and flags keep prefix matching, where a regex would teach nothing. And a pattern that doesn't compile matches <strong>nothing</strong> — the frame says so, rather than dumping the whole catalogue because a bracket is missing.</p>
 
         <div data-os-block="macos">
           <h4 class="os-block-title">macOS</h4>
-          <p class="demo-absent" data-i18n="use.regex.mac">The same <kbd>^R</kbd> toggle works on macOS — its capture isn't recorded yet. Switch to Windows above to watch it.</p>
+          <figure class="demo">
+            <div class="demo-frame">
+              <video muted loop playsinline preload="none"
+                     poster="/media/macos-04-regex.png"
+                     data-src="/media/macos-04-regex.mp4"
+                     aria-labelledby="use-mac04"></video>
+            </div>
+            <figcaption id="use-mac04" data-i18n="use.demo.mac04">brew install fire lists the names that begin with fire. ^R switches to regex and arrayfire joins them — the pattern is not anchored, so the list gets wider before it gets narrower. Then (bird|fly) keeps four. Captured on macOS.</figcaption>
+          </figure>
         </div>
 
         <div data-os-block="windows">
@@ -259,7 +268,7 @@
 
         <div data-os-block="omarchy">
           <h4 class="os-block-title">Omarchy</h4>
-          <p class="demo-absent" data-i18n="use.regex.omarchy">The same <kbd>^R</kbd> toggle works on Arch, where an alternation earns its keep: <span class="mono">(gtk|qt)</span> over a repository catalogue of thousands of entries. Its capture isn't recorded yet.</p>
+          <p class="demo-absent" data-i18n="use.regex.omarchy">The same <kbd>^R</kbd> toggle works on Arch, over the repositories and the AUR at once. Its capture isn't recorded yet — the tape that plays it is written, it has yet to be run on a reachable machine.</p>
         </div>
 
         <h3 data-i18n="use.now.runh">Completing, then running</h3>
@@ -373,7 +382,7 @@
       <div class="wrap">
         <aside class="encart">
           <h2 data-i18n="use.linux.h2">And Linux?</h2>
-          <p data-i18n="use.linux.p">Arch and Omarchy already work — pacman and yay, same popup, same verbs. Their captures aren't recorded yet, so this page doesn't walk you through them. The documentation does.</p>
+          <p data-i18n="use.linux.p">Arch and Omarchy already work — pacman and yay, same popup, same verbs. Pick <strong>Omarchy</strong> in the header and this page switches to their commands throughout. What is still missing is the recordings, not the instructions. The install guide goes further.</p>
           <p><a href="https://gitlab.yg-devworks.com/yves/jigger/-/blob/main/docs/installation.md" data-i18n="use.linux.link">Read the install guide <span class="arw">→</span></a></p>
         </aside>
       </div>
