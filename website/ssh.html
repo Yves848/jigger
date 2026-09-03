@@ -120,8 +120,95 @@
         <h2 data-i18n="ssh.file.h2">One file, and nothing else.</h2>
         <p class="lede" data-i18n="ssh.file.lede"><span class="mono">~/.ssh/config</span>. No <span class="mono">known_hosts</span>, no <span class="mono">/etc/ssh/ssh_config</span>, no network — jigger never opens a connection, and never asks a server anything.</p>
 
-        <!-- Le schéma du fichier SSH vient ici (tâche 9). -->
-        <div id="dia-ssh"></div>
+        <!-- Le fichier lu, les hôtes proposés, les motifs écartés. Les six hôtes
+             sont exactement ceux du fixture de capture (docs/media/fixtures/home) :
+             le schéma et les enregistrements montrent le même fichier, et
+             « atelier » n'y arrive que par l'Include — c'est ce qu'il prouve. -->
+        <div class="diagram" id="dia-ssh">
+          <svg viewBox="0 0 1240 500" role="img" aria-labelledby="dia4-title">
+            <title id="dia4-title" data-i18n="dia4.alt">Three columns: on the left ~/.ssh/config and the Include that pulls in a second file; in the middle the six hosts the popup offers, atelier among them because the Include is followed; on the right the two patterns, Host *.exemple.net and Host *, struck out — a pattern is not a server, and is never offered.</title>
+            <defs>
+              <marker id="dia4-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path class="mk-read" d="M0 0 L10 5 L0 10 z"/></marker>
+            </defs>
+
+            <text class="dia-eyebrow" x="40" y="26" data-i18n="dia4.col1">WHAT IT READS</text>
+            <text class="dia-eyebrow" x="450" y="26" data-i18n="dia4.col2">WHAT THE POPUP OFFERS</text>
+            <text class="dia-eyebrow" x="860" y="26" data-i18n="dia4.col3">WHAT IT DROPS</text>
+
+            <!-- colonne 1 : le fichier -->
+            <rect class="dia-box" x="40" y="48" width="340" height="268" rx="8"/>
+            <text class="dia-mono" x="60" y="80">~/.ssh/config</text>
+            <text class="dia-code hi" x="60" y="110">Include conf.d/*.conf</text>
+            <text class="dia-code" x="60" y="138">Host passerelle</text>
+            <text class="dia-code" x="60" y="162">Host nas</text>
+            <text class="dia-code" x="60" y="186">Host proxmox</text>
+            <text class="dia-code" x="60" y="210">Host omarchy</text>
+            <text class="dia-code" x="60" y="234">Host windows</text>
+            <text class="dia-code off" x="60" y="262">Host *.exemple.net</text>
+            <line class="dia-strike" x1="56" y1="258" x2="198" y2="258"/>
+            <text class="dia-code off" x="60" y="286">Host *</text>
+            <line class="dia-strike" x1="56" y1="282" x2="108" y2="282"/>
+
+            <line class="dia-flow f-read" x1="330" y1="320" x2="330" y2="356" marker-end="url(#dia4-ar)"/>
+            <text class="dia-note" x="60" y="344" data-i18n="dia4.follow">includes are followed</text>
+
+            <rect class="dia-box" x="40" y="360" width="340" height="104" rx="8"/>
+            <text class="dia-mono" x="60" y="392">conf.d/atelier.conf</text>
+            <text class="dia-code" x="60" y="420">Host atelier</text>
+            <text class="dia-note" x="60" y="446" data-i18n="dia4.inc">a second file, one more host</text>
+
+            <!-- colonne 2 : les six hôtes -->
+            <line class="dia-flow f-read" x1="386" y1="190" x2="444" y2="190" marker-end="url(#dia4-ar)"/>
+            <line class="dia-flow f-read" x1="386" y1="400" x2="444" y2="308" marker-end="url(#dia4-ar)"/>
+
+            <rect class="dia-box" x="450" y="48" width="340" height="330" rx="8"/>
+            <text class="dia-t on" x="470" y="80" data-i18n="dia4.offered">the six hosts the popup offers</text>
+
+            <rect class="dia-pip" x="468" y="108" width="10" height="10"/>
+            <text class="dia-mono" x="488" y="118">passerelle</text>
+            <text class="dia-note" x="772" y="118" text-anchor="end">passerelle.exemple.net</text>
+
+            <rect class="dia-pip" x="468" y="144" width="10" height="10"/>
+            <text class="dia-mono" x="488" y="154">nas</text>
+            <text class="dia-note" x="772" y="154" text-anchor="end">192.168.1.20</text>
+
+            <rect class="dia-pip" x="468" y="180" width="10" height="10"/>
+            <text class="dia-mono" x="488" y="190">proxmox</text>
+            <text class="dia-note" x="772" y="190" text-anchor="end">192.168.1.10</text>
+
+            <rect class="dia-pip" x="468" y="216" width="10" height="10"/>
+            <text class="dia-mono" x="488" y="226">omarchy</text>
+            <text class="dia-note" x="772" y="226" text-anchor="end">192.168.1.31</text>
+
+            <rect class="dia-pip" x="468" y="252" width="10" height="10"/>
+            <text class="dia-mono" x="488" y="262">windows</text>
+            <text class="dia-note" x="772" y="262" text-anchor="end">192.168.1.32</text>
+
+            <rect class="dia-hl" x="464" y="286" width="312" height="34" rx="6"/>
+            <rect class="dia-pip" x="468" y="296" width="10" height="10"/>
+            <text class="dia-mono" x="488" y="306">atelier</text>
+            <text class="dia-note" x="772" y="306" text-anchor="end">atelier.exemple.net</text>
+            <text class="dia-note" x="470" y="344" data-i18n="dia4.atelier">atelier comes from the second file</text>
+            <text class="dia-note" x="470" y="364" data-i18n="dia4.proof">the Include is what puts it here</text>
+
+            <!-- colonne 3 : ce qui est écarté -->
+            <rect class="dia-box" x="860" y="48" width="340" height="200" rx="8"/>
+            <text class="dia-t on" x="880" y="80" data-i18n="dia4.dropped">the two patterns, never offered</text>
+            <text class="dia-mono off" x="880" y="120">Host *.exemple.net</text>
+            <line class="dia-strike" x1="876" y1="116" x2="1030" y2="116"/>
+            <text class="dia-mono off" x="880" y="156">Host *</text>
+            <line class="dia-strike" x1="876" y1="152" x2="933" y2="152"/>
+            <text class="dia-note" x="880" y="192" data-i18n="dia4.why">a name with * ? or ! is not a server</text>
+            <text class="dia-note" x="880" y="214" data-i18n="dia4.why2">offering it would insert an unreachable name</text>
+
+            <rect class="dia-box" x="860" y="284" width="340" height="180" rx="8"/>
+            <text class="dia-t on" x="880" y="316" data-i18n="dia4.never">what it never reads</text>
+            <text class="dia-mono off" x="880" y="350">known_hosts</text>
+            <text class="dia-mono off" x="880" y="380">/etc/ssh/ssh_config</text>
+            <text class="dia-note" x="880" y="412" data-i18n="dia4.never2">and no network at all</text>
+            <text class="dia-note" x="880" y="434" data-i18n="dia4.reread">re-read on every keystroke, nothing cached</text>
+          </svg>
+        </div>
 
         <p data-i18n="ssh.file.fixture">The file behind both recordings holds an <span class="mono">Include</span>, six hosts and two patterns. The <span class="mono">Include</span> pulls in <span class="mono">atelier</span> from a second file, which is how the recordings show that includes are followed. The six — <span class="mono">passerelle</span>, <span class="mono">nas</span>, <span class="mono">proxmox</span>, <span class="mono">omarchy</span>, <span class="mono">windows</span> and <span class="mono">atelier</span> — are the ones the popup offers, each with its <span class="mono">HostName</span> to the right when it differs from the name. The two patterns, <span class="mono">Host *.exemple.net</span> and <span class="mono">Host *</span>, never appear: a name containing <span class="mono">*</span>, <span class="mono">?</span> or <span class="mono">!</span> is not a server, and offering it would insert something you cannot connect to.</p>
         <p data-i18n="ssh.file.reread">Everything is re-read on every keystroke. There is no cache and no warm-up: reading a few fragments of configuration costs a millisecond, which makes SSH the only provider in jigger with nothing to keep.</p>

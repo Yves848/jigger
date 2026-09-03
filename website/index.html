@@ -94,6 +94,75 @@
           down with every letter. Nothing to trigger, nothing to remember.
         </p>
 
+        <!-- Le cadre qui se resserre. Les trois états sont ceux de l'enregistrement
+             du haut de page : « fire » donne sept candidats, « fireb » en laisse
+             trois, « firebi » un seul. L'éclairage tourne par @keyframes ; sous
+             mouvement réduit les trois s'allument ensemble, et le schéma se lit
+             pareil, à l'arrêt. -->
+        <div class="diagram">
+          <svg viewBox="0 0 1240 400" role="img" aria-labelledby="dia2-title">
+            <title id="dia2-title" data-i18n="dia2.alt">The same line typed in three states — fire, then fireb, then firebi — with the frame shrinking beside it: seven candidates, then three, then one. Nothing opens it, the list simply follows the line.</title>
+
+            <text class="dia-eyebrow" x="20" y="26" data-i18n="dia2.eyebrow">AS YOU TYPE</text>
+            <text class="dia-sub" x="1220" y="26" text-anchor="end" data-i18n="dia2.note">nothing to press: the frame opens on its own and narrows letter by letter</text>
+
+            <!-- état 1 : fire -->
+            <g class="dia-etape-1">
+              <rect class="dia-term" x="20" y="52" width="380" height="44" rx="6"/>
+              <text class="dia-mono" x="36" y="80">❯ brew install fire</text>
+              <rect class="dia-caret" x="195" y="62" width="8" height="22"/>
+
+              <rect class="dia-box" x="20" y="108" width="380" height="232" rx="8"/>
+              <rect class="dia-pip" x="36" y="128" width="10" height="10"/>
+              <text class="dia-mono" x="58" y="138">firealpaca</text>
+              <rect class="dia-pip" x="36" y="158" width="10" height="10"/>
+              <text class="dia-mono" x="58" y="168">firebase-admin</text>
+              <rect class="dia-pip" x="36" y="188" width="10" height="10"/>
+              <text class="dia-mono" x="58" y="198">firebase-cli</text>
+              <rect class="dia-pip" x="36" y="218" width="10" height="10"/>
+              <text class="dia-mono" x="58" y="228">firebird-emu</text>
+              <rect class="dia-pip" x="36" y="248" width="10" height="10"/>
+              <text class="dia-mono" x="58" y="258">firecamp</text>
+              <rect class="dia-pip" x="36" y="278" width="10" height="10"/>
+              <text class="dia-mono" x="58" y="288">firefly</text>
+              <rect class="dia-pip" x="36" y="308" width="10" height="10"/>
+              <text class="dia-mono" x="58" y="318">firefly-iota-desktop</text>
+
+              <text class="dia-note" x="210" y="368" text-anchor="middle" data-i18n="dia2.c1">seven candidates</text>
+            </g>
+
+            <!-- état 2 : fireb -->
+            <g class="dia-etape-2">
+              <rect class="dia-term" x="430" y="52" width="380" height="44" rx="6"/>
+              <text class="dia-mono" x="446" y="80">❯ brew install fireb</text>
+              <rect class="dia-caret" x="613" y="62" width="8" height="22"/>
+
+              <rect class="dia-box" x="430" y="108" width="380" height="112" rx="8"/>
+              <rect class="dia-pip" x="446" y="128" width="10" height="10"/>
+              <text class="dia-mono" x="468" y="138">firebase-admin</text>
+              <rect class="dia-pip" x="446" y="158" width="10" height="10"/>
+              <text class="dia-mono" x="468" y="168">firebase-cli</text>
+              <rect class="dia-pip" x="446" y="188" width="10" height="10"/>
+              <text class="dia-mono" x="468" y="198">firebird-emu</text>
+
+              <text class="dia-note" x="620" y="368" text-anchor="middle" data-i18n="dia2.c2">one letter more, three left</text>
+            </g>
+
+            <!-- état 3 : firebi -->
+            <g class="dia-etape-3">
+              <rect class="dia-term" x="840" y="52" width="380" height="44" rx="6"/>
+              <text class="dia-mono" x="856" y="80">❯ brew install firebi</text>
+              <rect class="dia-caret" x="1031" y="62" width="8" height="22"/>
+
+              <rect class="dia-box" x="840" y="108" width="380" height="52" rx="8"/>
+              <rect class="dia-pip" x="856" y="128" width="10" height="10"/>
+              <text class="dia-mono" x="878" y="138">firebird-emu</text>
+
+              <text class="dia-note" x="1030" y="368" text-anchor="middle" data-i18n="dia2.c3">one letter more, one left — ⇥ inserts it</text>
+            </g>
+          </svg>
+        </div>
+
         <ul class="keys">
           <li><kbd>⇥</kbd> <span data-i18n="popup.k1">inserts the current candidate</span></li>
           <li><kbd>↓</kbd> <span data-i18n="popup.k2">enters the list</span></li>
@@ -155,6 +224,77 @@
           <span class="mono">source</span>, fails cleanly, naming who would know how to
           do it.
         </p>
+
+        <!-- La façade. La bande du bas n'est pas un ornement : sans elle, quatre
+             flèches dont une seule est allumée laissent croire à une résolution
+             magique. Le schéma doit dire l'inverse — quand deux catalogues
+             portent le même nom, personne ne tranche à la place de qui tape. -->
+        <div class="diagram">
+          <svg viewBox="0 0 1240 620" role="img" aria-labelledby="dia3-title">
+            <title id="dia3-title" data-i18n="dia3.alt">One verb at the centre, jg install fd, with four package managers around it. A single solid arrow reaches the one whose catalogue holds the name; the other three stay dim. Below, the case where two managers know the same name: the picker opens and you choose — nothing is settled for you.</title>
+            <defs>
+              <marker id="dia3-ar-on" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path class="mk-run" d="M0 0 L10 5 L0 10 z"/></marker>
+              <marker id="dia3-ar-off" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path class="mk-off" d="M0 0 L10 5 L0 10 z"/></marker>
+            </defs>
+
+            <text class="dia-eyebrow" x="70" y="28" data-i18n="dia3.eyebrow">ONE VERB, FOUR DOORS</text>
+            <text class="dia-sub" x="1170" y="28" text-anchor="end" data-i18n="dia3.note">routed by what the catalogues hold, never by a setting</text>
+
+            <!-- les quatre gestionnaires -->
+            <rect class="dia-box" x="70" y="64" width="250" height="92" rx="8"/>
+            <text class="dia-name" x="195" y="108" text-anchor="middle">brew</text>
+            <text class="dia-note" x="195" y="132" text-anchor="middle" data-i18n="dia3.knows">it has the name — it runs</text>
+
+            <rect class="dia-box" x="920" y="64" width="250" height="92" rx="8"/>
+            <text class="dia-name" x="1045" y="108" text-anchor="middle">winget</text>
+            <text class="dia-note" x="1045" y="132" text-anchor="middle" data-i18n="dia3.absent">no such name in its catalogue</text>
+
+            <rect class="dia-box" x="70" y="300" width="250" height="92" rx="8"/>
+            <text class="dia-name" x="195" y="344" text-anchor="middle">scoop</text>
+            <text class="dia-note" x="195" y="368" text-anchor="middle" data-i18n="dia3.absent">no such name in its catalogue</text>
+
+            <rect class="dia-box" x="920" y="300" width="250" height="92" rx="8"/>
+            <text class="dia-name" x="1045" y="344" text-anchor="middle">pacman</text>
+            <text class="dia-note" x="1045" y="368" text-anchor="middle" data-i18n="dia3.absent">no such name in its catalogue</text>
+
+            <!-- le verbe, au centre -->
+            <rect class="dia-core" x="470" y="170" width="300" height="116" rx="10"/>
+            <text class="dia-tag c-run" x="490" y="198" data-i18n="dia3.tag">ONE VERB</text>
+            <text class="dia-mono" x="490" y="228">jg install fd</text>
+            <text class="dia-t on" x="490" y="254" data-i18n="dia3.center">who has this name?</text>
+
+            <!-- une seule flèche allumée, trois éteintes -->
+            <line class="dia-flow f-run" x1="466" y1="196" x2="326" y2="118" marker-end="url(#dia3-ar-on)"/>
+            <line class="dia-flow f-off" x1="466" y1="260" x2="326" y2="338" marker-end="url(#dia3-ar-off)"/>
+            <line class="dia-flow f-off" x1="774" y1="196" x2="914" y2="118" marker-end="url(#dia3-ar-off)"/>
+            <line class="dia-flow f-off" x1="774" y1="260" x2="914" y2="338" marker-end="url(#dia3-ar-off)"/>
+
+            <!-- et quand deux catalogues portent le même nom -->
+            <rect class="dia-band" x="70" y="430" width="1100" height="160" rx="10"/>
+            <text class="dia-eyebrow" x="96" y="462" data-i18n="dia3.tie">TWO MANAGERS, ONE NAME</text>
+            <text class="dia-note" x="96" y="486" data-i18n="dia3.tienote">not the same software</text>
+            <text class="dia-mono" x="96" y="520">jg install fzf</text>
+
+            <line class="dia-flow f-run" x1="222" y1="514" x2="376" y2="474" marker-end="url(#dia3-ar-on)"/>
+            <line class="dia-flow f-run" x1="222" y1="522" x2="376" y2="546" marker-end="url(#dia3-ar-on)"/>
+
+            <rect class="dia-box" x="380" y="452" width="140" height="44" rx="8"/>
+            <text class="dia-name" x="450" y="480" text-anchor="middle">brew</text>
+            <rect class="dia-box" x="380" y="524" width="140" height="44" rx="8"/>
+            <text class="dia-name" x="450" y="552" text-anchor="middle">scoop</text>
+
+            <line class="dia-flow f-run" x1="524" y1="510" x2="594" y2="510" marker-end="url(#dia3-ar-on)"/>
+
+            <rect class="dia-core" x="600" y="448" width="300" height="124" rx="10"/>
+            <text class="dia-tag c-run" x="620" y="478" data-i18n="dia3.pickertag">THE PICKER</text>
+            <text class="dia-t on" x="620" y="506" data-i18n="dia3.picker1">it opens, and you choose</text>
+            <text class="dia-t" x="620" y="530" data-i18n="dia3.picker2">nothing is decided for you</text>
+            <text class="dia-note" x="620" y="556" data-i18n="dia3.picker3">--pm settles it inside a script</text>
+
+            <text class="dia-t on" x="1144" y="500" text-anchor="end" data-i18n="dia3.never">No setting changes this.</text>
+            <text class="dia-note" x="1144" y="524" text-anchor="end" data-i18n="dia3.never2">you are the one who chooses</text>
+          </svg>
+        </div>
 
         <p data-i18n="facade.choice">
           <strong>Never an automatic choice.</strong> When a single manager knows the

@@ -204,22 +204,61 @@ a:hover .arw { transform: translateX(3px); }
 .dia-eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 2.2px; fill: var(--subtext); }
 .dia-tag     { font-family: var(--mono); font-size: 12.5px; font-weight: 600; letter-spacing: 2px; }
 
-/* Les trois canaux : lecture, exécution, état. */
-.c-read  { fill: var(--mauve); }
+/* Les trois canaux : lecture, exécution, état. La lecture est bleue et non
+   mauve : le mauve est l'accent général de la page (bouton principal, bascule
+   de langue), et un canal qui porte la même couleur que le mobilier cesse de se
+   distinguer. La légende du schéma dit « bleu » depuis le premier jour. */
+.c-read  { fill: var(--blue); }
 .c-run   { fill: var(--peach); }
 .c-state { fill: var(--green); }
 
 .dia-flow          { fill: none; stroke-width: 1.6; }
-.dia-flow.f-read   { stroke: var(--mauve); }
+.dia-flow.f-read   { stroke: var(--blue); }
 .dia-flow.f-run    { stroke: var(--peach); }
 .dia-flow.f-state  { stroke: var(--green); stroke-dasharray: 5 5; }
 .dia-flow.f-state.plain { stroke-dasharray: none; }
 
-.mk-read  { fill: var(--mauve); }
+.mk-read  { fill: var(--blue); }
 .mk-run   { fill: var(--peach); }
 .mk-state { fill: var(--green); }
 
-.dia-caret { fill: var(--mauve); opacity: .7; }
+.dia-caret { fill: var(--blue); opacity: .7; }
+
+/* --- les trois autres schémas ---------------------------------------------
+   Mêmes conventions que le schéma de fonctionnement ci-dessus : toute la
+   présentation passe par des classes, jamais par un attribut `style` ni par un
+   attribut de présentation, et aucune couleur n'est écrite ailleurs que dans
+   les jetons de :root.                                                       */
+
+/* Le cadre qui se resserre : trois états d'une même ligne, éclairés à tour de
+   rôle. L'opacité est animée par classe — un `style` en ligne serait refusé par
+   la CSP et le schéma resterait figé sur un seul état. Sous mouvement réduit,
+   les trois états s'allument ensemble : le schéma est le même, il ne bouge
+   simplement plus, et rien n'y manque. */
+@keyframes dia-etape { 0%, 28% { opacity: 1 } 33%, 100% { opacity: .22 } }
+.dia-etape-1 { animation: dia-etape 4.5s infinite; }
+.dia-etape-2 { animation: dia-etape 4.5s infinite 1.5s; }
+.dia-etape-3 { animation: dia-etape 4.5s infinite 3s; }
+@media (prefers-reduced-motion: reduce) {
+  .dia-etape-1, .dia-etape-2, .dia-etape-3 { animation: none; opacity: 1; }
+}
+
+/* La pastille qui précède un candidat, dans le popup dessiné. */
+.dia-pip { fill: var(--overlay); }
+
+/* La façade : la flèche pleine va au gestionnaire dont le catalogue contient le
+   nom ; les autres restent éteintes. L'éteint est gris et non pointillé — le
+   pointillé dit déjà « tâche de fond » dans le schéma voisin. */
+.dia-flow.f-off { stroke: var(--overlay); }
+.mk-off { fill: var(--overlay); }
+
+/* Le fichier SSH : des lignes de configuration citées telles quelles. */
+.dia-code     { font-family: var(--mono); font-size: 12.5px; fill: var(--subtext); }
+.dia-code.hi  { fill: var(--blue); }
+.dia-code.off,
+.dia-mono.off { fill: var(--overlay); }
+.dia-strike   { stroke: var(--red); stroke-width: 1.6; }
+.dia-hl       { fill: var(--surface-2); }
 
 /* --- pages intérieures ---------------------------------------------------
    L'accueil a son hero ; les deux autres pages ont ce bandeau, plus sobre. */
