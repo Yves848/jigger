@@ -208,6 +208,25 @@ dans l'ancien CSS, tombaient alors sur les valeurs par défaut de SVG, c'est-à-
 JS : le navigateur revalide à chaque visite, nginx répond `304` sur l'`ETag` tant que rien
 n'a bougé. Quelques octets par visite, et un déploiement est visible tout de suite.
 
+Mais une consigne d'en-tête ne rattrape **jamais** une entrée de cache déjà posée : un
+navigateur qui détient l'ancien fichier avec l'ancienne consigne ne redemandera rien avant
+son expiration. Seule l'URL peut le forcer. `deploy-proxmox.sh` estampille donc, à la
+publication, une empreinte du contenu sur les deux fichiers dont dépend l'affichage :
+
+```html
+<link rel="stylesheet" href="/styles.css?v=c4534944">
+<script src="/app.js?v=1f73781b" defer></script>
+```
+
+Huit caractères du SHA-256 du fichier. Le fichier change, l'empreinte change, l'URL change,
+et aucun cache ne peut plus servir une version pour une autre. Le script échoue si
+l'estampille ne s'est pas posée — une page qui ne cite plus sa feuille sortirait sans
+style, et personne ne le verrait avant la mise en ligne.
+
+L'estampille ne vit que dans la **copie publiée** : les pages du dépôt gardent
+`href="/styles.css"`, s'ouvrent en local sans rien construire, et `verifier.sh` les lit
+telles quelles. C'est ce qui permet d'avoir des URL versionnées sans build.
+
 C'est `expires` et non `add_header Cache-Control` : dans nginx, un `add_header` posé dans
 un `location` **annule** ceux du bloc serveur. L'ancienne version en posait un, et ces
 fichiers repartaient sans CSP, sans `nosniff`, sans `X-Frame-Options` ni
