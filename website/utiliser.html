@@ -38,6 +38,282 @@
         <h1 data-i18n="use.h1">Download, wire, use.</h1>
       </div>
     </section>
+
+    <!-- Rappel du système choisi : le sélecteur de l'en-tête défile, celui-ci
+         reste sous les yeux pendant qu'on lit des commandes. -->
+    <div class="os-sticky">
+      <div class="wrap">
+        <span data-i18n="use.showing">Showing commands for</span>
+        <span class="os-name" data-os-block="macos">macOS</span>
+        <span class="os-name" data-os-block="windows">Windows</span>
+      </div>
+    </div>
+
+    <!-- § 1 ------------------------------------------------------------- -->
+    <section id="telecharger">
+      <div class="wrap">
+        <p class="eyebrow">1</p>
+        <h2 data-i18n="use.dl.h2">Download it.</h2>
+
+        <div data-os-block="macos">
+          <h3 class="os-block-title">macOS</h3>
+          <p data-i18n="use.dl.mac">Homebrew, from the project's tap — hosted on the project's GitLab, hence the explicit URL. The formula builds the binary on your machine, pulling <span class="mono">go</span> in as a build dependency, and installs the zsh plugin alongside it.</p>
+          <pre class="cmd"><code data-verifier="install">brew tap yves/cocktails https://gitlab.yg-devworks.com/yves/homebrew-cocktails.git</code></pre>
+          <pre class="cmd"><code data-verifier="install">brew install jigger</code></pre>
+          <p class="note" data-i18n="use.dl.macup">To upgrade later: <span class="mono">brew upgrade jigger</span>.</p>
+        </div>
+
+        <div data-os-block="windows">
+          <h3 class="os-block-title">Windows</h3>
+          <p data-i18n="use.dl.win">scoop, from the project's bucket. Since v0.10.0 the releases carry prebuilt binaries: nothing to compile, no Go to install. <span class="mono">scoop bucket add</span> takes two arguments — the local name you choose, then the repository; passing only a name makes scoop look it up in its own directory and answer <span class="mono">unknown bucket</span>.</p>
+          <pre class="cmd"><code data-verifier="install">scoop bucket add jigger https://gitlab.yg-devworks.com/yves/scoop-jigger.git</code></pre>
+          <pre class="cmd"><code data-verifier="install">scoop install jigger</code></pre>
+          <p class="note" data-i18n="use.dl.winup">To upgrade later: <span class="mono">scoop update jigger</span>. There is no winget package.</p>
+        </div>
+
+        <p class="note" data-i18n="use.dl.go">Any platform, if you have Go: <span class="mono">go install gitlab.yg-devworks.com/yves/jigger@latest</span></p>
+      </div>
+    </section>
+
+    <!-- § 2 ------------------------------------------------------------- -->
+    <section id="brancher">
+      <div class="wrap">
+        <p class="eyebrow">2</p>
+        <h2 data-i18n="use.wire.h2">Wire it into your shell.</h2>
+
+        <div data-os-block="macos">
+          <h3 class="os-block-title">macOS</h3>
+          <p data-i18n="use.wire.mac">One <span class="mono">source</span> line in <span class="mono">~/.zshrc</span>, then <span class="mono">exec zsh</span>. It covers every manager the machine has: the plugin doesn't need to be told whether it faces brew or pacman, it looks.</p>
+          <pre class="cmd"><code data-verifier="install">source "$(brew --prefix jigger)/share/jigger/jigger.plugin.zsh"</code></pre>
+          <p class="note" data-i18n="use.wire.macorder">The order of the <span class="mono">source</span> calls doesn't matter, starship included — the plugin places itself wherever it needs to in zsh's hooks.</p>
+        </div>
+
+        <div data-os-block="windows">
+          <h3 class="os-block-title">Windows</h3>
+          <p data-i18n="use.wire.win">One <span class="mono">Import-Module</span> in <span class="mono">$PROFILE</span> — <span class="mono">notepad $PROFILE</span> opens it — then <span class="mono">. $PROFILE</span>, or a new tab. The bucket installed the binary only; this line is the part that makes the popup appear as you type.</p>
+          <pre class="cmd"><code data-verifier="install">Import-Module C:\path\to\jigger\shell\jigger.psm1</code></pre>
+          <p class="note" data-i18n="use.wire.winorder">Here the order is real: if you use oh-my-posh or starship, import jigger <strong>after</strong> it. And PSReadLine keeps only the last handler bound to a chord — a profile that binds <kbd>^R</kbd> after the import takes the key back, and the regex toggle becomes unreachable. The guide shows how to hand it over.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- § 3 ------------------------------------------------------------- -->
+    <section id="verifier">
+      <div class="wrap">
+        <p class="eyebrow">3</p>
+        <h2 data-i18n="use.check.h2">Check it took.</h2>
+
+        <div data-os-block="macos">
+          <h3 class="os-block-title">macOS</h3>
+          <p data-i18n="use.check.mac">The version first, then who answers. An old binary shadowing a newer install in the <span class="mono">PATH</span> is the most painful failure to diagnose — one line settles it.</p>
+          <pre class="cmd"><code data-verifier="install">jigger --version</code></pre>
+          <pre class="cmd"><code data-verifier="install">which -a jigger</code></pre>
+        </div>
+
+        <div data-os-block="windows">
+          <h3 class="os-block-title">Windows</h3>
+          <p data-i18n="use.check.win">The version first, then who answers. An old binary shadowing a newer install in the <span class="mono">PATH</span> is the most painful failure to diagnose — one line settles it.</p>
+          <pre class="cmd"><code data-verifier="install">jigger --version</code></pre>
+          <pre class="cmd"><code data-verifier="install">Get-Command jigger -All</code></pre>
+        </div>
+
+        <p data-i18n="use.check.try">Then open a fresh shell and type <span class="mono">brew ins</span> — <span class="mono">winget ins</span> on Windows — <strong>without pressing Enter</strong>. The frame should appear under the prompt and narrow down with every letter.</p>
+        <p class="note" data-i18n="use.check.note">Nothing shows up? The plugin says so when it refuses to load: a message, at shell startup, reports that the binary is missing from the <span class="mono">PATH</span>, or that it is too old for this plugin. On the very first use the frame may say “building the catalog…” — jigger never holds up a keystroke waiting on a package manager, so it builds its catalog in the background instead.</p>
+      </div>
+    </section>
+
+    <!-- § 4 ------------------------------------------------------------- -->
+    <section id="utiliser">
+      <div class="wrap">
+        <p class="eyebrow">4</p>
+        <h2 data-i18n="use.now.h2">Now type a command.</h2>
+        <p class="lede" data-i18n="use.now.lede">There is nothing else to learn. The popup lives on its own, and the recordings below are what it actually does — not a mock-up.</p>
+
+        <h3 data-i18n="use.now.nativeh">Your manager, as you type</h3>
+        <p data-i18n="use.now.native">Type a package-manager command and the frame appears on its own, narrowing down with every letter. Nothing to trigger, nothing to remember.</p>
+
+        <div data-os-block="macos">
+          <h3 class="os-block-title">macOS</h3>
+          <figure class="demo">
+            <div class="demo-frame">
+              <video muted loop playsinline preload="none"
+                     poster="/media/macos-01-gestionnaire-natif.png"
+                     data-src="/media/macos-01-gestionnaire-natif.mp4"
+                     aria-labelledby="use-mac01"></video>
+            </div>
+            <figcaption id="use-mac01" data-i18n="use.demo.mac01">brew install fire — the list narrows with every letter, nothing pressed. Captured on macOS.</figcaption>
+          </figure>
+        </div>
+
+        <div data-os-block="windows">
+          <h3 class="os-block-title">Windows</h3>
+          <figure class="demo">
+            <div class="demo-frame">
+              <video muted loop playsinline preload="none"
+                     poster="/media/windows-01-gestionnaire-natif.png"
+                     data-src="/media/windows-01-gestionnaire-natif.mp4"
+                     aria-labelledby="use-win01"></video>
+            </div>
+            <figcaption id="use-win01" data-i18n="use.demo.win01">winget install fire — the same frame and the same keys, a different catalogue: winget answers with Publisher.Package identifiers where brew shows bare formula names. Captured on Windows.</figcaption>
+          </figure>
+        </div>
+
+        <h3 data-i18n="use.now.jgh">One syntax: <span class="mono">jg</span></h3>
+        <p data-i18n="use.now.jg"><span class="mono">jg install fd</span> reaches whichever manager knows <span class="mono">fd</span>, without you having to know which. The facade only adds: <span class="mono">brew install fd</span> keeps working exactly as before, popup included.</p>
+
+        <div data-os-block="macos">
+          <h3 class="os-block-title">macOS</h3>
+          <figure class="demo">
+            <div class="demo-frame">
+              <video muted loop playsinline preload="none"
+                     poster="/media/macos-02-jg.png"
+                     data-src="/media/macos-02-jg.mp4"
+                     aria-labelledby="use-mac02"></video>
+            </div>
+            <figcaption id="use-mac02" data-i18n="use.demo.mac02">jg install fd — the facade answers for whichever manager knows the package. Captured on macOS.</figcaption>
+          </figure>
+        </div>
+
+        <div data-os-block="windows">
+          <h3 class="os-block-title">Windows</h3>
+          <figure class="demo">
+            <div class="demo-frame">
+              <video muted loop playsinline preload="none"
+                     poster="/media/windows-02-jg.png"
+                     data-src="/media/windows-02-jg.mp4"
+                     aria-labelledby="use-win02"></video>
+            </div>
+            <figcaption id="use-win02" data-i18n="use.demo.win02">jg install node — with two managers installed side by side, the right-hand column names who answers for each candidate. Captured on Windows.</figcaption>
+          </figure>
+        </div>
+
+        <h3 data-i18n="use.now.regexh">Regex, on the same line</h3>
+        <p data-i18n="use.now.regex"><kbd>^R</kbd> switches the filter, and only the filter: the line, the frame and the keys don't move. The title says which mode is on, and outside the popup the key remains your shell's reverse history search.</p>
+
+        <div data-os-block="macos">
+          <h3 class="os-block-title">macOS</h3>
+          <p class="demo-absent" data-i18n="use.regex.mac">The same <kbd>^R</kbd> toggle works on macOS — its capture isn't recorded yet. Switch to Windows above to watch it.</p>
+        </div>
+
+        <div data-os-block="windows">
+          <h3 class="os-block-title">Windows</h3>
+          <figure class="demo">
+            <div class="demo-frame">
+              <video muted loop playsinline preload="none"
+                     poster="/media/windows-04-regex.png"
+                     data-src="/media/windows-04-regex.mp4"
+                     aria-labelledby="use-win04"></video>
+            </div>
+            <figcaption id="use-win04" data-i18n="use.demo.win04">winget install fire offers twenty-one candidates by prefix. ^R, then (bird|blade), keeps four — an alternation no prefix search can express. Captured on Windows.</figcaption>
+          </figure>
+        </div>
+
+        <h3 data-i18n="use.now.runh">Completing, then running</h3>
+        <p data-i18n="use.now.run"><kbd>⏎</kbd> completes the last part <strong>and</strong> runs the line, in a single keystroke. From that point on jigger does nothing at all: what scrolls by is the manager's own output, relayed as is — progress bars, prompts and elevation included.</p>
+
+        <div data-os-block="macos">
+          <h3 class="os-block-title">macOS</h3>
+          <p class="demo-absent" data-i18n="use.install.mac">Installing through the facade behaves the same on macOS, with brew answering — no capture of it is recorded yet. Switch to Windows above to watch one.</p>
+        </div>
+
+        <div data-os-block="windows">
+          <h3 class="os-block-title">Windows</h3>
+          <figure class="demo">
+            <div class="demo-frame">
+              <video muted loop playsinline preload="none"
+                     poster="/media/windows-05-installation.png"
+                     data-src="/media/windows-05-installation.mp4"
+                     aria-labelledby="use-win05"></video>
+            </div>
+            <figcaption id="use-win05" data-i18n="use.demo.win05">jg install hexy, completed to hexyl, then run — scoop's own output, relayed untouched. Captured on Windows, against a real manager.</figcaption>
+          </figure>
+        </div>
+
+        <h3 data-i18n="use.now.upgh">And an upgrade</h3>
+        <p data-i18n="use.now.upg">Same gesture, different verb. Nothing here is specific to installing: <span class="mono">upgrade</span>, <span class="mono">search</span> and <span class="mono">outdated</span> are completed and run the same way.</p>
+
+        <div data-os-block="macos">
+          <h3 class="os-block-title">macOS</h3>
+          <p class="demo-absent" data-i18n="use.upgrade.mac">The same holds on macOS, where brew does the upgrading — its capture isn't recorded yet. Switch to Windows above to watch one.</p>
+        </div>
+
+        <div data-os-block="windows">
+          <h3 class="os-block-title">Windows</h3>
+          <figure class="demo">
+            <div class="demo-frame">
+              <video muted loop playsinline preload="none"
+                     poster="/media/windows-06-upgrade.png"
+                     data-src="/media/windows-06-upgrade.mp4"
+                     aria-labelledby="use-win06"></video>
+            </div>
+            <figcaption id="use-win06" data-i18n="use.demo.win06">jg upgrade hyperf, completed to hyperfine, then run — scoop replacing 1.16.1 with 1.20.0. Captured on Windows, against a real manager.</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- § 5 ------------------------------------------------------------- -->
+    <section id="touches">
+      <div class="wrap">
+        <p class="eyebrow">5</p>
+        <h2 data-i18n="use.keys.h2">The keys.</h2>
+        <p data-i18n="use.keys.lede">The same set everywhere — one frame, one set of keys, four catalogues.</p>
+
+        <ul class="keys">
+          <li><kbd>⇥</kbd> <span data-i18n="use.keys.k1">inserts the current candidate</span></li>
+          <li><kbd>⏎</kbd> <span data-i18n="use.keys.k2">completes the last part and runs the line, in a single keystroke</span></li>
+          <li><kbd>↓</kbd> <span data-i18n="use.keys.k3">enters the list, then moves down one candidate</span></li>
+          <li><kbd>↑</kbd> <span data-i18n="use.keys.k4">moves up; on the first candidate, hands the keyboard back to the shell</span></li>
+          <li><kbd>^N</kbd> <kbd>^P</kbd> <span data-i18n="use.keys.k5">the same, for those who prefer them to arrow keys</span></li>
+          <li><kbd>^G</kbd> <span data-i18n="use.keys.k6">closes the popup for the current line — ⇥ reopens it</span></li>
+          <li><kbd>^R</kbd> <span data-i18n="use.keys.k7">switches the filter between plain text and regex; the frame's title shows [regex] while it is on</span></li>
+        </ul>
+
+        <p data-i18n="use.keys.arrows"><strong>Your arrow keys are never taken over.</strong> As long as the popup doesn't hold the keyboard, <kbd>↑</kbd> and <kbd>↓</kbd> stay your shell history. The frame shows which: the current line underlined and the footer reading <span class="mono">↑↓ navigate</span> when it has focus, <span class="mono">↓ browse</span> when it doesn't.</p>
+        <p class="note" data-i18n="use.keys.fix">jigger corrects what it inserts whenever the command would otherwise be wrong: <span class="mono">--cask</span> in front of a Homebrew cask, the qualified name <span class="mono">main/flux</span> for a scoop package present in several buckets, quotes around a winget identifier that contains spaces.</p>
+      </div>
+    </section>
+
+    <!-- § 6 ------------------------------------------------------------- -->
+    <section id="reglages">
+      <div class="wrap">
+        <p class="eyebrow">6</p>
+        <h2 data-i18n="use.set.h2">Settings.</h2>
+        <p data-i18n="use.set.lede">Settings are environment variables, set <strong>before</strong> the <span class="mono">source</span> or the <span class="mono">Import-Module</span>: the plugin reads its keys and sets its hooks at load time. Four of the twelve, the ones worth knowing on day one:</p>
+
+        <ul class="grid-3">
+          <li>
+            <h3 class="mono">JIGGER_COMMANDS</h3>
+            <p data-i18n="use.set.commands">The commands that open the popup — <span class="mono">brew pacman yay ssh scp sftp</span> under zsh, <span class="mono">winget,scoop,ssh,scp,sftp</span> under PowerShell. This is also how the SSH picker gets turned off. <span class="mono">jigger</span> and <span class="mono">jg</span> are always added to whatever you set.</p>
+          </li>
+          <li>
+            <h3 class="mono">JIGGER_LANG</h3>
+            <p data-i18n="use.set.lang">Messages: <span class="mono">en</span> or <span class="mono">fr</span>. Read before <span class="mono">LC_ALL</span>, <span class="mono">LC_MESSAGES</span> and <span class="mono">LANG</span> — this is how you get French back in an English-speaking shell.</p>
+          </li>
+          <li>
+            <h3 class="mono">JIGGER_LIVE</h3>
+            <p data-i18n="use.set.live"><span class="mono">1</span> by default. <span class="mono">0</span> means nothing shows up unasked: <kbd>⇥</kbd> opens the full-screen picker instead. That is also the way to isolate a conflict with another line-editing plugin.</p>
+          </li>
+          <li>
+            <h3 class="mono">JIGGER_CACHE_DIR</h3>
+            <p data-i18n="use.set.cache">Where the catalogs are cached — <span class="mono">~/Library/Caches/jigger</span> on macOS, <span class="mono">%LOCALAPPDATA%\jigger</span> on Windows. <span class="mono">jigger prompt --path</span> prints the file actually in use.</p>
+          </li>
+        </ul>
+
+        <p class="note" data-i18n="use.set.config">Environment variables vanish with the shell. <span class="mono">jigger config</span> opens a screen that writes them down, says where each value comes from — default, file, or environment — and never touches your <span class="mono">~/.zshrc</span> or your <span class="mono">$PROFILE</span>.</p>
+      </div>
+    </section>
+
+    <!-- § 7 ------------------------------------------------------------- -->
+    <section id="linux">
+      <div class="wrap">
+        <aside class="encart">
+          <h2 data-i18n="use.linux.h2">And Linux?</h2>
+          <p data-i18n="use.linux.p">Arch and Omarchy already work — pacman and yay, same popup, same verbs. Their captures aren't recorded yet, so this page doesn't walk you through them. The documentation does.</p>
+          <p><a href="https://gitlab.yg-devworks.com/yves/jigger/-/blob/main/docs/installation.md" data-i18n="use.linux.link">Read the install guide <span class="arw">→</span></a></p>
+        </aside>
+      </div>
+    </section>
   </main>
 
   <footer class="site-footer">

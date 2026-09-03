@@ -43,13 +43,15 @@ fi
 
 # --- 2. Liens -------------------------------------------------------------
 # Internes : chaque ancre doit désigner un id existant.
-for ancre in $(grep -o 'href="#[^"]*"' index.html | cut -d'"' -f2 | cut -c2- | sort -u); do
-    [ "$ancre" = "top" ] && continue
-    if grep -q "id=\"$ancre\"" index.html; then
-        ok "ancre #$ancre"
-    else
-        echec "ancre #$ancre ne désigne aucun id"
-    fi
+for p in "${PAGES[@]}"; do
+    for ancre in $(grep -o 'href="#[^"]*"' "$p" | cut -d'"' -f2 | cut -c2- | sort -u); do
+        [ "$ancre" = "top" ] && continue
+        if grep -q "id=\"$ancre\"" "$p"; then
+            ok "ancre #$ancre ($p)"
+        else
+            echec "ancre #$ancre ne désigne aucun id dans $p"
+        fi
+    done
 done
 
 # Externes : seulement sur demande, car ça dépend du réseau.
@@ -67,19 +69,23 @@ fi
 # Chaque commande affichée doit exister mot pour mot dans le guide : si le guide
 # change et pas la page, la page ment.
 guide="$RACINE/docs/getting-started.md"
-commandes="$(grep -o '<code data-verifier="install">[^<]*</code>' index.html \
-             | sed 's/<[^>]*>//g')"
+for p in "${PAGES[@]}"; do
+    # `|| true` : une page sans commande fait sortir grep en 1, et `set -e`
+    # arrêterait le vérificateur au milieu au lieu de passer à la page suivante.
+    commandes="$(grep -o '<code data-verifier="install">[^<]*</code>' "$p" \
+                 | sed 's/<[^>]*>//g' || true)"
 
-# Here-string, pas un tube : un `while` en bout de tube tourne dans un sous-shell,
-# où l'incrément de $echecs serait perdu et où le premier échec masquerait les suivants.
-while IFS= read -r commande; do
-    [ -z "$commande" ] && continue
-    if grep -Fq "$commande" "$guide"; then
-        ok "commande présente dans le guide : $commande"
-    else
-        echec "commande absente du guide : $commande"
-    fi
-done <<< "$commandes"
+    # Here-string, pas un tube : un `while` en bout de tube tourne dans un sous-shell,
+    # où l'incrément de $echecs serait perdu et où le premier échec masquerait les suivants.
+    while IFS= read -r commande; do
+        [ -z "$commande" ] && continue
+        if grep -Fq "$commande" "$guide"; then
+            ok "commande présente dans le guide : $commande"
+        else
+            echec "commande absente du guide ($p) : $commande"
+        fi
+    done <<< "$commandes"
+done
 
 # --- 4. En-têtes identiques -----------------------------------------------
 # L'en-tête est recopié dans chaque page plutôt qu'injecté par app.js : la
