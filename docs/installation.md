@@ -119,7 +119,9 @@ which -a jigger           # exactly one line
 
 Then type — do not press anything — `yay -S visual-studio`. The frame appears on its
 own, `◆` for a repository package, `▣` for an AUR one, `●` for what is already
-installed.
+installed:
+
+![The popup under a yay -S line, on Omarchy](media/out/omarchy-01-gestionnaire-natif.png)
 
 **pacman and yay are two doors onto the same database**, so jigger lists your packages
 once, never twice. yay drives, pacman only reads

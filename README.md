@@ -310,7 +310,7 @@ jigger: --pm scoop — manager unavailable for this verb. Available: brew
 
 On Windows, with both winget and scoop present, a real ambiguity would open the picker
 (illustrative example: the routing picker is the one frame Windows has no capture of yet
-— [docs/captures.md](docs/captures.md) says what the three scenarios cover):
+— [docs/captures.md](docs/captures.md) says what its six scenarios cover):
 
 ```
 $ jg install git

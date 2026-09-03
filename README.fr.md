@@ -314,8 +314,8 @@ jigger : --pm scoop — gestionnaire indisponible pour ce verbe. Disponibles : b
 
 Sous Windows, avec winget et scoop tous deux présents, une vraie ambiguïté ouvrirait le
 sélecteur (exemple illustratif : le sélecteur de routage est le seul cadre dont Windows
-n'a pas encore de capture — [docs/captures.md](docs/captures.md) dit ce que couvrent les
-trois scénarios) :
+n'a pas encore de capture — [docs/captures.md](docs/captures.md) dit ce que couvrent ses
+six scénarios) :
 
 ```
 $ jg install git

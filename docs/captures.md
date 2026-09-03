@@ -12,14 +12,15 @@ qui n'est pas le sujet.
 
 ## Ce qui est produit
 
-Trois scénarios communs aux trois plateformes — c'est le catalogue qui change, jamais
-le geste — et trois autres, propres à Windows, que la voie zsh ne sait pas jouer.
+Quatre scénarios communs aux trois plateformes — c'est le catalogue qui change, jamais
+le geste — et deux autres, propres à Windows, que la voie zsh ne sait pas jouer.
 
 | Scénario | macOS | Omarchy | Windows |
 |---|---|---|---|
 | `01-gestionnaire-natif` | `brew install fire` | `yay -S visual-studio` | `winget install fire` |
 | `02-jg` | `jg install fd` | `jg install fd` | `jg install node` |
 | `03-ssh` | `ssh ` | `ssh ` | `ssh ` |
+| `04-regex` | `brew install fire` puis `^R` | `yay -S fire` puis `^R` | `winget install fire` puis `^R` |
 
 **Pourquoi `node` et non `fd` sous Windows.** Le geste doit rester le même, et c'est ce
 qui a tranché. `jg install fd` n'y trouve qu'un seul paquet — le `fd` de scoop, winget
@@ -29,20 +30,25 @@ winget** — la colonne de droite le dit —, ce qui est précisément la démon
 attendue de `jg`. Le catalogue change d'une plateforme à l'autre ; la ligne tapée s'ajuste
 pour que le geste, lui, ne change pas.
 
-### Les trois scénarios propres à Windows
+**Pourquoi `fire` et non `visual-studio` pour la regex d'Omarchy.** `04` a besoin d'un
+préfixe que la bascule *élargit* : c'est la démonstration, un motif non ancré retrouvant
+des noms où le préfixe se trouve au milieu. `visual-studio` ne l'offre pas — ses candidats
+commencent tous par lui. `fire` l'offre sur les trois plateformes, et c'est pourquoi ce
+scénario-là garde le même nom de paquet partout — seul le verbe du gestionnaire
+change.
+
+### Les deux scénarios propres à Windows
 
 | Scénario | Ce qu'il montre |
 |---|---|
-| `04-regex` | la même ligne filtrée en texte simple, puis en expression régulière après `^R` |
 | `05-installation` | la complétion, puis l'exécution : `jg install hexy` ⇥ ⏎, et scoop installe |
 | `06-upgrade` | le même geste, autre verbe : `jg upgrade hyperf` ⇥ ⏎, et scoop passe de 1.16.1 à 1.20.0 |
 
 Ils ne sont pas dans la voie zsh, et ce n'est pas un oubli : VHS pilote une frappe, pas
-une session. `04-regex` demande de taper, presser `^R`, puis retaper — deux temps de
-frappe séparés par une touche, qu'un tape exprimerait mal ; `05` et `06` **exécutent
-vraiment** une commande dont la durée n'est pas connue d'avance. Les produire sur macOS
-demanderait d'installer et de mettre à jour de vrais paquets sur la machine de qui les
-produit ; sous Windows, la machine est une VM dédiée, et le script y range derrière lui.
+une session. `05` et `06` **exécutent vraiment** une commande dont la durée n'est pas
+connue d'avance. Les produire sur macOS ou sur Omarchy demanderait d'installer et de
+mettre à jour de vrais paquets sur la machine de qui les produit ; sous Windows, la
+machine est une VM dédiée, et le script y range derrière lui.
 
 **Ce que ces deux scénarios font à la machine, en toutes lettres.** `05` installe puis
 désinstalle `hexyl` ; `06` installe `hyperfine` en 1.16.1, le laisse se mettre à jour en
@@ -263,6 +269,10 @@ Changer les `Sleep` d'un tape déplace l'instant où l'image fixe est extraite :
 ensemble, sinon l'image fixe montrera une liste en train de défiler. Côté Windows,
 l'instant n'est pas écrit : il est **calculé** — 800 ms d'attente, la frappe, puis deux
 secondes —, et il redonne bien les valeurs qu'annoncent les tapes (4,5 s, 4,0 s, 3,0 s).
+`04-regex` fait exception : sa frappe est en deux temps, séparés par `^R`, et l'instant
+ne se déduit donc plus d'une formule. Côté zsh, `instant()` l'écrit — 9,5 s, avec le
+calcul en commentaire ; côté Windows, la table `$Scenarios` pose un jalon `Photo = $true`
+au milieu de la séquence, et le script somme les étapes jusqu'à lui.
 
 ## Ce que le protocole ne couvre pas
 
@@ -274,13 +284,18 @@ secondes —, et il redonne bien les valeurs qu'annoncent les tapes (4,5 s, 4,0 
   même nom — n'en a pas davantage : le déclencher demande de lancer une vraie
   installation ambiguë, et les READMEs s'en tiennent pour l'instant à un exemple
   illustratif.
-- **Les captures d'Omarchy** ne sont pas dans le dépôt à ce jour : le tape est prêt, la
-  machine n'était pas joignable. Les produire demande de lancer `./docs/media/capturer.sh`
-  sur elle, et rien d'autre. Les trois scénarios `04` à `06` n'y ont pas d'équivalent, et
-  n'en auront pas tant qu'ils supposeront d'installer pour de vrai sur une machine de
-  travail.
+- **`05-installation` et `06-upgrade` n'existent que sous Windows**, et n'auront pas
+  d'équivalent zsh tant qu'ils supposeront d'installer pour de vrai sur une machine de
+  travail. La raison est au-dessus, § « Les deux scénarios propres à Windows ».
 
-Les captures **macOS et Windows**, elles, sont dans le dépôt et ont été produites par les
-scripts ci-dessus. Celles de Windows viennent d'une machine ARM64 sous Windows 11 26200,
-Windows Terminal 1.23.12811, PowerShell 7.5.4 — une machine virtuelle Parallels, ce qui
-ne change rien à l'image : le popup ne sait pas où il tourne.
+Les captures des **trois plateformes** sont dans le dépôt, et toutes ont été produites par
+les scripts ci-dessus. Celles d'Omarchy viennent d'une machine x86_64 sous Omarchy
+(Arch, noyau 7.1.9), zsh 5.9.2, yay 13.0.1, VHS 0.11.0 et ttyd 1.7.7 ; celles de Windows
+d'une machine ARM64 sous Windows 11 26200, Windows Terminal 1.23.12811, PowerShell
+7.5.4 — une machine virtuelle Parallels, ce qui ne change rien à l'image : le popup ne
+sait pas où il tourne.
+
+Le catalogue de l'AUR, lui, bouge tous les jours : une capture Omarchy refaite dans six
+mois ne montrera pas exactement les mêmes noms que celle du dépôt. C'est sans conséquence
+pour ce qu'elle démontre — le cadre, les touches, les deux badges — et c'est pourquoi les
+textes qui l'accompagnent ne citent aucun décompte de candidats.
