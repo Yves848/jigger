@@ -23,6 +23,22 @@ lives in the git history.
   from the recording itself, at an instant computed from the script rather than chosen
   by hand.
 
+- **The `^R` regex toggle is documented and shown.** The key existed and worked; the
+  documentation only ever asserted it, and the single image of it was a Windows one — so
+  a reader on macOS, the site's default, saw the feature claimed and never demonstrated.
+  There is now a macOS recording (`macos-04-regex`, and an Arch tape waiting for a
+  reachable machine), and the READMEs' key tables — which omitted `^R` entirely — list it.
+
+  What the toggle actually does is written down for the first time, because none of it is
+  guessable from the frame: the pattern is **not anchored**, so switching often *widens*
+  the list before you narrow it (`fire` starts matching `arrayfire`); the case is ignored
+  in both modes; it applies to **package names only**, verbs, subcommands and flags
+  keeping prefix matching; and a pattern that does not compile matches **nothing**, the
+  frame saying so rather than spilling 16 000 entries over a missing bracket. The
+  full-screen picker makes the opposite choice on that last point — an invalid pattern
+  keeps every line and the filter line carries the warning — and the contrast is now
+  stated instead of being left for a reader to discover twice.
+
 - **The capture protocol is executable, not prose.** `docs/media/generer-tapes.sh` writes
   the nine VHS tapes from a single preamble — the three platforms cannot drift apart by a
   manual copy — and the tapes it produces are standalone: one file to carry onto the

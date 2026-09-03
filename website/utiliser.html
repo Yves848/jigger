@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title data-i18n="title.use">jigger — download, install, use</title>
+  <meta name="description" content="Download jigger, wire it into zsh or PowerShell, and see what it does — on macOS and on Windows.">
+  <meta name="theme-color" content="#1e1e2e">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="jigger — download, install, use">
+  <meta property="og:description" content="Download jigger, wire it into zsh or PowerShell, and see what it does — on macOS and on Windows.">
+  <meta property="og:url" content="https://jigger.yg-devworks.com/utiliser.html">
+  <meta property="og:image" content="https://jigger.yg-devworks.com/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="jigger — download, install, use">
+  <meta name="twitter:description" content="Download jigger, wire it into zsh or PowerShell, and see what it does — on macOS and on Windows.">
+  <meta name="twitter:image" content="https://jigger.yg-devworks.com/og.png">
+  <link rel="icon" href="/jigger-icon.svg">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <!-- EN-TÊTE : copie exacte de celui d'index.html, hormis la classe « on ». -->
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="brand" href="/">jigger</a>
+      <nav aria-label="Main navigation">
+        <a href="/" data-i18n="nav.home">Home</a>
+        <a href="/utiliser.html" class="on" data-i18n="nav.use">Use it</a>
+        <a href="/ssh.html" data-i18n="nav.ssh">SSH</a>
+      </nav>
+      <div class="os-toggle" role="group" aria-label="Operating system">
+        <button type="button" data-os="macos" aria-pressed="true">macOS</button>
+        <button type="button" data-os="windows" aria-pressed="false">Windows</button>
+        <button type="button" data-os="omarchy" aria-pressed="false">Omarchy</button>
+      </div>
+      <div class="lang-toggle" role="group" aria-label="Language">
+        <button type="button" data-lang="en" aria-pressed="true">EN</button>
+        <button type="button" data-lang="fr" aria-pressed="false">FR</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="page-head">
+      <div class="wrap">
+        <p class="eyebrow" data-i18n="use.eyebrow">Use it</p>
+        <h1 data-i18n="use.h1">Download, wire, use.</h1>
+      </div>
+    </section>
+
+    <!-- Rappel du système choisi : le sélecteur de l'en-tête défile, celui-ci
+         reste sous les yeux pendant qu'on lit des commandes. -->
+    <div class="os-sticky">
+      <div class="wrap">
+        <span data-i18n="use.showing">Showing commands for</span>
+        <span class="os-name" data-os-block="macos">macOS</span>
+        <span class="os-name" data-os-block="windows">Windows</span>
+        <span class="os-name" data-os-block="omarchy">Omarchy</span>
+      </div>
+    </div>
+
+    <!-- § 1 ------------------------------------------------------------- -->
+    <section id="telecharger">
+      <div class="wrap">
+        <p class="eyebrow">1</p>
+        <h2 data-i18n="use.dl.h2">Download it.</h2>
+
+        <div data-os-block="macos">
+          <h3 class="os-block-title">macOS</h3>
+          <p data-i18n="use.dl.mac">Homebrew, from the project's tap — hosted on the project's GitLab, hence the explicit URL. The formula builds the binary on your machine, pulling <span class="mono">go</span> in as a build dependency, and installs the zsh plugin alongside it.</p>
+          <pre class="cmd"><code data-verifier="install">brew tap yves/cocktails https://gitlab.yg-devworks.com/yves/homebrew-cocktails.git</code></pre>
+          <pre class="cmd"><code data-verifier="install">brew install jigger</code></pre>
+          <p class="note" data-i18n="use.dl.macup">To upgrade later: <span class="mono">brew upgrade jigger</span>.</p>
+        </div>
+
+        <div data-os-block="windows">
+          <h3 class="os-block-title">Windows</h3>
+          <p data-i18n="use.dl.win">scoop, from the project's bucket. Since v0.10.0 the releases carry prebuilt binaries: nothing to compile, no Go to install. <span class="mono">scoop bucket add</span> takes two arguments — the local name you choose, then the repository; passing only a name makes scoop look it up in its own directory and answer <span class="mono">unknown bucket</span>.</p>
+          <pre class="cmd"><code data-verifier="install">scoop bucket add jigger https://gitlab.yg-devworks.com/yves/scoop-jigger.git</code></pre>
+          <pre class="cmd"><code data-verifier="install">scoop install jigger</code></pre>
+          <p class="note" data-i18n="use.dl.winup">To upgrade later: <span class="mono">scoop update jigger</span>. There is no winget package.</p>
+        </div>
+
+        <div data-os-block="omarchy">
+          <h3 class="os-block-title">Omarchy</h3>
+          <p data-i18n="use.dl.omarchy">Go, because there is <strong>no jigger package</strong> — neither in the Arch repositories nor in the AUR. It is not a lesser route: jigger has no runtime dependency beyond the managers themselves, so the compiled binary is the whole of it.</p>
+          <pre class="cmd"><code data-verifier="install">sudo pacman -S --needed go git zsh</code></pre>
+          <pre class="cmd"><code data-verifier="install">go install gitlab.yg-devworks.com/yves/jigger@latest</code></pre>
+          <p data-i18n="use.dl.omarchypath">The binary lands in <span class="mono">$GOBIN</span> — <span class="mono">~/go/bin</span> by default. Put it on the <span class="mono">PATH</span> if it isn't already:</p>
+          <pre class="cmd"><code data-verifier="install">export PATH="$HOME/go/bin:$PATH"</code></pre>
+          <p class="note" data-i18n="use.dl.omarchyup">To upgrade later: the same <span class="mono">go install</span> line — <span class="mono">@latest</span> fetches the newest tag each time.</p>
+        </div>
+
+        <p class="note" data-i18n="use.dl.go">Any platform, if you have Go: <span class="mono">go install gitlab.yg-devworks.com/yves/jigger@latest</span></p>
+      </div>
+    </section>
+
+    <!-- § 2 ------------------------------------------------------------- -->
+    <section id="brancher">
+      <div class="wrap">
+        <p class="eyebrow">2</p>
+        <h2 data-i18n="use.wire.h2">Wire it into your shell.</h2>
+
+        <div data-os-block="macos">
+          <h3 class="os-block-title">macOS</h3>
+          <p data-i18n="use.wire.mac">One <span class="mono">source</span> line in <span class="mono">~/.zshrc</span>, then <span class="mono">exec zsh</span>. It covers every manager the machine has: the plugin doesn't need to be told whether it faces brew or pacman, it looks.</p>
+          <pre class="cmd"><code data-verifier="install">source "$(brew --prefix jigger)/share/jigger/jigger.plugin.zsh"</code></pre>
+          <p class="note" data-i18n="use.wire.macorder">The order of the <span class="mono">source</span> calls doesn't matter, starship included — the plugin places itself wherever it needs to in zsh's hooks.</p>
+        </div>
+
+        <div data-os-block="windows">
+          <h3 class="os-block-title">Windows</h3>
+          <p data-i18n="use.wire.win">The bucket installed the <strong>binary</strong> only. The module — the part that draws the popup — comes from the repository, so clone it first. The path below is the one the rest of this section uses; any other works, as long as the next line points at it.</p>
+          <pre class="cmd"><code data-verifier="install">git clone https://gitlab.yg-devworks.com/yves/jigger.git $HOME\git\jigger</code></pre>
+          <p data-i18n="use.wire.winmod">Then one <span class="mono">Import-Module</span> line in <span class="mono">$PROFILE</span> — <span class="mono">notepad $PROFILE</span> opens it, and <span class="mono">New-Item -ItemType File -Path $PROFILE -Force</span> creates it when it doesn't exist yet — then <span class="mono">. $PROFILE</span>, or a new tab.</p>
+          <pre class="cmd"><code data-verifier="install">Import-Module $HOME\git\jigger\shell\jigger.psm1</code></pre>
+          <p class="note" data-i18n="use.wire.winorder">Here the order is real: if you use oh-my-posh or starship, import jigger <strong>after</strong> it. And PSReadLine keeps only the last handler bound to a chord — a profile that binds <kbd>^R</kbd> after the import takes the key back, and the regex toggle becomes unreachable. The guide shows how to hand it over.</p>
+        </div>
+
+        <div data-os-block="omarchy">
+          <h3 class="os-block-title">Omarchy</h3>
+          <p data-i18n="use.wire.omarchy">The plugin is <strong>not</strong> in the Go module — it comes from the repository, so clone it first. The path below is the one the next line points at; any other works.</p>
+          <pre class="cmd"><code data-verifier="install">git clone https://gitlab.yg-devworks.com/yves/jigger.git ~/git/jigger</code></pre>
+          <p data-i18n="use.wire.omarchysource">Then one <span class="mono">source</span> line in <span class="mono">~/.zshrc</span>, and <span class="mono">exec zsh</span>. It covers both managers at once: the plugin doesn't need to be told whether it faces pacman or yay, it looks.</p>
+          <pre class="cmd"><code data-verifier="install">source ~/git/jigger/shell/jigger.plugin.zsh</code></pre>
+          <p class="note" data-i18n="use.wire.omarchykeep">Keep the clone: <span class="mono">git pull</span> updates the plugin, <span class="mono">go install …@latest</span> the binary, and the two travel together — the plugin refuses to load against a binary older than 0.11.0, and says so.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- § 3 ------------------------------------------------------------- -->
+    <section id="verifier">
+      <div class="wrap">
+        <p class="eyebrow">3</p>
+        <h2 data-i18n="use.check.h2">Check it took.</h2>
+
+        <div data-os-block="macos">
+          <h3 class="os-block-title">macOS</h3>
+          <p data-i18n="use.check.mac">The version first, then who answers. An old binary shadowing a newer install in the <span class="mono">PATH</span> is the most painful failure to diagnose — one line settles it.</p>
+          <pre class="cmd"><code data-verifier="install">jigger --version</code></pre>
+          <pre class="cmd"><code data-verifier="install">which -a jigger</code></pre>
+        </div>
+
+        <div data-os-block="windows">
+          <h3 class="os-block-title">Windows</h3>
+          <p data-i18n="use.check.win">The version first, then who answers. An old binary shadowing a newer install in the <span class="mono">PATH</span> is the most painful failure to diagnose — one line settles it.</p>
+          <pre class="cmd"><code data-verifier="install">jigger --version</code></pre>
+          <pre class="cmd"><code data-verifier="install">Get-Command jigger -All</code></pre>
+        </div>
+
+        <div data-os-block="omarchy">
+          <h3 class="os-block-title">Omarchy</h3>
+          <p data-i18n="use.check.omarchy">The version first, then who answers. An old binary shadowing a newer install in the <span class="mono">PATH</span> is the most painful failure to diagnose — one line settles it.</p>
+          <pre class="cmd"><code data-verifier="install">jigger --version</code></pre>
+          <pre class="cmd"><code data-verifier="install">which -a jigger</code></pre>
+        </div>
+
+        <p data-i18n="use.check.try">Then open a fresh shell and type <span class="mono">brew ins</span> — <span class="mono">pacman ins</span> on Arch, <span class="mono">winget ins</span> on Windows — <strong>without pressing Enter</strong>. The frame should appear under the prompt and narrow down with every letter.</p>
+        <p class="note" data-i18n="use.check.note">Nothing shows up? The plugin says so when it refuses to load: a message, at shell startup, reports that the binary is missing from the <span class="mono">PATH</span>, or that it is too old for this plugin. On the very first use the frame may say “building the catalog…” — jigger never holds up a keystroke waiting on a package manager, so it builds its catalog in the background instead.</p>
+      </div>
+    </section>
+
+    <!-- § 4 ------------------------------------------------------------- -->
+    <section id="utiliser">
+      <div class="wrap">
+        <p class="eyebrow">4</p>
+        <h2 data-i18n="use.now.h2">Now type a command.</h2>
+        <p class="lede" data-i18n="use.now.lede">There is nothing else to learn. The popup lives on its own, and the recordings below are what it actually does — not a mock-up.</p>
+
+        <h3 data-i18n="use.now.nativeh">Your manager, as you type</h3>
+        <p data-i18n="use.now.native">Type a package-manager command and the frame appears on its own, narrowing down with every letter. Nothing to trigger, nothing to remember.</p>
+
+        <div data-os-block="macos">
+          <h4 class="os-block-title">macOS</h4>
+          <figure class="demo">
+            <div class="demo-frame">
+              <video muted loop playsinline preload="none"
+                     poster="/media/macos-01-gestionnaire-natif.png"
+                     data-src="/media/macos-01-gestionnaire-natif.mp4"
+                     aria-labelledby="use-mac01"></video>
+            </div>
+            <figcaption id="use-mac01" data-i18n="use.demo.mac01">brew install fire — the list narrows with every letter, nothing pressed. Captured on macOS.</figcaption>
+          </figure>
+        </div>
+
+        <div data-os-block="windows">
+          <h4 class="os-block-title">Windows</h4>
+          <figure class="demo">
+            <div class="demo-frame">
+              <video muted loop playsinline preload="none"
+                     poster="/media/windows-01-gestionnaire-natif.png"
+                     data-src="/media/windows-01-gestionnaire-natif.mp4"
+                     aria-labelledby="use-win01"></video>
+            </div>
+            <figcaption id="use-win01" data-i18n="use.demo.win01">winget install fire — the same frame and the same keys, a different catalogue: winget answers with Publisher.Package identifiers where brew shows bare formula names. Captured on Windows.</figcaption>
+          </figure>
+        </div>
+
+        <div data-os-block="omarchy">
+          <h4 class="os-block-title">Omarchy</h4>
+          <p class="demo-absent" data-i18n="use.demo.omarchy01"><span class="mono">yay -S visual-studio</span> shows repositories and the AUR in a single list — <span class="mono">◆</span> for a repository package, <span class="mono">▣</span> for an AUR one, <span class="mono">●</span> for what is already installed. No recording of it exists yet.</p>
+        </div>
+
+        <h3 data-i18n="use.now.jgh">One syntax: <span class="mono">jg</span></h3>
+        <p data-i18n="use.now.jg"><span class="mono">jg install fd</span> reaches whichever manager knows <span class="mono">fd</span>, without you having to know which. The facade only adds: <span class="mono">brew install fd</span> keeps working exactly as before, popup included.</p>
+
+        <div data-os-block="macos">
+          <h4 class="os-block-title">macOS</h4>
+          <figure class="demo">
+            <div class="demo-frame">
+              <video muted loop playsinline preload="none"
+                     poster="/media/macos-02-jg.png"
+                     data-src="/media/macos-02-jg.mp4"
+                     aria-labelledby="use-mac02"></video>
+            </div>
+            <figcaption id="use-mac02" data-i18n="use.demo.mac02">jg install fd — the facade answers for whichever manager knows the package. Captured on macOS.</figcaption>
+          </figure>
+        </div>
+
+        <div data-os-block="windows">
+          <h4 class="os-block-title">Windows</h4>
+          <figure class="demo">
+            <div class="demo-frame">
+              <video muted loop playsinline preload="none"
+                     poster="/media/windows-02-jg.png"
+                     data-src="/media/windows-02-jg.mp4"
+                     aria-labelledby="use-win02"></video>
+            </div>
+            <figcaption id="use-win02" data-i18n="use.demo.win02">jg install node — with two managers installed side by side, the right-hand column names who answers for each candidate. Captured on Windows.</figcaption>
+          </figure>
+        </div>
+
+        <div data-os-block="omarchy">
+          <h4 class="os-block-title">Omarchy</h4>
+          <p class="demo-absent" data-i18n="use.demo.omarchy02">The facade behaves the same, with one detail that belongs to Arch: pacman and yay are two doors onto the same database, so <span class="mono">jg</span> lists your packages <strong>once</strong>, never twice. No recording of it exists yet.</p>
+        </div>
+
+        <h3 data-i18n="use.now.regexh">Regex, on the same line</h3>
+        <p data-i18n="use.now.regex"><kbd>^R</kbd> switches the filter, and only the filter: the line, the frame and the keys don't move. The title says which mode is on, and outside the popup the key remains your shell's reverse history search.</p>
+        <p class="note" data-i18n="use.now.regexhow">Four things the toggle doesn't say out loud. The pattern is <strong>not anchored</strong>: it matches anywhere in a name, so switching often widens the list before you narrow it. The case is ignored in both modes — switching never changes that quietly. It applies to <strong>package names only</strong>: verbs, subcommands and flags keep prefix matching, where a regex would teach nothing. And a pattern that doesn't compile matches <strong>nothing</strong> — the frame says so, rather than dumping the whole catalogue because a bracket is missing.</p>
+
+        <div data-os-block="macos">
+          <h4 class="os-block-title">macOS</h4>
+          <figure class="demo">
+            <div class="demo-frame">
+              <video muted loop playsinline preload="none"
+                     poster="/media/macos-04-regex.png"
+                     data-src="/media/macos-04-regex.mp4"
+                     aria-labelledby="use-mac04"></video>
+            </div>
+            <figcaption id="use-mac04" data-i18n="use.demo.mac04">brew install fire lists the names that begin with fire. ^R switches to regex and arrayfire joins them — the pattern is not anchored, so the list gets wider before it gets narrower. Then (bird|fly) keeps four. Captured on macOS.</figcaption>
+          </figure>
+        </div>
+
+        <div data-os-block="windows">
+          <h4 class="os-block-title">Windows</h4>
+          <figure class="demo">
+            <div class="demo-frame">
+              <video muted loop playsinline preload="none"
+                     poster="/media/windows-04-regex.png"
+                     data-src="/media/windows-04-regex.mp4"
+                     aria-labelledby="use-win04"></video>
+            </div>
+            <figcaption id="use-win04" data-i18n="use.demo.win04">winget install fire offers twenty-one candidates by prefix. ^R, then (bird|blade), keeps four — an alternation no prefix search can express. Captured on Windows.</figcaption>
+          </figure>
+        </div>
+
+        <div data-os-block="omarchy">
+          <h4 class="os-block-title">Omarchy</h4>
+          <p class="demo-absent" data-i18n="use.regex.omarchy">The same <kbd>^R</kbd> toggle works on Arch, over the repositories and the AUR at once. Its capture isn't recorded yet — the tape that plays it is written, it has yet to be run on a reachable machine.</p>
+        </div>
+
+        <h3 data-i18n="use.now.runh">Completing, then running</h3>
+        <p data-i18n="use.now.run"><kbd>⏎</kbd> completes the last part <strong>and</strong> runs the line, in a single keystroke. From that point on jigger does nothing at all: what scrolls by is the manager's own output, relayed as is — progress bars, prompts and elevation included.</p>
+
+        <div data-os-block="macos">
+          <h4 class="os-block-title">macOS</h4>
+          <p class="demo-absent" data-i18n="use.install.mac">Installing through the facade behaves the same on macOS, with brew answering — no capture of it is recorded yet. Switch to Windows above to watch one.</p>
+        </div>
+
+        <div data-os-block="windows">
+          <h4 class="os-block-title">Windows</h4>
+          <figure class="demo">
+            <div class="demo-frame">
+              <video muted loop playsinline preload="none"
+                     poster="/media/windows-05-installation.png"
+                     data-src="/media/windows-05-installation.mp4"
+                     aria-labelledby="use-win05"></video>
+            </div>
+            <figcaption id="use-win05" data-i18n="use.demo.win05">jg install hexy, completed to hexyl, then run — scoop's own output, relayed untouched. Captured on Windows, against a real manager.</figcaption>
+          </figure>
+        </div>
+
+        <div data-os-block="omarchy">
+          <h4 class="os-block-title">Omarchy</h4>
+          <p class="demo-absent" data-i18n="use.install.omarchy">Same on Arch, with yay answering — and its own prompts relayed as is, the AUR ones included, since jigger does nothing at all once the line is run. No capture of it is recorded yet.</p>
+        </div>
+
+        <h3 data-i18n="use.now.upgh">And an upgrade</h3>
+        <p data-i18n="use.now.upg">Same gesture, different verb. Nothing here is specific to installing: <span class="mono">upgrade</span>, <span class="mono">search</span> and <span class="mono">outdated</span> are completed and run the same way.</p>
+
+        <div data-os-block="macos">
+          <h4 class="os-block-title">macOS</h4>
+          <p class="demo-absent" data-i18n="use.upgrade.mac">The same holds on macOS, where brew does the upgrading — its capture isn't recorded yet. Switch to Windows above to watch one.</p>
+        </div>
+
+        <div data-os-block="windows">
+          <h4 class="os-block-title">Windows</h4>
+          <figure class="demo">
+            <div class="demo-frame">
+              <video muted loop playsinline preload="none"
+                     poster="/media/windows-06-upgrade.png"
+                     data-src="/media/windows-06-upgrade.mp4"
+                     aria-labelledby="use-win06"></video>
+            </div>
+            <figcaption id="use-win06" data-i18n="use.demo.win06">jg upgrade hyperf, completed to hyperfine, then run — scoop replacing 1.16.1 with 1.20.0. Captured on Windows, against a real manager.</figcaption>
+          </figure>
+        </div>
+
+        <div data-os-block="omarchy">
+          <h4 class="os-block-title">Omarchy</h4>
+          <p class="demo-absent" data-i18n="use.upgrade.omarchy">Same gesture on Arch. Note that yay drives and pacman only reads, which is why <span class="mono">jg install --pm pacman</span> does not exist while yay is installed. Its capture isn't recorded yet.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- § 5 ------------------------------------------------------------- -->
+    <section id="touches">
+      <div class="wrap">
+        <p class="eyebrow">5</p>
+        <h2 data-i18n="use.keys.h2">The keys.</h2>
+        <p data-i18n="use.keys.lede">The same set everywhere — one frame, one set of keys, whether Homebrew, winget, scoop, pacman or yay is the one answering.</p>
+
+        <ul class="keys">
+          <li><kbd>⇥</kbd> <span data-i18n="use.keys.k1">inserts the current candidate</span></li>
+          <li><kbd>⏎</kbd> <span data-i18n="use.keys.k2">completes the last part and runs the line, in a single keystroke</span></li>
+          <li><kbd>↓</kbd> <span data-i18n="use.keys.k3">enters the list, then moves down one candidate</span></li>
+          <li><kbd>↑</kbd> <span data-i18n="use.keys.k4">moves up; on the first candidate, hands the keyboard back to the shell</span></li>
+          <li><kbd>^N</kbd> <kbd>^P</kbd> <span data-i18n="use.keys.k5">the same, for those who prefer them to arrow keys</span></li>
+          <li><kbd>^G</kbd> <span data-i18n="use.keys.k6">closes the popup for the current line — ⇥ reopens it</span></li>
+          <li><kbd>^R</kbd> <span data-i18n="use.keys.k7">switches the filter between plain text and regex; the frame's title shows [regex] while it is on</span></li>
+        </ul>
+
+        <p data-i18n="use.keys.arrows"><strong>Your arrow keys are never taken over.</strong> As long as the popup doesn't hold the keyboard, <kbd>↑</kbd> and <kbd>↓</kbd> stay your shell history. The frame shows which: the current line underlined and the footer reading <span class="mono">↑↓ navigate</span> when it has focus, <span class="mono">↓ browse</span> when it doesn't.</p>
+        <p class="note" data-i18n="use.keys.fix">jigger corrects what it inserts whenever the command would otherwise be wrong: <span class="mono">--cask</span> in front of a Homebrew cask, the qualified name <span class="mono">main/flux</span> for a scoop package present in several buckets, quotes around a winget identifier that contains spaces.</p>
+      </div>
+    </section>
+
+    <!-- § 6 ------------------------------------------------------------- -->
+    <section id="reglages">
+      <div class="wrap">
+        <p class="eyebrow">6</p>
+        <h2 data-i18n="use.set.h2">Settings.</h2>
+        <p data-i18n="use.set.lede">Settings are environment variables, set <strong>before</strong> the <span class="mono">source</span> or the <span class="mono">Import-Module</span>: the plugin reads its keys and sets its hooks at load time. Four of the twelve, the ones worth knowing on day one:</p>
+
+        <ul class="grid-3">
+          <li>
+            <h3 class="mono">JIGGER_COMMANDS</h3>
+            <p data-i18n="use.set.commands">The commands that open the popup — <span class="mono">brew pacman yay ssh scp sftp</span> under zsh, <span class="mono">winget,scoop,ssh,scp,sftp</span> under PowerShell. This is also how the SSH picker gets turned off. <span class="mono">jigger</span> and <span class="mono">jg</span> are always added to whatever you set.</p>
+          </li>
+          <li>
+            <h3 class="mono">JIGGER_LANG</h3>
+            <p data-i18n="use.set.lang">Messages: <span class="mono">en</span> or <span class="mono">fr</span>. Read before <span class="mono">LC_ALL</span>, <span class="mono">LC_MESSAGES</span> and <span class="mono">LANG</span> — this is how you get French back in an English-speaking shell.</p>
+          </li>
+          <li>
+            <h3 class="mono">JIGGER_LIVE</h3>
+            <p data-i18n="use.set.live"><span class="mono">1</span> by default. <span class="mono">0</span> means nothing shows up unasked: <kbd>⇥</kbd> opens the full-screen picker instead. That is also the way to isolate a conflict with another line-editing plugin.</p>
+          </li>
+          <li>
+            <h3 class="mono">JIGGER_CACHE_DIR</h3>
+            <p data-i18n="use.set.cache">Where the catalogs are cached — <span class="mono">~/Library/Caches/jigger</span> on macOS, <span class="mono">%LOCALAPPDATA%\jigger</span> on Windows. <span class="mono">jigger prompt --path</span> prints the file actually in use.</p>
+          </li>
+        </ul>
+
+        <p class="note" data-i18n="use.set.config">Environment variables vanish with the shell. <span class="mono">jigger config</span> opens a screen that writes them down, says where each value comes from — default, file, or environment — and never touches your <span class="mono">~/.zshrc</span> or your <span class="mono">$PROFILE</span>.</p>
+      </div>
+    </section>
+
+    <!-- § 7 ------------------------------------------------------------- -->
+    <section id="linux">
+      <div class="wrap">
+        <aside class="encart">
+          <h2 data-i18n="use.linux.h2">And Linux?</h2>
+          <p data-i18n="use.linux.p">Arch and Omarchy already work — pacman and yay, same popup, same verbs. Pick <strong>Omarchy</strong> in the header and this page switches to their commands throughout. What is still missing is the recordings, not the instructions. The install guide goes further.</p>
+          <p><a href="https://gitlab.yg-devworks.com/yves/jigger/-/blob/main/docs/installation.md" data-i18n="use.linux.link">Read the install guide <span class="arw">→</span></a></p>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p data-i18n="foot.made">Free software, Apache 2.0. Built in the open.</p>
+      <p class="foot-links">
+        <a href="https://gitlab.yg-devworks.com/yves/jigger" data-i18n="foot.repo">Repository</a>
+        <a href="https://gitlab.yg-devworks.com/yves/jigger/-/blob/main/docs/getting-started.md" data-i18n="foot.guide">Getting started</a>
+        <a href="https://gitlab.yg-devworks.com/yves/jigger/-/blob/main/CHANGELOG.md" data-i18n="foot.changelog">Changelog</a>
+      </p>
+    </div>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title data-i18n="title.ssh">jigger — the SSH picker</title>
+  <meta name="description" content="Type ssh and the popup offers the servers of your ~/.ssh/config. Same frame, same keys — only the catalogue changes.">
+  <meta name="theme-color" content="#1e1e2e">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="jigger — the SSH picker">
+  <meta property="og:description" content="Type ssh and the popup offers the servers of your ~/.ssh/config. Same frame, same keys — only the catalogue changes.">
+  <meta property="og:url" content="https://jigger.yg-devworks.com/ssh.html">
+  <meta property="og:image" content="https://jigger.yg-devworks.com/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="jigger — the SSH picker">
+  <meta name="twitter:description" content="Type ssh and the popup offers the servers of your ~/.ssh/config. Same frame, same keys — only the catalogue changes.">
+  <meta name="twitter:image" content="https://jigger.yg-devworks.com/og.png">
+  <link rel="icon" href="/jigger-icon.svg">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <!-- EN-TÊTE : copie exacte de celui d'index.html, hormis la classe « on ». -->
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="brand" href="/">jigger</a>
+      <nav aria-label="Main navigation">
+        <a href="/" data-i18n="nav.home">Home</a>
+        <a href="/utiliser.html" data-i18n="nav.use">Use it</a>
+        <a href="/ssh.html" class="on" data-i18n="nav.ssh">SSH</a>
+      </nav>
+      <div class="os-toggle" role="group" aria-label="Operating system">
+        <button type="button" data-os="macos" aria-pressed="true">macOS</button>
+        <button type="button" data-os="windows" aria-pressed="false">Windows</button>
+        <button type="button" data-os="omarchy" aria-pressed="false">Omarchy</button>
+      </div>
+      <div class="lang-toggle" role="group" aria-label="Language">
+        <button type="button" data-lang="en" aria-pressed="true">EN</button>
+        <button type="button" data-lang="fr" aria-pressed="false">FR</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="page-head">
+      <div class="wrap">
+        <p class="eyebrow" data-i18n="ssh.eyebrow">The SSH picker</p>
+        <h1 data-i18n="ssh.h1">Not just package managers.</h1>
+      </div>
+    </section>
+
+    <!-- § 1 ------------------------------------------------------------- -->
+    <section id="pourquoi">
+      <div class="wrap">
+        <span class="eyebrow" data-i18n="ssh.why.eyebrow">Why a page of its own</span>
+        <h2 data-i18n="ssh.why.h2">The completion contract is not reserved for package managers.</h2>
+        <p class="lede" data-i18n="ssh.why.lede"><span class="mono">ssh</span> is not a package manager, and that is exactly what it demonstrates. It is the same popup, the same keys and the same frame as for <span class="mono">brew</span> or <span class="mono">winget</span> — only the catalogue changes. Nothing in the popup knows it is looking at servers rather than packages, because nothing in the contract a provider honours ever mentions packages.</p>
+        <p data-i18n="ssh.why.adr">That was written down before the picker existed: a provider announces candidates, and the popup draws them. The SSH picker is what proves the rule holds outside Homebrew, winget, scoop, pacman and yay — and what the next provider, whatever it completes, would look like.</p>
+        <p><a class="btn ghost" href="https://gitlab.yg-devworks.com/yves/jigger/-/blob/main/docs/adr/0005-completion-sans-facade.md" data-i18n="ssh.why.link">Read ADR-0005 <span class="arw">→</span></a></p>
+      </div>
+    </section>
+
+    <!-- § 2 ------------------------------------------------------------- -->
+    <section id="en-action">
+      <div class="wrap">
+        <span class="eyebrow" data-i18n="ssh.action.eyebrow">In action</span>
+        <h2 data-i18n="ssh.action.h2">Type <span class="mono">ssh</span> and a space.</h2>
+        <p class="lede" data-i18n="ssh.action.lede">The recordings below read the same <span class="mono">~/.ssh/config</span> — a fixture of invented servers, identical from one system to the next. Nothing about SSH is platform-specific, which is why one recording is enough to show what all of them do.</p>
+
+        <div data-os-block="macos">
+          <h3 class="os-block-title">macOS</h3>
+          <figure class="demo">
+            <div class="demo-frame">
+              <video muted loop playsinline preload="none"
+                     poster="/media/macos-03-ssh.png"
+                     data-src="/media/macos-03-ssh.mp4"
+                     aria-labelledby="demo-mac03"></video>
+            </div>
+            <figcaption id="demo-mac03" data-i18n="ssh.demo.mac">Type <span class="mono">ssh</span> and a space: the servers of your <span class="mono">~/.ssh/config</span>, each with its address alongside. Captured on macOS.</figcaption>
+          </figure>
+        </div>
+
+        <div data-os-block="windows">
+          <h3 class="os-block-title">Windows</h3>
+          <figure class="demo">
+            <div class="demo-frame">
+              <video muted loop playsinline preload="none"
+                     poster="/media/windows-03-ssh.png"
+                     data-src="/media/windows-03-ssh.mp4"
+                     aria-labelledby="demo-win03"></video>
+            </div>
+            <figcaption id="demo-win03" data-i18n="ssh.demo.win">The same list and the same <span class="mono">~/.ssh/config</span>, under PowerShell — <span class="mono">atelier</span> included, which comes from an <span class="mono">Include</span>. Captured on Windows.</figcaption>
+          </figure>
+        </div>
+
+        <div data-os-block="omarchy">
+          <h3 class="os-block-title">Omarchy</h3>
+          <p class="demo-absent" data-i18n="ssh.demo.omarchy">Nothing changes on Arch: the picker reads <span class="mono">~/.ssh/config</span> and nothing else, so it behaves there exactly as in the two recordings above. None was captured on Omarchy yet.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- § 3 ------------------------------------------------------------- -->
+    <section id="ce-qui-compte">
+      <div class="wrap">
+        <span class="eyebrow" data-i18n="ssh.what.eyebrow">What it completes</span>
+        <h2 data-i18n="ssh.what.h2">Three commands, and three things worth knowing.</h2>
+
+        <ul class="grid-3">
+          <li>
+            <h3 data-i18n="ssh.what.1h">Three providers, not one</h3>
+            <p data-i18n="ssh.what.1p"><span class="mono">ssh</span>, <span class="mono">scp</span> and <span class="mono">sftp</span> are three separate providers rather than one answering to three names. They read the same file, but each answers for its own command — which is how <span class="mono">scp</span> can behave differently from the other two.</p>
+          </li>
+          <li>
+            <h3 data-i18n="ssh.what.2h">No verb, so the catalogue comes on the space</h3>
+            <p data-i18n="ssh.what.2p"><span class="mono">brew install fire</span> needs its subcommand before the catalogue means anything. <span class="mono">ssh</span> does not: the operand comes straight after the command name, so the servers appear on the space, with nothing else typed.</p>
+          </li>
+          <li>
+            <h3 data-i18n="ssh.what.3h"><span class="mono">scp</span> inserts a colon</h3>
+            <p data-i18n="ssh.what.3p">Picking <span class="mono">nas</span> behind <span class="mono">scp</span> inserts <span class="mono">nas:</span>, colon attached. It is not cosmetic — without it the command still runs, and does something else entirely.</p>
+          </li>
+        </ul>
+
+        <p data-i18n="ssh.what.local">The two lines below differ by one character, and only one of them reaches a server. The first copies <span class="mono">rapport.pdf</span> to a <strong>local</strong> file named <span class="mono">nas</span>, in the current directory — valid, silent, and wrong.</p>
+        <pre class="cmd"><code>scp rapport.pdf nas /tmp</code></pre>
+        <pre class="cmd"><code>scp rapport.pdf nas:/tmp</code></pre>
+        <p class="note" data-i18n="ssh.what.remote">The second is the one you meant. So <span class="mono">scp</span> gets the colon, and the other two don't: <span class="mono">ssh nas</span> and <span class="mono">sftp nas</span> want the bare name.</p>
+      </div>
+    </section>
+
+    <!-- § 4 ------------------------------------------------------------- -->
+    <section id="le-fichier">
+      <div class="wrap">
+        <span class="eyebrow" data-i18n="ssh.file.eyebrow">What it reads</span>
+        <h2 data-i18n="ssh.file.h2">One file, and nothing else.</h2>
+        <p class="lede" data-i18n="ssh.file.lede"><span class="mono">~/.ssh/config</span>. No <span class="mono">known_hosts</span>, no <span class="mono">/etc/ssh/ssh_config</span>, no network — jigger never opens a connection, and never asks a server anything.</p>
+
+        <!-- Le fichier lu, les hôtes proposés, les motifs écartés. Les six hôtes
+             sont exactement ceux du fixture de capture (docs/media/fixtures/home) :
+             le schéma et les enregistrements montrent le même fichier, et
+             « atelier » n'y arrive que par l'Include — c'est ce qu'il prouve. -->
+        <div class="diagram" id="dia-ssh">
+          <svg viewBox="0 0 1240 500" role="img" aria-labelledby="dia4-title">
+            <title id="dia4-title" data-i18n="dia4.alt">Three columns: on the left ~/.ssh/config and the Include that pulls in a second file; in the middle the six hosts the popup offers, atelier among them because the Include is followed; on the right the two patterns, Host *.exemple.net and Host *, struck out — a pattern is not a server, and is never offered.</title>
+            <defs>
+              <marker id="dia4-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path class="mk-read" d="M0 0 L10 5 L0 10 z"/></marker>
+            </defs>
+
+            <text class="dia-eyebrow" x="40" y="26" data-i18n="dia4.col1">WHAT IT READS</text>
+            <text class="dia-eyebrow" x="450" y="26" data-i18n="dia4.col2">WHAT THE POPUP OFFERS</text>
+            <text class="dia-eyebrow" x="860" y="26" data-i18n="dia4.col3">WHAT IT DROPS</text>
+
+            <!-- colonne 1 : le fichier -->
+            <rect class="dia-box" x="40" y="48" width="340" height="268" rx="8"/>
+            <text class="dia-mono" x="60" y="80">~/.ssh/config</text>
+            <text class="dia-code hi" x="60" y="110">Include conf.d/*.conf</text>
+            <text class="dia-code" x="60" y="138">Host passerelle</text>
+            <text class="dia-code" x="60" y="162">Host nas</text>
+            <text class="dia-code" x="60" y="186">Host proxmox</text>
+            <text class="dia-code" x="60" y="210">Host omarchy</text>
+            <text class="dia-code" x="60" y="234">Host windows</text>
+            <text class="dia-code off" x="60" y="262">Host *.exemple.net</text>
+            <line class="dia-strike" x1="56" y1="258" x2="198" y2="258"/>
+            <text class="dia-code off" x="60" y="286">Host *</text>
+            <line class="dia-strike" x1="56" y1="282" x2="108" y2="282"/>
+
+            <line class="dia-flow f-read" x1="330" y1="320" x2="330" y2="356" marker-end="url(#dia4-ar)"/>
+            <text class="dia-note" x="60" y="344" data-i18n="dia4.follow">includes are followed</text>
+
+            <rect class="dia-box" x="40" y="360" width="340" height="104" rx="8"/>
+            <text class="dia-mono" x="60" y="392">conf.d/atelier.conf</text>
+            <text class="dia-code" x="60" y="420">Host atelier</text>
+            <text class="dia-note" x="60" y="446" data-i18n="dia4.inc">a second file, one more host</text>
+
+            <!-- colonne 2 : les six hôtes -->
+            <line class="dia-flow f-read" x1="386" y1="190" x2="444" y2="190" marker-end="url(#dia4-ar)"/>
+            <line class="dia-flow f-read" x1="386" y1="400" x2="444" y2="308" marker-end="url(#dia4-ar)"/>
+
+            <rect class="dia-box" x="450" y="48" width="340" height="330" rx="8"/>
+            <text class="dia-t on" x="470" y="80" data-i18n="dia4.offered">the six hosts the popup offers</text>
+
+            <rect class="dia-pip" x="468" y="108" width="10" height="10"/>
+            <text class="dia-mono" x="488" y="118">passerelle</text>
+            <text class="dia-note" x="772" y="118" text-anchor="end">passerelle.exemple.net</text>
+
+            <rect class="dia-pip" x="468" y="144" width="10" height="10"/>
+            <text class="dia-mono" x="488" y="154">nas</text>
+            <text class="dia-note" x="772" y="154" text-anchor="end">192.168.1.20</text>
+
+            <rect class="dia-pip" x="468" y="180" width="10" height="10"/>
+            <text class="dia-mono" x="488" y="190">proxmox</text>
+            <text class="dia-note" x="772" y="190" text-anchor="end">192.168.1.10</text>
+
+            <rect class="dia-pip" x="468" y="216" width="10" height="10"/>
+            <text class="dia-mono" x="488" y="226">omarchy</text>
+            <text class="dia-note" x="772" y="226" text-anchor="end">192.168.1.31</text>
+
+            <rect class="dia-pip" x="468" y="252" width="10" height="10"/>
+            <text class="dia-mono" x="488" y="262">windows</text>
+            <text class="dia-note" x="772" y="262" text-anchor="end">192.168.1.32</text>
+
+            <rect class="dia-hl" x="464" y="286" width="312" height="34" rx="6"/>
+            <rect class="dia-pip" x="468" y="296" width="10" height="10"/>
+            <text class="dia-mono" x="488" y="306">atelier</text>
+            <text class="dia-note" x="772" y="306" text-anchor="end">atelier.exemple.net</text>
+            <text class="dia-note" x="470" y="344" data-i18n="dia4.atelier">atelier comes from the second file</text>
+            <text class="dia-note" x="470" y="364" data-i18n="dia4.proof">the Include is what puts it here</text>
+
+            <!-- colonne 3 : ce qui est écarté -->
+            <rect class="dia-box" x="860" y="48" width="340" height="200" rx="8"/>
+            <text class="dia-t on" x="880" y="80" data-i18n="dia4.dropped">the two patterns, never offered</text>
+            <text class="dia-mono off" x="880" y="120">Host *.exemple.net</text>
+            <line class="dia-strike" x1="876" y1="116" x2="1030" y2="116"/>
+            <text class="dia-mono off" x="880" y="156">Host *</text>
+            <line class="dia-strike" x1="876" y1="152" x2="933" y2="152"/>
+            <text class="dia-note" x="880" y="192" data-i18n="dia4.why">a name with * ? or ! is not a server</text>
+            <text class="dia-note" x="880" y="214" data-i18n="dia4.why2">offering it would insert an unreachable name</text>
+
+            <rect class="dia-box" x="860" y="284" width="340" height="180" rx="8"/>
+            <text class="dia-t on" x="880" y="316" data-i18n="dia4.never">what it never reads</text>
+            <text class="dia-mono off" x="880" y="350">known_hosts</text>
+            <text class="dia-mono off" x="880" y="380">/etc/ssh/ssh_config</text>
+            <text class="dia-note" x="880" y="412" data-i18n="dia4.never2">and no network at all</text>
+            <text class="dia-note" x="880" y="434" data-i18n="dia4.reread">re-read on every keystroke, nothing cached</text>
+          </svg>
+        </div>
+
+        <p data-i18n="ssh.file.fixture">The file behind both recordings holds an <span class="mono">Include</span>, six hosts and two patterns. The <span class="mono">Include</span> pulls in <span class="mono">atelier</span> from a second file, which is how the recordings show that includes are followed. The six — <span class="mono">passerelle</span>, <span class="mono">nas</span>, <span class="mono">proxmox</span>, <span class="mono">omarchy</span>, <span class="mono">windows</span> and <span class="mono">atelier</span> — are the ones the popup offers, each with its <span class="mono">HostName</span> to the right when it differs from the name. The two patterns, <span class="mono">Host *.exemple.net</span> and <span class="mono">Host *</span>, never appear: a name containing <span class="mono">*</span>, <span class="mono">?</span> or <span class="mono">!</span> is not a server, and offering it would insert something you cannot connect to.</p>
+        <p data-i18n="ssh.file.reread">Everything is re-read on every keystroke. There is no cache and no warm-up: reading a few fragments of configuration costs a millisecond. SSH is not alone in having nothing to keep — scoop doesn't either, for a different reason: its catalogue is already laid out on disk, one manifest per package, so reading it costs less than caching it.</p>
+        <p class="note" data-i18n="ssh.file.silence">On a machine with no <span class="mono">~/.ssh/config</span>, nothing appears at all — no popup, no empty box, no “no candidates”. Same when nothing matches what you typed. A provider with an empty catalogue draws no frame.</p>
+      </div>
+    </section>
+
+    <!-- § 5 ------------------------------------------------------------- -->
+    <section id="deja-la">
+      <div class="wrap">
+        <span class="eyebrow" data-i18n="ssh.cta.eyebrow">Nothing to add</span>
+        <h2 data-i18n="ssh.cta.h2">It ships with jigger.</h2>
+        <p class="lede" data-i18n="ssh.cta.lede">There is no separate install and no setting to switch on: the picker lives in the same binary and the same shell plugin as everything else. <span class="mono">JIGGER_COMMANDS</span> lists the commands that open the popup — drop <span class="mono">ssh</span>, <span class="mono">scp</span> and <span class="mono">sftp</span> from it and the picker is gone.</p>
+        <p><a class="btn primary" href="/utiliser.html" data-i18n="ssh.cta.link">Download, wire, use <span class="arw">→</span></a></p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p data-i18n="foot.made">Free software, Apache 2.0. Built in the open.</p>
+      <p class="foot-links">
+        <a href="https://gitlab.yg-devworks.com/yves/jigger" data-i18n="foot.repo">Repository</a>
+        <a href="https://gitlab.yg-devworks.com/yves/jigger/-/blob/main/docs/getting-started.md" data-i18n="foot.guide">Getting started</a>
+        <a href="https://gitlab.yg-devworks.com/yves/jigger/-/blob/main/CHANGELOG.md" data-i18n="foot.changelog">Changelog</a>
+      </p>
+    </div>
+  </footer>
+</body>
+</html>

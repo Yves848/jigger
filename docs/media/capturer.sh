@@ -41,6 +41,10 @@ instant() {
     *-01-gestionnaire-natif) echo 4.5 ;;
     *-02-jg)                 echo 4.0 ;;
     *-03-ssh)                echo 3.0 ;;
+    # 04 : l'image doit montrer la liste APRÈS l'alternance, pas la bascule seule.
+    # 0,8 (Show) + 1,62 (frappe) + 3 + 2 (bascule vue) + 0,99 (motif) = 8,41 s ;
+    # une seconde de battement pour que la liste soit posée.
+    *-04-regex)              echo 9.5 ;;
     *)                       echo 3.0 ;;
   esac
 }

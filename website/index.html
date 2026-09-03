@@ -3,17 +3,17 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>jigger — one syntax for Homebrew, winget, scoop and pacman</title>
+  <title data-i18n="title.home">jigger — one syntax for Homebrew, winget, scoop and pacman</title>
   <meta name="description" content="A live package picker in your shell, and one syntax across Homebrew, winget, scoop and pacman. A small Go binary wired into zsh and PowerShell.">
-  <meta name="theme-color" content="#07090e">
+  <meta name="theme-color" content="#1e1e2e">
   <meta property="og:type" content="website">
   <meta property="og:title" content="jigger — one syntax for Homebrew, winget, scoop and pacman">
-  <meta property="og:description" content="A live package picker in your shell, and one syntax across four package managers. A small Go binary wired into zsh and PowerShell.">
+  <meta property="og:description" content="A live package picker in your shell, and one syntax across Homebrew, winget, scoop and pacman. A small Go binary wired into zsh and PowerShell.">
   <meta property="og:url" content="https://jigger.yg-devworks.com/">
   <meta property="og:image" content="https://jigger.yg-devworks.com/og.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="jigger — one syntax for Homebrew, winget, scoop and pacman">
-  <meta name="twitter:description" content="A live package picker in your shell, and one syntax across four package managers.">
+  <meta name="twitter:description" content="A live package picker in your shell, and one syntax across Homebrew, winget, scoop and pacman. A small Go binary wired into zsh and PowerShell.">
   <meta name="twitter:image" content="https://jigger.yg-devworks.com/og.png">
   <link rel="icon" href="/jigger-icon.svg">
   <link rel="stylesheet" href="/styles.css">
@@ -22,13 +22,17 @@
 <body>
   <header class="site-header">
     <div class="wrap header-inner">
-      <a class="brand" href="#top">jigger</a>
+      <a class="brand" href="/">jigger</a>
       <nav aria-label="Main navigation">
-        <a href="#popup" data-i18n="nav.popup">The popup</a>
-        <a href="#facade" data-i18n="nav.facade">One syntax</a>
-        <a href="#fonctionnement" data-i18n="nav.how">How it works</a>
-        <a href="#install" data-i18n="nav.install">Install</a>
+        <a href="/" class="on" data-i18n="nav.home">Home</a>
+        <a href="/utiliser.html" data-i18n="nav.use">Use it</a>
+        <a href="/ssh.html" data-i18n="nav.ssh">SSH</a>
       </nav>
+      <div class="os-toggle" role="group" aria-label="Operating system">
+        <button type="button" data-os="macos" aria-pressed="true">macOS</button>
+        <button type="button" data-os="windows" aria-pressed="false">Windows</button>
+        <button type="button" data-os="omarchy" aria-pressed="false">Omarchy</button>
+      </div>
       <div class="lang-toggle" role="group" aria-label="Language">
         <button type="button" data-lang="en" aria-pressed="true">EN</button>
         <button type="button" data-lang="fr" aria-pressed="false">FR</button>
@@ -42,26 +46,48 @@
         <span class="eyebrow" data-i18n="hero.eyebrow">macOS · Windows · Linux</span>
         <h1 data-i18n="hero.h1">Your package manager,<br><em>as you type.</em></h1>
         <p class="lede" data-i18n="hero.lede">
-          A frame appears under your prompt and follows every keystroke. And across
-          Homebrew, winget, scoop and pacman, one syntax instead of four.
+          A frame appears under your prompt and follows every keystroke. And one syntax
+          for Homebrew, winget, scoop and pacman, instead of one each.
         </p>
 
-        <!-- capture : jigger render --line "brew install fire" --cols 60 -->
-        <pre class="frame" aria-label="jigger in a terminal">❯ brew install fire
-╭──────────────────────────────────────────────────────────╮
-│❯ brew install                               jigger 0.15.0│
-│  ▣  firealpaca                                           │
-│  ▣  firebase-admin                                       │
-│  ◆  firebase-cli                                         │
-│  ▣  firebird-emu                                         │
-│  ▣  firecamp                                             │
-│                                                          │
-│   ⇥  insert   ↩  execute   ↓  browse   ^G  close         │
-╰──────────────────────────────────────────────────────────╯</pre>
+        <!-- L'enregistrement remplace le cadre qui était dessiné à la main ici :
+             la même ligne, mais telle qu'elle se passe. Un bloc par système, au
+             motif des deux autres pages — le visiteur voit le sien. Omarchy n'a
+             pas encore d'enregistrement : il le dit, plutôt que de laisser un trou. -->
+        <div data-os-block="macos">
+          <h3 class="os-block-title">macOS</h3>
+          <figure class="demo">
+            <div class="demo-frame">
+              <video muted loop playsinline preload="none"
+                     poster="/media/macos-01-gestionnaire-natif.png"
+                     data-src="/media/macos-01-gestionnaire-natif.mp4"
+                     aria-labelledby="home-mac01"></video>
+            </div>
+            <figcaption id="home-mac01" data-i18n="home.demo.mac01">brew install fire — the frame appears on its own and narrows with every letter. Captured on macOS.</figcaption>
+          </figure>
+        </div>
+
+        <div data-os-block="windows">
+          <h3 class="os-block-title">Windows</h3>
+          <figure class="demo">
+            <div class="demo-frame">
+              <video muted loop playsinline preload="none"
+                     poster="/media/windows-01-gestionnaire-natif.png"
+                     data-src="/media/windows-01-gestionnaire-natif.mp4"
+                     aria-labelledby="home-win01"></video>
+            </div>
+            <figcaption id="home-win01" data-i18n="home.demo.win01">winget install fire — the same frame and the same keys, another catalogue. Captured on Windows.</figcaption>
+          </figure>
+        </div>
+
+        <div data-os-block="omarchy">
+          <h3 class="os-block-title">Omarchy</h3>
+          <p class="demo-absent" data-i18n="home.demo.omarchy">On Arch — Omarchy included — the same frame answers for <span class="mono">pacman</span> and <span class="mono">yay</span>, repositories and the AUR in a single list. No recording of it exists yet: the two above were captured on the machines that were reachable.</p>
+        </div>
 
         <div class="hero-actions">
-          <a class="btn primary" href="#install" data-i18n="hero.install">Install it <span class="arw">→</span></a>
-          <a class="btn ghost" href="https://gitlab.yg-devworks.com/yves/jigger" data-i18n="hero.source">Read the source</a>
+          <a class="btn primary" href="/utiliser.html#telecharger" data-i18n="hero.download">Download <span class="arw">→</span></a>
+          <a class="btn ghost" href="/utiliser.html#utiliser" data-i18n="hero.see">See it work <span class="arw">→</span></a>
         </div>
       </div>
     </section>
@@ -75,11 +101,81 @@
           down with every letter. Nothing to trigger, nothing to remember.
         </p>
 
+        <!-- Le cadre qui se resserre. Les trois états sont ceux de l'enregistrement
+             du haut de page : « fire » donne sept candidats, « fireb » en laisse
+             trois, « firebi » un seul. L'éclairage tourne par @keyframes ; sous
+             mouvement réduit les trois s'allument ensemble, et le schéma se lit
+             pareil, à l'arrêt. -->
+        <div class="diagram">
+          <svg viewBox="0 0 1240 400" role="img" aria-labelledby="dia2-title">
+            <title id="dia2-title" data-i18n="dia2.alt">The same line typed in three states — fire, then fireb, then firebi — with the frame shrinking beside it: seven candidates, then three, then one. Nothing opens it, the list simply follows the line.</title>
+
+            <text class="dia-eyebrow" x="20" y="26" data-i18n="dia2.eyebrow">AS YOU TYPE</text>
+            <text class="dia-sub" x="1220" y="26" text-anchor="end" data-i18n="dia2.note">nothing to press: the frame opens on its own and narrows letter by letter</text>
+
+            <!-- état 1 : fire -->
+            <g class="dia-etape-1">
+              <rect class="dia-term" x="20" y="52" width="380" height="44" rx="6"/>
+              <text class="dia-mono" x="36" y="80">❯ brew install fire</text>
+              <rect class="dia-caret" x="195" y="62" width="8" height="22"/>
+
+              <rect class="dia-box" x="20" y="108" width="380" height="232" rx="8"/>
+              <rect class="dia-pip" x="36" y="128" width="10" height="10"/>
+              <text class="dia-mono" x="58" y="138">firealpaca</text>
+              <rect class="dia-pip" x="36" y="158" width="10" height="10"/>
+              <text class="dia-mono" x="58" y="168">firebase-admin</text>
+              <rect class="dia-pip" x="36" y="188" width="10" height="10"/>
+              <text class="dia-mono" x="58" y="198">firebase-cli</text>
+              <rect class="dia-pip" x="36" y="218" width="10" height="10"/>
+              <text class="dia-mono" x="58" y="228">firebird-emu</text>
+              <rect class="dia-pip" x="36" y="248" width="10" height="10"/>
+              <text class="dia-mono" x="58" y="258">firecamp</text>
+              <rect class="dia-pip" x="36" y="278" width="10" height="10"/>
+              <text class="dia-mono" x="58" y="288">firefly</text>
+              <rect class="dia-pip" x="36" y="308" width="10" height="10"/>
+              <text class="dia-mono" x="58" y="318">firefly-iota-desktop</text>
+
+              <text class="dia-note" x="210" y="368" text-anchor="middle" data-i18n="dia2.c1">seven candidates</text>
+            </g>
+
+            <!-- état 2 : fireb -->
+            <g class="dia-etape-2">
+              <rect class="dia-term" x="430" y="52" width="380" height="44" rx="6"/>
+              <text class="dia-mono" x="446" y="80">❯ brew install fireb</text>
+              <rect class="dia-caret" x="613" y="62" width="8" height="22"/>
+
+              <rect class="dia-box" x="430" y="108" width="380" height="112" rx="8"/>
+              <rect class="dia-pip" x="446" y="128" width="10" height="10"/>
+              <text class="dia-mono" x="468" y="138">firebase-admin</text>
+              <rect class="dia-pip" x="446" y="158" width="10" height="10"/>
+              <text class="dia-mono" x="468" y="168">firebase-cli</text>
+              <rect class="dia-pip" x="446" y="188" width="10" height="10"/>
+              <text class="dia-mono" x="468" y="198">firebird-emu</text>
+
+              <text class="dia-note" x="620" y="368" text-anchor="middle" data-i18n="dia2.c2">one letter more, three left</text>
+            </g>
+
+            <!-- état 3 : firebi -->
+            <g class="dia-etape-3">
+              <rect class="dia-term" x="840" y="52" width="380" height="44" rx="6"/>
+              <text class="dia-mono" x="856" y="80">❯ brew install firebi</text>
+              <rect class="dia-caret" x="1031" y="62" width="8" height="22"/>
+
+              <rect class="dia-box" x="840" y="108" width="380" height="52" rx="8"/>
+              <rect class="dia-pip" x="856" y="128" width="10" height="10"/>
+              <text class="dia-mono" x="878" y="138">firebird-emu</text>
+
+              <text class="dia-note" x="1030" y="368" text-anchor="middle" data-i18n="dia2.c3">one letter more, one left — ⇥ inserts it</text>
+            </g>
+          </svg>
+        </div>
+
         <ul class="keys">
           <li><kbd>⇥</kbd> <span data-i18n="popup.k1">inserts the current candidate</span></li>
           <li><kbd>↓</kbd> <span data-i18n="popup.k2">enters the list</span></li>
           <li><kbd>↑</kbd> <span data-i18n="popup.k3">moves up, then hands the keyboard back to the shell</span></li>
           <li><kbd>^G</kbd> <span data-i18n="popup.k4">closes it for this line</span></li>
+          <li><kbd>^R</kbd> <span data-i18n="popup.k5">filters by regex instead of by prefix</span></li>
         </ul>
 
         <p data-i18n="popup.arrows">
@@ -95,6 +191,7 @@
           <span class="mono">HostName</span> alongside. jigger never opens the connection
           — it completes the line you will run yourself, and shows nothing at all when it
           has no host to offer.
+          <a href="/ssh.html">The SSH picker has a page of its own <span class="arw">→</span></a>
         </p>
       </div>
     </section>
@@ -102,7 +199,7 @@
     <section id="facade">
       <div class="wrap">
         <span class="eyebrow" data-i18n="facade.eyebrow">One syntax</span>
-        <h2 data-i18n="facade.h2">Four dialects, one vocabulary.</h2>
+        <h2 data-i18n="facade.h2">One vocabulary, every dialect.</h2>
         <p class="lede" data-i18n="facade.lede">
           <span class="mono">jg install fd</span> reaches whichever of Homebrew, winget,
           scoop or pacman knows <span class="mono">fd</span> — without you having to know
@@ -136,6 +233,77 @@
           do it.
         </p>
 
+        <!-- La façade. La bande du bas n'est pas un ornement : sans elle, quatre
+             flèches dont une seule est allumée laissent croire à une résolution
+             magique. Le schéma doit dire l'inverse — quand deux catalogues
+             portent le même nom, personne ne tranche à la place de qui tape. -->
+        <div class="diagram">
+          <svg viewBox="0 0 1240 620" role="img" aria-labelledby="dia3-title">
+            <title id="dia3-title" data-i18n="dia3.alt">One verb at the centre, jg install fd, with four package managers around it. A single solid arrow reaches the one whose catalogue holds the name; the other three stay dim. Below, the case where two managers know the same name: the picker opens and you choose — nothing is settled for you.</title>
+            <defs>
+              <marker id="dia3-ar-on" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path class="mk-run" d="M0 0 L10 5 L0 10 z"/></marker>
+              <marker id="dia3-ar-off" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path class="mk-off" d="M0 0 L10 5 L0 10 z"/></marker>
+            </defs>
+
+            <text class="dia-eyebrow" x="70" y="28" data-i18n="dia3.eyebrow">ONE VERB, SEVERAL DOORS</text>
+            <text class="dia-sub" x="1170" y="28" text-anchor="end" data-i18n="dia3.note">routed by what the catalogues hold, never by a setting</text>
+
+            <!-- les quatre gestionnaires -->
+            <rect class="dia-box" x="70" y="64" width="250" height="92" rx="8"/>
+            <text class="dia-name" x="195" y="108" text-anchor="middle">brew</text>
+            <text class="dia-note" x="195" y="132" text-anchor="middle" data-i18n="dia3.knows">it has the name — it runs</text>
+
+            <rect class="dia-box" x="920" y="64" width="250" height="92" rx="8"/>
+            <text class="dia-name" x="1045" y="108" text-anchor="middle">winget</text>
+            <text class="dia-note" x="1045" y="132" text-anchor="middle" data-i18n="dia3.absent">no such name in its catalogue</text>
+
+            <rect class="dia-box" x="70" y="300" width="250" height="92" rx="8"/>
+            <text class="dia-name" x="195" y="344" text-anchor="middle">scoop</text>
+            <text class="dia-note" x="195" y="368" text-anchor="middle" data-i18n="dia3.absent">no such name in its catalogue</text>
+
+            <rect class="dia-box" x="920" y="300" width="250" height="92" rx="8"/>
+            <text class="dia-name" x="1045" y="344" text-anchor="middle">pacman</text>
+            <text class="dia-note" x="1045" y="368" text-anchor="middle" data-i18n="dia3.absent">no such name in its catalogue</text>
+
+            <!-- le verbe, au centre -->
+            <rect class="dia-core" x="470" y="170" width="300" height="116" rx="10"/>
+            <text class="dia-tag c-run" x="490" y="198" data-i18n="dia3.tag">ONE VERB</text>
+            <text class="dia-mono" x="490" y="228">jg install fd</text>
+            <text class="dia-t on" x="490" y="254" data-i18n="dia3.center">who has this name?</text>
+
+            <!-- une seule flèche allumée, trois éteintes -->
+            <line class="dia-flow f-run" x1="466" y1="196" x2="326" y2="118" marker-end="url(#dia3-ar-on)"/>
+            <line class="dia-flow f-off" x1="466" y1="260" x2="326" y2="338" marker-end="url(#dia3-ar-off)"/>
+            <line class="dia-flow f-off" x1="774" y1="196" x2="914" y2="118" marker-end="url(#dia3-ar-off)"/>
+            <line class="dia-flow f-off" x1="774" y1="260" x2="914" y2="338" marker-end="url(#dia3-ar-off)"/>
+
+            <!-- et quand deux catalogues portent le même nom -->
+            <rect class="dia-band" x="70" y="430" width="1100" height="160" rx="10"/>
+            <text class="dia-eyebrow" x="96" y="462" data-i18n="dia3.tie">TWO MANAGERS, ONE NAME</text>
+            <text class="dia-note" x="96" y="486" data-i18n="dia3.tienote">not the same software</text>
+            <text class="dia-mono" x="96" y="520">jg install fzf</text>
+
+            <line class="dia-flow f-run" x1="222" y1="514" x2="376" y2="474" marker-end="url(#dia3-ar-on)"/>
+            <line class="dia-flow f-run" x1="222" y1="522" x2="376" y2="546" marker-end="url(#dia3-ar-on)"/>
+
+            <rect class="dia-box" x="380" y="452" width="140" height="44" rx="8"/>
+            <text class="dia-name" x="450" y="480" text-anchor="middle">brew</text>
+            <rect class="dia-box" x="380" y="524" width="140" height="44" rx="8"/>
+            <text class="dia-name" x="450" y="552" text-anchor="middle">scoop</text>
+
+            <line class="dia-flow f-run" x1="524" y1="510" x2="594" y2="510" marker-end="url(#dia3-ar-on)"/>
+
+            <rect class="dia-core" x="600" y="448" width="300" height="124" rx="10"/>
+            <text class="dia-tag c-run" x="620" y="478" data-i18n="dia3.pickertag">THE PICKER</text>
+            <text class="dia-t on" x="620" y="506" data-i18n="dia3.picker1">it opens, and you choose</text>
+            <text class="dia-t" x="620" y="530" data-i18n="dia3.picker2">nothing is decided for you</text>
+            <text class="dia-note" x="620" y="556" data-i18n="dia3.picker3">--pm settles it inside a script</text>
+
+            <text class="dia-t on" x="1144" y="500" text-anchor="end" data-i18n="dia3.never">No setting changes this.</text>
+            <text class="dia-note" x="1144" y="524" text-anchor="end" data-i18n="dia3.never2">you are the one who chooses</text>
+          </svg>
+        </div>
+
         <p data-i18n="facade.choice">
           <strong>Never an automatic choice.</strong> When a single manager knows the
           name, it wins silently. When several do, the picker opens and you decide — two
@@ -164,8 +332,8 @@
         </p>
 
         <div class="diagram">
-          <svg viewBox="0 0 1240 740" role="img" aria-labelledby="dia-title">
-            <title id="dia-title" data-i18n="dia.alt">Three bands: your shell on top, jigger in the middle, the six package managers at the bottom, linked by three channels — completion reading catalogs, the facade running a translated command, and the prompt counting upgrades in the background.</title>
+          <svg viewBox="0 0 1240 754" role="img" aria-labelledby="dia-title">
+            <title id="dia-title" data-i18n="dia.alt">Three bands: your shell on top, jigger in the middle, the five package managers and the ssh commands at the bottom, linked by three channels — completion reading catalogs, the facade running a translated command, and the prompt counting upgrades in the background.</title>
             <defs>
               <marker id="dia-ar-read" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path class="mk-read" d="M0 0 L10 5 L0 10 z"/></marker>
               <marker id="dia-ar-run" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path class="mk-run" d="M0 0 L10 5 L0 10 z"/></marker>
@@ -187,19 +355,22 @@
             <rect class="dia-term" x="820" y="88" width="300" height="44" rx="6"/>
             <text class="dia-mono" x="836" y="115">🍺 6.0.17 🔬 7 ❯</text>
 
-            <!-- liaisons shell / jigger -->
-            <line class="dia-flow f-read" x1="150" y1="168" x2="150" y2="240" marker-end="url(#dia-ar-read)"/>
-            <line class="dia-flow f-read" x1="390" y1="240" x2="390" y2="168" marker-end="url(#dia-ar-read)"/>
+            <!-- liaisons shell / jigger. Les allers sont sur x = 136/486/836 et les
+                 retours sur 404/754/1104 : 268 unités entre les deux traits d'un même
+                 canal, contre 240 auparavant. Les étiquettes françaises sont plus
+                 longues que les anglaises et passaient sous les flèches de retour. -->
+            <line class="dia-flow f-read" x1="136" y1="168" x2="136" y2="240" marker-end="url(#dia-ar-read)"/>
+            <line class="dia-flow f-read" x1="404" y1="240" x2="404" y2="168" marker-end="url(#dia-ar-read)"/>
             <text class="dia-label" x="270" y="199" text-anchor="middle" data-i18n="dia.a1">↓ every keystroke, relayed</text>
             <text class="dia-label" x="270" y="219" text-anchor="middle" data-i18n="dia.a2">↑ one frame to draw</text>
 
-            <line class="dia-flow f-run" x1="500" y1="168" x2="500" y2="240" marker-end="url(#dia-ar-run)"/>
-            <line class="dia-flow f-run" x1="740" y1="240" x2="740" y2="168" marker-end="url(#dia-ar-run)"/>
+            <line class="dia-flow f-run" x1="486" y1="168" x2="486" y2="240" marker-end="url(#dia-ar-run)"/>
+            <line class="dia-flow f-run" x1="754" y1="240" x2="754" y2="168" marker-end="url(#dia-ar-run)"/>
             <text class="dia-label" x="620" y="199" text-anchor="middle" data-i18n="dia.b1">↓ one verb, some names</text>
             <text class="dia-label" x="620" y="219" text-anchor="middle" data-i18n="dia.b2">↑ the output, as is</text>
 
-            <line class="dia-flow f-state plain" x1="850" y1="168" x2="850" y2="240" marker-end="url(#dia-ar-state)"/>
-            <line class="dia-flow f-state plain" x1="1090" y1="240" x2="1090" y2="168" marker-end="url(#dia-ar-state)"/>
+            <line class="dia-flow f-state plain" x1="836" y1="168" x2="836" y2="240" marker-end="url(#dia-ar-state)"/>
+            <line class="dia-flow f-state plain" x1="1104" y1="240" x2="1104" y2="168" marker-end="url(#dia-ar-state)"/>
             <text class="dia-label" x="970" y="199" text-anchor="middle" data-i18n="dia.c1">↓ the hook reads one line</text>
             <text class="dia-label" x="970" y="219" text-anchor="middle" data-i18n="dia.c2">↑ version + counters</text>
 
@@ -218,7 +389,7 @@
             <rect class="dia-box" x="470" y="306" width="300" height="118" rx="8"/>
             <text class="dia-tag c-run" x="490" y="332" data-i18n="dia.run">RUN</text>
             <text class="dia-mono" x="490" y="358">jg &lt;verb&gt; [--pm] [--json]</text>
-            <text class="dia-t on" x="490" y="384" data-i18n="dia.run1">Twelve verbs into four dialects.</text>
+            <text class="dia-t on" x="490" y="384" data-i18n="dia.run1">Twelve verbs into every dialect.</text>
             <text class="dia-t" x="490" y="406" data-i18n="dia.run2">Routed by catalog, never by setting.</text>
 
             <rect class="dia-box" x="820" y="306" width="300" height="118" rx="8"/>
@@ -227,50 +398,60 @@
             <text class="dia-t on" x="840" y="384" data-i18n="dia.state1">Counts what is waiting, in the background.</text>
             <text class="dia-t" x="840" y="406" data-i18n="dia.state2">Never on the prompt's critical path.</text>
 
-            <!-- liaisons jigger / gestionnaires -->
-            <line class="dia-flow f-read" x1="150" y1="458" x2="150" y2="552" marker-end="url(#dia-ar-read)"/>
-            <line class="dia-flow f-read" x1="390" y1="552" x2="390" y2="458" marker-end="url(#dia-ar-read)"/>
+            <!-- liaisons jigger / gestionnaires : mêmes abscisses qu'au-dessus, un
+                 canal se lit sur une verticale d'un bout à l'autre du schéma. -->
+            <line class="dia-flow f-read" x1="136" y1="458" x2="136" y2="552" marker-end="url(#dia-ar-read)"/>
+            <line class="dia-flow f-read" x1="404" y1="552" x2="404" y2="458" marker-end="url(#dia-ar-read)"/>
             <text class="dia-label" x="270" y="490" text-anchor="middle" data-i18n="dia.a3">↓ reads catalog + installed</text>
             <text class="dia-label" x="270" y="510" text-anchor="middle" data-i18n="dia.a4">↑ candidates, badges, fixes</text>
 
-            <line class="dia-flow f-run" x1="500" y1="458" x2="500" y2="552" marker-end="url(#dia-ar-run)"/>
-            <line class="dia-flow f-run" x1="740" y1="552" x2="740" y2="458" marker-end="url(#dia-ar-run)"/>
+            <line class="dia-flow f-run" x1="486" y1="458" x2="486" y2="552" marker-end="url(#dia-ar-run)"/>
+            <line class="dia-flow f-run" x1="754" y1="552" x2="754" y2="458" marker-end="url(#dia-ar-run)"/>
             <text class="dia-label" x="620" y="490" text-anchor="middle" data-i18n="dia.b3">↓ the translated command</text>
             <text class="dia-label" x="620" y="510" text-anchor="middle" data-i18n="dia.b4">↑ raw stream, exit code</text>
 
-            <line class="dia-flow f-state" x1="850" y1="458" x2="850" y2="552" marker-end="url(#dia-ar-state)"/>
-            <line class="dia-flow f-state" x1="1090" y1="552" x2="1090" y2="458" marker-end="url(#dia-ar-state)"/>
+            <line class="dia-flow f-state" x1="836" y1="458" x2="836" y2="552" marker-end="url(#dia-ar-state)"/>
+            <line class="dia-flow f-state" x1="1104" y1="552" x2="1104" y2="458" marker-end="url(#dia-ar-state)"/>
             <text class="dia-label" x="970" y="490" text-anchor="middle" data-i18n="dia.c3">↓ queried in the background</text>
             <text class="dia-label" x="970" y="510" text-anchor="middle" data-i18n="dia.c4">↑ version + how many waiting</text>
 
-            <!-- bande 3 : les gestionnaires -->
-            <rect class="dia-band" x="70" y="560" width="1100" height="150" rx="10"/>
+            <!-- bande 3 : les gestionnaires. Six boîtes dans 1100 unités laissent 168
+                 de large, soit une vingtaine de caractères — ce qui suffit à l'anglais
+                 et pas au français. La note de chaque boîte tient donc sur deux lignes,
+                 une clé par ligne, et la boîte est assez haute pour les deux. -->
+            <rect class="dia-band" x="70" y="560" width="1100" height="164" rx="10"/>
             <text class="dia-eyebrow" x="96" y="590" data-i18n="dia.mgrs">THE PACKAGE MANAGERS</text>
             <text class="dia-sub" x="1144" y="590" text-anchor="end" data-i18n="dia.mgrsnote">each answers its own way — jigger adapts, they don't change</text>
 
-            <rect class="dia-box" x="90" y="608" width="168" height="82" rx="8"/>
-            <text class="dia-name" x="174" y="642" text-anchor="middle">brew</text>
-            <text class="dia-note" x="174" y="668" text-anchor="middle" data-i18n="dia.m1">catalog cached 24 h</text>
+            <rect class="dia-box" x="90" y="608" width="168" height="96" rx="8"/>
+            <text class="dia-name" x="174" y="640" text-anchor="middle">brew</text>
+            <text class="dia-note" x="174" y="666" text-anchor="middle" data-i18n="dia.m1">catalog</text>
+            <text class="dia-note" x="174" y="686" text-anchor="middle" data-i18n="dia.m1b">cached 24 h</text>
 
-            <rect class="dia-box" x="268" y="608" width="168" height="82" rx="8"/>
-            <text class="dia-name" x="352" y="642" text-anchor="middle">pacman</text>
-            <text class="dia-note" x="352" y="668" text-anchor="middle" data-i18n="dia.m2">it reads, yay drives</text>
+            <rect class="dia-box" x="268" y="608" width="168" height="96" rx="8"/>
+            <text class="dia-name" x="352" y="640" text-anchor="middle">pacman</text>
+            <text class="dia-note" x="352" y="666" text-anchor="middle" data-i18n="dia.m2">it reads,</text>
+            <text class="dia-note" x="352" y="686" text-anchor="middle" data-i18n="dia.m2b">yay drives</text>
 
-            <rect class="dia-box" x="446" y="608" width="168" height="82" rx="8"/>
-            <text class="dia-name" x="530" y="642" text-anchor="middle">yay</text>
-            <text class="dia-note" x="530" y="668" text-anchor="middle" data-i18n="dia.m3">repositories + AUR</text>
+            <rect class="dia-box" x="446" y="608" width="168" height="96" rx="8"/>
+            <text class="dia-name" x="530" y="640" text-anchor="middle">yay</text>
+            <text class="dia-note" x="530" y="666" text-anchor="middle" data-i18n="dia.m3">the repositories</text>
+            <text class="dia-note" x="530" y="686" text-anchor="middle" data-i18n="dia.m3b">and the AUR</text>
 
-            <rect class="dia-box" x="624" y="608" width="168" height="82" rx="8"/>
-            <text class="dia-name" x="708" y="642" text-anchor="middle">winget</text>
-            <text class="dia-note" x="708" y="668" text-anchor="middle" data-i18n="dia.m4">14,401 ids, cached</text>
+            <rect class="dia-box" x="624" y="608" width="168" height="96" rx="8"/>
+            <text class="dia-name" x="708" y="640" text-anchor="middle">winget</text>
+            <text class="dia-note" x="708" y="666" text-anchor="middle" data-i18n="dia.m4">14,401 ids,</text>
+            <text class="dia-note" x="708" y="686" text-anchor="middle" data-i18n="dia.m4b">cached</text>
 
-            <rect class="dia-box" x="802" y="608" width="168" height="82" rx="8"/>
-            <text class="dia-name" x="886" y="642" text-anchor="middle">scoop</text>
-            <text class="dia-note" x="886" y="668" text-anchor="middle" data-i18n="dia.m5">all on disk, no cache</text>
+            <rect class="dia-box" x="802" y="608" width="168" height="96" rx="8"/>
+            <text class="dia-name" x="886" y="640" text-anchor="middle">scoop</text>
+            <text class="dia-note" x="886" y="666" text-anchor="middle" data-i18n="dia.m5">all on disk,</text>
+            <text class="dia-note" x="886" y="686" text-anchor="middle" data-i18n="dia.m5b">no cache</text>
 
-            <rect class="dia-box" x="980" y="608" width="168" height="82" rx="8"/>
-            <text class="dia-name" x="1064" y="642" text-anchor="middle">ssh scp sftp</text>
-            <text class="dia-note" x="1064" y="668" text-anchor="middle" data-i18n="dia.m6">never run by jigger</text>
+            <rect class="dia-box" x="980" y="608" width="168" height="96" rx="8"/>
+            <text class="dia-name" x="1064" y="640" text-anchor="middle">ssh scp sftp</text>
+            <text class="dia-note" x="1064" y="666" text-anchor="middle" data-i18n="dia.m6">never run</text>
+            <text class="dia-note" x="1064" y="686" text-anchor="middle" data-i18n="dia.m6b">by jigger</text>
           </svg>
         </div>
 
@@ -343,34 +524,26 @@
       </div>
     </section>
 
+    <!-- Les commandes ne vivent plus qu'à un seul endroit : utiliser.html. Une
+         page qui les recopie finit par les recopier fausses. -->
     <section id="install">
       <div class="wrap">
-        <span class="eyebrow" data-i18n="install.eyebrow">Install</span>
-        <h2 data-i18n="install.h2">Three lines, on any of the three.</h2>
-
-        <h3 data-i18n="install.mac">macOS and Linux — Homebrew</h3>
-        <pre class="cmd"><code data-verifier="install">brew tap yves/cocktails https://gitlab.yg-devworks.com/yves/homebrew-cocktails.git</code></pre>
-        <pre class="cmd"><code data-verifier="install">brew install jigger</code></pre>
-
-        <h3 data-i18n="install.win">Windows — scoop</h3>
-        <pre class="cmd"><code data-verifier="install">scoop bucket add jigger https://gitlab.yg-devworks.com/yves/scoop-jigger.git</code></pre>
-        <pre class="cmd"><code data-verifier="install">scoop install jigger</code></pre>
-        <p class="muted-note" data-i18n="install.winp">
-          Prebuilt binary, nothing to compile. To build from a clone instead — while
-          developing, or to run something not released yet — the repository ships
-          <span class="mono">install-windows.ps1</span>. There is no winget package.
+        <span class="eyebrow" data-i18n="cta.eyebrow">Install</span>
+        <h2 data-i18n="cta.h2">Two lines, then one in your shell.</h2>
+        <p class="lede" data-i18n="cta.lede">
+          Homebrew on macOS and Linux, scoop on Windows, <span class="mono">go install</span>
+          anywhere else. Then one <span class="mono">source</span> line in
+          <span class="mono">~/.zshrc</span>, or one <span class="mono">Import-Module</span>
+          in your PowerShell profile.
         </p>
-
-        <h3 data-i18n="install.go">Any platform — Go</h3>
-        <pre class="cmd"><code data-verifier="install">go install gitlab.yg-devworks.com/yves/jigger@latest</code></pre>
-
-        <p data-i18n="install.plugin">
-          Then wire the plugin into your shell — one <span class="mono">source</span> line
-          in <span class="mono">~/.zshrc</span>, one <span class="mono">Import-Module</span>
-          in your PowerShell profile. The guide walks through both, and through what to do
-          when nothing shows up.
+        <p class="muted-note" data-i18n="cta.where">
+          The commands live on a page of their own, next to what to check when nothing
+          shows up, the keys, and the settings worth knowing on day one.
         </p>
-        <a class="btn primary" href="https://gitlab.yg-devworks.com/yves/jigger/-/blob/main/docs/getting-started.md" data-i18n="install.guide">Read the getting-started guide <span class="arw">→</span></a>
+        <div class="hero-actions">
+          <a class="btn primary" href="/utiliser.html#telecharger" data-i18n="cta.link">Download, wire, use <span class="arw">→</span></a>
+          <a class="btn ghost" href="https://gitlab.yg-devworks.com/yves/jigger" data-i18n="cta.source">Read the source</a>
+        </div>
       </div>
     </section>
   </main>

@@ -59,8 +59,9 @@ réseau — jigger n'ouvre jamais de connexion, et ne demande jamais rien à un 
   s'arrête à ne pas attribuer un `HostName` à un hôte qui n'en a pas.
 
 Tout est relu à chaque frappe. Pas de cache, pas de préchauffage : lire quelques fragments
-de configuration coûte une milliseconde, ce qui fait de SSH le seul fournisseur de jigger
-qui n'ait rien à tenir.
+de configuration coûte une milliseconde. SSH n'est pas seul à n'avoir rien à tenir —
+scoop non plus, pour une autre raison : son catalogue est déjà étalé sur le disque, un
+manifeste par paquet, et le lire coûte moins cher que le mettre en cache.
 
 ## Quand il ne montre rien
 

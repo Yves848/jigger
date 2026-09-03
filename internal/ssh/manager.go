@@ -58,7 +58,8 @@ func (m Manager) Insert(_ *pm.Catalog, _, _, name string) string {
 
 // Warm ne fait rien. Lire quelques fragments de configuration coûte une milliseconde :
 // il n'y a ni sortie machine à analyser, ni service distant à interroger, ni cache de
-// 24 h à tenir. C'est le seul fournisseur de jigger dans ce cas.
+// 24 h à tenir. scoop n'a pas plus à réchauffer, pour une autre raison : son catalogue
+// vit déjà sur le disque (internal/scoop/scoop.go).
 func (Manager) Warm(pm.Scope) error { return nil }
 
 func cheminConfig() string {

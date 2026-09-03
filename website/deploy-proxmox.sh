@@ -27,7 +27,7 @@ echo "Contrôles avant publication…"
 
 # og.html est le gabarit qui a produit og.png : il n'a rien à faire en ligne.
 tar -czf "$ARCHIVE" -C "$SCRIPT_DIR" \
-  index.html styles.css app.js jigger-icon.svg og.png
+  index.html utiliser.html ssh.html styles.css app.js jigger-icon.svg og.png media
 
 echo "Publication des fichiers sur ${WEB_HOST}…"
 scp "${SSH_OPTIONS[@]}" \

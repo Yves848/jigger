@@ -4,17 +4,22 @@
    ============================================================================ */
 
 :root {
-  --bg:        #07090e;
-  --panel:     #0e111b;
-  --card:      #141726;
-  --line:      rgba(255,255,255,.08);
-  --line-2:    rgba(255,255,255,.14);
-  --text:      #eceef5;
-  --muted:     #8b90a6;
-  --accent:    #5b8cff;
-  --accent-2:  #86a6ff;
-  --green:     #37d67a;
-  --amber:     #f5a623;
+  /* Catppuccin Mocha — la palette des captures. Le fond de la page est le fond
+     des vidéos : une carte qui encadre une vidéo la prolonge au lieu de la poser. */
+  --base:      #1e1e2e;
+  --mantle:    #181825;
+  --crust:     #11111b;
+  --surface:   #313244;
+  --surface-2: #45475a;
+  --text:      #cdd6f4;
+  --subtext:   #a6adc8;
+  --overlay:   #6c7086;
+  --mauve:     #cba6f7;
+  --blue:      #89b4fa;
+  --green:     #a6e3a1;
+  --peach:     #fab387;
+  --red:       #f38ba8;
+
   --radius:    18px;
   --maxw:      1080px;
   --sans: system-ui, -apple-system, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
@@ -27,7 +32,7 @@ html { scroll-behavior: smooth; }
 
 body {
   margin: 0;
-  background: var(--bg);
+  background: var(--base);
   color: var(--text);
   font-family: var(--sans);
   font-size: 17px;
@@ -40,8 +45,8 @@ body::before {
   content: "";
   position: fixed; inset: 0; z-index: -1;
   background:
-    radial-gradient(1100px 700px at 78% -8%, rgba(91,140,255,.20), transparent 60%),
-    radial-gradient(900px 620px at 8% 12%, rgba(91,140,255,.10), transparent 55%);
+    radial-gradient(1100px 700px at 78% -8%, color-mix(in srgb, var(--mauve) 14%, transparent), transparent 60%),
+    radial-gradient(900px 620px at 8% 12%, color-mix(in srgb, var(--blue) 8%, transparent), transparent 55%);
 }
 
 a { color: inherit; text-decoration: none; }
@@ -51,45 +56,45 @@ a { color: inherit; text-decoration: none; }
 .eyebrow {
   font-family: var(--mono);
   font-size: 12.5px; letter-spacing: .14em; text-transform: uppercase;
-  color: var(--accent-2);
+  color: var(--blue);
 }
 
 /* --- en-tête ------------------------------------------------------------- */
 .site-header {
   position: sticky; top: 0; z-index: 10;
-  background: rgba(7,9,14,.72);
+  background: var(--mantle);
   backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--surface-2);
 }
 .header-inner { display: flex; align-items: center; gap: 24px; height: 60px; }
 .brand { font-family: var(--mono); font-weight: 600; font-size: 18px; }
 .site-header nav { display: flex; gap: 20px; margin-inline-end: auto; }
-.site-header nav a { color: var(--muted); font-size: 15px; }
+.site-header nav a { color: var(--subtext); font-size: 15px; }
 .site-header nav a:hover { color: var(--text); }
 
-.lang-toggle { display: flex; border: 1px solid var(--line-2); border-radius: 999px; overflow: hidden; }
+.lang-toggle { display: flex; border: 1px solid var(--overlay); border-radius: 999px; overflow: hidden; }
 .lang-toggle button {
-  background: none; border: 0; color: var(--muted);
+  background: none; border: 0; color: var(--subtext);
   font: inherit; font-size: 13px; padding: 4px 12px; cursor: pointer;
 }
-.lang-toggle button.on { background: var(--accent); color: #06080f; }
+.lang-toggle button.on { background: var(--mauve); color: var(--crust); }
 
 /* --- corps --------------------------------------------------------------- */
 .hero { padding: 72px 0 56px; }
 h1 { font-size: clamp(32px, 5vw, 52px); line-height: 1.12; margin: 12px 0 16px; }
-h1 em { color: var(--accent-2); font-style: normal; }
+h1 em { color: var(--blue); font-style: normal; }
 h2 { font-size: clamp(24px, 3.4vw, 34px); margin: 0 0 12px; }
-.lede { color: var(--muted); font-size: 19px; max-width: 62ch; }
+.lede { color: var(--subtext); font-size: 19px; max-width: 62ch; }
 
-section { padding: 56px 0; border-top: 1px solid var(--line); }
+section { padding: 56px 0; border-top: 1px solid var(--surface-2); }
 .hero { border-top: 0; }
 
 /* --- cadres de terminal --------------------------------------------------- */
 .frame {
   font-family: var(--mono);
   font-size: 13px; line-height: 1.45;
-  background: var(--panel);
-  border: 1px solid var(--line-2);
+  background: var(--mantle);
+  border: 1px solid var(--overlay);
   border-radius: 12px;
   padding: 16px 18px;
   margin: 28px 0;
@@ -100,11 +105,11 @@ section { padding: 56px 0; border-top: 1px solid var(--line); }
 
 /* --- listes de touches et de verbes --------------------------------------- */
 .keys { list-style: none; padding: 0; margin: 24px 0; display: grid; gap: 10px; }
-.keys li { display: flex; align-items: baseline; gap: 12px; color: var(--muted); }
+.keys li { display: flex; align-items: baseline; gap: 12px; color: var(--subtext); }
 
 kbd {
   font-family: var(--mono); font-size: 13px;
-  background: var(--card); border: 1px solid var(--line-2); border-radius: 6px;
+  background: var(--surface); border: 1px solid var(--overlay); border-radius: 6px;
   padding: 2px 8px; color: var(--text);
   display: inline-block; min-width: 34px; text-align: center;
 }
@@ -115,19 +120,19 @@ kbd {
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
 }
 .verbs li {
-  background: var(--card); border: 1px solid var(--line);
+  background: var(--surface); border: 1px solid var(--surface-2);
   border-radius: 8px; padding: 8px 12px; font-size: 14px;
 }
-.muted-note { color: var(--muted); font-size: 15px; max-width: 62ch; }
+.muted-note { color: var(--subtext); font-size: 15px; max-width: 62ch; }
 
 /* --- blocs de commande ----------------------------------------------------- */
 .cmd {
   font-family: var(--mono); font-size: 13.5px;
-  background: var(--panel); border: 1px solid var(--line-2);
+  background: var(--mantle); border: 1px solid var(--overlay);
   border-radius: 10px; padding: 12px 14px; margin: 10px 0;
   overflow-x: auto; white-space: pre;
 }
-.cmd code { color: var(--accent-2); }
+.cmd code { color: var(--blue); }
 section h3 { font-size: 17px; margin: 28px 0 4px; }
 
 /* --- boutons -------------------------------------------------------------- */
@@ -135,9 +140,21 @@ section h3 { font-size: 17px; margin: 28px 0 4px; }
   display: inline-block; padding: 11px 20px; border-radius: 999px;
   font-size: 15px; font-weight: 500; border: 1px solid transparent;
 }
-.btn.primary { background: var(--accent); color: #06080f; }
-.btn.ghost { border-color: var(--line-2); color: var(--text); }
+.btn.primary { background: var(--mauve); color: var(--crust); }
+.btn.ghost { border-color: var(--overlay); color: var(--text); }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+
+/* --- flèche des liens ------------------------------------------------------
+   La flèche des liens n'avait aucune règle : elle était posée dans le HTML des
+   trois pages sans rien dire de plus qu'un caractère. Elle avance d'un cheveu
+   au survol du lien qui la porte — assez pour désigner le lien, pas assez pour
+   déplacer le texte. Sous prefers-reduced-motion, elle ne bouge plus. */
+.arw { display: inline-block; transition: transform .16s ease-out; }
+a:hover .arw { transform: translateX(3px); }
+@media (prefers-reduced-motion: reduce) {
+  .arw { transition: none; }
+  a:hover .arw { transform: none; }
+}
 
 /* --- grille de garanties --------------------------------------------------- */
 .grid-3 {
@@ -146,20 +163,34 @@ section h3 { font-size: 17px; margin: 28px 0 4px; }
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }
 .grid-3 li {
-  background: var(--card); border: 1px solid var(--line);
+  background: var(--surface); border: 1px solid var(--surface-2);
   border-radius: var(--radius); padding: 20px;
 }
 .grid-3 h3 { margin: 0 0 8px; font-size: 17px; }
-.grid-3 p { margin: 0; color: var(--muted); font-size: 15px; }
+.grid-3 p { margin: 0; color: var(--subtext); font-size: 15px; }
 
 /* --- pied ----------------------------------------------------------------- */
-.site-footer { border-top: 1px solid var(--line); padding: 40px 0; color: var(--muted); font-size: 15px; }
+.site-footer { border-top: 1px solid var(--surface-2); padding: 40px 0; color: var(--subtext); font-size: 15px; }
 .foot-links { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 8px; }
-.foot-links a { color: var(--accent-2); }
+.foot-links a { color: var(--blue); }
 
 @media (max-width: 640px) {
-  .site-header nav { display: none; }
-  .header-inner { gap: 12px; }
+  /* La navigation reste. Elle était masquée du temps où elle ne pointait que des
+     ancres d'une page unique ; le site en a trois, et ssh.html n'est atteignable
+     depuis utiliser.html par aucun lien de corps. La masquer sur téléphone la
+     rendait donc inatteignable. Elle se compacte et passe à la ligne. */
+  .header-inner {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 60px;
+    gap: 6px 14px;
+    padding: 9px 0;
+  }
+  .brand { font-size: 16px; }
+  .site-header nav { flex-wrap: wrap; gap: 14px; }
+  .site-header nav a { font-size: 13.5px; }
+  .os-toggle button { font-size: 13px; padding: 4px 9px; }
+  .lang-toggle button { font-size: 12px; padding: 3px 9px; }
   .lang-toggle { margin-inline-start: auto; }
 }
 
@@ -171,35 +202,161 @@ section h3 { font-size: 17px; margin: 28px 0 4px; }
 .diagram { margin: 30px 0 22px; overflow-x: auto; }
 .diagram svg { display: block; width: 100%; min-width: 880px; height: auto; }
 
-.dia-band  { fill: var(--panel); stroke: var(--line-2); }
-.dia-core  { fill: var(--panel); stroke: var(--line-2); stroke-width: 1.6; }
-.dia-box   { fill: var(--card);  stroke: var(--line); }
-.dia-term  { fill: var(--bg);    stroke: var(--line); }
+.dia-band  { fill: var(--mantle); stroke: var(--overlay); }
+.dia-core  { fill: var(--mantle); stroke: var(--overlay); stroke-width: 1.6; }
+.dia-box   { fill: var(--surface);  stroke: var(--surface-2); }
+.dia-term  { fill: var(--base);    stroke: var(--surface-2); }
 
 .dia-title   { font-family: var(--sans); font-size: 23px; font-weight: 600; fill: var(--text); }
-.dia-sub     { font-family: var(--sans); font-size: 14px; fill: var(--muted); }
-.dia-t       { font-family: var(--sans); font-size: 13px; fill: var(--muted); }
+.dia-sub     { font-family: var(--sans); font-size: 14px; fill: var(--subtext); }
+.dia-t       { font-family: var(--sans); font-size: 13px; fill: var(--subtext); }
 .dia-t.on    { fill: var(--text); }
 .dia-mono    { font-family: var(--mono); font-size: 13.5px; fill: var(--text); }
-.dia-label   { font-family: var(--mono); font-size: 12.5px; fill: var(--muted); }
-.dia-note    { font-family: var(--mono); font-size: 11.5px; fill: var(--muted); }
+.dia-label   { font-family: var(--mono); font-size: 12.5px; fill: var(--subtext); }
+.dia-note    { font-family: var(--mono); font-size: 11.5px; fill: var(--subtext); }
 .dia-name    { font-family: var(--mono); font-size: 15px; font-weight: 600; fill: var(--text); }
-.dia-eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 2.2px; fill: var(--muted); }
+.dia-eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 2.2px; fill: var(--subtext); }
 .dia-tag     { font-family: var(--mono); font-size: 12.5px; font-weight: 600; letter-spacing: 2px; }
 
-/* Les trois canaux : lecture, exécution, état. */
-.c-read  { fill: var(--accent); }
-.c-run   { fill: var(--amber); }
+/* Les trois canaux : lecture, exécution, état. La lecture est bleue et non
+   mauve : le mauve est l'accent général de la page (bouton principal, bascule
+   de langue), et un canal qui porte la même couleur que le mobilier cesse de se
+   distinguer. La légende du schéma dit « bleu » depuis le premier jour. */
+.c-read  { fill: var(--blue); }
+.c-run   { fill: var(--peach); }
 .c-state { fill: var(--green); }
 
 .dia-flow          { fill: none; stroke-width: 1.6; }
-.dia-flow.f-read   { stroke: var(--accent); }
-.dia-flow.f-run    { stroke: var(--amber); }
+.dia-flow.f-read   { stroke: var(--blue); }
+.dia-flow.f-run    { stroke: var(--peach); }
 .dia-flow.f-state  { stroke: var(--green); stroke-dasharray: 5 5; }
 .dia-flow.f-state.plain { stroke-dasharray: none; }
 
-.mk-read  { fill: var(--accent); }
-.mk-run   { fill: var(--amber); }
+.mk-read  { fill: var(--blue); }
+.mk-run   { fill: var(--peach); }
 .mk-state { fill: var(--green); }
 
-.dia-caret { fill: var(--accent); opacity: .7; }
+.dia-caret { fill: var(--blue); opacity: .7; }
+
+/* --- les trois autres schémas ---------------------------------------------
+   Mêmes conventions que le schéma de fonctionnement ci-dessus : toute la
+   présentation passe par des classes, jamais par un attribut `style` ni par un
+   attribut de présentation, et aucune couleur n'est écrite ailleurs que dans
+   les jetons de :root.                                                       */
+
+/* Le cadre qui se resserre : trois états d'une même ligne, éclairés à tour de
+   rôle. L'opacité est animée par classe — un `style` en ligne serait refusé par
+   la CSP et le schéma resterait figé sur un seul état. Sous mouvement réduit,
+   les trois états s'allument ensemble : le schéma est le même, il ne bouge
+   simplement plus, et rien n'y manque. */
+@keyframes dia-etape { 0%, 28% { opacity: 1 } 33%, 100% { opacity: .22 } }
+.dia-etape-1 { animation: dia-etape 4.5s infinite; }
+.dia-etape-2 { animation: dia-etape 4.5s infinite 1.5s; }
+.dia-etape-3 { animation: dia-etape 4.5s infinite 3s; }
+@media (prefers-reduced-motion: reduce) {
+  .dia-etape-1, .dia-etape-2, .dia-etape-3 { animation: none; opacity: 1; }
+}
+
+/* La pastille qui précède un candidat, dans le popup dessiné. */
+.dia-pip { fill: var(--overlay); }
+
+/* La façade : la flèche pleine va au gestionnaire dont le catalogue contient le
+   nom ; les autres restent éteintes. L'éteint est gris et non pointillé — le
+   pointillé dit déjà « tâche de fond » dans le schéma voisin. */
+.dia-flow.f-off { stroke: var(--overlay); }
+.mk-off { fill: var(--overlay); }
+
+/* Le fichier SSH : des lignes de configuration citées telles quelles. */
+.dia-code     { font-family: var(--mono); font-size: 12.5px; fill: var(--subtext); }
+.dia-code.hi  { fill: var(--blue); }
+.dia-code.off,
+.dia-mono.off { fill: var(--overlay); }
+.dia-strike   { stroke: var(--red); stroke-width: 1.6; }
+.dia-hl       { fill: var(--surface-2); }
+
+/* --- pages intérieures ---------------------------------------------------
+   L'accueil a son hero ; les deux autres pages ont ce bandeau, plus sobre. */
+.page-head { padding: 54px 0 18px; }
+.page-head h1 { font-size: clamp(30px, 4.5vw, 46px); margin: 6px 0 0; }
+
+.note { color: var(--subtext); font-size: 15px; }
+
+.encart {
+  border: 1px solid var(--surface-2);
+  border-left: 3px solid var(--peach);
+  border-radius: var(--radius);
+  background: var(--mantle);
+  padding: 22px 24px;
+}
+.encart h2 { margin-top: 0; font-size: 21px; }
+
+/* --- démonstrations ------------------------------------------------------
+   La carte a le fond des vidéos : elle les prolonge au lieu de les encadrer.
+   Seule la bordure dit où finit l'image. */
+.demo { margin: 28px 0; }
+.demo-frame {
+  border: 1px solid var(--surface-2);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--base);
+  line-height: 0;
+}
+.demo-frame video,
+.demo-frame img { width: 100%; height: auto; display: block; }
+.demo figcaption {
+  margin-top: 10px;
+  color: var(--subtext);
+  font-size: 15px;
+}
+.demo-absent {
+  border: 1px dashed var(--surface-2);
+  border-radius: var(--radius);
+  padding: 22px;
+  color: var(--subtext);
+  background: var(--mantle);
+}
+
+/* --- sélecteur de système ------------------------------------------------
+   Sans JavaScript, aucun data-os n'est posé sur <html> et les trois blocs
+   s'affichent, chacun sous son titre. La page ne se vide jamais. */
+.os-toggle { display: flex; gap: 2px; }
+.os-toggle button {
+  background: none; border: 0; color: var(--subtext);
+  font: inherit; font-size: 14px; padding: 5px 11px;
+  border-radius: 999px; cursor: pointer;
+}
+.os-toggle button.on { background: var(--mauve); color: var(--crust); }
+
+/* Un système choisi masque les deux autres. Neuf combinaisons possibles, six
+   règles : on n'écrit que celles qui masquent, la diagonale n'ayant rien à
+   faire. Écrites à plat plutôt qu'avec :not() — une règle par paire se lit et
+   se retire sans réfléchir, et aucun navigateur n'en discute. */
+html[data-os="macos"]   [data-os-block="windows"] { display: none; }
+html[data-os="macos"]   [data-os-block="omarchy"] { display: none; }
+html[data-os="windows"] [data-os-block="macos"]   { display: none; }
+html[data-os="windows"] [data-os-block="omarchy"] { display: none; }
+html[data-os="omarchy"] [data-os-block="macos"]   { display: none; }
+html[data-os="omarchy"] [data-os-block="windows"] { display: none; }
+/* Le titre interne d'un bloc ne sert qu'au cas sans JavaScript : dès qu'un
+   système est choisi, le sélecteur le dit déjà. Sa balise varie — <h3> quand il
+   suit directement un <h2>, <h4> quand il est sous-ordonné à un <h3> de
+   sous-partie — donc sa présentation vient de la classe, pas de la balise. */
+html[data-os] .os-block-title { display: none; }
+.os-block-title { font-size: 17px; margin: 28px 0 4px; }
+
+.os-sticky {
+  position: sticky; top: 56px; z-index: 9;
+  background: var(--mantle);
+  border-bottom: 1px solid var(--surface-2);
+  color: var(--subtext); font-size: 14px;
+  padding: 8px 0;
+}
+.os-sticky .os-name { color: var(--text); font-weight: 600; }
+
+/* Sous 640 px l'en-tête passe à la ligne et n'a plus de hauteur fixe : un
+   décalage collant en dur ferait passer ce rappel sous lui. Il défile alors avec
+   la page. Cette règle vient après celle qu'elle annule — à spécificité égale,
+   c'est l'ordre du fichier qui tranche. */
+@media (max-width: 640px) {
+  .os-sticky { position: static; }
+}
