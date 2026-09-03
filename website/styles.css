@@ -175,8 +175,22 @@ a:hover .arw { transform: translateX(3px); }
 .foot-links a { color: var(--blue); }
 
 @media (max-width: 640px) {
-  .site-header nav { display: none; }
-  .header-inner { gap: 12px; }
+  /* La navigation reste. Elle était masquée du temps où elle ne pointait que des
+     ancres d'une page unique ; le site en a trois, et ssh.html n'est atteignable
+     depuis utiliser.html par aucun lien de corps. La masquer sur téléphone la
+     rendait donc inatteignable. Elle se compacte et passe à la ligne. */
+  .header-inner {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 60px;
+    gap: 6px 14px;
+    padding: 9px 0;
+  }
+  .brand { font-size: 16px; }
+  .site-header nav { flex-wrap: wrap; gap: 14px; }
+  .site-header nav a { font-size: 13.5px; }
+  .os-toggle button { font-size: 13px; padding: 4px 9px; }
+  .lang-toggle button { font-size: 12px; padding: 3px 9px; }
   .lang-toggle { margin-inline-start: auto; }
 }
 
@@ -316,8 +330,11 @@ a:hover .arw { transform: translateX(3px); }
 html[data-os="macos"]   [data-os-block="windows"] { display: none; }
 html[data-os="windows"] [data-os-block="macos"]   { display: none; }
 /* Le titre interne d'un bloc ne sert qu'au cas sans JavaScript : dès qu'un
-   système est choisi, le sélecteur le dit déjà. */
+   système est choisi, le sélecteur le dit déjà. Sa balise varie — <h3> quand il
+   suit directement un <h2>, <h4> quand il est sous-ordonné à un <h3> de
+   sous-partie — donc sa présentation vient de la classe, pas de la balise. */
 html[data-os] .os-block-title { display: none; }
+.os-block-title { font-size: 17px; margin: 28px 0 4px; }
 
 .os-sticky {
   position: sticky; top: 56px; z-index: 9;
@@ -327,3 +344,11 @@ html[data-os] .os-block-title { display: none; }
   padding: 8px 0;
 }
 .os-sticky .os-name { color: var(--text); font-weight: 600; }
+
+/* Sous 640 px l'en-tête passe à la ligne et n'a plus de hauteur fixe : un
+   décalage collant en dur ferait passer ce rappel sous lui. Il défile alors avec
+   la page. Cette règle vient après celle qu'elle annule — à spécificité égale,
+   c'est l'ordre du fichier qui tranche. */
+@media (max-width: 640px) {
+  .os-sticky { position: static; }
+}

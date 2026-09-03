@@ -54,14 +54,18 @@ for p in "${PAGES[@]}"; do
     done
 done
 
-# Externes : seulement sur demande, car ça dépend du réseau.
+# Externes : seulement sur demande, car ça dépend du réseau. Les trois pages, et
+# non la seule page d'accueil : le guide d'installation n'est cité que par
+# utiliser.html, l'ADR-0005 que par ssh.html — deux liens qui échappaient au filet.
 if [ "$RESEAU" = 1 ]; then
-    for url in $(grep -o 'href="https\?://[^"]*"' index.html | cut -d'"' -f2 | sort -u); do
-        code="$(curl -sIL --max-time 10 -o /dev/null -w '%{http_code}' "$url" || echo 000)"
-        case "$code" in
-            2*|3*) ok "$url → $code" ;;
-            *)     echec "$url → $code" ;;
-        esac
+    for p in "${PAGES[@]}"; do
+        for url in $(grep -o 'href="https\?://[^"]*"' "$p" | cut -d'"' -f2 | sort -u); do
+            code="$(curl -sIL --max-time 10 -o /dev/null -w '%{http_code}' "$url" || echo 000)"
+            case "$code" in
+                2*|3*) ok "$url → $code ($p)" ;;
+                *)     echec "$url → $code ($p)" ;;
+            esac
+        done
     done
 fi
 

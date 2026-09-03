@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>jigger — the SSH picker</title>
+  <title data-i18n="title.ssh">jigger — the SSH picker</title>
   <meta name="description" content="Type ssh and the popup offers the servers of your ~/.ssh/config. Same frame, same keys — only the catalogue changes.">
   <meta name="theme-color" content="#1e1e2e">
   <meta property="og:type" content="website">
@@ -54,7 +54,7 @@
         <span class="eyebrow" data-i18n="ssh.why.eyebrow">Why a page of its own</span>
         <h2 data-i18n="ssh.why.h2">The completion contract is not reserved for package managers.</h2>
         <p class="lede" data-i18n="ssh.why.lede"><span class="mono">ssh</span> is not a package manager, and that is exactly what it demonstrates. It is the same popup, the same keys and the same frame as for <span class="mono">brew</span> or <span class="mono">winget</span> — only the catalogue changes. Nothing in the popup knows it is looking at servers rather than packages, because nothing in the contract a provider honours ever mentions packages.</p>
-        <p data-i18n="ssh.why.adr">That was written down before the picker existed: a provider announces candidates, and the popup draws them. The SSH picker is what proves the rule holds outside the four managers — and what a fifth, sixth or seventh provider would look like.</p>
+        <p data-i18n="ssh.why.adr">That was written down before the picker existed: a provider announces candidates, and the popup draws them. The SSH picker is what proves the rule holds outside Homebrew, winget, scoop, pacman and yay — and what the next provider, whatever it completes, would look like.</p>
         <p><a class="btn ghost" href="https://gitlab.yg-devworks.com/yves/jigger/-/blob/main/docs/adr/0005-completion-sans-facade.md" data-i18n="ssh.why.link">Read ADR-0005 <span class="arw">→</span></a></p>
       </div>
     </section>
@@ -220,7 +220,7 @@
         </div>
 
         <p data-i18n="ssh.file.fixture">The file behind both recordings holds an <span class="mono">Include</span>, six hosts and two patterns. The <span class="mono">Include</span> pulls in <span class="mono">atelier</span> from a second file, which is how the recordings show that includes are followed. The six — <span class="mono">passerelle</span>, <span class="mono">nas</span>, <span class="mono">proxmox</span>, <span class="mono">omarchy</span>, <span class="mono">windows</span> and <span class="mono">atelier</span> — are the ones the popup offers, each with its <span class="mono">HostName</span> to the right when it differs from the name. The two patterns, <span class="mono">Host *.exemple.net</span> and <span class="mono">Host *</span>, never appear: a name containing <span class="mono">*</span>, <span class="mono">?</span> or <span class="mono">!</span> is not a server, and offering it would insert something you cannot connect to.</p>
-        <p data-i18n="ssh.file.reread">Everything is re-read on every keystroke. There is no cache and no warm-up: reading a few fragments of configuration costs a millisecond, which makes SSH the only provider in jigger with nothing to keep.</p>
+        <p data-i18n="ssh.file.reread">Everything is re-read on every keystroke. There is no cache and no warm-up: reading a few fragments of configuration costs a millisecond. SSH is one of the two providers in jigger with nothing to keep — scoop is the other, for a different reason: its catalogue is already laid out on disk, one manifest per package, so reading it costs less than caching it.</p>
         <p class="note" data-i18n="ssh.file.silence">On a machine with no <span class="mono">~/.ssh/config</span>, nothing appears at all — no popup, no empty box, no “no candidates”. Same when nothing matches what you typed. A provider with an empty catalogue draws no frame.</p>
       </div>
     </section>

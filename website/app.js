@@ -4,6 +4,10 @@
 
   /* --- FR --- */
   var FR = {
+    /* --- les titres de page : une clé par page, posée sur son <title> --- */
+    'title.home': 'jigger — une syntaxe pour Homebrew, winget, scoop et pacman',
+    'title.use': 'jigger — télécharger, brancher, utiliser',
+    'title.ssh': 'jigger — le sélecteur SSH',
     /* --- partagé : en-tête et pied --- */
     'nav.home': 'Accueil',
     'nav.use': 'L’utiliser',
@@ -52,7 +56,7 @@
     'use.upgrade.mac': 'C’est pareil sur macOS, où c’est brew qui met à jour — sa capture n’est pas encore enregistrée. Basculez sur Windows ci-dessus pour en voir une.',
     'use.demo.win06': 'jg upgrade hyperf, complété en hyperfine, puis lancé — scoop remplace la 1.16.1 par la 1.20.0. Pris sur Windows, contre un vrai gestionnaire.',
     'use.keys.h2': 'Les touches.',
-    'use.keys.lede': 'Le même jeu partout — un cadre, un jeu de touches, quatre catalogues.',
+    'use.keys.lede': 'Le même jeu partout — un cadre, un jeu de touches, que ce soit Homebrew, winget, scoop, pacman ou yay qui réponde.',
     'use.keys.k1': 'insère le candidat courant',
     'use.keys.k2': 'complète la dernière partie et lance la ligne, d’une seule frappe',
     'use.keys.k3': 'entre dans la liste, puis descend d’un candidat',
@@ -78,12 +82,12 @@
     'ssh.why.eyebrow': 'Pourquoi une page à part',
     'ssh.why.h2': 'Le contrat de complétion n’est pas réservé aux gestionnaires de paquets.',
     'ssh.why.lede': '<span class="mono">ssh</span> n’est pas un gestionnaire de paquets, et c’est justement ce qu’il démontre. C’est la même fenêtre, les mêmes touches et le même cadre que pour <span class="mono">brew</span> ou <span class="mono">winget</span> — seul le catalogue change. Rien dans la fenêtre ne sait qu’elle regarde des serveurs plutôt que des paquets, parce que rien dans le contrat qu’honore un fournisseur ne parle jamais de paquets.',
-    'ssh.why.adr': 'C’était écrit avant que le sélecteur existe : un fournisseur annonce des candidats, la fenêtre les dessine. Le sélecteur SSH est ce qui prouve que la règle tient hors des quatre gestionnaires — et ce à quoi ressemblerait un cinquième, un sixième ou un septième fournisseur.',
+    'ssh.why.adr': 'C’était écrit avant que le sélecteur existe : un fournisseur annonce des candidats, la fenêtre les dessine. Le sélecteur SSH est ce qui prouve que la règle tient hors de Homebrew, winget, scoop, pacman et yay — et ce à quoi ressemblerait le fournisseur suivant, quoi qu’il complète.',
     'ssh.why.link': 'Lire l’ADR-0005 <span class="arw">→</span>',
     'ssh.action.eyebrow': 'En action',
-    'ssh.action.h2': 'Tapez <span class="mono">ssh</span> et une espace.',
+    'ssh.action.h2': 'Tapez <span class="mono">ssh</span> et un espace.',
     'ssh.action.lede': 'Les deux enregistrements lisent le même <span class="mono">~/.ssh/config</span> — un fixture de serveurs inventés, identique sur les deux systèmes. Rien, dans SSH, n’est propre à une plateforme.',
-    'ssh.demo.mac': 'Tapez <span class="mono">ssh</span> et une espace : les serveurs de votre <span class="mono">~/.ssh/config</span>, chacun avec son adresse en regard. Pris sur macOS.',
+    'ssh.demo.mac': 'Tapez <span class="mono">ssh</span> et un espace : les serveurs de votre <span class="mono">~/.ssh/config</span>, chacun avec son adresse en regard. Pris sur macOS.',
     'ssh.demo.win': 'La même liste et le même <span class="mono">~/.ssh/config</span>, sous PowerShell — <span class="mono">atelier</span> compris, qui vient d’un <span class="mono">Include</span>. Pris sur Windows.',
     'ssh.what.eyebrow': 'Ce qui est complété',
     'ssh.what.h2': 'Trois commandes, et trois choses à savoir.',
@@ -114,7 +118,7 @@
     'dia4.never2': 'et aucun réseau, jamais',
     'dia4.reread': 'relu à chaque frappe, rien en cache',
     'ssh.file.fixture': 'Le fichier derrière les deux enregistrements contient un <span class="mono">Include</span>, six hôtes et deux motifs. L’<span class="mono">Include</span> tire <span class="mono">atelier</span> d’un second fichier : c’est ainsi que les enregistrements montrent que les inclusions sont suivies. Les six — <span class="mono">passerelle</span>, <span class="mono">nas</span>, <span class="mono">proxmox</span>, <span class="mono">omarchy</span>, <span class="mono">windows</span> et <span class="mono">atelier</span> — sont ceux que la fenêtre propose, chacun avec son <span class="mono">HostName</span> à droite quand il diffère du nom. Les deux motifs, <span class="mono">Host *.exemple.net</span> et <span class="mono">Host *</span>, n’apparaissent jamais : un nom contenant <span class="mono">*</span>, <span class="mono">?</span> ou <span class="mono">!</span> n’est pas un serveur, et le proposer insérerait quelque chose à quoi on ne peut pas se connecter.',
-    'ssh.file.reread': 'Tout est relu à chaque frappe. Il n’y a ni cache ni préchauffage : lire quelques fragments de configuration coûte une milliseconde, ce qui fait de SSH le seul fournisseur de jigger qui n’a rien à garder.',
+    'ssh.file.reread': 'Tout est relu à chaque frappe. Il n’y a ni cache ni préchauffage : lire quelques fragments de configuration coûte une milliseconde. SSH est l’un des deux fournisseurs de jigger qui n’ont rien à tenir — scoop est l’autre, pour une autre raison : son catalogue est déjà étalé sur le disque, un manifeste par paquet, et le lire coûte moins cher que le mettre en cache.',
     'ssh.file.silence': 'Sur une machine sans <span class="mono">~/.ssh/config</span>, rien n’apparaît du tout — pas de fenêtre, pas de cadre vide, pas de « aucun candidat ». Idem quand rien ne correspond à ce que vous avez tapé. Un fournisseur au catalogue vide ne dessine aucun cadre.',
     'ssh.cta.eyebrow': 'Rien à ajouter',
     'ssh.cta.h2': 'Il est livré avec jigger.',
@@ -193,12 +197,18 @@
     'dia.c4': '↑ version et nombre en attente',
     'dia.mgrs': 'LES GESTIONNAIRES',
     'dia.mgrsnote': 'chacun répond à sa façon — jigger s’adapte, eux ne changent pas',
-    'dia.m1': 'catalogue en cache 24 h',
-    'dia.m2': 'il lit, yay pilote',
-    'dia.m3': 'dépôts et AUR',
-    'dia.m4': '14 401 ids, en cache',
-    'dia.m5': 'tout sur disque, sans cache',
-    'dia.m6': 'jamais exécuté par jigger',
+    'dia.m1': 'catalogue',
+    'dia.m1b': 'en cache 24 h',
+    'dia.m2': 'il lit,',
+    'dia.m2b': 'yay pilote',
+    'dia.m3': 'les dépôts',
+    'dia.m3b': 'et l’AUR',
+    'dia.m4': '14 401 ids,',
+    'dia.m4b': 'en cache',
+    'dia.m5': 'tout sur disque,',
+    'dia.m5b': 'sans cache',
+    'dia.m6': 'jamais exécuté',
+    'dia.m6b': 'par jigger',
     'dia.caption': '<strong>Bleu</strong> — la complétion lit, elle n’exécute rien. <strong>Ambre</strong> — la façade traduit un verbe, puis laisse le gestionnaire faire le travail et relaie sa sortie sans y toucher. <strong>Vert</strong> — l’invite : en pointillés là où ça tourne en tâche de fond, en trait plein là où le hook se contente de lire une ligne, sans rien coûter.',
     'guar.eyebrow': 'Ce qu’il garantit',
     'guar.h2': 'Il ne se met pas en travers.',
@@ -229,11 +239,10 @@
   };
   /* --- /FR --- */
 
-  var TITLE = {
-    en: 'jigger — one syntax for Homebrew, winget, scoop and pacman',
-    fr: 'jigger — une syntaxe pour Homebrew, winget, scoop et pacman'
-  };
-
+  /* Le <title> de chaque page porte son propre `data-i18n` et suit donc le même
+     chemin que le reste : l'anglais reste écrit dans la balise, le français vient
+     du dictionnaire. Une table de titres dans ce fichier n'en connaissait qu'un, et
+     l'appliquait aux trois pages — onglets, favoris et indexation confondus. */
   var i18nEls = Array.prototype.slice.call(document.querySelectorAll('[data-i18n]'));
   i18nEls.forEach(function (el) { el.setAttribute('data-en', el.innerHTML); });
 
@@ -242,7 +251,6 @@
   function setLang(l) {
     lang = (l === 'fr') ? 'fr' : 'en';
     docEl.lang = lang;
-    document.title = TITLE[lang];
     i18nEls.forEach(function (el) {
       var k = el.getAttribute('data-i18n');
       /* Repli sur l'anglais : une clé française absente laisse le texte d'origine. */

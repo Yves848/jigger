@@ -1,6 +1,7 @@
 # Le site de jigger
 
-Une page statique, bilingue, sans build : trois fichiers servis tels quels.
+Un site statique, bilingue, sans build : trois pages servies telles quelles, avec quatre
+schémas SVG écrits à la main, dix-huit médias et un vérificateur à huit contrôles.
 La conception est dans [`docs/specs/2026-09-03-site-jigger-refonte-design.md`](../docs/specs/2026-09-03-site-jigger-refonte-design.md).
 
 ## Prévisualiser
@@ -31,8 +32,10 @@ contrôles :
    part. Attrape une clé posée dans le HTML et jamais traduite, et une traduction
    devenue orpheline après suppression d'un bloc.
 2. **Liens** — chaque ancre `href="#…"` désigne un `id` qui existe dans la page. Avec
-   `--reseau`, les liens externes d'`index.html` sont interrogés et doivent répondre en
-   2xx ou 3xx. Attrape une ancre mal orthographiée et un lien externe mort.
+   `--reseau`, les liens externes **des trois pages** sont interrogés et doivent répondre
+   en 2xx ou 3xx — le guide d'installation n'est cité que par `utiliser.html` et
+   l'ADR-0005 que par `ssh.html`. Attrape une ancre mal orthographiée et un lien externe
+   mort.
 3. **Commandes d'installation** — chaque `<code data-verifier="install">` doit exister
    mot pour mot dans `docs/getting-started.md` ou `docs/installation.md`. Deux fichiers,
    pas un : le parcours pas à pas vit dans le premier, le bloc à copier-coller par
@@ -67,7 +70,13 @@ dans le binaire.
 Une entrée par ligne, de la forme `'cle.sous': 'texte',` : `verifier.sh` lit ce bloc avec
 `grep`, pas avec un analyseur JavaScript.
 
+Le `<title>` de chaque page porte lui aussi un `data-i18n` (`title.home`, `title.use`,
+`title.ssh`) : l'anglais reste écrit dans la balise, le français vient du dictionnaire, et
+chaque page garde son propre titre. Une table de titres dans `app.js` n'en connaissait
+qu'un et l'appliquait aux trois.
+
 Le dictionnaire porte des commentaires qui délimitent des blocs, mais pas un par page :
+`/* --- les titres de page --- */` couvre les trois clés `title.*`,
 `/* --- partagé : en-tête et pied --- */` couvre `nav.*` (les trois pages en dépendent),
 `/* --- page « utiliser » --- */` couvre les clés `use.*`, `/* --- page « ssh » --- */`
 couvre les clés `ssh.*` et `dia4.*`. Les clés de l'accueil (`hero.*`, `home.*`,
@@ -92,6 +101,68 @@ Après avoir régénéré une vidéo ou une affiche, recopiez le fichier :
 ```sh
 cp docs/media/out/<fichier> website/media/<fichier>
 ```
+
+## Les schémas
+
+Ils sont quatre, écrits à la main — ni image, ni script. Trois sur l'accueil : le cadre
+qui se resserre (`#popup`), la façade (`#facade`) et le grand schéma des trois canaux
+(`#fonctionnement`). Le quatrième est sur `ssh.html` : le fichier lu, les hôtes proposés,
+les motifs écartés.
+
+- Ils sont **stylés par classes** (`.dia-*` dans `styles.css`), jamais par attribut
+  `style` **ni par attribut de présentation** (`fill`, `stroke`, `font-size`…) : la CSP du
+  vhost pose `style-src 'self'`, qui interdit le style en ligne, et une couleur posée en
+  attribut vivrait hors des jetons de `:root` — ce que le contrôle 5 refuse. `text-anchor`
+  est la seule exception admise : il ne porte ni couleur ni style.
+- Leurs libellés se traduisent **comme le reste de la page**, un `data-i18n` par élément
+  `<text>` — y compris le `<title>` du SVG, qui sert de description accessible et que
+  `role="img"` + `aria-labelledby` désignent. `verifier.sh` contrôle donc ces clés-là
+  comme les autres.
+- Les noms de gestionnaires et les commandes ne se traduisent pas, comme partout ailleurs.
+
+Les coordonnées du schéma de fonctionnement suivent une grille : trois bandes (shell,
+jigger, gestionnaires) et trois canaux, l'aller sur x = 136/486/836 et le retour sur
+404/754/1104. Déplacer une bande demande de bouger les extrémités des flèches en regard.
+
+### Les regarder, dans les deux langues
+
+Un schéma propre en anglais peut déborder en français : mêmes coordonnées, texte plus
+long. Il n'y a pas d'autre moyen que de le rendre et de le regarder — **dans les deux
+langues**. Extraire le `<svg>` dans un fichier autonome, y coller les jetons de `:root` et
+les règles `.dia-*` dans une balise `<style>`, remplacer chaque libellé par la valeur du
+dictionnaire `FR` pour la version française, puis :
+
+```sh
+qlmanage -t -s 1400 -o /tmp/dia schema.svg
+```
+
+`qlmanage` rend au carré ; pour la dimension exacte du `viewBox`, Chrome est plus fidèle :
+
+```sh
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new \
+  --disable-gpu --hide-scrollbars --window-size=1240,754 \
+  --screenshot=/tmp/dia/schema.png "file:///chemin/absolu/schema.svg"
+```
+
+Puis **ouvrir l'image**. Une étiquette qui sort de sa boîte, ou qui passe sous une flèche,
+se corrige par la géométrie — boîte élargie, étiquette déplacée, libellé coupé en deux
+lignes avec une clé `data-i18n` par ligne. Jamais en raccourcissant le français : ce
+serait appauvrir une langue pour épargner un ajustement de coordonnées.
+
+## Les captures
+
+Les sorties de terminal affichées dans les blocs `<pre class="frame">` sont **de vraies
+sorties**, pas des maquettes. Chaque bloc porte en commentaire HTML la commande qui l'a
+produite ; à rejouer quand l'affichage de jigger change :
+
+```sh
+jigger render --line "jg " --cols 60
+STARSHIP_CONFIG=shell/starship/brew.toml starship prompt
+```
+
+Le résultat se recolle tel quel dans le bloc, et le commentaire reste au-dessus. Les
+enregistrements vidéo, eux, ne se rejouent pas ici : ils viennent de `docs/media/out/`
+(voir la section précédente).
 
 ## Refaire l'image d'aperçu
 

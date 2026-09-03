@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>jigger — one syntax for Homebrew, winget, scoop and pacman</title>
+  <title data-i18n="title.home">jigger — one syntax for Homebrew, winget, scoop and pacman</title>
   <meta name="description" content="A live package picker in your shell, and one syntax across Homebrew, winget, scoop and pacman. A small Go binary wired into zsh and PowerShell.">
   <meta name="theme-color" content="#1e1e2e">
   <meta property="og:type" content="website">
@@ -13,7 +13,7 @@
   <meta property="og:image" content="https://jigger.yg-devworks.com/og.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="jigger — one syntax for Homebrew, winget, scoop and pacman">
-  <meta name="twitter:description" content="A live package picker in your shell, and one syntax across Homebrew, winget, scoop and pacman.">
+  <meta name="twitter:description" content="A live package picker in your shell, and one syntax across Homebrew, winget, scoop and pacman. A small Go binary wired into zsh and PowerShell.">
   <meta name="twitter:image" content="https://jigger.yg-devworks.com/og.png">
   <link rel="icon" href="/jigger-icon.svg">
   <link rel="stylesheet" href="/styles.css">
@@ -324,7 +324,7 @@
         </p>
 
         <div class="diagram">
-          <svg viewBox="0 0 1240 740" role="img" aria-labelledby="dia-title">
+          <svg viewBox="0 0 1240 754" role="img" aria-labelledby="dia-title">
             <title id="dia-title" data-i18n="dia.alt">Three bands: your shell on top, jigger in the middle, the five package managers and the ssh commands at the bottom, linked by three channels — completion reading catalogs, the facade running a translated command, and the prompt counting upgrades in the background.</title>
             <defs>
               <marker id="dia-ar-read" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path class="mk-read" d="M0 0 L10 5 L0 10 z"/></marker>
@@ -347,19 +347,22 @@
             <rect class="dia-term" x="820" y="88" width="300" height="44" rx="6"/>
             <text class="dia-mono" x="836" y="115">🍺 6.0.17 🔬 7 ❯</text>
 
-            <!-- liaisons shell / jigger -->
-            <line class="dia-flow f-read" x1="150" y1="168" x2="150" y2="240" marker-end="url(#dia-ar-read)"/>
-            <line class="dia-flow f-read" x1="390" y1="240" x2="390" y2="168" marker-end="url(#dia-ar-read)"/>
+            <!-- liaisons shell / jigger. Les allers sont sur x = 136/486/836 et les
+                 retours sur 404/754/1104 : 268 unités entre les deux traits d'un même
+                 canal, contre 240 auparavant. Les étiquettes françaises sont plus
+                 longues que les anglaises et passaient sous les flèches de retour. -->
+            <line class="dia-flow f-read" x1="136" y1="168" x2="136" y2="240" marker-end="url(#dia-ar-read)"/>
+            <line class="dia-flow f-read" x1="404" y1="240" x2="404" y2="168" marker-end="url(#dia-ar-read)"/>
             <text class="dia-label" x="270" y="199" text-anchor="middle" data-i18n="dia.a1">↓ every keystroke, relayed</text>
             <text class="dia-label" x="270" y="219" text-anchor="middle" data-i18n="dia.a2">↑ one frame to draw</text>
 
-            <line class="dia-flow f-run" x1="500" y1="168" x2="500" y2="240" marker-end="url(#dia-ar-run)"/>
-            <line class="dia-flow f-run" x1="740" y1="240" x2="740" y2="168" marker-end="url(#dia-ar-run)"/>
+            <line class="dia-flow f-run" x1="486" y1="168" x2="486" y2="240" marker-end="url(#dia-ar-run)"/>
+            <line class="dia-flow f-run" x1="754" y1="240" x2="754" y2="168" marker-end="url(#dia-ar-run)"/>
             <text class="dia-label" x="620" y="199" text-anchor="middle" data-i18n="dia.b1">↓ one verb, some names</text>
             <text class="dia-label" x="620" y="219" text-anchor="middle" data-i18n="dia.b2">↑ the output, as is</text>
 
-            <line class="dia-flow f-state plain" x1="850" y1="168" x2="850" y2="240" marker-end="url(#dia-ar-state)"/>
-            <line class="dia-flow f-state plain" x1="1090" y1="240" x2="1090" y2="168" marker-end="url(#dia-ar-state)"/>
+            <line class="dia-flow f-state plain" x1="836" y1="168" x2="836" y2="240" marker-end="url(#dia-ar-state)"/>
+            <line class="dia-flow f-state plain" x1="1104" y1="240" x2="1104" y2="168" marker-end="url(#dia-ar-state)"/>
             <text class="dia-label" x="970" y="199" text-anchor="middle" data-i18n="dia.c1">↓ the hook reads one line</text>
             <text class="dia-label" x="970" y="219" text-anchor="middle" data-i18n="dia.c2">↑ version + counters</text>
 
@@ -387,50 +390,60 @@
             <text class="dia-t on" x="840" y="384" data-i18n="dia.state1">Counts what is waiting, in the background.</text>
             <text class="dia-t" x="840" y="406" data-i18n="dia.state2">Never on the prompt's critical path.</text>
 
-            <!-- liaisons jigger / gestionnaires -->
-            <line class="dia-flow f-read" x1="150" y1="458" x2="150" y2="552" marker-end="url(#dia-ar-read)"/>
-            <line class="dia-flow f-read" x1="390" y1="552" x2="390" y2="458" marker-end="url(#dia-ar-read)"/>
+            <!-- liaisons jigger / gestionnaires : mêmes abscisses qu'au-dessus, un
+                 canal se lit sur une verticale d'un bout à l'autre du schéma. -->
+            <line class="dia-flow f-read" x1="136" y1="458" x2="136" y2="552" marker-end="url(#dia-ar-read)"/>
+            <line class="dia-flow f-read" x1="404" y1="552" x2="404" y2="458" marker-end="url(#dia-ar-read)"/>
             <text class="dia-label" x="270" y="490" text-anchor="middle" data-i18n="dia.a3">↓ reads catalog + installed</text>
             <text class="dia-label" x="270" y="510" text-anchor="middle" data-i18n="dia.a4">↑ candidates, badges, fixes</text>
 
-            <line class="dia-flow f-run" x1="500" y1="458" x2="500" y2="552" marker-end="url(#dia-ar-run)"/>
-            <line class="dia-flow f-run" x1="740" y1="552" x2="740" y2="458" marker-end="url(#dia-ar-run)"/>
+            <line class="dia-flow f-run" x1="486" y1="458" x2="486" y2="552" marker-end="url(#dia-ar-run)"/>
+            <line class="dia-flow f-run" x1="754" y1="552" x2="754" y2="458" marker-end="url(#dia-ar-run)"/>
             <text class="dia-label" x="620" y="490" text-anchor="middle" data-i18n="dia.b3">↓ the translated command</text>
             <text class="dia-label" x="620" y="510" text-anchor="middle" data-i18n="dia.b4">↑ raw stream, exit code</text>
 
-            <line class="dia-flow f-state" x1="850" y1="458" x2="850" y2="552" marker-end="url(#dia-ar-state)"/>
-            <line class="dia-flow f-state" x1="1090" y1="552" x2="1090" y2="458" marker-end="url(#dia-ar-state)"/>
+            <line class="dia-flow f-state" x1="836" y1="458" x2="836" y2="552" marker-end="url(#dia-ar-state)"/>
+            <line class="dia-flow f-state" x1="1104" y1="552" x2="1104" y2="458" marker-end="url(#dia-ar-state)"/>
             <text class="dia-label" x="970" y="490" text-anchor="middle" data-i18n="dia.c3">↓ queried in the background</text>
             <text class="dia-label" x="970" y="510" text-anchor="middle" data-i18n="dia.c4">↑ version + how many waiting</text>
 
-            <!-- bande 3 : les gestionnaires -->
-            <rect class="dia-band" x="70" y="560" width="1100" height="150" rx="10"/>
+            <!-- bande 3 : les gestionnaires. Six boîtes dans 1100 unités laissent 168
+                 de large, soit une vingtaine de caractères — ce qui suffit à l'anglais
+                 et pas au français. La note de chaque boîte tient donc sur deux lignes,
+                 une clé par ligne, et la boîte est assez haute pour les deux. -->
+            <rect class="dia-band" x="70" y="560" width="1100" height="164" rx="10"/>
             <text class="dia-eyebrow" x="96" y="590" data-i18n="dia.mgrs">THE PACKAGE MANAGERS</text>
             <text class="dia-sub" x="1144" y="590" text-anchor="end" data-i18n="dia.mgrsnote">each answers its own way — jigger adapts, they don't change</text>
 
-            <rect class="dia-box" x="90" y="608" width="168" height="82" rx="8"/>
-            <text class="dia-name" x="174" y="642" text-anchor="middle">brew</text>
-            <text class="dia-note" x="174" y="668" text-anchor="middle" data-i18n="dia.m1">catalog cached 24 h</text>
+            <rect class="dia-box" x="90" y="608" width="168" height="96" rx="8"/>
+            <text class="dia-name" x="174" y="640" text-anchor="middle">brew</text>
+            <text class="dia-note" x="174" y="666" text-anchor="middle" data-i18n="dia.m1">catalog</text>
+            <text class="dia-note" x="174" y="686" text-anchor="middle" data-i18n="dia.m1b">cached 24 h</text>
 
-            <rect class="dia-box" x="268" y="608" width="168" height="82" rx="8"/>
-            <text class="dia-name" x="352" y="642" text-anchor="middle">pacman</text>
-            <text class="dia-note" x="352" y="668" text-anchor="middle" data-i18n="dia.m2">it reads, yay drives</text>
+            <rect class="dia-box" x="268" y="608" width="168" height="96" rx="8"/>
+            <text class="dia-name" x="352" y="640" text-anchor="middle">pacman</text>
+            <text class="dia-note" x="352" y="666" text-anchor="middle" data-i18n="dia.m2">it reads,</text>
+            <text class="dia-note" x="352" y="686" text-anchor="middle" data-i18n="dia.m2b">yay drives</text>
 
-            <rect class="dia-box" x="446" y="608" width="168" height="82" rx="8"/>
-            <text class="dia-name" x="530" y="642" text-anchor="middle">yay</text>
-            <text class="dia-note" x="530" y="668" text-anchor="middle" data-i18n="dia.m3">repositories + AUR</text>
+            <rect class="dia-box" x="446" y="608" width="168" height="96" rx="8"/>
+            <text class="dia-name" x="530" y="640" text-anchor="middle">yay</text>
+            <text class="dia-note" x="530" y="666" text-anchor="middle" data-i18n="dia.m3">the repositories</text>
+            <text class="dia-note" x="530" y="686" text-anchor="middle" data-i18n="dia.m3b">and the AUR</text>
 
-            <rect class="dia-box" x="624" y="608" width="168" height="82" rx="8"/>
-            <text class="dia-name" x="708" y="642" text-anchor="middle">winget</text>
-            <text class="dia-note" x="708" y="668" text-anchor="middle" data-i18n="dia.m4">14,401 ids, cached</text>
+            <rect class="dia-box" x="624" y="608" width="168" height="96" rx="8"/>
+            <text class="dia-name" x="708" y="640" text-anchor="middle">winget</text>
+            <text class="dia-note" x="708" y="666" text-anchor="middle" data-i18n="dia.m4">14,401 ids,</text>
+            <text class="dia-note" x="708" y="686" text-anchor="middle" data-i18n="dia.m4b">cached</text>
 
-            <rect class="dia-box" x="802" y="608" width="168" height="82" rx="8"/>
-            <text class="dia-name" x="886" y="642" text-anchor="middle">scoop</text>
-            <text class="dia-note" x="886" y="668" text-anchor="middle" data-i18n="dia.m5">all on disk, no cache</text>
+            <rect class="dia-box" x="802" y="608" width="168" height="96" rx="8"/>
+            <text class="dia-name" x="886" y="640" text-anchor="middle">scoop</text>
+            <text class="dia-note" x="886" y="666" text-anchor="middle" data-i18n="dia.m5">all on disk,</text>
+            <text class="dia-note" x="886" y="686" text-anchor="middle" data-i18n="dia.m5b">no cache</text>
 
-            <rect class="dia-box" x="980" y="608" width="168" height="82" rx="8"/>
-            <text class="dia-name" x="1064" y="642" text-anchor="middle">ssh scp sftp</text>
-            <text class="dia-note" x="1064" y="668" text-anchor="middle" data-i18n="dia.m6">never run by jigger</text>
+            <rect class="dia-box" x="980" y="608" width="168" height="96" rx="8"/>
+            <text class="dia-name" x="1064" y="640" text-anchor="middle">ssh scp sftp</text>
+            <text class="dia-note" x="1064" y="666" text-anchor="middle" data-i18n="dia.m6">never run</text>
+            <text class="dia-note" x="1064" y="686" text-anchor="middle" data-i18n="dia.m6b">by jigger</text>
           </svg>
         </div>
 
