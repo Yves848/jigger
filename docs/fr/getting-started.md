@@ -273,8 +273,11 @@ le gestionnaire qui répond — rien d'autre. Les trois sont prises dans le mêm
 
 **Windows — `winget install fire`**
 
-*Pas encore capturé — `pwsh -File docs\media\capturer.ps1 -Preparer` sur la machine
-Windows la produit.*
+![Le popup sous Windows, complétant une ligne winget install](../media/out/windows-01-gestionnaire-natif.png)
+
+Le même cadre, les mêmes touches, les mêmes 1000 × 530 px — et un autre catalogue : ce
+sont des identifiants winget, `Éditeur.Paquet`, là où brew montre des noms de formules
+nus. Rien d'autre n'a bougé.
 
 Le même cadre sous Arch, `yay` répondant pour les deux catalogues à la fois :
 
@@ -344,6 +347,12 @@ PowerShell ; les deux s'écrivent indifféremment. **La façade s'ajoute, elle n
 de marcher exactement comme avant, popup compris.
 
 ![jg install fd, la façade répondant pour le gestionnaire qui connaît le paquet](../media/out/macos-02-jg.gif)
+
+Sous Windows, où deux gestionnaires cohabitent, la même ligne montre la façade faisant ce
+qu'un gestionnaire seul ne peut pas — la colonne de droite nomme qui répond pour chaque
+candidat :
+
+![jg install node sous Windows, scoop et winget répondant dans une seule liste](../media/out/windows-02-jg.png)
 
 ### Les douze verbes
 

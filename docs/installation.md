@@ -184,6 +184,8 @@ Get-Command jigger -All       # exactly one line
 Then type — do not press anything — `winget install fire`. The frame appears on its own,
 `◆` for a catalog package, `▣` for an application detected outside it.
 
+![The popup under a winget install line, on Windows](media/out/windows-01-gestionnaire-natif.png)
+
 ### 4. If you use `^R`, `^U` or other screen-taking keys
 
 PSReadLine keeps only the **last** handler bound to a chord, so a profile that binds

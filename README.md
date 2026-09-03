@@ -258,10 +258,11 @@ available manager fails cleanly, naming who would know how to do it and why it i
 this one — that's the capability model speaking, not a silent error.
 
 > **The winget and scoop columns: to be taken with caution.** They come from the spec
-> and, as of today, have never been checked against a real install — this machine is a
-> Mac. Only the brew column has actually run for real (`brew <verb> --help`, one at a
-> time). `internal/winget/verbs.go` and `internal/scoop/verbs.go` carry the same
-> warning as a comment; a Windows pass will lift it.
+> and, as of today, have never been checked against a real install. Only the brew column
+> has actually run for real (`brew <verb> --help`, one at a time).
+> `internal/winget/verbs.go` and `internal/scoop/verbs.go` carry the same warning as a
+> comment; a Windows pass will lift it — the captures are not that pass: they show the
+> popup, not the verb tables.
 
 ### Routing: never an automatic choice
 
@@ -300,7 +301,8 @@ jigger: --pm scoop — manager unavailable for this verb. Available: brew
 ```
 
 On Windows, with both winget and scoop present, a real ambiguity would open the picker
-(illustrative example, for lack of a Windows machine at hand):
+(illustrative example: the routing picker is the one frame Windows has no capture of yet
+— [docs/captures.md](docs/captures.md) says what the three scenarios cover):
 
 ```
 $ jg install git

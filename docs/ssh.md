@@ -7,6 +7,11 @@ address alongside. `⇥` inserts the one you're after.
 
 ![The SSH picker, showing the hosts of a ~/.ssh/config](media/out/macos-03-ssh.png)
 
+The same list, the same `~/.ssh/config`, on Windows — where nothing about SSH is
+platform-specific either:
+
+![The SSH picker on Windows, showing the same hosts](media/out/windows-03-ssh.png)
+
 It is the same popup, the same keys and the same frame as for `brew` or `winget` — only
 the catalogue changes. That is the whole idea:
 [ADR-0005](adr/0005-completion-sans-facade.md) says the completion contract is not

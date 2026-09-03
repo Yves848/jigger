@@ -272,8 +272,11 @@ the manager answering — nothing else. All three are captured in the same decor
 
 **Windows — `winget install fire`**
 
-*Not captured yet — `pwsh -File docs\media\capturer.ps1 -Preparer` on the Windows machine
-produces it.*
+![The popup on Windows, completing a winget install line](media/out/windows-01-gestionnaire-natif.png)
+
+Same frame, same keys, same 1000 × 530 px — and a different catalogue: these are winget
+package identifiers, `Publisher.Package`, where brew shows bare formula names. Nothing
+else moved.
 
 The same frame on Arch, `yay` answering for both catalogues at once:
 
@@ -348,6 +351,12 @@ PowerShell module; you can type either one.
 exactly as before, popup included.
 
 ![jg install fd, the facade answering for whichever manager knows the package](media/out/macos-02-jg.gif)
+
+On Windows, where two managers are installed side by side, the same line shows the facade
+doing the one thing a single manager cannot — the right-hand column names who answers for
+each candidate:
+
+![jg install node on Windows, scoop and winget answering in one list](media/out/windows-02-jg.png)
 
 ### The twelve verbs
 
