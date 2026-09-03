@@ -192,3 +192,23 @@ Vérifie la page, archive les fichiers, les dépose dans `/var/www/jigger/releas
 sur le LXC nginx, bascule le lien `current`, installe le vhost, puis ajoute la route HTTPS
 au Caddy. Les deux configurations sont validées avant rechargement et restaurées en cas
 d'échec. Demande les clés SSH du Proxmox maison.
+
+### Les fichiers ne sont pas mis en cache pour longtemps, et c'est voulu
+
+Aucun nom ne porte d'empreinte : `styles.css` s'appelle `styles.css` d'un déploiement à
+l'autre, et une capture refaite garde le sien — c'est le protocole qui l'impose, une
+image s'appelle d'après son scénario. Un cache à durée fixe sert donc l'**ancien** fichier
+sous le nouveau nom. Le vhost a longtemps posé `expires 7d` : un visiteur déjà venu
+pouvait recevoir le HTML du jour habillé par le CSS de la semaine précédente, sans qu'un
+rechargement ordinaire n'y change rien — les schémas SVG, dont les classes ne sont pas
+dans l'ancien CSS, tombaient alors sur les valeurs par défaut de SVG, c'est-à-dire un
+`fill` noir sur fond sombre.
+
+`deploy/nginx-jigger.conf` pose donc `expires -1` sur les images, les vidéos, le CSS et le
+JS : le navigateur revalide à chaque visite, nginx répond `304` sur l'`ETag` tant que rien
+n'a bougé. Quelques octets par visite, et un déploiement est visible tout de suite.
+
+C'est `expires` et non `add_header Cache-Control` : dans nginx, un `add_header` posé dans
+un `location` **annule** ceux du bloc serveur. L'ancienne version en posait un, et ces
+fichiers repartaient sans CSP, sans `nosniff`, sans `X-Frame-Options` ni
+`Referrer-Policy` — un effet de bord que rien ne signalait.
