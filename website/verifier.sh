@@ -94,6 +94,18 @@ for p in "${PAGES[@]:1}"; do
     fi
 done
 
+# --- 5. Aucune couleur écrite en dur hors des jetons -----------------------
+# Une couleur posée à la main dans une règle échappe à la palette : elle ne
+# suivra pas le jour où la palette bouge, et c'est exactement ce qui a fait
+# diverger la page de ses propres captures.
+hors_jetons="$(sed '/^:root {/,/^}/d' styles.css \
+               | grep -nE '#[0-9a-fA-F]{3,8}\b|rgba?\(' || true)"
+if [ -n "$hors_jetons" ]; then
+    echec "couleurs en dur hors de :root dans styles.css — $(printf '%s' "$hors_jetons" | head -3 | tr '\n' ' ')"
+else
+    ok "toutes les couleurs de styles.css viennent des jetons"
+fi
+
 if [ "$echecs" -gt 0 ]; then
     printf '\n%d contrôle(s) en échec.\n' "$echecs" >&2
     exit 1
