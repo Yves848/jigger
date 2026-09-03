@@ -273,8 +273,11 @@ le gestionnaire qui répond — rien d'autre. Les trois sont prises dans le mêm
 
 **Windows — `winget install fire`**
 
-*Pas encore capturé — `pwsh -File docs\media\capturer.ps1 -Preparer` sur la machine
-Windows la produit.*
+![Le popup sous Windows, complétant une ligne winget install](../media/out/windows-01-gestionnaire-natif.png)
+
+Le même cadre, les mêmes touches, les mêmes 1000 × 530 px — et un autre catalogue : ce
+sont des identifiants winget, `Éditeur.Paquet`, là où brew montre des noms de formules
+nus. Rien d'autre n'a bougé.
 
 Le même cadre sous Arch, `yay` répondant pour les deux catalogues à la fois :
 
@@ -327,6 +330,18 @@ Les badges devant les noms distinguent les deux natures de paquets : ◆ pour le
 ordinaire (formula, paquet de dépôt sous pacman et yay, catalogue winget, bucket `main`),
 ▣ pour l'autre (cask, paquet AUR, application hors catalogue, bucket tiers).
 
+### La regex, sur la même ligne
+
+`^R` change le filtre, et rien que le filtre : la ligne, le cadre et les touches ne
+bougent pas. Le titre dit quel mode est actif.
+
+![La même ligne filtrée en texte simple, puis en regex, après ^R](../media/out/windows-04-regex.gif)
+
+`winget install fire` propose vingt-et-un candidats par préfixe. `^R`, puis
+`(bird|blade)`, n'en garde que quatre — une alternance qu'aucune recherche par préfixe
+ne sait exprimer. `^R` à nouveau revient en arrière, et hors du popup la touche reste la
+recherche arrière dans l'historique du shell.
+
 ## 6. Une seule syntaxe : `jg`
 
 Tout ce qui précède parle la langue de chaque gestionnaire. `jg` en parle une seule pour
@@ -344,6 +359,30 @@ PowerShell ; les deux s'écrivent indifféremment. **La façade s'ajoute, elle n
 de marcher exactement comme avant, popup compris.
 
 ![jg install fd, la façade répondant pour le gestionnaire qui connaît le paquet](../media/out/macos-02-jg.gif)
+
+Sous Windows, où deux gestionnaires cohabitent, la même ligne montre la façade faisant ce
+qu'un gestionnaire seul ne peut pas — la colonne de droite nomme qui répond pour chaque
+candidat :
+
+![jg install node sous Windows, scoop et winget répondant dans une seule liste](../media/out/windows-02-jg.png)
+
+### Compléter, puis exécuter
+
+`⏎` complète la dernière partie **et** lance la ligne. À partir de là jigger ne fait
+plus rien du tout : ce qui défile est la sortie du gestionnaire, relayée telle quelle —
+barres de progression, questions et élévation comprises.
+
+Une installation, de la ligne vide au binaire installé :
+
+![jg install hexy, complété en hexyl, puis exécuté](../media/out/windows-05-installation.gif)
+
+Et une mise à jour, même geste, autre verbe — scoop remplaçant 1.16.1 par 1.20.0 :
+
+![jg upgrade hyperf, complété en hyperfine, puis exécuté](../media/out/windows-06-upgrade.gif)
+
+Les deux ont été enregistrées contre de vrais gestionnaires : elles installent et
+mettent à jour pour de bon, et [le protocole de capture](../captures.md) dit comment la
+machine est rendue ensuite.
 
 ### Les douze verbes
 

@@ -7,6 +7,11 @@ adresse en regard. `⇥` insère celui qu'on visait.
 
 ![Le sélecteur SSH, montrant les hôtes d'un ~/.ssh/config](../media/out/macos-03-ssh.png)
 
+La même liste, le même `~/.ssh/config`, sous Windows — où rien de ce qui touche à SSH
+n'est propre à la plateforme non plus :
+
+![Le sélecteur SSH sous Windows, montrant les mêmes hôtes](../media/out/windows-03-ssh.png)
+
 C'est le même popup, les mêmes touches et le même cadre que pour `brew` ou `winget` —
 seul le catalogue change. C'est tout le propos :
 [l'ADR-0005](../adr/0005-completion-sans-facade.md) dit que le contrat de complétion

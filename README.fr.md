@@ -261,10 +261,11 @@ gestionnaire disponible échoue proprement, en disant qui saurait faire ça et p
 n'est pas lui — c'est le modèle de capacités qui parle, pas une erreur muette.
 
 > **Colonnes winget et scoop : à prendre avec précaution.** Elles viennent du cahier des
-> charges et n'ont, à ce jour, jamais été vérifiées contre une vraie installation — cette
-> machine est un Mac. Seule la colonne brew a tourné pour de vrai (`brew <verbe> --help`,
-> une à une). `internal/winget/verbs.go` et `internal/scoop/verbs.go` portent le même
-> avertissement en commentaire ; une passe Windows le lèvera.
+> charges et n'ont, à ce jour, jamais été vérifiées contre une vraie installation. Seule
+> la colonne brew a tourné pour de vrai (`brew <verbe> --help`, une à une).
+> `internal/winget/verbs.go` et `internal/scoop/verbs.go` portent le même avertissement en
+> commentaire ; une passe Windows le lèvera — les captures ne sont pas cette passe : elles
+> montrent le popup, pas les tables de verbes.
 
 ### Le routage : jamais de choix automatique
 
@@ -303,7 +304,9 @@ jigger : --pm scoop — gestionnaire indisponible pour ce verbe. Disponibles : b
 ```
 
 Sous Windows, avec winget et scoop tous deux présents, une vraie ambiguïté ouvrirait le
-sélecteur (exemple illustratif, faute de machine Windows sous la main) :
+sélecteur (exemple illustratif : le sélecteur de routage est le seul cadre dont Windows
+n'a pas encore de capture — [docs/captures.md](docs/captures.md) dit ce que couvrent les
+trois scénarios) :
 
 ```
 $ jg install git

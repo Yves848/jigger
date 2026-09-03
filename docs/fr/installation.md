@@ -186,6 +186,8 @@ Get-Command jigger -All       # exactement une ligne
 Puis taper — sans rien presser — `winget install fire`. Le cadre arrive tout seul, `◆`
 pour un paquet du catalogue, `▣` pour une application détectée en dehors.
 
+![Le popup sous une ligne winget install, sous Windows](../media/out/windows-01-gestionnaire-natif.png)
+
 ### 4. Si vous utilisez `^R`, `^U` ou d'autres touches qui prennent l'écran
 
 PSReadLine ne garde que le **dernier** gestionnaire lié à un accord : un profil qui lie
