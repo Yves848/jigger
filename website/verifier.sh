@@ -144,6 +144,20 @@ for p in "${PAGES[@]}"; do
     done <<< "$(grep -o 'data-src="/media/[^"]*\.mp4"' "$p" | cut -d'"' -f2)"
 done
 
+# --- 8. Symétrie des blocs par système ------------------------------------
+# Sans JavaScript, les deux systèmes s'affichent : un bloc macOS sans son
+# pendant Windows n'est pas une section masquée, c'est un trou. Le compte
+# doit donc être le même dans chaque page.
+for p in "${PAGES[@]}"; do
+    n_mac="$(grep -c 'data-os-block="macos"' "$p" || true)"
+    n_win="$(grep -c 'data-os-block="windows"' "$p" || true)"
+    if [ "$n_mac" = "$n_win" ]; then
+        ok "blocs par système équilibrés dans $p ($n_mac de chaque)"
+    else
+        echec "$p : $n_mac bloc(s) macOS pour $n_win bloc(s) Windows"
+    fi
+done
+
 if [ "$echecs" -gt 0 ]; then
     printf '\n%d contrôle(s) en échec.\n' "$echecs" >&2
     exit 1

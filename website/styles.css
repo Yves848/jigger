@@ -250,3 +250,29 @@ section h3 { font-size: 17px; margin: 28px 0 4px; }
   color: var(--subtext);
   background: var(--mantle);
 }
+
+/* --- sélecteur de système ------------------------------------------------
+   Sans JavaScript, aucun data-os n'est posé sur <html> et les deux blocs
+   s'affichent, chacun sous son titre. La page ne se vide jamais. */
+.os-toggle { display: flex; gap: 2px; }
+.os-toggle button {
+  background: none; border: 0; color: var(--subtext);
+  font: inherit; font-size: 14px; padding: 5px 11px;
+  border-radius: 999px; cursor: pointer;
+}
+.os-toggle button.on { background: var(--mauve); color: var(--crust); }
+
+html[data-os="macos"]   [data-os-block="windows"] { display: none; }
+html[data-os="windows"] [data-os-block="macos"]   { display: none; }
+/* Le titre interne d'un bloc ne sert qu'au cas sans JavaScript : dès qu'un
+   système est choisi, le sélecteur le dit déjà. */
+html[data-os] .os-block-title { display: none; }
+
+.os-sticky {
+  position: sticky; top: 56px; z-index: 9;
+  background: var(--mantle);
+  border-bottom: 1px solid var(--surface-2);
+  color: var(--subtext); font-size: 14px;
+  padding: 8px 0;
+}
+.os-sticky .os-name { color: var(--text); font-weight: 600; }

@@ -162,6 +162,33 @@
     });
   }
 
+  /* --- sélecteur de système ---------------------------------------------
+     Une préférence de site, pas de page : elle vaut pour les trois. L'ordre
+     de décision — l'URL d'abord (un lien partagé doit imposer ce qu'il
+     montre), puis le choix mémorisé, puis la plateforme du navigateur. */
+  function setOs(os) {
+    os = (os === 'windows') ? 'windows' : 'macos';
+    docEl.setAttribute('data-os', os);
+    Array.prototype.forEach.call(document.querySelectorAll('.os-toggle button'), function (b) {
+      var on = b.getAttribute('data-os') === os;
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      b.classList.toggle('on', on);
+    });
+    try { localStorage.setItem('jigger-os', os); } catch (e) {}
+    activerDemos();
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('.os-toggle button'), function (b) {
+    b.addEventListener('click', function () { setOs(b.getAttribute('data-os')); });
+  });
+
+  var osUrl = null;
+  try { osUrl = new URLSearchParams(location.search).get('os'); } catch (e) {}
+  var osMemo = null;
+  try { osMemo = localStorage.getItem('jigger-os'); } catch (e) {}
+  var osNav = /win/i.test(navigator.platform || navigator.userAgent || '') ? 'windows' : 'macos';
+  setOs(osUrl || osMemo || osNav);
+
   setLang(initial);
   activerDemos();
 })();
