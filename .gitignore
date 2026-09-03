@@ -7,3 +7,4 @@ dist/
 # Espaces de travail isolés (worktrees) et scratch des sessions d'agent.
 /.claude/worktrees/
 /.superpowers/
+/.claude/settings.local.json

@@ -22,6 +22,11 @@ Import-Module (Join-Path $env:JIGGER_REPO 'shell/jigger.psm1')
 
 # L'historique de PSReadLine est la principale source de non-déterminisme : ↑ y
 # rejouerait ce que la machine a tapé avant.
+# Un curseur bloc, fixe : xterm.js — donc les tapes VHS — ne le fait pas clignoter,
+# et un curseur qui clignote rendrait l'image fixe aléatoire, présent ou absent selon
+# la phase. DECSCUSR 2, que Windows Terminal comprend, dit exactement cela.
+Write-Host -NoNewline "$([char]27)[2 q"
+
 Set-PSReadLineOption -HistorySaveStyle SaveNothing
 Set-PSReadLineOption -PredictionSource None
 Clear-Host

@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
-# Génère les tapes VHS des trois plateformes.
+# Génère les tapes VHS des deux plateformes qui savent jouer VHS : macOS et Omarchy.
+#
+# Windows n'en a pas. VHS y passerait par ttyd, qui n'existe pas, et par tmux, qui
+# n'existe pas non plus ; un tape « windows-*.tape » ne pourrait jamais être joué.
+# Le décor et les gestes y sont tenus par docs/media/capturer.ps1, qui reprend les
+# constantes ci-dessous et les Sleep des tapes, scénario par scénario.
 #
 # Le préambule — police, taille, dimensions, thème, vitesse de frappe — est écrit
 # ici UNE fois et recopié tel quel dans chaque tape. C'est ce qui garantit que la
-# capture de macOS, celle d'Omarchy et celle de Windows sont comparables : rien de
-# ce qui décide de l'image ne peut diverger par recopie manuelle.
+# capture de macOS et celle d'Omarchy sont comparables : rien de ce qui décide de
+# l'image ne peut diverger par recopie manuelle.
 #
 # Les tapes produits sont pour autant AUTONOMES : aucune directive « Source », rien
 # à installer d'autre que VHS. On copie un fichier sur la machine cible et on le
@@ -26,7 +31,7 @@ preambule() { # $1 = nom de sortie
 Output out/$1.gif
 Output out/$1.mp4
 
-# --- décor figé : identique sur macOS, Omarchy et Windows ------------------
+# --- décor figé : identique sur macOS et Omarchy (et repris par capturer.ps1) ---
 Set FontFamily "MesloLGL Nerd Font"
 Set FontSize 22
 Set Width 1000
@@ -38,9 +43,8 @@ Set Theme $THEME
 EOF
 }
 
-# Le shell capturé. Sur zsh il tourne dans tmux — sans quoi le popup ne s'affiche
-# pas du tout (DSR, cf. docs/captures.md). Sur PowerShell il n'en a pas besoin :
-# le module lit la position du curseur par PSReadLine, pas par le terminal.
+# Le shell capturé tourne dans tmux — sans quoi le popup ne s'affiche pas du tout
+# sous un enregistreur (DSR, cf. docs/captures.md).
 amorce_zsh() {
   cat <<'EOF'
 Set Shell "zsh"
@@ -53,17 +57,6 @@ Show
 Sleep 800ms
 EOF
 }
-amorce_pwsh() {
-  cat <<'EOF'
-Set Shell "pwsh"
-Hide
-Type "Clear-Host" Enter
-Sleep 1500ms
-Show
-Sleep 800ms
-EOF
-}
-
 ecrire() { # $1=plateforme  $2=nom  $3=amorce  $4=corps
   local f="tapes/$1-$2.tape"
   { preambule "$1-$2"; echo; $3; echo; printf '%s\n' "$4"; } > "$f"
@@ -93,14 +86,6 @@ Sleep 1s
 Tab
 Sleep 2500ms'
 
-ecrire windows 01-gestionnaire-natif amorce_pwsh 'Type "winget install fire"
-Sleep 3s
-Down
-Sleep 1s
-Down
-Sleep 1s
-Tab
-Sleep 2500ms'
 
 # --- 02 · la syntaxe unique « jg » ------------------------------------------
 # Le même geste, mais sans avoir à savoir quel gestionnaire connaît le paquet.
@@ -118,12 +103,6 @@ Sleep 1200ms
 Tab
 Sleep 2500ms'
 
-ecrire windows 02-jg amorce_pwsh 'Type "jg install fd"
-Sleep 3s
-Down
-Sleep 1200ms
-Tab
-Sleep 2500ms'
 
 # --- 03 · le sélecteur SSH ---------------------------------------------------
 # Une commande sans verbe : le catalogue vient dès l'espace. Les hôtes sont ceux
@@ -146,11 +125,3 @@ Sleep 1s
 Tab
 Sleep 2500ms'
 
-ecrire windows 03-ssh amorce_pwsh 'Type "ssh "
-Sleep 2500ms
-Down
-Sleep 1s
-Down
-Sleep 1s
-Tab
-Sleep 2500ms'

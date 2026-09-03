@@ -1,7 +1,7 @@
 Output out/macos-03-ssh.gif
 Output out/macos-03-ssh.mp4
 
-# --- décor figé : identique sur macOS, Omarchy et Windows ------------------
+# --- décor figé : identique sur macOS et Omarchy (et repris par capturer.ps1) ---
 Set FontFamily "MesloLGL Nerd Font"
 Set FontSize 22
 Set Width 1000
