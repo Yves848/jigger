@@ -58,10 +58,9 @@ network — jigger never opens a connection, and never asks a server anything.
   `HostName` to a host that does not have one.
 
 Everything is re-read on every keystroke. There is no cache and no warm-up: reading a
-few fragments of configuration costs a millisecond. SSH is one of the two providers in
-jigger with nothing to keep — scoop is the other, for a different reason: its catalogue
-is already laid out on disk, one manifest per package, so reading it costs less than
-caching it.
+few fragments of configuration costs a millisecond. SSH is not alone in having nothing
+to keep — scoop doesn't either, for a different reason: its catalogue is already laid
+out on disk, one manifest per package, so reading it costs less than caching it.
 
 ## When it shows nothing
 
