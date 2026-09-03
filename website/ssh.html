@@ -38,6 +38,106 @@
         <h1 data-i18n="ssh.h1">Not just package managers.</h1>
       </div>
     </section>
+
+    <!-- § 1 ------------------------------------------------------------- -->
+    <section id="pourquoi">
+      <div class="wrap">
+        <span class="eyebrow" data-i18n="ssh.why.eyebrow">Why a page of its own</span>
+        <h2 data-i18n="ssh.why.h2">The completion contract is not reserved for package managers.</h2>
+        <p class="lede" data-i18n="ssh.why.lede"><span class="mono">ssh</span> is not a package manager, and that is exactly what it demonstrates. It is the same popup, the same keys and the same frame as for <span class="mono">brew</span> or <span class="mono">winget</span> — only the catalogue changes. Nothing in the popup knows it is looking at servers rather than packages, because nothing in the contract a provider honours ever mentions packages.</p>
+        <p data-i18n="ssh.why.adr">That was written down before the picker existed: a provider announces candidates, and the popup draws them. The SSH picker is what proves the rule holds outside the four managers — and what a fifth, sixth or seventh provider would look like.</p>
+        <p><a class="btn ghost" href="https://gitlab.yg-devworks.com/yves/jigger/-/blob/main/docs/adr/0005-completion-sans-facade.md" data-i18n="ssh.why.link">Read ADR-0005 <span class="arw">→</span></a></p>
+      </div>
+    </section>
+
+    <!-- § 2 ------------------------------------------------------------- -->
+    <section id="en-action">
+      <div class="wrap">
+        <span class="eyebrow" data-i18n="ssh.action.eyebrow">In action</span>
+        <h2 data-i18n="ssh.action.h2">Type <span class="mono">ssh</span> and a space.</h2>
+        <p class="lede" data-i18n="ssh.action.lede">Both recordings read the same <span class="mono">~/.ssh/config</span> — a fixture of invented servers, identical on the two systems. Nothing about SSH is platform-specific.</p>
+
+        <div data-os-block="macos">
+          <h3 class="os-block-title">macOS</h3>
+          <figure class="demo">
+            <div class="demo-frame">
+              <video muted loop playsinline preload="none"
+                     poster="/media/macos-03-ssh.png"
+                     data-src="/media/macos-03-ssh.mp4"
+                     aria-labelledby="demo-mac03"></video>
+            </div>
+            <figcaption id="demo-mac03" data-i18n="ssh.demo.mac">Type <span class="mono">ssh</span> and a space: the servers of your <span class="mono">~/.ssh/config</span>, each with its address alongside. Captured on macOS.</figcaption>
+          </figure>
+        </div>
+
+        <div data-os-block="windows">
+          <h3 class="os-block-title">Windows</h3>
+          <figure class="demo">
+            <div class="demo-frame">
+              <video muted loop playsinline preload="none"
+                     poster="/media/windows-03-ssh.png"
+                     data-src="/media/windows-03-ssh.mp4"
+                     aria-labelledby="demo-win03"></video>
+            </div>
+            <figcaption id="demo-win03" data-i18n="ssh.demo.win">The same list and the same <span class="mono">~/.ssh/config</span>, under PowerShell — <span class="mono">atelier</span> included, which comes from an <span class="mono">Include</span>. Captured on Windows.</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- § 3 ------------------------------------------------------------- -->
+    <section id="ce-qui-compte">
+      <div class="wrap">
+        <span class="eyebrow" data-i18n="ssh.what.eyebrow">What it completes</span>
+        <h2 data-i18n="ssh.what.h2">Three commands, and three things worth knowing.</h2>
+
+        <ul class="grid-3">
+          <li>
+            <h3 data-i18n="ssh.what.1h">Three providers, not one</h3>
+            <p data-i18n="ssh.what.1p"><span class="mono">ssh</span>, <span class="mono">scp</span> and <span class="mono">sftp</span> are three separate providers rather than one answering to three names. They read the same file, but each answers for its own command — which is how <span class="mono">scp</span> can behave differently from the other two.</p>
+          </li>
+          <li>
+            <h3 data-i18n="ssh.what.2h">No verb, so the catalogue comes on the space</h3>
+            <p data-i18n="ssh.what.2p"><span class="mono">brew install fire</span> needs its subcommand before the catalogue means anything. <span class="mono">ssh</span> does not: the operand comes straight after the command name, so the servers appear on the space, with nothing else typed.</p>
+          </li>
+          <li>
+            <h3 data-i18n="ssh.what.3h"><span class="mono">scp</span> inserts a colon</h3>
+            <p data-i18n="ssh.what.3p">Picking <span class="mono">nas</span> behind <span class="mono">scp</span> inserts <span class="mono">nas:</span>, colon attached. It is not cosmetic — without it the command still runs, and does something else entirely.</p>
+          </li>
+        </ul>
+
+        <p data-i18n="ssh.what.local">The two lines below differ by one character, and only one of them reaches a server. The first copies <span class="mono">rapport.pdf</span> to a <strong>local</strong> file named <span class="mono">nas</span>, in the current directory — valid, silent, and wrong.</p>
+        <pre class="cmd"><code>scp rapport.pdf nas /tmp</code></pre>
+        <pre class="cmd"><code>scp rapport.pdf nas:/tmp</code></pre>
+        <p class="note" data-i18n="ssh.what.remote">The second is the one you meant. So <span class="mono">scp</span> gets the colon, and the other two don't: <span class="mono">ssh nas</span> and <span class="mono">sftp nas</span> want the bare name.</p>
+      </div>
+    </section>
+
+    <!-- § 4 ------------------------------------------------------------- -->
+    <section id="le-fichier">
+      <div class="wrap">
+        <span class="eyebrow" data-i18n="ssh.file.eyebrow">What it reads</span>
+        <h2 data-i18n="ssh.file.h2">One file, and nothing else.</h2>
+        <p class="lede" data-i18n="ssh.file.lede"><span class="mono">~/.ssh/config</span>. No <span class="mono">known_hosts</span>, no <span class="mono">/etc/ssh/ssh_config</span>, no network — jigger never opens a connection, and never asks a server anything.</p>
+
+        <!-- Le schéma du fichier SSH vient ici (tâche 9). -->
+        <div id="dia-ssh"></div>
+
+        <p data-i18n="ssh.file.fixture">The file behind both recordings holds an <span class="mono">Include</span>, six hosts and two patterns. The <span class="mono">Include</span> pulls in <span class="mono">atelier</span> from a second file, which is how the recordings show that includes are followed. The six — <span class="mono">passerelle</span>, <span class="mono">nas</span>, <span class="mono">proxmox</span>, <span class="mono">omarchy</span>, <span class="mono">windows</span> and <span class="mono">atelier</span> — are the ones the popup offers, each with its <span class="mono">HostName</span> to the right when it differs from the name. The two patterns, <span class="mono">Host *.exemple.net</span> and <span class="mono">Host *</span>, never appear: a name containing <span class="mono">*</span>, <span class="mono">?</span> or <span class="mono">!</span> is not a server, and offering it would insert something you cannot connect to.</p>
+        <p data-i18n="ssh.file.reread">Everything is re-read on every keystroke. There is no cache and no warm-up: reading a few fragments of configuration costs a millisecond, which makes SSH the only provider in jigger with nothing to keep.</p>
+        <p class="note" data-i18n="ssh.file.silence">On a machine with no <span class="mono">~/.ssh/config</span>, nothing appears at all — no popup, no empty box, no “no candidates”. Same when nothing matches what you typed. A provider with an empty catalogue draws no frame.</p>
+      </div>
+    </section>
+
+    <!-- § 5 ------------------------------------------------------------- -->
+    <section id="deja-la">
+      <div class="wrap">
+        <span class="eyebrow" data-i18n="ssh.cta.eyebrow">Nothing to add</span>
+        <h2 data-i18n="ssh.cta.h2">It ships with jigger.</h2>
+        <p class="lede" data-i18n="ssh.cta.lede">There is no separate install and no setting to switch on: the picker lives in the same binary and the same shell plugin as everything else. <span class="mono">JIGGER_COMMANDS</span> lists the commands that open the popup — drop <span class="mono">ssh</span>, <span class="mono">scp</span> and <span class="mono">sftp</span> from it and the picker is gone.</p>
+        <p><a class="btn primary" href="/utiliser.html" data-i18n="ssh.cta.link">Download, wire, use <span class="arw">→</span></a></p>
+      </div>
+    </section>
   </main>
 
   <footer class="site-footer">
