@@ -21,7 +21,8 @@
     'use.wire.h2': 'Le brancher dans votre shell.',
     'use.wire.mac': 'Une ligne <span class="mono">source</span> dans <span class="mono">~/.zshrc</span>, puis <span class="mono">exec zsh</span>. Elle couvre tous les gestionnaires présents sur la machine : le greffon n’a pas besoin qu’on lui dise s’il a affaire à brew ou à pacman, il regarde.',
     'use.wire.macorder': 'L’ordre des appels <span class="mono">source</span> n’a pas d’importance, starship compris — le greffon se place là où il doit dans les hooks de zsh.',
-    'use.wire.win': 'Un <span class="mono">Import-Module</span> dans <span class="mono">$PROFILE</span> — <span class="mono">notepad $PROFILE</span> l’ouvre — puis <span class="mono">. $PROFILE</span>, ou un nouvel onglet. Le bucket n’a installé que le binaire ; cette ligne est ce qui fait apparaître la fenêtre pendant la frappe.',
+    'use.wire.win': 'Le bucket n’a installé que le <strong>binaire</strong>. Le module — ce qui dessine la fenêtre — vient du dépôt : il faut donc le cloner d’abord. Le chemin ci-dessous est celui que reprend la suite de cette section ; n’importe quel autre convient, pourvu que la ligne suivante le désigne.',
+    'use.wire.winmod': 'Puis une ligne <span class="mono">Import-Module</span> dans <span class="mono">$PROFILE</span> — <span class="mono">notepad $PROFILE</span> l’ouvre, et <span class="mono">New-Item -ItemType File -Path $PROFILE -Force</span> le crée s’il n’existe pas encore — puis <span class="mono">. $PROFILE</span>, ou un nouvel onglet.',
     'use.wire.winorder': 'Ici l’ordre compte pour de bon : si vous utilisez oh-my-posh ou starship, importez jigger <strong>après</strong> lui. Et PSReadLine ne garde que le dernier gestionnaire lié à un raccourci — un profil qui lie <kbd>^R</kbd> après l’import reprend la touche, et la bascule regex devient inaccessible. Le guide montre comment la lui repasser.',
     'use.check.h2': 'Vérifier que c’est pris.',
     'use.check.mac': 'La version d’abord, puis qui répond. Un vieux binaire qui masque une installation plus récente dans le <span class="mono">PATH</span> est la panne la plus pénible à diagnostiquer — une ligne tranche.',
@@ -214,8 +215,12 @@
     if (immobile) return;
     Array.prototype.forEach.call(document.querySelectorAll('video[data-src]'), function (v) {
       /* offsetParent vaut null quand un ancêtre est en display:none — c'est
-         ainsi qu'on sait qu'une démonstration appartient au système inactif. */
-      if (v.offsetParent === null) return;
+         ainsi qu'on sait qu'une démonstration appartient au système inactif.
+         On la met en pause au lieu de simplement l'ignorer : une vidéo déjà
+         lancée continue de tourner une fois masquée, et après un aller-retour
+         macOS ↔ Windows toutes les démonstrations de la page décoderaient en
+         même temps, dont celles que personne ne regarde. */
+      if (v.offsetParent === null) { v.pause(); return; }
       if (!v.src) { v.src = v.getAttribute('data-src'); }
       var p = v.play();
       if (p && p.catch) { p.catch(function () {}); }

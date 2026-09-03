@@ -66,9 +66,14 @@ if [ "$RESEAU" = 1 ]; then
 fi
 
 # --- 3. Commandes d'installation ------------------------------------------
-# Chaque commande affichée doit exister mot pour mot dans le guide : si le guide
-# change et pas la page, la page ment.
-guide="$RACINE/docs/getting-started.md"
+# Chaque commande affichée doit exister mot pour mot dans l'un des deux guides :
+# si un guide change et pas la page, la page ment. Deux fichiers et non un seul,
+# parce que la marche à suivre est répartie entre eux — le parcours pas à pas
+# vit dans getting-started.md, le bloc à copier-coller par plateforme dans
+# installation.md, et le `git clone` du greffon Windows n'existe que là. Exiger
+# le seul getting-started.md revenait à interdire d'écrire une étape pourtant
+# documentée, donc à laisser le lecteur Windows sans son module.
+GUIDES=("$RACINE/docs/getting-started.md" "$RACINE/docs/installation.md")
 for p in "${PAGES[@]}"; do
     # `|| true` : une page sans commande fait sortir grep en 1, et `set -e`
     # arrêterait le vérificateur au milieu au lieu de passer à la page suivante.
@@ -79,10 +84,14 @@ for p in "${PAGES[@]}"; do
     # où l'incrément de $echecs serait perdu et où le premier échec masquerait les suivants.
     while IFS= read -r commande; do
         [ -z "$commande" ] && continue
-        if grep -Fq "$commande" "$guide"; then
-            ok "commande présente dans le guide : $commande"
+        trouve=""
+        for g in "${GUIDES[@]}"; do
+            if grep -Fq "$commande" "$g"; then trouve="$(basename "$g")"; break; fi
+        done
+        if [ -n "$trouve" ]; then
+            ok "commande présente dans $trouve : $commande"
         else
-            echec "commande absente du guide ($p) : $commande"
+            echec "commande absente de getting-started.md et d'installation.md ($p) : $commande"
         fi
     done <<< "$commandes"
 done

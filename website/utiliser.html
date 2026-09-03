@@ -90,8 +90,10 @@
 
         <div data-os-block="windows">
           <h3 class="os-block-title">Windows</h3>
-          <p data-i18n="use.wire.win">One <span class="mono">Import-Module</span> in <span class="mono">$PROFILE</span> — <span class="mono">notepad $PROFILE</span> opens it — then <span class="mono">. $PROFILE</span>, or a new tab. The bucket installed the binary only; this line is the part that makes the popup appear as you type.</p>
-          <pre class="cmd"><code data-verifier="install">Import-Module C:\path\to\jigger\shell\jigger.psm1</code></pre>
+          <p data-i18n="use.wire.win">The bucket installed the <strong>binary</strong> only. The module — the part that draws the popup — comes from the repository, so clone it first. The path below is the one the rest of this section uses; any other works, as long as the next line points at it.</p>
+          <pre class="cmd"><code data-verifier="install">git clone https://gitlab.yg-devworks.com/yves/jigger.git $HOME\git\jigger</code></pre>
+          <p data-i18n="use.wire.winmod">Then one <span class="mono">Import-Module</span> line in <span class="mono">$PROFILE</span> — <span class="mono">notepad $PROFILE</span> opens it, and <span class="mono">New-Item -ItemType File -Path $PROFILE -Force</span> creates it when it doesn't exist yet — then <span class="mono">. $PROFILE</span>, or a new tab.</p>
+          <pre class="cmd"><code data-verifier="install">Import-Module $HOME\git\jigger\shell\jigger.psm1</code></pre>
           <p class="note" data-i18n="use.wire.winorder">Here the order is real: if you use oh-my-posh or starship, import jigger <strong>after</strong> it. And PSReadLine keeps only the last handler bound to a chord — a profile that binds <kbd>^R</kbd> after the import takes the key back, and the regex toggle becomes unreachable. The guide shows how to hand it over.</p>
         </div>
       </div>
