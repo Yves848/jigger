@@ -144,6 +144,18 @@ section h3 { font-size: 17px; margin: 28px 0 4px; }
 .btn.ghost { border-color: var(--overlay); color: var(--text); }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
 
+/* --- flèche des liens ------------------------------------------------------
+   La flèche des liens n'avait aucune règle : elle était posée dans le HTML des
+   trois pages sans rien dire de plus qu'un caractère. Elle avance d'un cheveu
+   au survol du lien qui la porte — assez pour désigner le lien, pas assez pour
+   déplacer le texte. Sous prefers-reduced-motion, elle ne bouge plus. */
+.arw { display: inline-block; transition: transform .16s ease-out; }
+a:hover .arw { transform: translateX(3px); }
+@media (prefers-reduced-motion: reduce) {
+  .arw { transition: none; }
+  a:hover .arw { transform: none; }
+}
+
 /* --- grille de garanties --------------------------------------------------- */
 .grid-3 {
   list-style: none; padding: 0; margin: 28px 0 0;

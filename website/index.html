@@ -8,12 +8,12 @@
   <meta name="theme-color" content="#1e1e2e">
   <meta property="og:type" content="website">
   <meta property="og:title" content="jigger — one syntax for Homebrew, winget, scoop and pacman">
-  <meta property="og:description" content="A live package picker in your shell, and one syntax across four package managers. A small Go binary wired into zsh and PowerShell.">
+  <meta property="og:description" content="A live package picker in your shell, and one syntax across Homebrew, winget, scoop and pacman. A small Go binary wired into zsh and PowerShell.">
   <meta property="og:url" content="https://jigger.yg-devworks.com/">
   <meta property="og:image" content="https://jigger.yg-devworks.com/og.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="jigger — one syntax for Homebrew, winget, scoop and pacman">
-  <meta name="twitter:description" content="A live package picker in your shell, and one syntax across four package managers.">
+  <meta name="twitter:description" content="A live package picker in your shell, and one syntax across Homebrew, winget, scoop and pacman.">
   <meta name="twitter:image" content="https://jigger.yg-devworks.com/og.png">
   <link rel="icon" href="/jigger-icon.svg">
   <link rel="stylesheet" href="/styles.css">
@@ -45,26 +45,42 @@
         <span class="eyebrow" data-i18n="hero.eyebrow">macOS · Windows · Linux</span>
         <h1 data-i18n="hero.h1">Your package manager,<br><em>as you type.</em></h1>
         <p class="lede" data-i18n="hero.lede">
-          A frame appears under your prompt and follows every keystroke. And across
-          Homebrew, winget, scoop and pacman, one syntax instead of four.
+          A frame appears under your prompt and follows every keystroke. And one syntax
+          for Homebrew, winget, scoop and pacman, instead of one each.
         </p>
 
-        <!-- capture : jigger render --line "brew install fire" --cols 60 -->
-        <pre class="frame" aria-label="jigger in a terminal">❯ brew install fire
-╭──────────────────────────────────────────────────────────╮
-│❯ brew install                               jigger 0.15.0│
-│  ▣  firealpaca                                           │
-│  ▣  firebase-admin                                       │
-│  ◆  firebase-cli                                         │
-│  ▣  firebird-emu                                         │
-│  ▣  firecamp                                             │
-│                                                          │
-│   ⇥  insert   ↩  execute   ↓  browse   ^G  close         │
-╰──────────────────────────────────────────────────────────╯</pre>
+        <!-- L'enregistrement remplace le cadre qui était dessiné à la main ici :
+             la même ligne, mais telle qu'elle se passe. Une paire macOS / Windows,
+             au motif des deux autres pages — le visiteur voit son propre système. -->
+        <div data-os-block="macos">
+          <h3 class="os-block-title">macOS</h3>
+          <figure class="demo">
+            <div class="demo-frame">
+              <video muted loop playsinline preload="none"
+                     poster="/media/macos-01-gestionnaire-natif.png"
+                     data-src="/media/macos-01-gestionnaire-natif.mp4"
+                     aria-labelledby="home-mac01"></video>
+            </div>
+            <figcaption id="home-mac01" data-i18n="home.demo.mac01">brew install fire — the frame appears on its own and narrows with every letter. Captured on macOS.</figcaption>
+          </figure>
+        </div>
+
+        <div data-os-block="windows">
+          <h3 class="os-block-title">Windows</h3>
+          <figure class="demo">
+            <div class="demo-frame">
+              <video muted loop playsinline preload="none"
+                     poster="/media/windows-01-gestionnaire-natif.png"
+                     data-src="/media/windows-01-gestionnaire-natif.mp4"
+                     aria-labelledby="home-win01"></video>
+            </div>
+            <figcaption id="home-win01" data-i18n="home.demo.win01">winget install fire — the same frame and the same keys, another catalogue. Captured on Windows.</figcaption>
+          </figure>
+        </div>
 
         <div class="hero-actions">
-          <a class="btn primary" href="#install" data-i18n="hero.install">Install it <span class="arw">→</span></a>
-          <a class="btn ghost" href="https://gitlab.yg-devworks.com/yves/jigger" data-i18n="hero.source">Read the source</a>
+          <a class="btn primary" href="/utiliser.html#telecharger" data-i18n="hero.download">Download <span class="arw">→</span></a>
+          <a class="btn ghost" href="/utiliser.html#utiliser" data-i18n="hero.see">See it work <span class="arw">→</span></a>
         </div>
       </div>
     </section>
@@ -77,16 +93,6 @@
           Type a package-manager command and the frame appears on its own, narrowing
           down with every letter. Nothing to trigger, nothing to remember.
         </p>
-
-        <figure class="demo">
-          <div class="demo-frame">
-            <video muted loop playsinline preload="none"
-                   poster="/media/macos-01-gestionnaire-natif.png"
-                   data-src="/media/macos-01-gestionnaire-natif.mp4"
-                   aria-labelledby="demo-mac01"></video>
-          </div>
-          <figcaption id="demo-mac01" data-i18n="home.demo.mac01">brew install fire — the frame appears on its own and narrows with every letter. Captured on macOS.</figcaption>
-        </figure>
 
         <ul class="keys">
           <li><kbd>⇥</kbd> <span data-i18n="popup.k1">inserts the current candidate</span></li>
@@ -108,6 +114,7 @@
           <span class="mono">HostName</span> alongside. jigger never opens the connection
           — it completes the line you will run yourself, and shows nothing at all when it
           has no host to offer.
+          <a href="/ssh.html">The SSH picker has a page of its own <span class="arw">→</span></a>
         </p>
       </div>
     </section>
@@ -115,7 +122,7 @@
     <section id="facade">
       <div class="wrap">
         <span class="eyebrow" data-i18n="facade.eyebrow">One syntax</span>
-        <h2 data-i18n="facade.h2">Four dialects, one vocabulary.</h2>
+        <h2 data-i18n="facade.h2">One vocabulary, every dialect.</h2>
         <p class="lede" data-i18n="facade.lede">
           <span class="mono">jg install fd</span> reaches whichever of Homebrew, winget,
           scoop or pacman knows <span class="mono">fd</span> — without you having to know
@@ -178,7 +185,7 @@
 
         <div class="diagram">
           <svg viewBox="0 0 1240 740" role="img" aria-labelledby="dia-title">
-            <title id="dia-title" data-i18n="dia.alt">Three bands: your shell on top, jigger in the middle, the six package managers at the bottom, linked by three channels — completion reading catalogs, the facade running a translated command, and the prompt counting upgrades in the background.</title>
+            <title id="dia-title" data-i18n="dia.alt">Three bands: your shell on top, jigger in the middle, the five package managers and the ssh commands at the bottom, linked by three channels — completion reading catalogs, the facade running a translated command, and the prompt counting upgrades in the background.</title>
             <defs>
               <marker id="dia-ar-read" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path class="mk-read" d="M0 0 L10 5 L0 10 z"/></marker>
               <marker id="dia-ar-run" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path class="mk-run" d="M0 0 L10 5 L0 10 z"/></marker>
@@ -231,7 +238,7 @@
             <rect class="dia-box" x="470" y="306" width="300" height="118" rx="8"/>
             <text class="dia-tag c-run" x="490" y="332" data-i18n="dia.run">RUN</text>
             <text class="dia-mono" x="490" y="358">jg &lt;verb&gt; [--pm] [--json]</text>
-            <text class="dia-t on" x="490" y="384" data-i18n="dia.run1">Twelve verbs into four dialects.</text>
+            <text class="dia-t on" x="490" y="384" data-i18n="dia.run1">Twelve verbs into every dialect.</text>
             <text class="dia-t" x="490" y="406" data-i18n="dia.run2">Routed by catalog, never by setting.</text>
 
             <rect class="dia-box" x="820" y="306" width="300" height="118" rx="8"/>
@@ -356,34 +363,26 @@
       </div>
     </section>
 
+    <!-- Les commandes ne vivent plus qu'à un seul endroit : utiliser.html. Une
+         page qui les recopie finit par les recopier fausses. -->
     <section id="install">
       <div class="wrap">
-        <span class="eyebrow" data-i18n="install.eyebrow">Install</span>
-        <h2 data-i18n="install.h2">Three lines, on any of the three.</h2>
-
-        <h3 data-i18n="install.mac">macOS and Linux — Homebrew</h3>
-        <pre class="cmd"><code data-verifier="install">brew tap yves/cocktails https://gitlab.yg-devworks.com/yves/homebrew-cocktails.git</code></pre>
-        <pre class="cmd"><code data-verifier="install">brew install jigger</code></pre>
-
-        <h3 data-i18n="install.win">Windows — scoop</h3>
-        <pre class="cmd"><code data-verifier="install">scoop bucket add jigger https://gitlab.yg-devworks.com/yves/scoop-jigger.git</code></pre>
-        <pre class="cmd"><code data-verifier="install">scoop install jigger</code></pre>
-        <p class="muted-note" data-i18n="install.winp">
-          Prebuilt binary, nothing to compile. To build from a clone instead — while
-          developing, or to run something not released yet — the repository ships
-          <span class="mono">install-windows.ps1</span>. There is no winget package.
+        <span class="eyebrow" data-i18n="cta.eyebrow">Install</span>
+        <h2 data-i18n="cta.h2">Two lines, then one in your shell.</h2>
+        <p class="lede" data-i18n="cta.lede">
+          Homebrew on macOS and Linux, scoop on Windows, <span class="mono">go install</span>
+          anywhere else. Then one <span class="mono">source</span> line in
+          <span class="mono">~/.zshrc</span>, or one <span class="mono">Import-Module</span>
+          in your PowerShell profile.
         </p>
-
-        <h3 data-i18n="install.go">Any platform — Go</h3>
-        <pre class="cmd"><code data-verifier="install">go install gitlab.yg-devworks.com/yves/jigger@latest</code></pre>
-
-        <p data-i18n="install.plugin">
-          Then wire the plugin into your shell — one <span class="mono">source</span> line
-          in <span class="mono">~/.zshrc</span>, one <span class="mono">Import-Module</span>
-          in your PowerShell profile. The guide walks through both, and through what to do
-          when nothing shows up.
+        <p class="muted-note" data-i18n="cta.where">
+          The commands live on a page of their own, next to what to check when nothing
+          shows up, the keys, and the settings worth knowing on day one.
         </p>
-        <a class="btn primary" href="https://gitlab.yg-devworks.com/yves/jigger/-/blob/main/docs/getting-started.md" data-i18n="install.guide">Read the getting-started guide <span class="arw">→</span></a>
+        <div class="hero-actions">
+          <a class="btn primary" href="/utiliser.html#telecharger" data-i18n="cta.link">Download, wire, use <span class="arw">→</span></a>
+          <a class="btn ghost" href="https://gitlab.yg-devworks.com/yves/jigger" data-i18n="cta.source">Read the source</a>
+        </div>
       </div>
     </section>
   </main>
