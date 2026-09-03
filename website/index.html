@@ -31,6 +31,7 @@
       <div class="os-toggle" role="group" aria-label="Operating system">
         <button type="button" data-os="macos" aria-pressed="true">macOS</button>
         <button type="button" data-os="windows" aria-pressed="false">Windows</button>
+        <button type="button" data-os="omarchy" aria-pressed="false">Omarchy</button>
       </div>
       <div class="lang-toggle" role="group" aria-label="Language">
         <button type="button" data-lang="en" aria-pressed="true">EN</button>
@@ -50,8 +51,9 @@
         </p>
 
         <!-- L'enregistrement remplace le cadre qui était dessiné à la main ici :
-             la même ligne, mais telle qu'elle se passe. Une paire macOS / Windows,
-             au motif des deux autres pages — le visiteur voit son propre système. -->
+             la même ligne, mais telle qu'elle se passe. Un bloc par système, au
+             motif des deux autres pages — le visiteur voit le sien. Omarchy n'a
+             pas encore d'enregistrement : il le dit, plutôt que de laisser un trou. -->
         <div data-os-block="macos">
           <h3 class="os-block-title">macOS</h3>
           <figure class="demo">
@@ -76,6 +78,11 @@
             </div>
             <figcaption id="home-win01" data-i18n="home.demo.win01">winget install fire — the same frame and the same keys, another catalogue. Captured on Windows.</figcaption>
           </figure>
+        </div>
+
+        <div data-os-block="omarchy">
+          <h3 class="os-block-title">Omarchy</h3>
+          <p class="demo-absent" data-i18n="home.demo.omarchy">On Arch — Omarchy included — the same frame answers for <span class="mono">pacman</span> and <span class="mono">yay</span>, repositories and the AUR in a single list. No recording of it exists yet: the two above were captured on the machines that were reachable.</p>
         </div>
 
         <div class="hero-actions">

@@ -32,6 +32,7 @@
       <div class="os-toggle" role="group" aria-label="Operating system">
         <button type="button" data-os="macos" aria-pressed="true">macOS</button>
         <button type="button" data-os="windows" aria-pressed="false">Windows</button>
+        <button type="button" data-os="omarchy" aria-pressed="false">Omarchy</button>
       </div>
       <div class="lang-toggle" role="group" aria-label="Language">
         <button type="button" data-lang="en" aria-pressed="true">EN</button>
@@ -55,6 +56,7 @@
         <span data-i18n="use.showing">Showing commands for</span>
         <span class="os-name" data-os-block="macos">macOS</span>
         <span class="os-name" data-os-block="windows">Windows</span>
+        <span class="os-name" data-os-block="omarchy">Omarchy</span>
       </div>
     </div>
 
@@ -78,6 +80,16 @@
           <pre class="cmd"><code data-verifier="install">scoop bucket add jigger https://gitlab.yg-devworks.com/yves/scoop-jigger.git</code></pre>
           <pre class="cmd"><code data-verifier="install">scoop install jigger</code></pre>
           <p class="note" data-i18n="use.dl.winup">To upgrade later: <span class="mono">scoop update jigger</span>. There is no winget package.</p>
+        </div>
+
+        <div data-os-block="omarchy">
+          <h3 class="os-block-title">Omarchy</h3>
+          <p data-i18n="use.dl.omarchy">Go, because there is <strong>no jigger package</strong> — neither in the Arch repositories nor in the AUR. It is not a lesser route: jigger has no runtime dependency beyond the managers themselves, so the compiled binary is the whole of it.</p>
+          <pre class="cmd"><code data-verifier="install">sudo pacman -S --needed go git zsh</code></pre>
+          <pre class="cmd"><code data-verifier="install">go install gitlab.yg-devworks.com/yves/jigger@latest</code></pre>
+          <p data-i18n="use.dl.omarchypath">The binary lands in <span class="mono">$GOBIN</span> — <span class="mono">~/go/bin</span> by default. Put it on the <span class="mono">PATH</span> if it isn't already:</p>
+          <pre class="cmd"><code data-verifier="install">export PATH="$HOME/go/bin:$PATH"</code></pre>
+          <p class="note" data-i18n="use.dl.omarchyup">To upgrade later: the same <span class="mono">go install</span> line — <span class="mono">@latest</span> fetches the newest tag each time.</p>
         </div>
 
         <p class="note" data-i18n="use.dl.go">Any platform, if you have Go: <span class="mono">go install gitlab.yg-devworks.com/yves/jigger@latest</span></p>
@@ -105,6 +117,15 @@
           <pre class="cmd"><code data-verifier="install">Import-Module $HOME\git\jigger\shell\jigger.psm1</code></pre>
           <p class="note" data-i18n="use.wire.winorder">Here the order is real: if you use oh-my-posh or starship, import jigger <strong>after</strong> it. And PSReadLine keeps only the last handler bound to a chord — a profile that binds <kbd>^R</kbd> after the import takes the key back, and the regex toggle becomes unreachable. The guide shows how to hand it over.</p>
         </div>
+
+        <div data-os-block="omarchy">
+          <h3 class="os-block-title">Omarchy</h3>
+          <p data-i18n="use.wire.omarchy">The plugin is <strong>not</strong> in the Go module — it comes from the repository, so clone it first. The path below is the one the next line points at; any other works.</p>
+          <pre class="cmd"><code data-verifier="install">git clone https://gitlab.yg-devworks.com/yves/jigger.git ~/git/jigger</code></pre>
+          <p data-i18n="use.wire.omarchysource">Then one <span class="mono">source</span> line in <span class="mono">~/.zshrc</span>, and <span class="mono">exec zsh</span>. It covers both managers at once: the plugin doesn't need to be told whether it faces pacman or yay, it looks.</p>
+          <pre class="cmd"><code data-verifier="install">source ~/git/jigger/shell/jigger.plugin.zsh</code></pre>
+          <p class="note" data-i18n="use.wire.omarchykeep">Keep the clone: <span class="mono">git pull</span> updates the plugin, <span class="mono">go install …@latest</span> the binary, and the two travel together — the plugin refuses to load against a binary older than 0.11.0, and says so.</p>
+        </div>
       </div>
     </section>
 
@@ -128,7 +149,14 @@
           <pre class="cmd"><code data-verifier="install">Get-Command jigger -All</code></pre>
         </div>
 
-        <p data-i18n="use.check.try">Then open a fresh shell and type <span class="mono">brew ins</span> — <span class="mono">winget ins</span> on Windows — <strong>without pressing Enter</strong>. The frame should appear under the prompt and narrow down with every letter.</p>
+        <div data-os-block="omarchy">
+          <h3 class="os-block-title">Omarchy</h3>
+          <p data-i18n="use.check.omarchy">The version first, then who answers. An old binary shadowing a newer install in the <span class="mono">PATH</span> is the most painful failure to diagnose — one line settles it.</p>
+          <pre class="cmd"><code data-verifier="install">jigger --version</code></pre>
+          <pre class="cmd"><code data-verifier="install">which -a jigger</code></pre>
+        </div>
+
+        <p data-i18n="use.check.try">Then open a fresh shell and type <span class="mono">brew ins</span> — <span class="mono">pacman ins</span> on Arch, <span class="mono">winget ins</span> on Windows — <strong>without pressing Enter</strong>. The frame should appear under the prompt and narrow down with every letter.</p>
         <p class="note" data-i18n="use.check.note">Nothing shows up? The plugin says so when it refuses to load: a message, at shell startup, reports that the binary is missing from the <span class="mono">PATH</span>, or that it is too old for this plugin. On the very first use the frame may say “building the catalog…” — jigger never holds up a keystroke waiting on a package manager, so it builds its catalog in the background instead.</p>
       </div>
     </section>
@@ -169,6 +197,11 @@
           </figure>
         </div>
 
+        <div data-os-block="omarchy">
+          <h4 class="os-block-title">Omarchy</h4>
+          <p class="demo-absent" data-i18n="use.demo.omarchy01"><span class="mono">yay -S visual-studio</span> shows repositories and the AUR in a single list — <span class="mono">◆</span> for a repository package, <span class="mono">▣</span> for an AUR one, <span class="mono">●</span> for what is already installed. No recording of it exists yet.</p>
+        </div>
+
         <h3 data-i18n="use.now.jgh">One syntax: <span class="mono">jg</span></h3>
         <p data-i18n="use.now.jg"><span class="mono">jg install fd</span> reaches whichever manager knows <span class="mono">fd</span>, without you having to know which. The facade only adds: <span class="mono">brew install fd</span> keeps working exactly as before, popup included.</p>
 
@@ -198,6 +231,11 @@
           </figure>
         </div>
 
+        <div data-os-block="omarchy">
+          <h4 class="os-block-title">Omarchy</h4>
+          <p class="demo-absent" data-i18n="use.demo.omarchy02">The facade behaves the same, with one detail that belongs to Arch: pacman and yay are two doors onto the same database, so <span class="mono">jg</span> lists your packages <strong>once</strong>, never twice. No recording of it exists yet.</p>
+        </div>
+
         <h3 data-i18n="use.now.regexh">Regex, on the same line</h3>
         <p data-i18n="use.now.regex"><kbd>^R</kbd> switches the filter, and only the filter: the line, the frame and the keys don't move. The title says which mode is on, and outside the popup the key remains your shell's reverse history search.</p>
 
@@ -217,6 +255,11 @@
             </div>
             <figcaption id="use-win04" data-i18n="use.demo.win04">winget install fire offers twenty-one candidates by prefix. ^R, then (bird|blade), keeps four — an alternation no prefix search can express. Captured on Windows.</figcaption>
           </figure>
+        </div>
+
+        <div data-os-block="omarchy">
+          <h4 class="os-block-title">Omarchy</h4>
+          <p class="demo-absent" data-i18n="use.regex.omarchy">The same <kbd>^R</kbd> toggle works on Arch, where an alternation earns its keep: <span class="mono">(gtk|qt)</span> over a repository catalogue of thousands of entries. Its capture isn't recorded yet.</p>
         </div>
 
         <h3 data-i18n="use.now.runh">Completing, then running</h3>
@@ -240,6 +283,11 @@
           </figure>
         </div>
 
+        <div data-os-block="omarchy">
+          <h4 class="os-block-title">Omarchy</h4>
+          <p class="demo-absent" data-i18n="use.install.omarchy">Same on Arch, with yay answering — and its own prompts relayed as is, the AUR ones included, since jigger does nothing at all once the line is run. No capture of it is recorded yet.</p>
+        </div>
+
         <h3 data-i18n="use.now.upgh">And an upgrade</h3>
         <p data-i18n="use.now.upg">Same gesture, different verb. Nothing here is specific to installing: <span class="mono">upgrade</span>, <span class="mono">search</span> and <span class="mono">outdated</span> are completed and run the same way.</p>
 
@@ -259,6 +307,11 @@
             </div>
             <figcaption id="use-win06" data-i18n="use.demo.win06">jg upgrade hyperf, completed to hyperfine, then run — scoop replacing 1.16.1 with 1.20.0. Captured on Windows, against a real manager.</figcaption>
           </figure>
+        </div>
+
+        <div data-os-block="omarchy">
+          <h4 class="os-block-title">Omarchy</h4>
+          <p class="demo-absent" data-i18n="use.upgrade.omarchy">Same gesture on Arch. Note that yay drives and pacman only reads, which is why <span class="mono">jg install --pm pacman</span> does not exist while yay is installed. Its capture isn't recorded yet.</p>
         </div>
       </div>
     </section>

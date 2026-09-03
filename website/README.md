@@ -56,9 +56,10 @@ contrôles :
    sans affiche montre un rectangle noir tant qu'elle n'a pas chargé, et rien du tout
    sous `prefers-reduced-motion` : l'affiche est le contenu de repli, pas un ornement.
 8. **Symétrie des blocs par système** — dans chaque page, le nombre de blocs
-   `data-os-block="macos"` doit égaler celui des blocs `data-os-block="windows"`. Sans
-   JavaScript les deux systèmes s'affichent : un bloc macOS sans son pendant Windows
-   n'est pas une section masquée, c'est un trou.
+   `data-os-block="macos"`, `="windows"` et `="omarchy"` doit être le même. Sans
+   JavaScript les trois systèmes s'affichent : un bloc macOS sans son pendant Omarchy
+   n'est pas une section masquée, c'est un trou — même quand un système n'a pas encore
+   de capture, il a un bloc « demo-absent » qui le dit.
 
 ## Traduire
 

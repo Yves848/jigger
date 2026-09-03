@@ -32,6 +32,7 @@
       <div class="os-toggle" role="group" aria-label="Operating system">
         <button type="button" data-os="macos" aria-pressed="true">macOS</button>
         <button type="button" data-os="windows" aria-pressed="false">Windows</button>
+        <button type="button" data-os="omarchy" aria-pressed="false">Omarchy</button>
       </div>
       <div class="lang-toggle" role="group" aria-label="Language">
         <button type="button" data-lang="en" aria-pressed="true">EN</button>
@@ -64,7 +65,7 @@
       <div class="wrap">
         <span class="eyebrow" data-i18n="ssh.action.eyebrow">In action</span>
         <h2 data-i18n="ssh.action.h2">Type <span class="mono">ssh</span> and a space.</h2>
-        <p class="lede" data-i18n="ssh.action.lede">Both recordings read the same <span class="mono">~/.ssh/config</span> — a fixture of invented servers, identical on the two systems. Nothing about SSH is platform-specific.</p>
+        <p class="lede" data-i18n="ssh.action.lede">The recordings below read the same <span class="mono">~/.ssh/config</span> — a fixture of invented servers, identical from one system to the next. Nothing about SSH is platform-specific, which is why one recording is enough to show what all of them do.</p>
 
         <div data-os-block="macos">
           <h3 class="os-block-title">macOS</h3>
@@ -90,6 +91,11 @@
             </div>
             <figcaption id="demo-win03" data-i18n="ssh.demo.win">The same list and the same <span class="mono">~/.ssh/config</span>, under PowerShell — <span class="mono">atelier</span> included, which comes from an <span class="mono">Include</span>. Captured on Windows.</figcaption>
           </figure>
+        </div>
+
+        <div data-os-block="omarchy">
+          <h3 class="os-block-title">Omarchy</h3>
+          <p class="demo-absent" data-i18n="ssh.demo.omarchy">Nothing changes on Arch: the picker reads <span class="mono">~/.ssh/config</span> and nothing else, so it behaves there exactly as in the two recordings above. None was captured on Omarchy yet.</p>
         </div>
       </div>
     </section>

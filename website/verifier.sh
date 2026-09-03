@@ -11,6 +11,11 @@ RESEAU=0
 # Les trois pages du site. Tout contrôle qui lit « la page » les lit toutes.
 PAGES=(index.html utiliser.html ssh.html)
 
+# Les systèmes que le site montre. Le sélecteur en a trois depuis qu'Omarchy s'y
+# est ajouté ; les énumérer ici plutôt que de les écrire en dur dans le contrôle 8
+# fait qu'un quatrième ne demandera qu'une ligne.
+SYSTEMES=(macos windows omarchy)
+
 for p in "${PAGES[@]}"; do
     [ -f "$p" ] || { printf 'ÉCHEC  — page absente : %s\n' "$p" >&2; exit 1; }
 done
@@ -164,16 +169,28 @@ for p in "${PAGES[@]}"; do
 done
 
 # --- 8. Symétrie des blocs par système ------------------------------------
-# Sans JavaScript, les deux systèmes s'affichent : un bloc macOS sans son
-# pendant Windows n'est pas une section masquée, c'est un trou. Le compte
-# doit donc être le même dans chaque page.
+# Sans JavaScript, TOUS les systèmes s'affichent : un bloc macOS sans son
+# pendant Omarchy n'est pas une section masquée, c'est un trou. Le compte doit
+# donc être le même pour chacun, dans chaque page — y compris quand un système
+# n'a pas encore de capture : il a alors un bloc « demo-absent », qui dit
+# l'absence au lieu de la laisser béer.
 for p in "${PAGES[@]}"; do
-    n_mac="$(grep -c 'data-os-block="macos"' "$p" || true)"
-    n_win="$(grep -c 'data-os-block="windows"' "$p" || true)"
-    if [ "$n_mac" = "$n_win" ]; then
-        ok "blocs par système équilibrés dans $p ($n_mac de chaque)"
+    reference_n=""
+    detail=""
+    equilibre=1
+    for sys in "${SYSTEMES[@]}"; do
+        n="$(grep -c "data-os-block=\"$sys\"" "$p" || true)"
+        detail="$detail $sys=$n"
+        if [ -z "$reference_n" ]; then
+            reference_n="$n"
+        elif [ "$n" != "$reference_n" ]; then
+            equilibre=0
+        fi
+    done
+    if [ "$equilibre" = 1 ]; then
+        ok "blocs par système équilibrés dans $p ($reference_n de chaque)"
     else
-        echec "$p : $n_mac bloc(s) macOS pour $n_win bloc(s) Windows"
+        echec "$p : blocs déséquilibrés —$detail"
     fi
 done
 

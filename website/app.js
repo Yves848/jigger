@@ -21,6 +21,9 @@
     'use.dl.macup': 'Pour mettre à jour ensuite : <span class="mono">brew upgrade jigger</span>.',
     'use.dl.win': 'scoop, depuis le bucket du projet. Depuis la v0.10.0, les publications embarquent des binaires précompilés : rien à compiler, pas de Go à installer. <span class="mono">scoop bucket add</span> prend deux arguments — le nom local que vous choisissez, puis le dépôt ; ne passer que le nom fait chercher scoop dans son propre annuaire, et il répond <span class="mono">unknown bucket</span>.',
     'use.dl.winup': 'Pour mettre à jour ensuite : <span class="mono">scoop update jigger</span>. Il n’existe pas de paquet winget.',
+    'use.dl.omarchy': 'Go, parce qu’il n’existe <strong>aucun paquet jigger</strong> — ni dans les dépôts d’Arch, ni dans l’AUR. Ce n’est pas une route au rabais : jigger n’a aucune dépendance d’exécution en dehors des gestionnaires eux-mêmes, si bien que le binaire compilé est tout ce qu’il y a.',
+    'use.dl.omarchypath': 'Le binaire arrive dans <span class="mono">$GOBIN</span> — <span class="mono">~/go/bin</span> par défaut. Le mettre sur le <span class="mono">PATH</span> s’il n’y est pas :',
+    'use.dl.omarchyup': 'Pour mettre à jour ensuite : la même ligne <span class="mono">go install</span> — <span class="mono">@latest</span> va chercher le dernier tag à chaque fois.',
     'use.dl.go': 'Toute plateforme, si vous avez Go : <span class="mono">go install gitlab.yg-devworks.com/yves/jigger@latest</span>',
     'use.wire.h2': 'Le brancher dans votre shell.',
     'use.wire.mac': 'Une ligne <span class="mono">source</span> dans <span class="mono">~/.zshrc</span>, puis <span class="mono">exec zsh</span>. Elle couvre tous les gestionnaires présents sur la machine : le greffon n’a pas besoin qu’on lui dise s’il a affaire à brew ou à pacman, il regarde.',
@@ -28,10 +31,14 @@
     'use.wire.win': 'Le bucket n’a installé que le <strong>binaire</strong>. Le module — ce qui dessine la fenêtre — vient du dépôt : il faut donc le cloner d’abord. Le chemin ci-dessous est celui que reprend la suite de cette section ; n’importe quel autre convient, pourvu que la ligne suivante le désigne.',
     'use.wire.winmod': 'Puis une ligne <span class="mono">Import-Module</span> dans <span class="mono">$PROFILE</span> — <span class="mono">notepad $PROFILE</span> l’ouvre, et <span class="mono">New-Item -ItemType File -Path $PROFILE -Force</span> le crée s’il n’existe pas encore — puis <span class="mono">. $PROFILE</span>, ou un nouvel onglet.',
     'use.wire.winorder': 'Ici l’ordre compte pour de bon : si vous utilisez oh-my-posh ou starship, importez jigger <strong>après</strong> lui. Et PSReadLine ne garde que le dernier gestionnaire lié à un raccourci — un profil qui lie <kbd>^R</kbd> après l’import reprend la touche, et la bascule regex devient inaccessible. Le guide montre comment la lui repasser.',
+    'use.wire.omarchy': 'Le greffon n’est <strong>pas</strong> dans le module Go — il vient du dépôt, qu’il faut donc cloner d’abord. Le chemin ci-dessous est celui que vise la ligne suivante ; n’importe quel autre convient.',
+    'use.wire.omarchysource': 'Puis une ligne <span class="mono">source</span> dans <span class="mono">~/.zshrc</span>, et <span class="mono">exec zsh</span>. Elle couvre les deux gestionnaires d’un coup : le greffon n’a pas besoin qu’on lui dise s’il fait face à pacman ou à yay, il regarde.',
+    'use.wire.omarchykeep': 'Garder le clone : <span class="mono">git pull</span> met le greffon à jour, <span class="mono">go install …@latest</span> met le binaire, et les deux voyagent ensemble — le greffon refuse de se charger contre un binaire antérieur à 0.11.0, et le dit.',
     'use.check.h2': 'Vérifier que c’est pris.',
     'use.check.mac': 'La version d’abord, puis qui répond. Un vieux binaire qui masque une installation plus récente dans le <span class="mono">PATH</span> est la panne la plus pénible à diagnostiquer — une ligne tranche.',
     'use.check.win': 'La version d’abord, puis qui répond. Un vieux binaire qui masque une installation plus récente dans le <span class="mono">PATH</span> est la panne la plus pénible à diagnostiquer — une ligne tranche.',
-    'use.check.try': 'Ouvrez ensuite un shell neuf et tapez <span class="mono">brew ins</span> — <span class="mono">winget ins</span> sous Windows — <strong>sans appuyer sur Entrée</strong>. Le cadre doit apparaître sous l’invite et se resserrer à chaque lettre.',
+    'use.check.omarchy': 'La version d’abord, puis qui répond. Un vieux binaire qui masque une installation plus récente dans le <span class="mono">PATH</span> est la panne la plus pénible à diagnostiquer — une ligne tranche.',
+    'use.check.try': 'Ouvrez ensuite un shell neuf et tapez <span class="mono">brew ins</span> — <span class="mono">pacman ins</span> sur Arch, <span class="mono">winget ins</span> sous Windows — <strong>sans appuyer sur Entrée</strong>. Le cadre doit apparaître sous l’invite et se resserrer à chaque lettre.',
     'use.check.note': 'Rien n’apparaît ? Le greffon le dit quand il refuse de se charger : un message, au démarrage du shell, signale que le binaire est absent du <span class="mono">PATH</span>, ou qu’il est trop ancien pour ce greffon. À la toute première utilisation, le cadre peut afficher « catalogue en préparation… » — jigger ne retient jamais une frappe en attendant un gestionnaire de paquets, il construit son catalogue en tâche de fond.',
     'use.now.h2': 'Tapez une commande.',
     'use.now.lede': 'Il n’y a rien d’autre à apprendre. La fenêtre vit toute seule, et les enregistrements ci-dessous sont ce qu’elle fait vraiment — pas une maquette.',
@@ -39,21 +46,26 @@
     'use.now.native': 'Tapez une commande de gestionnaire : le cadre apparaît seul et se resserre à chaque lettre. Rien à déclencher, rien à retenir.',
     'use.demo.mac01': 'brew install fire — la liste se resserre à chaque lettre, sans rien presser. Pris sur macOS.',
     'use.demo.win01': 'winget install fire — le même cadre et les mêmes touches, un autre catalogue : winget répond avec des identifiants Publisher.Package là où brew affiche des noms de formules nus. Pris sur Windows.',
+    'use.demo.omarchy01': '<span class="mono">yay -S visual-studio</span> montre les dépôts et l’AUR dans une seule liste — <span class="mono">◆</span> pour un paquet des dépôts, <span class="mono">▣</span> pour un paquet de l’AUR, <span class="mono">●</span> pour ce qui est déjà installé. Aucun enregistrement n’en existe encore.',
     'use.now.jgh': 'Une syntaxe : <span class="mono">jg</span>',
     'use.now.jg': '<span class="mono">jg install fd</span> atteint celui des gestionnaires qui connaît <span class="mono">fd</span>, sans que vous ayez à savoir lequel. La façade ne fait qu’ajouter : <span class="mono">brew install fd</span> continue de marcher exactement comme avant, fenêtre comprise.',
     'use.demo.mac02': 'jg install fd — la façade répond pour le gestionnaire qui connaît le paquet. Pris sur macOS.',
     'use.demo.win02': 'jg install node — avec deux gestionnaires installés côte à côte, la colonne de droite nomme qui répond pour chaque candidat. Pris sur Windows.',
+    'use.demo.omarchy02': 'La façade se comporte pareil, avec un détail qui appartient à Arch : pacman et yay sont deux portes sur la même base, aussi <span class="mono">jg</span> liste-t-il vos paquets <strong>une</strong> fois, jamais deux. Aucun enregistrement n’en existe encore.',
     'use.now.regexh': 'Regex, sur la même ligne',
     'use.now.regex': '<kbd>^R</kbd> bascule le filtre, et rien que le filtre : la ligne, le cadre et les touches ne bougent pas. Le titre indique le mode en cours, et hors de la fenêtre la touche reste la recherche inverse d’historique de votre shell.',
     'use.regex.mac': 'La même bascule <kbd>^R</kbd> fonctionne sur macOS — sa capture n’est pas encore enregistrée. Basculez sur Windows ci-dessus pour la voir.',
+    'use.regex.omarchy': 'La même bascule <kbd>^R</kbd> fonctionne sur Arch, où une alternation gagne son prix : <span class="mono">(gtk|qt)</span> sur un catalogue de dépôts de plusieurs milliers d’entrées. Sa capture n’est pas encore enregistrée.',
     'use.demo.win04': 'winget install fire propose vingt et un candidats par préfixe. ^R, puis (bird|blade), en garde quatre — une alternative qu’aucune recherche par préfixe ne sait exprimer. Pris sur Windows.',
     'use.now.runh': 'Compléter, puis exécuter',
     'use.now.run': '<kbd>⏎</kbd> complète la dernière partie <strong>et</strong> lance la ligne, d’une seule frappe. À partir de là, jigger ne fait plus rien du tout : ce qui défile est la sortie du gestionnaire, relayée telle quelle — barres de progression, invites et élévation comprises.',
     'use.install.mac': 'L’installation par la façade se comporte pareil sur macOS, avec brew qui répond — aucune capture n’en est encore enregistrée. Basculez sur Windows ci-dessus pour en voir une.',
+    'use.install.omarchy': 'Pareil sur Arch, avec yay qui répond — et ses propres questions relayées telles quelles, celles de l’AUR comprises, puisque jigger ne fait plus rien du tout une fois la ligne lancée. Aucune capture n’en est encore enregistrée.',
     'use.demo.win05': 'jg install hexy, complété en hexyl, puis lancé — la sortie de scoop, relayée sans y toucher. Pris sur Windows, contre un vrai gestionnaire.',
     'use.now.upgh': 'Et une mise à jour',
     'use.now.upg': 'Même geste, autre verbe. Rien ici n’est propre à l’installation : <span class="mono">upgrade</span>, <span class="mono">search</span> et <span class="mono">outdated</span> se complètent et se lancent de la même façon.',
     'use.upgrade.mac': 'C’est pareil sur macOS, où c’est brew qui met à jour — sa capture n’est pas encore enregistrée. Basculez sur Windows ci-dessus pour en voir une.',
+    'use.upgrade.omarchy': 'Même geste sur Arch. À noter que yay pilote et que pacman ne fait que lire, ce qui explique que <span class="mono">jg install --pm pacman</span> n’existe pas tant que yay est installé. Sa capture n’est pas encore enregistrée.',
     'use.demo.win06': 'jg upgrade hyperf, complété en hyperfine, puis lancé — scoop remplace la 1.16.1 par la 1.20.0. Pris sur Windows, contre un vrai gestionnaire.',
     'use.keys.h2': 'Les touches.',
     'use.keys.lede': 'Le même jeu partout — un cadre, un jeu de touches, que ce soit Homebrew, winget, scoop, pacman ou yay qui réponde.',
@@ -86,9 +98,10 @@
     'ssh.why.link': 'Lire l’ADR-0005 <span class="arw">→</span>',
     'ssh.action.eyebrow': 'En action',
     'ssh.action.h2': 'Tapez <span class="mono">ssh</span> et un espace.',
-    'ssh.action.lede': 'Les deux enregistrements lisent le même <span class="mono">~/.ssh/config</span> — un fixture de serveurs inventés, identique sur les deux systèmes. Rien, dans SSH, n’est propre à une plateforme.',
+    'ssh.action.lede': 'Les enregistrements ci-dessous lisent le même <span class="mono">~/.ssh/config</span> — un fixture de serveurs inventés, identique d’un système à l’autre. Rien, dans SSH, n’est propre à une plateforme, et c’est pourquoi un seul enregistrement suffit à montrer ce qu’ils font tous.',
     'ssh.demo.mac': 'Tapez <span class="mono">ssh</span> et un espace : les serveurs de votre <span class="mono">~/.ssh/config</span>, chacun avec son adresse en regard. Pris sur macOS.',
     'ssh.demo.win': 'La même liste et le même <span class="mono">~/.ssh/config</span>, sous PowerShell — <span class="mono">atelier</span> compris, qui vient d’un <span class="mono">Include</span>. Pris sur Windows.',
+    'ssh.demo.omarchy': 'Rien ne change sur Arch : le sélecteur lit <span class="mono">~/.ssh/config</span> et rien d’autre, il s’y comporte donc exactement comme dans les deux enregistrements ci-dessus. Aucun n’a encore été pris sur Omarchy.',
     'ssh.what.eyebrow': 'Ce qui est complété',
     'ssh.what.h2': 'Trois commandes, et trois choses à savoir.',
     'ssh.what.1h': 'Trois fournisseurs, pas un seul',
@@ -131,6 +144,7 @@
     'hero.see': 'Le voir à l’œuvre <span class="arw">→</span>',
     'home.demo.mac01': 'brew install fire — le cadre arrive tout seul et se resserre à chaque lettre. Pris sur macOS.',
     'home.demo.win01': 'winget install fire — le même cadre et les mêmes touches, un autre catalogue. Pris sur Windows.',
+    'home.demo.omarchy': 'Sur Arch — Omarchy compris — le même cadre répond pour <span class="mono">pacman</span> et <span class="mono">yay</span>, les dépôts et l’AUR dans une seule liste. Aucun enregistrement n’en existe encore : les deux ci-dessus ont été pris sur les machines qui étaient joignables.',
     'popup.eyebrow': 'La fenêtre',
     'popup.h2': 'Elle suit votre frappe.',
     'popup.lede': 'Tapez une commande de gestionnaire : le cadre apparaît seul et se resserre à chaque lettre. Rien à déclencher, rien à retenir.',
@@ -291,8 +305,8 @@
          ainsi qu'on sait qu'une démonstration appartient au système inactif.
          On la met en pause au lieu de simplement l'ignorer : une vidéo déjà
          lancée continue de tourner une fois masquée, et après un aller-retour
-         macOS ↔ Windows toutes les démonstrations de la page décoderaient en
-         même temps, dont celles que personne ne regarde. */
+         d'un système à l'autre toutes les démonstrations de la page
+         décoderaient en même temps, dont celles que personne ne regarde. */
       if (v.offsetParent === null) { v.pause(); return; }
       if (!v.src) { v.src = v.getAttribute('data-src'); }
       var p = v.play();
@@ -304,8 +318,14 @@
      Une préférence de site, pas de page : elle vaut pour les trois. L'ordre
      de décision — l'URL d'abord (un lien partagé doit imposer ce qu'il
      montre), puis le choix mémorisé, puis la plateforme du navigateur. */
+  var SYSTEMES = ['macos', 'windows', 'omarchy'];
+
   function setOs(os) {
-    os = (os === 'windows') ? 'windows' : 'macos';
+    /* Liste blanche plutôt que ternaire : à trois systèmes, « tout ce qui
+       n'est pas Windows est macOS » enverrait un ?os=linux partagé sur la
+       mauvaise page sans que rien ne le signale. Une valeur inconnue retombe
+       sur macOS, qui reste le cas le plus fréquent. */
+    if (SYSTEMES.indexOf(os) === -1) { os = 'macos'; }
     docEl.setAttribute('data-os', os);
     Array.prototype.forEach.call(document.querySelectorAll('.os-toggle button'), function (b) {
       var on = b.getAttribute('data-os') === os;
@@ -324,7 +344,16 @@
   try { osUrl = new URLSearchParams(location.search).get('os'); } catch (e) {}
   var osMemo = null;
   try { osMemo = localStorage.getItem('jigger-os'); } catch (e) {}
-  var osNav = /win/i.test(navigator.platform || navigator.userAgent || '') ? 'windows' : 'macos';
+  /* Android annonce « Linux » lui aussi, et n'a ni pacman ni yay : on l'écarte
+     avant de conclure, sans quoi un visiteur sur téléphone verrait les
+     commandes d'Arch. Ce qui reste sans correspondance retombe sur macOS. */
+  var signature = navigator.platform || navigator.userAgent || '';
+  var osNav = 'macos';
+  if (/win/i.test(signature)) {
+    osNav = 'windows';
+  } else if (/linux/i.test(signature) && !/android/i.test(signature)) {
+    osNav = 'omarchy';
+  }
   setOs(osUrl || osMemo || osNav);
 
   setLang(initial);
