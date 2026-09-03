@@ -4,6 +4,13 @@
    ============================================================================ */
 
 :root {
+  /* La page est sombre, et le navigateur doit le savoir. Sans cette ligne il
+     suppose un document clair : il rend les ascenseurs, les champs et les menus
+     natifs en clair sur un fond sombre, et se croit autorisé à assombrir la page
+     lui-même quand le mode sombre forcé est actif — sur un document déjà sombre,
+     cette retouche n'améliore rien et peut abîmer ce qu'elle ne comprend pas. */
+  color-scheme: dark;
+
   /* Catppuccin Mocha — la palette des captures. Le fond de la page est le fond
      des vidéos : une carte qui encadre une vidéo la prolonge au lieu de la poser. */
   --base:      #1e1e2e;
