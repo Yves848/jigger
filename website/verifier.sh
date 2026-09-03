@@ -127,6 +127,23 @@ else
     done
 fi
 
+# --- 7. Démonstrations ----------------------------------------------------
+# Une vidéo sans affiche montre un rectangle noir tant qu'elle n'est pas
+# chargée — et, sous prefers-reduced-motion, elle ne montre jamais rien
+# d'autre. L'affiche n'est donc pas un ornement : c'est le contenu de repli.
+for p in "${PAGES[@]}"; do
+    while IFS= read -r src; do
+        [ -z "$src" ] && continue
+        affiche="${src%.mp4}.png"
+        if grep -Fq "poster=\"$affiche\"" "$p"; then
+            ok "démonstration avec affiche : $(basename "$src") ($p)"
+        else
+            echec "démonstration sans affiche $affiche dans $p"
+        fi
+        [ -f ".$src" ] || echec "média absent : $src (cité par $p)"
+    done <<< "$(grep -o 'data-src="/media/[^"]*\.mp4"' "$p" | cut -d'"' -f2)"
+done
+
 if [ "$echecs" -gt 0 ]; then
     printf '\n%d contrôle(s) en échec.\n' "$echecs" >&2
     exit 1

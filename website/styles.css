@@ -224,3 +224,29 @@ section h3 { font-size: 17px; margin: 28px 0 4px; }
   padding: 22px 24px;
 }
 .encart h2 { margin-top: 0; font-size: 21px; }
+
+/* --- démonstrations ------------------------------------------------------
+   La carte a le fond des vidéos : elle les prolonge au lieu de les encadrer.
+   Seule la bordure dit où finit l'image. */
+.demo { margin: 28px 0; }
+.demo-frame {
+  border: 1px solid var(--surface-2);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--base);
+  line-height: 0;
+}
+.demo-frame video,
+.demo-frame img { width: 100%; height: auto; display: block; }
+.demo figcaption {
+  margin-top: 10px;
+  color: var(--subtext);
+  font-size: 15px;
+}
+.demo-absent {
+  border: 1px dashed var(--surface-2);
+  border-radius: var(--radius);
+  padding: 22px;
+  color: var(--subtext);
+  background: var(--mantle);
+}

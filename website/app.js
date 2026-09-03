@@ -28,6 +28,7 @@
     'popup.k4': 'referme pour cette ligne',
     'popup.arrows': '<strong>Vos flèches ne sont jamais confisquées.</strong> Tant que la fenêtre n’a pas le clavier, <kbd>↑</kbd> et <kbd>↓</kbd> restent l’historique du shell — là où elles doivent être.',
     'popup.ssh': '<strong>Pas seulement les gestionnaires de paquets.</strong> Tapez <span class="mono">ssh</span>, <span class="mono">scp</span> ou <span class="mono">sftp</span> : la fenêtre propose les hôtes de votre <span class="mono">~/.ssh/config</span>, chacun avec son <span class="mono">HostName</span> en regard. jigger n’ouvre jamais la connexion — il complète la ligne que vous lancerez vous-même, et ne montre rien du tout quand il n’a aucun hôte à proposer.',
+    'home.demo.mac01': 'brew install fire — le cadre arrive tout seul et se resserre à chaque lettre. Pris sur macOS.',
     'facade.eyebrow': 'Une syntaxe',
     'facade.h2': 'Quatre dialectes, un vocabulaire.',
     'facade.lede': '<span class="mono">jg install fd</span> atteint celui de Homebrew, winget, scoop ou pacman qui connaît <span class="mono">fd</span> — sans que vous ayez à savoir lequel.',
@@ -138,5 +139,29 @@
   var saved = null;
   try { saved = localStorage.getItem('jigger-lang'); } catch (e) {}
   var initial = saved || ((navigator.language || 'en').toLowerCase().indexOf('fr') === 0 ? 'fr' : 'en');
+
+  /* --- démonstrations ---------------------------------------------------
+     Les vidéos ne portent pas leur src : app.js le pose au moment où la
+     démonstration devient visible. Deux raisons — ne pas télécharger les
+     enregistrements du système que le lecteur n'a pas choisi, et respecter
+     prefers-reduced-motion, où l'affiche suffit et rien ne démarre. */
+  var immobile = false;
+  try {
+    immobile = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  } catch (e) {}
+
+  function activerDemos() {
+    if (immobile) return;
+    Array.prototype.forEach.call(document.querySelectorAll('video[data-src]'), function (v) {
+      /* offsetParent vaut null quand un ancêtre est en display:none — c'est
+         ainsi qu'on sait qu'une démonstration appartient au système inactif. */
+      if (v.offsetParent === null) return;
+      if (!v.src) { v.src = v.getAttribute('data-src'); }
+      var p = v.play();
+      if (p && p.catch) { p.catch(function () {}); }
+    });
+  }
+
   setLang(initial);
+  activerDemos();
 })();
