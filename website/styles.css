@@ -203,3 +203,19 @@ section h3 { font-size: 17px; margin: 28px 0 4px; }
 .mk-state { fill: var(--green); }
 
 .dia-caret { fill: var(--accent); opacity: .7; }
+
+/* --- pages intérieures ---------------------------------------------------
+   L'accueil a son hero ; les deux autres pages ont ce bandeau, plus sobre. */
+.page-head { padding: 54px 0 18px; }
+.page-head h1 { font-size: clamp(30px, 4.5vw, 46px); margin: 6px 0 0; }
+
+.note { color: var(--muted); font-size: 15px; }
+
+.encart {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--amber);
+  border-radius: var(--radius);
+  background: var(--panel);
+  padding: 22px 24px;
+}
+.encart h2 { margin-top: 0; font-size: 21px; }

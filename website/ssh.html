@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>jigger — the SSH picker</title>
+  <meta name="description" content="Type ssh and the popup offers the servers of your ~/.ssh/config. Same frame, same keys — only the catalogue changes.">
+  <meta name="theme-color" content="#07090e">
+  <link rel="icon" href="/jigger-icon.svg">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <!-- EN-TÊTE : copie exacte de celui d'index.html, hormis la classe « on ». -->
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="brand" href="/">jigger</a>
+      <nav aria-label="Main navigation">
+        <a href="/" data-i18n="nav.home">Home</a>
+        <a href="/utiliser.html" data-i18n="nav.use">Use it</a>
+        <a href="/ssh.html" class="on" data-i18n="nav.ssh">SSH</a>
+      </nav>
+      <div class="lang-toggle" role="group" aria-label="Language">
+        <button type="button" data-lang="en" aria-pressed="true">EN</button>
+        <button type="button" data-lang="fr" aria-pressed="false">FR</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="page-head">
+      <div class="wrap">
+        <p class="eyebrow" data-i18n="ssh.eyebrow">The SSH picker</p>
+        <h1 data-i18n="ssh.h1">Not just package managers.</h1>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p data-i18n="foot.made">Free software, Apache 2.0. Built in the open.</p>
+      <p class="foot-links">
+        <a href="https://gitlab.yg-devworks.com/yves/jigger" data-i18n="foot.repo">Repository</a>
+        <a href="https://gitlab.yg-devworks.com/yves/jigger/-/blob/main/docs/getting-started.md" data-i18n="foot.guide">Getting started</a>
+        <a href="https://gitlab.yg-devworks.com/yves/jigger/-/blob/main/CHANGELOG.md" data-i18n="foot.changelog">Changelog</a>
+      </p>
+    </div>
+  </footer>
+</body>
+</html>

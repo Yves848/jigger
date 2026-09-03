@@ -4,10 +4,16 @@
 
   /* --- FR --- */
   var FR = {
-    'nav.popup': 'La fenêtre',
-    'nav.facade': 'Une syntaxe',
-    'nav.how': 'Le fonctionnement',
-    'nav.install': 'Installer',
+    /* --- partagé : en-tête et pied --- */
+    'nav.home': 'Accueil',
+    'nav.use': 'L’utiliser',
+    'nav.ssh': 'SSH',
+    /* --- page « utiliser » --- */
+    'use.eyebrow': 'L’utiliser',
+    'use.h1': 'Télécharger, brancher, utiliser.',
+    /* --- page « ssh » --- */
+    'ssh.eyebrow': 'Le sélecteur SSH',
+    'ssh.h1': 'Pas seulement les gestionnaires de paquets.',
     'hero.eyebrow': 'macOS · Windows · Linux',
     'hero.h1': 'Votre gestionnaire de paquets,<br><em>pendant que vous tapez.</em>',
     'hero.lede': 'Un cadre apparaît sous votre invite et suit chaque frappe. Et pour Homebrew, winget, scoop et pacman, une seule syntaxe au lieu de quatre.',

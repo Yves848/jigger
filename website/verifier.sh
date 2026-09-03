@@ -8,13 +8,20 @@ RACINE="$(cd .. && pwd)"
 RESEAU=0
 [ "${1:-}" = "--reseau" ] && RESEAU=1
 
+# Les trois pages du site. Tout contrôle qui lit « la page » les lit toutes.
+PAGES=(index.html utiliser.html ssh.html)
+
+for p in "${PAGES[@]}"; do
+    [ -f "$p" ] || { printf 'ÉCHEC  — page absente : %s\n' "$p" >&2; exit 1; }
+done
+
 echecs=0
 ok()    { printf 'ok     — %s\n' "$1"; }
 echec() { printf 'ÉCHEC  — %s\n' "$1" >&2; echecs=$((echecs + 1)); }
 
 # --- 1. Parité des langues ------------------------------------------------
 # Les clés employées dans le HTML, et celles définies dans le dictionnaire FR.
-cles_html="$(grep -o 'data-i18n="[^"]*"' index.html | cut -d'"' -f2 | sort -u)"
+cles_html="$(cat "${PAGES[@]}" | grep -o 'data-i18n="[^"]*"' | cut -d'"' -f2 | sort -u)"
 cles_fr="$(sed -n '/--- FR ---/,/--- \/FR ---/p' app.js \
            | grep -oE "^[[:space:]]+'[^']+':" \
            | sed -E "s/^[[:space:]]+'([^']+)':/\1/" | sort -u)"
@@ -73,6 +80,19 @@ while IFS= read -r commande; do
         echec "commande absente du guide : $commande"
     fi
 done <<< "$commandes"
+
+# --- 4. En-têtes identiques -----------------------------------------------
+# L'en-tête est recopié dans chaque page plutôt qu'injecté par app.js : la
+# navigation doit exister sans JavaScript. Le prix, c'est cette vérification.
+entete() { sed -n '/<header class="site-header">/,/<\/header>/p' "$1" | sed 's/ class="on"//'; }
+reference="$(entete index.html)"
+for p in "${PAGES[@]:1}"; do
+    if [ "$(entete "$p")" = "$reference" ]; then
+        ok "en-tête identique à celui d'index.html : $p"
+    else
+        echec "en-tête différent de celui d'index.html : $p"
+    fi
+done
 
 if [ "$echecs" -gt 0 ]; then
     printf '\n%d contrôle(s) en échec.\n' "$echecs" >&2
