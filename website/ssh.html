@@ -66,7 +66,7 @@
       <div class="wrap">
         <span class="eyebrow" data-i18n="ssh.action.eyebrow">In action</span>
         <h2 data-i18n="ssh.action.h2">Type <span class="mono">ssh</span> and a space.</h2>
-        <p class="lede" data-i18n="ssh.action.lede">The recordings below read the same <span class="mono">~/.ssh/config</span> — a fixture of invented servers, identical from one system to the next. Nothing about SSH is platform-specific, which is why one recording is enough to show what all of them do.</p>
+        <p class="lede" data-i18n="ssh.action.lede">The recordings below read the same <span class="mono">~/.ssh/config</span> — a fixture of invented servers, identical from one system to the next. Nothing about SSH is platform-specific, which is why the three show exactly the same list.</p>
 
         <div data-os-block="macos">
           <h3 class="os-block-title">macOS</h3>
@@ -96,7 +96,15 @@
 
         <div data-os-block="omarchy">
           <h3 class="os-block-title">Omarchy</h3>
-          <p class="demo-absent" data-i18n="ssh.demo.omarchy">Nothing changes on Arch: the picker reads <span class="mono">~/.ssh/config</span> and nothing else, so it behaves there exactly as in the two recordings above. None was captured on Omarchy yet.</p>
+          <figure class="demo">
+            <div class="demo-frame">
+              <video muted loop playsinline preload="none"
+                     poster="/media/omarchy-03-ssh.png"
+                     data-src="/media/omarchy-03-ssh.mp4"
+                     aria-labelledby="demo-oma03"></video>
+            </div>
+            <figcaption id="demo-oma03" data-i18n="ssh.demo.omarchy">The same list again, on Arch: the picker reads <span class="mono">~/.ssh/config</span> and nothing else, so nothing about it is platform-specific. Captured on Omarchy.</figcaption>
+          </figure>
         </div>
       </div>
     </section>

@@ -25,8 +25,54 @@ SSH_OPTIONS=(
 echo "Contrôles avant publication…"
 "$SCRIPT_DIR/verifier.sh"
 
+# --- Empreintes de contenu -------------------------------------------------
+# `styles.css` et `app.js` gardent leur nom d'un déploiement à l'autre. Un
+# navigateur qui les a déjà vus peut donc servir l'ANCIEN fichier sous le
+# nouveau nom, sans rien demander au serveur et sans que personne s'en aperçoive
+# — c'est ce qui a rendu les schémas SVG en noir après la refonte du site, chez
+# un visiteur dont le cache datait d'avant. Le vhost revalide désormais, mais
+# une consigne ne rattrape jamais une entrée de cache déjà posée : seule l'URL
+# le peut. On publie donc les pages avec une empreinte du contenu dans l'URL,
+# `/styles.css?v=1a2b3c4d`. Le fichier change, l'empreinte change, l'URL change,
+# et le cache ne peut plus se tromper de version.
+#
+# L'empreinte est posée sur la COPIE publiée, jamais dans le dépôt : les pages
+# y restent lisibles telles quelles et le site s'ouvre en local sans rien
+# construire, ce qui est tout l'intérêt d'un site sans build.
+SITE_DIR="$WORK_DIR/site"
+mkdir -p "$SITE_DIR"
+
+# shasum sur macOS, sha256sum sur Linux : le script tourne des deux côtés.
+empreinte() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | cut -c1-8
+  else
+    shasum -a 256 "$1" | cut -c1-8
+  fi
+}
+
+V_CSS="$(empreinte "$SCRIPT_DIR/styles.css")"
+V_JS="$(empreinte "$SCRIPT_DIR/app.js")"
+echo "Empreintes : styles.css?v=$V_CSS · app.js?v=$V_JS"
+
+# Pas de `sed -i` : il demande un argument sur BSD et pas sur GNU. On écrit la
+# copie, le fichier du dépôt n'est jamais touché.
+for page in index.html parcours.html utiliser.html ssh.html; do
+  sed -e "s|href=\"/styles\.css\"|href=\"/styles.css?v=$V_CSS\"|" \
+      -e "s|src=\"/app\.js\"|src=\"/app.js?v=$V_JS\"|" \
+      "$SCRIPT_DIR/$page" > "$SITE_DIR/$page"
+  # Une page qui ne cite plus la feuille attendue sortirait sans style, et
+  # personne ne le verrait avant la mise en ligne.
+  grep -q "styles.css?v=$V_CSS" "$SITE_DIR/$page" \
+    || { echo "empreinte non posée dans $page — le lien a-t-il changé de forme ?" >&2; exit 1; }
+done
+
+cp "$SCRIPT_DIR/styles.css" "$SCRIPT_DIR/app.js" \
+   "$SCRIPT_DIR/jigger-icon.svg" "$SCRIPT_DIR/og.png" "$SITE_DIR/"
+cp -R "$SCRIPT_DIR/media" "$SITE_DIR/media"
+
 # og.html est le gabarit qui a produit og.png : il n'a rien à faire en ligne.
-tar -czf "$ARCHIVE" -C "$SCRIPT_DIR" \
+tar -czf "$ARCHIVE" -C "$SITE_DIR" \
   index.html parcours.html utiliser.html ssh.html styles.css app.js jigger-icon.svg og.png media
 
 echo "Publication des fichiers sur ${WEB_HOST}…"

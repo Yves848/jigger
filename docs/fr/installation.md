@@ -121,7 +121,9 @@ which -a jigger           # exactement une ligne
 
 Puis taper — sans rien presser — `yay -S visual-studio`. Le cadre arrive tout seul, `◆`
 pour un paquet des dépôts, `▣` pour un paquet de l'AUR, `●` pour ce qui est déjà
-installé.
+installé :
+
+![Le popup sous une ligne yay -S, sous Omarchy](../media/out/omarchy-01-gestionnaire-natif.png)
 
 **pacman et yay sont deux portes sur la même base**, aussi `jg` liste-t-il vos paquets une
 fois et non deux. yay pilote, pacman ne fait que lire

@@ -4,6 +4,13 @@
    ============================================================================ */
 
 :root {
+  /* La page est sombre, et le navigateur doit le savoir. Sans cette ligne il
+     suppose un document clair : il rend les ascenseurs, les champs et les menus
+     natifs en clair sur un fond sombre, et se croit autorisé à assombrir la page
+     lui-même quand le mode sombre forcé est actif — sur un document déjà sombre,
+     cette retouche n'améliore rien et peut abîmer ce qu'elle ne comprend pas. */
+  color-scheme: dark;
+
   /* Catppuccin Mocha — la palette des captures. Le fond de la page est le fond
      des vidéos : une carte qui encadre une vidéo la prolonge au lieu de la poser. */
   --base:      #1e1e2e;
@@ -27,9 +34,26 @@
 }
 
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
-@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+/* Pas de `scroll-behavior: smooth` sur `html`, et ce n'est pas un oubli.
+   La règle ne se contente pas d'adoucir les ancres : elle rend animé TOUT
+   défilement programmé, y compris ceux que le navigateur déclenche pour le
+   clavier et la molette. Or chaque nouvelle impulsion annule l'animation en
+   cours. En remontant une page longue, où les impulsions s'enchaînent, la
+   position n'avance donc que par à-coups — mesuré sur l'accueil : vingt
+   remontées successives laissaient la page exactement où elle était, quand la
+   même page sans la règle passait de 5855 à 0.
 
+   L'adoucissement des ancres ne valait pas un défilement qu'on ne peut pas
+   remonter. Les lecteurs en « mouvement réduit » avaient d'ailleurs déjà ce
+   comportement-ci, et personne ne l'a jamais tenu pour dégradé. */
+
+/* Pas d'`overflow-x: hidden` sur `body`. Il n'y servait à rien — mesuré à 1400,
+   900 et 500 px sur les trois pages, le document ne déborde jamais : les seuls
+   contenus plus larges que la fenêtre sont les schémas et les cadres, et chacun
+   défile dans sa propre boîte `overflow-x: auto`. Il coûtait en revanche cher :
+   `overflow-x: hidden` fait calculer `overflow-y: auto`, et `body` devient une
+   boîte de défilement — de quoi dérégler le défilement de la page et l'en-tête
+   collant qui s'y appuie. */
 body {
   margin: 0;
   background: var(--base);
@@ -38,7 +62,6 @@ body {
   font-size: 17px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
 }
 
 body::before {
@@ -60,10 +83,15 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* --- en-tête ------------------------------------------------------------- */
+/* Pas de `backdrop-filter` ici : le fond est `--mantle`, opaque. Un flou
+   derrière un fond opaque ne se voit jamais — vérifié, la page est identique au
+   pixel près sans lui — mais il se paie à chaque image défilée : le navigateur
+   doit photographier ce qu'il y a derrière l'en-tête, le flouter sur douze
+   pixels, puis peindre un rectangle opaque par-dessus. Sur une machine où le
+   compositeur n'est pas accéléré, c'est ce qui fait trembler le défilement. */
 .site-header {
   position: sticky; top: 0; z-index: 10;
   background: var(--mantle);
-  backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--surface-2);
 }
 .header-inner { display: flex; align-items: center; gap: 24px; height: 60px; }
