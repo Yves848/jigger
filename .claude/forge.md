@@ -55,9 +55,13 @@ servant la CI et la main ; sans dossier, il va chercher les archives dans le reg
 générique de GitLab.
 
 Elle **existe depuis le 4 septembre 2026** et porte un **PAT dédié à portée fine**
-(`github_pat_…`), limité au seul dépôt `Yves848/jigger` avec la permission
-`Contents: Read and write` — le strict nécessaire pour créer une release et y téléverser
-des archives. GitHub ne renvoie **aucun en-tête `github-authentication-token-expiration`**
+(`github_pat_…`) nommé `jigger`. Sa configuration exacte importe, et deux réglages y sont
+faciles à manquer : *Repository access* doit être sur **`Only select repositories`** →
+`Yves848/jigger`, **pas** sur `Public repositories` qui est le défaut et ne donne qu'une
+lecture ; et la permission **`Contents: Read and write`** doit être ajoutée dans le bloc
+*Repository* — celui qui n'apparaît qu'une fois un dépôt sélectionné. `Metadata: Read-only`
+s'ajoute alors tout seul, c'est normal. Rien d'autre : ni *Actions*, ni *Workflows*, ni
+aucune permission de compte. GitHub ne renvoie **aucun en-tête `github-authentication-token-expiration`**
 dessus : il est sans date de fin, et ne lâchera donc pas la CI de lui-même. Le refaire, le
 cas échéant, passe par <https://github.com/settings/personal-access-tokens/new> ; l'API ne
 sait pas fabriquer un PAT, seule l'interface web le fait.
@@ -67,8 +71,17 @@ jour même : ce jeton-là **tourne** dès que `gh` se réauthentifie sur la mach
 rendrait la variable silencieusement invalide, découverte au tag suivant. Ne pas y revenir
 par commodité.
 
-Vérifier avant le tag — **la présence ne suffit pas**, une valeur tronquée de 13
-caractères y a déjà séjourné en répondant `401` :
+Vérifier avant le tag — et **seule une écriture réelle prouve quelque chose**. Deux
+contrôles paraissent suffisants et ne le sont pas :
+
+- la **présence** de la variable : une valeur tronquée de 13 caractères y a séjourné, en
+  répondant `401` à GitHub ;
+- un **`200` sur `/user`**, ou même la lecture réussie de la release : un PAT à portée
+  fine *sans aucun droit* passe ces deux tests, parce qu'un tel jeton peut toujours lire
+  les dépôts publics — et le miroir en est un. Le bloc `permissions` que renvoie
+  `GET /repos/…` ne vaut rien non plus : il décrit **le rôle du compte** sur le dépôt, pas
+  ce que le jeton a le droit de faire, et affiche donc `push: true` pour un jeton en
+  lecture seule.
 
 ```bash
 # glab sort en 401 sur cet endpoint : c'est le jeton du trousseau qu'il faut.
@@ -76,11 +89,20 @@ TOK=$(printf "protocol=https\nhost=gitlab.yg-devworks.com\n\n" | git credential 
 GH=$(curl -s -H "PRIVATE-TOKEN: $TOK" \
      https://gitlab.yg-devworks.com/api/v4/projects/25/variables/GITHUB_RELEASE_TOKEN \
      | python3 -c "import sys,json;print(json.load(sys.stdin)['value'])")
-curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer $GH" https://api.github.com/user
+
+# Sonde d'écriture idempotente : on repose sur la dernière release le nom qu'elle porte déjà.
+read -r ID NOM < <(curl -s -H "Authorization: Bearer $GH" \
+     https://api.github.com/repos/Yves848/jigger/releases/latest \
+     | python3 -c "import sys,json;d=json.load(sys.stdin);print(d['id'],d['name'])")
+curl -s -o /dev/null -w '%{http_code}\n' --request PATCH \
+     --header "Authorization: Bearer $GH" --header "Accept: application/vnd.github+json" \
+     --data "{\"name\":\"$NOM\"}" \
+     "https://api.github.com/repos/Yves848/jigger/releases/$ID"
 ```
 
-Attendu : `200`. Tout le reste veut dire que le prochain tag repartira avec une pipeline
-rouge.
+Attendu : `200`. Un `403` — message « Resource not accessible by personal access token »,
+en-tête `x-accepted-github-permissions: contents=write` — veut dire que le jeton lit mais
+n'écrit pas, et que le prochain tag repartira avec une pipeline rouge.
 
 **La variable doit être masquée mais NON protégée.** C'est contre-intuitif — un secret,
 on le protège — et c'est faux ici : le projet n'a **aucun tag protégé**
