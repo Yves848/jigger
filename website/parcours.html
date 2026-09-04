@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title data-i18n="title.tour">jigger — a guided tour, from install to daily use</title>
+  <meta name="description" content="Eleven steps, in order: install jigger, wire it into your shell, and go from your first popup to the facade, the regex filter, the SSH picker and the raw commands.">
+  <meta name="theme-color" content="#1e1e2e">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="jigger — a guided tour, from install to daily use">
+  <meta property="og:description" content="Eleven steps, in order: install jigger, wire it into your shell, and go from your first popup to the facade, the regex filter, the SSH picker and the raw commands.">
+  <meta property="og:url" content="https://jigger.yg-devworks.com/parcours.html">
+  <meta property="og:image" content="https://jigger.yg-devworks.com/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="jigger — a guided tour, from install to daily use">
+  <meta name="twitter:description" content="Eleven steps, in order: install jigger, wire it into your shell, and go from your first popup to the facade, the regex filter, the SSH picker and the raw commands.">
+  <meta name="twitter:image" content="https://jigger.yg-devworks.com/og.png">
+  <link rel="icon" href="/jigger-icon.svg">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <!-- EN-TÊTE : copie exacte de celui d'index.html, hormis la classe « on ». -->
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="brand" href="/">jigger</a>
+      <nav aria-label="Main navigation">
+        <a href="/" data-i18n="nav.home">Home</a>
+        <a href="/parcours.html" class="on" data-i18n="nav.tour">Guided tour</a>
+        <a href="/utiliser.html" data-i18n="nav.use">Use it</a>
+        <a href="/ssh.html" data-i18n="nav.ssh">SSH</a>
+      </nav>
+      <div class="os-toggle" role="group" aria-label="Operating system">
+        <button type="button" data-os="macos" aria-pressed="true">macOS</button>
+        <button type="button" data-os="windows" aria-pressed="false">Windows</button>
+        <button type="button" data-os="omarchy" aria-pressed="false">Omarchy</button>
+      </div>
+      <div class="lang-toggle" role="group" aria-label="Language">
+        <button type="button" data-lang="en" aria-pressed="true">EN</button>
+        <button type="button" data-lang="fr" aria-pressed="false">FR</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="page-head">
+      <div class="wrap">
+        <p class="eyebrow" data-i18n="tour.eyebrow">Guided tour</p>
+        <h1 data-i18n="tour.h1">From nothing installed, to fluent.</h1>
+        <p class="lede" data-i18n="tour.lede">Eleven steps, in order, each one building on the last. Steps 1 to 3 install jigger and wire it in; from step 4 on, nothing is ever installed again — you type, and you watch. Every command below follows the system you pick in the header, and the recordings are what actually happens, not mock-ups.</p>
+        <p class="note" data-i18n="tour.note">The two ways in are both here. <strong>You keep your own commands</strong> — <span class="mono">brew</span>, <span class="mono">winget</span>, <span class="mono">pacman</span> — and the popup appears over them, uninvited (steps 4 to 7). Or you use <strong>one syntax for all of them</strong>, <span class="mono">jg</span> (steps 8 and 9). Neither replaces the other, and step 11 shows the binary answering with no shell at all.</p>
+      </div>
+    </section>
+
+    <!-- Rappel du système choisi : le sélecteur de l'en-tête défile, celui-ci
+         reste sous les yeux pendant qu'on lit des commandes. -->
+    <div class="os-sticky">
+      <div class="wrap">
+        <span data-i18n="tour.showing">Following the steps for</span>
+        <span class="os-name" data-os-block="macos">macOS</span>
+        <span class="os-name" data-os-block="windows">Windows</span>
+        <span class="os-name" data-os-block="omarchy">Omarchy</span>
+      </div>
+    </div>
+
+    <!-- Étape 1 ---------------------------------------------------------- -->
+    <section id="etape-1">
+      <div class="wrap">
+        <p class="eyebrow">1</p>
+        <h2 data-i18n="tour.s1.h2">Install the binary.</h2>
+        <p data-i18n="tour.s1.lede">One command on macOS and Windows, where the project publishes a package. On Arch there is none, so Go builds it — jigger has no runtime dependency beyond the managers themselves, and the compiled binary is the whole of it.</p>
+
+        <div data-os-block="macos">
+          <h3 class="os-block-title">macOS</h3>
+          <pre class="cmd"><code data-verifier="install">brew tap yves/cocktails https://gitlab.yg-devworks.com/yves/homebrew-cocktails.git</code></pre>
+          <pre class="cmd"><code data-verifier="install">brew install jigger</code></pre>
+        </div>
+
+        <div data-os-block="windows">
+          <h3 class="os-block-title">Windows</h3>
+          <pre class="cmd"><code data-verifier="install">scoop bucket add jigger https://gitlab.yg-devworks.com/yves/scoop-jigger.git</code></pre>
+          <pre class="cmd"><code data-verifier="install">scoop install jigger</code></pre>
+        </div>
+
+        <div data-os-block="omarchy">
+          <h3 class="os-block-title">Omarchy</h3>
+          <pre class="cmd"><code data-verifier="install">sudo pacman -S --needed go git zsh</code></pre>
+          <pre class="cmd"><code data-verifier="install">go install gitlab.yg-devworks.com/yves/jigger@latest</code></pre>
+          <pre class="cmd"><code data-verifier="install">export PATH="$HOME/go/bin:$PATH"</code></pre>
+        </div>
+
+        <p class="note" data-i18n="tour.s1.more">Why these URLs, what the formula builds, how to upgrade later: the <a href="/utiliser.html#telecharger">Use it</a> page carries the detail. This tour keeps to the shortest road.</p>
+      </div>
+    </section>
+
+    <!-- Étape 2 ---------------------------------------------------------- -->
+    <section id="etape-2">
+      <div class="wrap">
+        <p class="eyebrow">2</p>
+        <h2 data-i18n="tour.s2.h2">Wire it into your shell.</h2>
+        <p data-i18n="tour.s2.lede">The binary alone completes nothing. What draws the popup and watches your typing is a shell plugin, and it has to be loaded by your shell — once, in your startup file.</p>
+
+        <div data-os-block="macos">
+          <h3 class="os-block-title">macOS</h3>
+          <p data-i18n="tour.s2.mac">One line in <span class="mono">~/.zshrc</span>, then <span class="mono">exec zsh</span>. It covers every manager the machine has — the plugin doesn't need to be told which.</p>
+          <pre class="cmd"><code data-verifier="install">source "$(brew --prefix jigger)/share/jigger/jigger.plugin.zsh"</code></pre>
+        </div>
+
+        <div data-os-block="windows">
+          <h3 class="os-block-title">Windows</h3>
+          <p data-i18n="tour.s2.win">The bucket installed the <strong>binary</strong> only. The module comes from the repository, so clone it first, then import it from <span class="mono">$PROFILE</span> and open a new tab.</p>
+          <pre class="cmd"><code data-verifier="install">git clone https://gitlab.yg-devworks.com/yves/jigger.git $HOME\git\jigger</code></pre>
+          <pre class="cmd"><code data-verifier="install">Import-Module $HOME\git\jigger\shell\jigger.psm1</code></pre>
+        </div>
+
+        <div data-os-block="omarchy">
+          <h3 class="os-block-title">Omarchy</h3>
+          <p data-i18n="tour.s2.omarchy">The plugin is not in the Go module — clone the repository, then source it from <span class="mono">~/.zshrc</span> and run <span class="mono">exec zsh</span>.</p>
+          <pre class="cmd"><code data-verifier="install">git clone https://gitlab.yg-devworks.com/yves/jigger.git ~/git/jigger</code></pre>
+          <pre class="cmd"><code data-verifier="install">source ~/git/jigger/shell/jigger.plugin.zsh</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- Étape 3 ---------------------------------------------------------- -->
+    <section id="etape-3">
+      <div class="wrap">
+        <p class="eyebrow">3</p>
+        <h2 data-i18n="tour.s3.h2">Check it took.</h2>
+        <p data-i18n="tour.s3.lede">The version first, then who answers. An old binary shadowing a newer install in the <span class="mono">PATH</span> is the most painful failure to diagnose, and one line settles it.</p>
+
+        <div data-os-block="macos">
+          <h3 class="os-block-title">macOS</h3>
+          <pre class="cmd"><code data-verifier="install">jigger --version</code></pre>
+          <pre class="cmd"><code data-verifier="install">which -a jigger</code></pre>
+        </div>
+
+        <div data-os-block="windows">
+          <h3 class="os-block-title">Windows</h3>
+          <pre class="cmd"><code data-verifier="install">jigger --version</code></pre>
+          <pre class="cmd"><code data-verifier="install">Get-Command jigger -All</code></pre>
+        </div>
+
+        <div data-os-block="omarchy">
+          <h3 class="os-block-title">Omarchy</h3>
+          <pre class="cmd"><code data-verifier="install">jigger --version</code></pre>
+          <pre class="cmd"><code data-verifier="install">which -a jigger</code></pre>
+        </div>
+
+        <p class="note" data-i18n="tour.s3.note">Nothing at all? The plugin says so when it refuses to load: a message at shell startup reports that the binary is missing from the <span class="mono">PATH</span>, or that it is too old for this plugin. It never fails silently.</p>
+      </div>
+    </section>
+
+    <!-- Étape 4 ---------------------------------------------------------- -->
+    <section id="etape-4">
+      <div class="wrap">
+        <p class="eyebrow">4</p>
+        <h2 data-i18n="tour.s4.h2">Your own command, intercepted.</h2>
+        <p class="lede" data-i18n="tour.s4.lede">This is the moment worth understanding. You do <strong>not</strong> learn a new command: you type the one you already typed, and the frame appears under your prompt on its own, narrowing with every letter. Nothing to trigger, nothing to remember — and if you ignore it, your line runs exactly as it always did.</p>
+        <p data-i18n="tour.s4.try">Open a fresh shell and type the line below <strong>without pressing Enter</strong>.</p>
+
+        <div data-os-block="macos">
+          <h3 class="os-block-title">macOS</h3>
+          <figure class="demo">
+            <div class="demo-frame">
+              <video muted loop playsinline preload="none"
+                     poster="/media/macos-01-gestionnaire-natif.png"
+                     data-src="/media/macos-01-gestionnaire-natif.mp4"
+                     aria-labelledby="tour-mac01"></video>
+            </div>
+            <figcaption id="tour-mac01" data-i18n="tour.demo.mac01">brew install fire — the frame arrives on its own and tightens with every letter. Captured on macOS.</figcaption>
+          </figure>
+        </div>
+
+        <div data-os-block="windows">
+          <h3 class="os-block-title">Windows</h3>
+          <figure class="demo">
+            <div class="demo-frame">
+              <video muted loop playsinline preload="none"
+                     poster="/media/windows-01-gestionnaire-natif.png"
+                     data-src="/media/windows-01-gestionnaire-natif.mp4"
+                     aria-labelledby="tour-win01"></video>
+            </div>
+            <figcaption id="tour-win01" data-i18n="tour.demo.win01">winget install fire — same frame, same keys, another catalogue: winget answers with Publisher.Package identifiers where brew shows bare formula names. Captured on Windows.</figcaption>
+          </figure>
+        </div>
+
+        <div data-os-block="omarchy">
+          <h3 class="os-block-title">Omarchy</h3>
+          <p class="demo-absent" data-i18n="tour.demo.omarchy01">On Arch the same frame answers for <span class="mono">pacman</span> and <span class="mono">yay</span>, repositories and the AUR in a single list. No recording of it exists yet.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Étape 5 ---------------------------------------------------------- -->
+    <section id="etape-5">
+      <div class="wrap">
+        <p class="eyebrow">5</p>
+        <h2 data-i18n="tour.s5.h2">Choose, and insert.</h2>
+        <p data-i18n="tour.s5.lede">Five keys, and they are the same everywhere — whichever manager is answering, and on all three systems.</p>
+        <ul class="keys">
+          <li><kbd>⇥</kbd> <span data-i18n="tour.k1">inserts the current candidate</span></li>
+          <li><kbd>↓</kbd> <span data-i18n="tour.k2">enters the list, then moves down one candidate</span></li>
+          <li><kbd>↑</kbd> <span data-i18n="tour.k3">moves up; on the first candidate, hands the keyboard back to the shell</span></li>
+          <li><kbd>⏎</kbd> <span data-i18n="tour.k4">completes the last part and runs the line, in one keystroke</span></li>
+          <li><kbd>^G</kbd> <span data-i18n="tour.k5">closes the popup for this line — ⇥ reopens it</span></li>
+        </ul>
+        <p data-i18n="tour.s5.arrows"><strong>Your arrow keys are never confiscated.</strong> Until the popup holds the keyboard, <kbd>↑</kbd> and <kbd>↓</kbd> remain your shell's history, popup open or not. What they will do is written in the frame's footer, so you never have to guess which mode you are in.</p>
+      </div>
+    </section>
+
+    <!-- Étape 6 ---------------------------------------------------------- -->
+    <section id="etape-6">
+      <div class="wrap">
+        <p class="eyebrow">6</p>
+        <h2 data-i18n="tour.s6.h2">Filter harder: <kbd>^R</kbd>.</h2>
+        <p data-i18n="tour.s6.lede">Prefix matching runs out when you don't know how the name starts. <kbd>^R</kbd> switches the filter — and only the filter: the line, the frame and the keys don't move, and the title says which mode is on.</p>
+        <p class="note" data-i18n="tour.s6.how">Watch the list <em>grow</em> at the moment of the switch: the pattern is not anchored, so it matches anywhere in a name. Then the alternation cuts it down to four — something no prefix search can express. A pattern that doesn't compile matches nothing, and the frame says so rather than spilling the whole catalogue.</p>
+
+        <div data-os-block="macos">
+          <h3 class="os-block-title">macOS</h3>
+          <figure class="demo">
+            <div class="demo-frame">
+              <video muted loop playsinline preload="none"
+                     poster="/media/macos-04-regex.png"
+                     data-src="/media/macos-04-regex.mp4"
+                     aria-labelledby="tour-mac04"></video>
+            </div>
+            <figcaption id="tour-mac04" data-i18n="tour.demo.mac04">fire by prefix, then ^R — arrayfire joins the list, because the pattern is not anchored. Then (bird|fly) keeps four. Captured on macOS.</figcaption>
+          </figure>
+        </div>
+
+        <div data-os-block="windows">
+          <h3 class="os-block-title">Windows</h3>
+          <figure class="demo">
+            <div class="demo-frame">
+              <video muted loop playsinline preload="none"
+                     poster="/media/windows-04-regex.png"
+                     data-src="/media/windows-04-regex.mp4"
+                     aria-labelledby="tour-win04"></video>
+            </div>
+            <figcaption id="tour-win04" data-i18n="tour.demo.win04">winget install fire offers twenty-one candidates by prefix. ^R, then (bird|blade), keeps four. Captured on Windows.</figcaption>
+          </figure>
+        </div>
+
+        <div data-os-block="omarchy">
+          <h3 class="os-block-title">Omarchy</h3>
+          <p class="demo-absent" data-i18n="tour.demo.omarchy04">The same <kbd>^R</kbd> toggle works on Arch, over the repositories and the AUR at once. Its capture isn't recorded yet.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Étape 7 ---------------------------------------------------------- -->
+    <section id="etape-7">
+      <div class="wrap">
+        <p class="eyebrow">7</p>
+        <h2 data-i18n="tour.s7.h2">Complete, then run — for real.</h2>
+        <p data-i18n="tour.s7.lede"><kbd>⏎</kbd> completes the last part <strong>and</strong> launches the line, in a single keystroke. From that point on jigger does nothing at all: what scrolls past is the manager's own output, relayed as is — progress bars, prompts and elevation included.</p>
+
+        <div data-os-block="macos">
+          <h3 class="os-block-title">macOS</h3>
+          <p class="demo-absent" data-i18n="tour.demo.mac05">Installing through the popup behaves the same on macOS, with brew answering. No recording of it exists yet — switch to Windows above to watch one, the gesture is identical.</p>
+        </div>
+
+        <div data-os-block="windows">
+          <h3 class="os-block-title">Windows</h3>
+          <figure class="demo">
+            <div class="demo-frame">
+              <video muted loop playsinline preload="none"
+                     poster="/media/windows-05-installation.png"
+                     data-src="/media/windows-05-installation.mp4"
+                     aria-labelledby="tour-win05"></video>
+            </div>
+            <figcaption id="tour-win05" data-i18n="tour.demo.win05">jg install hexy, completed to hexyl, then run — scoop's output, relayed untouched. Captured on Windows, against a real manager.</figcaption>
+          </figure>
+        </div>
+
+        <div data-os-block="omarchy">
+          <h3 class="os-block-title">Omarchy</h3>
+          <p class="demo-absent" data-i18n="tour.demo.omarchy05">Same on Arch, with yay answering — its own AUR prompts relayed as is, since jigger does nothing at all once the line is running. No capture of it is recorded yet.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Étape 8 ---------------------------------------------------------- -->
+    <section id="etape-8">
+      <div class="wrap">
+        <p class="eyebrow">8</p>
+        <h2 data-i18n="tour.s8.h2">The other way in: one syntax, <span class="mono">jg</span>.</h2>
+        <p class="lede" data-i18n="tour.s8.lede">Everything so far kept your manager's own words. <span class="mono">jg</span> speaks a single language for all of them: <span class="mono">jg install fd</span> reaches whichever manager knows <span class="mono">fd</span>, without you having to know which one. The facade only adds — <span class="mono">brew install fd</span> keeps working exactly as before, popup included.</p>
+        <p class="note" data-i18n="tour.s8.route">When several managers know the same name, jigger <strong>never</strong> chooses for you: the picker opens and you decide. When none does, it says so, with the closest neighbours.</p>
+
+        <div data-os-block="macos">
+          <h3 class="os-block-title">macOS</h3>
+          <figure class="demo">
+            <div class="demo-frame">
+              <video muted loop playsinline preload="none"
+                     poster="/media/macos-02-jg.png"
+                     data-src="/media/macos-02-jg.mp4"
+                     aria-labelledby="tour-mac02"></video>
+            </div>
+            <figcaption id="tour-mac02" data-i18n="tour.demo.mac02">jg install fd — the facade answers for the manager that knows the package. Captured on macOS.</figcaption>
+          </figure>
+        </div>
+
+        <div data-os-block="windows">
+          <h3 class="os-block-title">Windows</h3>
+          <figure class="demo">
+            <div class="demo-frame">
+              <video muted loop playsinline preload="none"
+                     poster="/media/windows-02-jg.png"
+                     data-src="/media/windows-02-jg.mp4"
+                     aria-labelledby="tour-win02"></video>
+            </div>
+            <figcaption id="tour-win02" data-i18n="tour.demo.win02">jg install node — with two managers side by side, the right-hand column names which one answers for each candidate. Captured on Windows.</figcaption>
+          </figure>
+        </div>
+
+        <div data-os-block="omarchy">
+          <h3 class="os-block-title">Omarchy</h3>
+          <p class="demo-absent" data-i18n="tour.demo.omarchy02">The facade behaves the same, with one detail that belongs to Arch: pacman and yay are two doors onto the same database, so <span class="mono">jg</span> lists your packages <strong>once</strong>, never twice. No recording of it exists yet.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Étape 9 ---------------------------------------------------------- -->
+    <section id="etape-9">
+      <div class="wrap">
+        <p class="eyebrow">9</p>
+        <h2 data-i18n="tour.s9.h2">Same gesture, other verbs.</h2>
+        <p data-i18n="tour.s9.lede">Nothing here is specific to installing. <span class="mono">upgrade</span>, <span class="mono">search</span>, <span class="mono">list</span> and <span class="mono">outdated</span> are completed and run the same way — twelve verbs in all, each translated into what your manager actually expects.</p>
+
+        <div data-os-block="macos">
+          <h3 class="os-block-title">macOS</h3>
+          <p class="demo-absent" data-i18n="tour.demo.mac06">It is the same on macOS, with brew doing the upgrading. Its capture isn't recorded yet.</p>
+        </div>
+
+        <div data-os-block="windows">
+          <h3 class="os-block-title">Windows</h3>
+          <figure class="demo">
+            <div class="demo-frame">
+              <video muted loop playsinline preload="none"
+                     poster="/media/windows-06-upgrade.png"
+                     data-src="/media/windows-06-upgrade.mp4"
+                     aria-labelledby="tour-win06"></video>
+            </div>
+            <figcaption id="tour-win06" data-i18n="tour.demo.win06">jg upgrade hyperf, completed to hyperfine, then run — scoop replacing 1.16.1 with 1.20.0. Captured on Windows, against a real manager.</figcaption>
+          </figure>
+        </div>
+
+        <div data-os-block="omarchy">
+          <h3 class="os-block-title">Omarchy</h3>
+          <p class="demo-absent" data-i18n="tour.demo.omarchy06">Same gesture on Arch. Note that yay drives and pacman only reads, which is why <span class="mono">jg install --pm pacman</span> does not exist while yay is installed. Its capture isn't recorded yet.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Étape 10 --------------------------------------------------------- -->
+    <section id="etape-10">
+      <div class="wrap">
+        <p class="eyebrow">10</p>
+        <h2 data-i18n="tour.s10.h2">Not only package managers.</h2>
+        <p data-i18n="tour.s10.lede">Type <span class="mono">ssh</span> and a space: the popup offers the hosts of your <span class="mono">~/.ssh/config</span>, each with its <span class="mono">HostName</span> alongside. Same frame, same keys — only the catalogue changed. jigger never opens the connection; it completes the line you will run yourself.</p>
+
+        <div data-os-block="macos">
+          <h3 class="os-block-title">macOS</h3>
+          <figure class="demo">
+            <div class="demo-frame">
+              <video muted loop playsinline preload="none"
+                     poster="/media/macos-03-ssh.png"
+                     data-src="/media/macos-03-ssh.mp4"
+                     aria-labelledby="tour-mac03"></video>
+            </div>
+            <figcaption id="tour-mac03" data-i18n="tour.demo.mac03">ssh and a space: the servers of your ~/.ssh/config, each with its address alongside. Captured on macOS.</figcaption>
+          </figure>
+        </div>
+
+        <div data-os-block="windows">
+          <h3 class="os-block-title">Windows</h3>
+          <figure class="demo">
+            <div class="demo-frame">
+              <video muted loop playsinline preload="none"
+                     poster="/media/windows-03-ssh.png"
+                     data-src="/media/windows-03-ssh.mp4"
+                     aria-labelledby="tour-win03"></video>
+            </div>
+            <figcaption id="tour-win03" data-i18n="tour.demo.win03">The same list and the same ~/.ssh/config, under PowerShell — atelier included, which comes from an Include. Captured on Windows.</figcaption>
+          </figure>
+        </div>
+
+        <div data-os-block="omarchy">
+          <h3 class="os-block-title">Omarchy</h3>
+          <p class="demo-absent" data-i18n="tour.demo.omarchy03">Nothing changes on Arch: the picker reads <span class="mono">~/.ssh/config</span> and nothing else. None was captured on Omarchy yet.</p>
+        </div>
+
+        <p data-i18n="tour.s10.more"><a href="/ssh.html">The SSH picker has a page of its own <span class="arw">→</span></a> — what it completes, what it never reads, and why a pattern is not a server.</p>
+      </div>
+    </section>
+
+    <!-- Étape 11 --------------------------------------------------------- -->
+    <section id="etape-11">
+      <div class="wrap">
+        <p class="eyebrow">11</p>
+        <h2 data-i18n="tour.s11.h2">Without the popup: calling <span class="mono">jigger</span> yourself.</h2>
+        <p class="lede" data-i18n="tour.s11.lede">The plugin is only a client. Every subcommand works on its own — which is the clearest way to see what is happening when something looks wrong, and the only way when there is no interactive shell at all: a script, a cron, a CI.</p>
+        <pre class="cmd"><code data-verifier="install">jigger complete "brew install fire"</code></pre>
+        <p class="note" data-i18n="tour.s11.complete">The candidates, one per line — exactly what the popup would have drawn.</p>
+        <pre class="cmd"><code data-verifier="install">jigger render --line "brew ins" --cols 80</code></pre>
+        <p class="note" data-i18n="tour.s11.render">One popup frame, drawn once on standard output, metadata included.</p>
+        <pre class="cmd"><code data-verifier="install">jigger pick "brew uninstall 7z"</code></pre>
+        <p class="note" data-i18n="tour.s11.pick">The full-screen picker — the same one <span class="mono">JIGGER_LIVE=0</span> gives you on <kbd>⇥</kbd> if you would rather nothing ever appeared unasked.</p>
+        <pre class="cmd"><code data-verifier="install">jigger prompt</code></pre>
+        <p class="note" data-i18n="tour.s11.prompt">The cached state your prompt hook reads — how many upgrades are waiting, without a single network call.</p>
+        <pre class="cmd"><code data-verifier="install">jigger warm --all</code></pre>
+        <p class="note" data-i18n="tour.s11.warm">Rebuilds the catalogues. Slow, and worth knowing about the day the frame says “building the catalog…” and never stops.</p>
+        <p data-i18n="tour.s11.select">And to pick rows <em>into</em> a pipe, ask for it explicitly — <span class="mono">--select</span> draws the view on the terminal and sends only the chosen names down the pipe, one per line:</p>
+        <pre class="cmd"><code data-verifier="install">jg install $(jg search fd --select)</code></pre>
+        <p class="note" data-i18n="tour.s11.pipe">Nothing changes when the output isn't a terminal: <span class="mono">jg list | grep fd</span> prints the same plain table it always has, byte for byte, and <span class="mono">--json</span> is never paged — it is a machine contract.</p>
+      </div>
+    </section>
+
+    <!-- Fin -------------------------------------------------------------- -->
+    <section id="apres">
+      <div class="wrap">
+        <aside class="encart">
+          <h2 data-i18n="tour.end.h2">That's the whole of it.</h2>
+          <p data-i18n="tour.end.p">Eleven steps, and nothing left to learn: from here you type what you were already typing, and the frame keeps up. What remains is detail — the twelve verbs and their translations, the settings, the pitfalls of a PowerShell profile that takes <kbd>^R</kbd> back.</p>
+          <p class="foot-links">
+            <a href="/utiliser.html" data-i18n="tour.end.use">The reference page <span class="arw">→</span></a>
+            <a href="/ssh.html" data-i18n="tour.end.ssh">The SSH picker <span class="arw">→</span></a>
+            <a href="https://gitlab.yg-devworks.com/yves/jigger/-/blob/main/docs/getting-started.md" data-i18n="tour.end.guide">The full guide <span class="arw">→</span></a>
+          </p>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p data-i18n="foot.made">Free software, Apache 2.0. Built in the open.</p>
+      <p class="foot-links">
+        <a href="https://gitlab.yg-devworks.com/yves/jigger" data-i18n="foot.repo">Repository</a>
+        <a href="https://gitlab.yg-devworks.com/yves/jigger/-/blob/main/docs/getting-started.md" data-i18n="foot.guide">Getting started</a>
+        <a href="https://gitlab.yg-devworks.com/yves/jigger/-/blob/main/CHANGELOG.md" data-i18n="foot.changelog">Changelog</a>
+      </p>
+    </div>
+  </footer>
+</body>
+</html>

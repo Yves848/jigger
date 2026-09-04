@@ -8,8 +8,8 @@ RACINE="$(cd .. && pwd)"
 RESEAU=0
 [ "${1:-}" = "--reseau" ] && RESEAU=1
 
-# Les trois pages du site. Tout contrôle qui lit « la page » les lit toutes.
-PAGES=(index.html utiliser.html ssh.html)
+# Les quatre pages du site. Tout contrôle qui lit « la page » les lit toutes.
+PAGES=(index.html parcours.html utiliser.html ssh.html)
 
 # Les systèmes que le site montre. Le sélecteur en a trois depuis qu'Omarchy s'y
 # est ajouté ; les énumérer ici plutôt que de les écrire en dur dans le contrôle 8
@@ -59,7 +59,7 @@ for p in "${PAGES[@]}"; do
     done
 done
 
-# Externes : seulement sur demande, car ça dépend du réseau. Les trois pages, et
+# Externes : seulement sur demande, car ça dépend du réseau. Les quatre pages, et
 # non la seule page d'accueil : le guide d'installation n'est cité que par
 # utiliser.html, l'ADR-0005 que par ssh.html — deux liens qui échappaient au filet.
 if [ "$RESEAU" = 1 ]; then

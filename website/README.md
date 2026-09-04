@@ -1,7 +1,7 @@
 # Le site de jigger
 
-Un site statique, bilingue, sans build : trois pages servies telles quelles, avec quatre
-schémas SVG écrits à la main, dix-huit médias et un vérificateur à huit contrôles.
+Un site statique, bilingue, sans build : quatre pages servies telles quelles, avec quatre
+schémas SVG écrits à la main, vingt médias et un vérificateur à huit contrôles.
 La conception est dans [`docs/specs/2026-09-03-site-jigger-refonte-design.md`](../docs/specs/2026-09-03-site-jigger-refonte-design.md).
 
 ## Prévisualiser
@@ -13,7 +13,7 @@ cd website && python3 -m http.server 8080
 Puis <http://localhost:8080/>. Ouvrir le fichier directement (`file://`) marche aussi,
 mais les chemins absolus (`/styles.css`) ne résolvent pas : passez par le serveur.
 
-Les trois pages — `index.html`, `utiliser.html`, `ssh.html` — vivent à plat, aux
+Les quatre pages — `index.html`, `parcours.html`, `utiliser.html`, `ssh.html` — vivent à plat, aux
 **mêmes chemins qu'en ligne** : `/styles.css`, `/app.js`, `/jigger-icon.svg`, `/og.png`,
 `/media/…`. Ce que vous voyez en local est ce qui sera servi.
 
@@ -27,12 +27,12 @@ Les trois pages — `index.html`, `utiliser.html`, `ssh.html` — vivent à plat
 Le déploiement lance `verifier.sh` de lui-même et s'arrête au premier échec. Huit
 contrôles :
 
-1. **Parité des langues** — chaque `data-i18n` des trois pages a une entrée dans le
+1. **Parité des langues** — chaque `data-i18n` des quatre pages a une entrée dans le
    dictionnaire `FR` de `app.js`, et chaque entrée du dictionnaire est employée quelque
    part. Attrape une clé posée dans le HTML et jamais traduite, et une traduction
    devenue orpheline après suppression d'un bloc.
 2. **Liens** — chaque ancre `href="#…"` désigne un `id` qui existe dans la page. Avec
-   `--reseau`, les liens externes **des trois pages** sont interrogés et doivent répondre
+   `--reseau`, les liens externes **des quatre pages** sont interrogés et doivent répondre
    en 2xx ou 3xx — le guide d'installation n'est cité que par `utiliser.html` et
    l'ADR-0005 que par `ssh.html`. Attrape une ancre mal orthographiée et un lien externe
    mort.
@@ -41,11 +41,12 @@ contrôles :
    pas un : le parcours pas à pas vit dans le premier, le bloc à copier-coller par
    plateforme et le `git clone` du greffon Windows vivent dans le second. Attrape une
    commande affichée sur le site qui a divergé de la documentation.
-4. **En-têtes identiques** — le bloc `<header class="site-header">` d'`utiliser.html`
-   et de `ssh.html` doit être identique à celui d'`index.html`, à la classe `on` près.
-   L'en-tête est recopié dans chaque page plutôt qu'injecté par `app.js`, pour que la
-   navigation existe sans JavaScript ; ce contrôle est le prix de ce choix. Attrape une
-   navigation modifiée sur une page et oubliée sur les deux autres.
+4. **En-têtes identiques** — le bloc `<header class="site-header">` de
+   `parcours.html`, d'`utiliser.html` et de `ssh.html` doit être identique à celui
+   d'`index.html`, à la classe `on` près. L'en-tête est recopié dans chaque page plutôt
+   qu'injecté par `app.js`, pour que la navigation existe sans JavaScript ; ce contrôle
+   est le prix de ce choix. Attrape une navigation modifiée sur une page et oubliée sur
+   les trois autres.
 5. **Couleurs codées en dur** — aucune couleur (`#rgb`, `#rrggbb`, `rgb()`, `rgba()`) en
    dehors du bloc `:root` de `styles.css`. Attrape une couleur posée à la main dans une
    règle, qui ne suivrait pas le jour où la palette change.
@@ -78,7 +79,7 @@ qu'un et l'appliquait aux trois.
 
 Le dictionnaire porte des commentaires qui délimitent des blocs, mais pas un par page :
 `/* --- les titres de page --- */` couvre les trois clés `title.*`,
-`/* --- partagé : en-tête et pied --- */` couvre `nav.*` (les trois pages en dépendent),
+`/* --- partagé : en-tête et pied --- */` couvre `nav.*` (les quatre pages en dépendent),
 `/* --- page « utiliser » --- */` couvre les clés `use.*`, `/* --- page « ssh » --- */`
 couvre les clés `ssh.*` et `dia4.*`. Les clés de l'accueil (`hero.*`, `home.*`,
 `popup.*`, `dia.*`, `dia2.*`, `dia3.*`, `facade.*`, `guar.*`, `prompt.*`, `coc.*`,
@@ -177,7 +178,7 @@ cd website && "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
 sips -g pixelWidth -g pixelHeight og.png     # doit dire 1200 × 630
 ```
 
-L'image est commune aux trois pages ; seuls `og:url`, `og:title` et `og:description`
+L'image est commune aux quatre pages ; seuls `og:url`, `og:title` et `og:description`
 changent d'une page à l'autre, repris du `<title>` et de la `<meta name="description">`
 de chacune.
 
