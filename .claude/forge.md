@@ -32,13 +32,13 @@ où le monde le cherche. Conséquences pratiques :
   [`docs/garde-fou-miroir.md`](../docs/garde-fou-miroir.md) existent pour ça.
 - Les binaires de release sont publiés **sur les deux** : la CI GitLab pousse aussi les
   archives vers la release GitHub (`tools/publier-github.sh`, job `github:`), qui demande
-  `GITHUB_RELEASE_TOKEN` en variable masquée du projet GitLab.
+  `GITHUB_RELEASE_TOKEN` en variable masquée — et **non protégée** — du projet GitLab.
 
 **Le miroir est public.** Tout ce qui est fusionné dans `main` est visible d'Internet dès
 la synchronisation suivante — irréversiblement, un dépôt supprimé pouvant déjà avoir été
 cloné ou indexé.
 
-## Publier une release — trois pièges vérifiés
+## Publier une release — quatre pièges vérifiés
 
 **Ne pas créer la release à la main.** Le job `release:` du stage `publier` s'en charge au
 tag : il teste si elle existe, la crée sinon, tire ses notes du `CHANGELOG.md` et la nomme
@@ -47,15 +47,40 @@ sur sa branche « release existante » et écrase titre et description — mais 
 inutile, et le titre posé à la main est perdu. Le skill `gitlab-changelog` prescrit
 l'étape 4 « créer la release » de façon générique ; **ici, elle est automatisée**.
 
-**`GITHUB_RELEASE_TOKEN` doit exister avant de taguer.** Le job `github:` publie les
-archives sur la release du miroir, et sans jeton il échoue — bruyamment, ce qui est voulu :
-« sans jeton on ne peut rien publier : on s'arrête plutôt que de faire semblant ». Le
-rattrapage est prévu, `tools/publier-github.sh <tag> dist/` servant la CI et la main.
-Vérifier avant le tag :
+**`GITHUB_RELEASE_TOKEN` doit exister *et être valide* avant de taguer.** Le job
+`github:` publie les archives sur la release du miroir, et sans jeton il échoue —
+bruyamment, ce qui est voulu : « sans jeton on ne peut rien publier : on s'arrête plutôt
+que de faire semblant ». Le rattrapage est prévu, `tools/publier-github.sh <tag> [dist/]`
+servant la CI et la main ; sans dossier, il va chercher les archives dans le registre
+générique de GitLab.
+
+Elle **existe depuis le 4 septembre 2026** et porte le jeton OAuth du `gh` local
+(`gho_…`, scopes `gist`, `read:org`, `repo`, `workflow`). **Ce jeton tourne** dès que `gh`
+se réauthentifie sur cette machine, et la variable devient alors silencieusement invalide
+— la CI ne le dira qu'au tag suivant. Un PAT dédié, à portée réduite, vaut mieux dès qu'on
+en a un.
+
+Vérifier avant le tag — **la présence ne suffit pas**, une valeur tronquée de 13
+caractères y a déjà séjourné en répondant `401` :
 
 ```bash
-glab api projects/25/variables | grep -o GITHUB_RELEASE_TOKEN
+# glab sort en 401 sur cet endpoint : c'est le jeton du trousseau qu'il faut.
+TOK=$(printf "protocol=https\nhost=gitlab.yg-devworks.com\n\n" | git credential fill | sed -n 's/^password=//p')
+GH=$(curl -s -H "PRIVATE-TOKEN: $TOK" \
+     https://gitlab.yg-devworks.com/api/v4/projects/25/variables/GITHUB_RELEASE_TOKEN \
+     | python3 -c "import sys,json;print(json.load(sys.stdin)['value'])")
+curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer $GH" https://api.github.com/user
 ```
+
+Attendu : `200`. Tout le reste veut dire que le prochain tag repartira avec une pipeline
+rouge.
+
+**La variable doit être masquée mais NON protégée.** C'est contre-intuitif — un secret,
+on le protège — et c'est faux ici : le projet n'a **aucun tag protégé**
+(`GET projects/25/protected_tags` rend une liste vide) et le job `github:` ne tourne que
+sur tag (`rules: if: $CI_COMMIT_TAG`). Une variable protégée ne lui serait donc *jamais*
+exposée, et l'échec serait exactement celui d'un jeton absent — de quoi accuser le jeton
+pendant un moment.
 
 **Le tag n'est pas le seul geste.** `main.go` porte `var version`, et un test
 (`TestLesBannieresSuiventLaVersion`) exige que les bannières « jigger X.Y.Z » de six
@@ -73,3 +98,7 @@ et sa version française annoncent aussi un numéro concret sans être gardés.
   `CHANGELOG.md`. Voir le skill `gitlab-changelog`.
 - Si le MCP GitLab ne répond plus, le skill `reauth-mcp-gitlab` couvre la reconnexion —
   ne pas se rabattre sur l'API REST sans avoir essayé.
+- **`main` est protégée avec `allow_force_push: false`.** Un `push --force-with-lease`,
+  même une minute après le commit fautif, est refusé par le hook `pre-receive` du serveur.
+  Un message de commit raté se rectifie donc par un commit de plus, pas par un `--amend` :
+  inutile de proposer la réécriture, elle ne passera pas.
