@@ -112,9 +112,15 @@ Reload your shell (`exec zsh`).
 
 ### PowerShell (winget, scoop)
 
+The scoop bucket installs the **binary** only — the module comes from the repository:
+
+```powershell
+git clone https://gitlab.yg-devworks.com/yves/jigger.git $HOME\git\jigger
+```
+
 ```powershell
 # in $PROFILE  (notepad $PROFILE to open it)
-Import-Module C:\path\to\jigger\shell\jigger.psm1
+Import-Module $HOME\git\jigger\shell\jigger.psm1
 ```
 
 Reload your shell (`. $PROFILE`, or a new tab). PowerShell 7 is recommended;
@@ -506,7 +512,7 @@ source /path/to/jigger/shell/jigger.plugin.zsh
 
 ```powershell
 $env:JIGGER_PROMPT = '1'                           # $PROFILE
-Import-Module C:\path\to\jigger\shell\jigger.psm1
+Import-Module $HOME\git\jigger\shell\jigger.psm1
 ```
 
 Under PowerShell, `prompt` is the only "precmd" available: jigger **wraps** whatever

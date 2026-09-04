@@ -172,9 +172,19 @@ wherever it needs to in zsh's hooks.
 
 ### PowerShell
 
+**The scoop bucket installs the binary only.** The module — the part that draws the
+popup — lives in the repository, so clone it first. This step has no macOS equivalent:
+there, Homebrew drops the plugin next to the binary.
+
+```powershell
+git clone https://gitlab.yg-devworks.com/yves/jigger.git $HOME\git\jigger
+```
+
+Then, in your profile:
+
 ```powershell
 # in $PROFILE   (notepad $PROFILE to open it)
-Import-Module C:\path\to\jigger\shell\jigger.psm1
+Import-Module $HOME\git\jigger\shell\jigger.psm1
 ```
 
 Then reload: `. $PROFILE`, or open a new tab.
@@ -541,7 +551,7 @@ source "$(brew --prefix jigger)/share/jigger/jigger.plugin.zsh"
 ```powershell
 # $PROFILE, before the Import-Module
 $env:JIGGER_ROWS = '12'
-Import-Module C:\path\to\jigger\shell\jigger.psm1
+Import-Module $HOME\git\jigger\shell\jigger.psm1
 ```
 
 | Variable | Default | Role |
@@ -639,7 +649,7 @@ source "$(brew --prefix jigger)/share/jigger/jigger.plugin.zsh"
 
 ```powershell
 $env:JIGGER_PROMPT = '1'                           # $PROFILE, AFTER oh-my-posh/starship
-Import-Module C:\path\to\jigger\shell\jigger.psm1
+Import-Module $HOME\git\jigger\shell\jigger.psm1
 ```
 
 The **names of the exported variables follow the machine**, and they're settled once,

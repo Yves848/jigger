@@ -174,9 +174,19 @@ là où il faut dans les hooks de zsh.
 
 ### PowerShell
 
+**Le bucket scoop ne pose que le binaire.** Le module — la partie qui dessine le cadre —
+vit dans le dépôt : il faut donc le cloner d'abord. Cette étape n'a pas d'équivalent sous
+macOS, où Homebrew pose le greffon à côté du binaire.
+
+```powershell
+git clone https://gitlab.yg-devworks.com/yves/jigger.git $HOME\git\jigger
+```
+
+Puis, dans ton profil :
+
 ```powershell
 # dans $PROFILE   (notepad $PROFILE pour l'ouvrir)
-Import-Module C:\chemin\vers\jigger\shell\jigger.psm1
+Import-Module $HOME\git\jigger\shell\jigger.psm1
 ```
 
 Puis recharge : `. $PROFILE`, ou ouvre un nouvel onglet.
@@ -536,7 +546,7 @@ source "$(brew --prefix jigger)/share/jigger/jigger.plugin.zsh"
 ```powershell
 # $PROFILE, avant l'Import-Module
 $env:JIGGER_ROWS = '12'
-Import-Module C:\chemin\vers\jigger\shell\jigger.psm1
+Import-Module $HOME\git\jigger\shell\jigger.psm1
 ```
 
 | Variable | Défaut | Rôle |
@@ -636,7 +646,7 @@ source "$(brew --prefix jigger)/share/jigger/jigger.plugin.zsh"
 
 ```powershell
 $env:JIGGER_PROMPT = '1'                           # $PROFILE, APRÈS oh-my-posh/starship
-Import-Module C:\chemin\vers\jigger\shell\jigger.psm1
+Import-Module $HOME\git\jigger\shell\jigger.psm1
 ```
 
 Le **nom des variables exportées suit la machine**, et il se décide une fois, au chargement
