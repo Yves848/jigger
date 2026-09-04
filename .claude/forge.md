@@ -54,11 +54,18 @@ que de faire semblant ». Le rattrapage est prévu, `tools/publier-github.sh <ta
 servant la CI et la main ; sans dossier, il va chercher les archives dans le registre
 générique de GitLab.
 
-Elle **existe depuis le 4 septembre 2026** et porte le jeton OAuth du `gh` local
-(`gho_…`, scopes `gist`, `read:org`, `repo`, `workflow`). **Ce jeton tourne** dès que `gh`
-se réauthentifie sur cette machine, et la variable devient alors silencieusement invalide
-— la CI ne le dira qu'au tag suivant. Un PAT dédié, à portée réduite, vaut mieux dès qu'on
-en a un.
+Elle **existe depuis le 4 septembre 2026** et porte un **PAT dédié à portée fine**
+(`github_pat_…`), limité au seul dépôt `Yves848/jigger` avec la permission
+`Contents: Read and write` — le strict nécessaire pour créer une release et y téléverser
+des archives. GitHub ne renvoie **aucun en-tête `github-authentication-token-expiration`**
+dessus : il est sans date de fin, et ne lâchera donc pas la CI de lui-même. Le refaire, le
+cas échéant, passe par <https://github.com/settings/personal-access-tokens/new> ; l'API ne
+sait pas fabriquer un PAT, seule l'interface web le fait.
+
+Un premier essai y avait posé le jeton OAuth du `gh` local (`gho_…`). Il a été remplacé le
+jour même : ce jeton-là **tourne** dès que `gh` se réauthentifie sur la machine, ce qui
+rendrait la variable silencieusement invalide, découverte au tag suivant. Ne pas y revenir
+par commodité.
 
 Vérifier avant le tag — **la présence ne suffit pas**, une valeur tronquée de 13
 caractères y a déjà séjourné en répondant `401` :
