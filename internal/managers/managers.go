@@ -8,6 +8,8 @@
 package managers
 
 import (
+	"fmt"
+	"os"
 	"path/filepath"
 	"runtime"
 	"sort"
@@ -15,6 +17,7 @@ import (
 
 	"gitlab.yg-devworks.com/yves/jigger/internal/brew"
 	"gitlab.yg-devworks.com/yves/jigger/internal/pacman"
+	"gitlab.yg-devworks.com/yves/jigger/internal/plugin"
 	"gitlab.yg-devworks.com/yves/jigger/internal/pm"
 	"gitlab.yg-devworks.com/yves/jigger/internal/scoop"
 	"gitlab.yg-devworks.com/yves/jigger/internal/ssh"
@@ -24,8 +27,11 @@ import (
 // All rend les gestionnaires reconnus, quelle que soit la plateforme : c'est la
 // présence du mot dans la ligne qui compte, pas celle du binaire. Un `brew` tapé sous
 // Windows (WSL, Git Bash…) reste ainsi complété — au pire sur un catalogue vide.
+//
+// Les gestionnaires natifs sont placés en premier : ils ont priorité sur les plugins
+// lorsqu'ils portent le même nom (un plugin ne peut pas écraser brew, winget…).
 func All() []pm.Manager {
-	return []pm.Manager{
+	out := []pm.Manager{
 		brew.New(), winget.New(), scoop.New(),
 		// pacman et yay : deux portes sur la même base alpm, donc deux fournisseurs qui
 		// partagent tout sauf le catalogue AUR et la table des verbes (ADR-0007).
@@ -35,6 +41,21 @@ func All() []pm.Manager {
 		// qu'ils ne se posent pas. Ils partagent implémentation et catalogue.
 		ssh.New("ssh"), ssh.New("scp"), ssh.New("sftp"),
 	}
+	// Plugins tiers découverts dynamiquement. Un plugin qui reprend le mot d'un
+	// gestionnaire natif est écarté : laisser deux « brew » dans la liste ferait exécuter
+	// la ligne deux fois, et le routage n'a aucun moyen de les départager.
+	natifs := make(map[string]bool, len(out))
+	for _, m := range out {
+		natifs[m.Cmd()] = true
+	}
+	for _, p := range plugin.Discover() {
+		if natifs[p.Cmd()] {
+			fmt.Fprintf(os.Stderr, "jigger : le plugin %q est ignoré, ce nom est déjà celui d'un gestionnaire natif\n", p.Cmd())
+			continue
+		}
+		out = append(out, p)
+	}
+	return out
 }
 
 // Available rend les gestionnaires réellement installés sur la machine. C'est la liste

@@ -7,6 +7,7 @@ import (
 	"os/exec"
 
 	"gitlab.yg-devworks.com/yves/jigger/internal/i18n"
+	"gitlab.yg-devworks.com/yves/jigger/internal/plugin"
 	"gitlab.yg-devworks.com/yves/jigger/internal/pm"
 )
 
@@ -16,15 +17,10 @@ type Opts struct {
 	Yes  bool // accepter les accords de licence (winget)
 }
 
-// verbesNormalises : ceux dont la sortie est tabulaire, donc capturée et refondue. Tout
-// le reste est relayé — et c'est ce qui fait que les invites, les barres de progression et
-// l'élévation UAC fonctionnent sans une ligne de code de TTY.
-var verbesNormalises = map[pm.Verb]bool{
-	"list": true, "outdated": true, "search": true, "source": true,
-}
-
-// Normalise dit si un verbe rend un tableau plutôt qu'une sortie relayée.
-func Normalise(v pm.Verb) bool { return verbesNormalises[v] }
+// Normalise dit si un verbe rend un tableau plutôt qu'une sortie relayée. La table vit
+// désormais dans pm : les plugins doivent en dériver leurs liaisons sans pouvoir importer
+// la façade (cf. pm.Normalise).
+func Normalise(v pm.Verb) bool { return pm.Normalise(v) }
 
 // lancer est le point d'injection des tests. relais dit si le processus hérite du
 // terminal (verbe relayé) ou si sa sortie est capturée (verbe normalisé).
@@ -118,7 +114,17 @@ func ExecuterAvec(v pm.Verb, cibles []Cible, o Opts) Resultat {
 		echoue := false
 		for _, argv := range liaison.Argv(cible.Args) {
 			argv = accords(cible.Mgr.Cmd(), v, argv, o)
-			out, c, err := lancer(cible.Mgr.Cmd(), argv, !lecture)
+
+			// Un plugin s'exécute exactement comme un gestionnaire natif : même relais de
+			// terminal, même lecture du code de sortie, même rejeu sur défaut de droits. Seul
+			// le programme lancé change — le mot de la ligne (« git ») n'est pas le binaire
+			// (« jigger-git »), et les confondre lancerait le vrai git.
+			binaire := cible.Mgr.Cmd()
+			if b, ok := plugin.Binaire(cible.Mgr); ok {
+				binaire = b
+			}
+
+			out, c, err := lancer(binaire, argv, !lecture)
 			if err != nil {
 				if !lecture {
 					// Écriture : on n'enchaîne pas sur un gestionnaire suivant après
@@ -128,7 +134,7 @@ func ExecuterAvec(v pm.Verb, cibles []Cible, o Opts) Resultat {
 					// Seule l'écriture porte un rejeu : une lecture qui échoue passe au
 					// gestionnaire suivant, il n'y a rien à relancer.
 					if d := pm.DroitsDe(cible.Mgr, c); d != pm.DroitsRien {
-						res.Rejeu = &Rejeu{Cmd: cible.Mgr.Cmd(), Argv: argv, Droits: d}
+						res.Rejeu = &Rejeu{Cmd: binaire, Argv: argv, Droits: d}
 					}
 					return res
 				}

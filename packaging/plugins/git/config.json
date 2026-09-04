@@ -1,0 +1,22 @@
+{
+  "name": "git",
+  "version": "1.0.0",
+  "cmd": "jigger-git",
+  "platforms": ["linux", "darwin", "windows"],
+  "verbs": {
+    "list":      {"native": ["list"],                       "pool": "aucun"},
+    "outdated":  {"native": ["outdated", "{args}"],         "pool": "aucun"},
+    "search":    {"native": ["search", "{args}"],           "pool": "aucun"},
+    "install":   {"native": ["run", "install", "{args}"],   "pool": "catalogue"},
+    "uninstall": {"native": ["run", "uninstall", "{args}"], "pool": "installees"},
+    "upgrade":   {"native": ["run", "upgrade", "{args}"],   "pool": "installees"}
+  },
+  "warmup": {
+    "catalog":   {"cmd": "jigger-git", "args": ["catalog"]},
+    "installed": {"cmd": "jigger-git", "args": ["list"]}
+  },
+  "parse": {
+    "package_fields": ["name", "version", "available", "kind", "source"],
+    "encoding": "utf-8"
+  }
+}
