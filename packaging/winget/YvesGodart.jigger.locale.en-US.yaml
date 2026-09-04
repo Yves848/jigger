@@ -1,0 +1,41 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.6.0.schema.json
+PackageIdentifier: YvesGodart.jigger
+PackageVersion: 0.15.0
+PackageLocale: en-US
+Publisher: Yves Godart
+PublisherUrl: https://gitlab.yg-devworks.com/yves
+PublisherSupportUrl: https://gitlab.yg-devworks.com/yves/jigger/-/issues
+PackageName: jigger
+PackageUrl: https://jigger.yg-devworks.com/
+License: Apache-2.0
+LicenseUrl: https://gitlab.yg-devworks.com/yves/jigger/-/blob/main/LICENSE
+ShortDescription: One syntax for winget, scoop, Homebrew and pacman, with a live popup that follows your typing.
+Description: |-
+  jigger is a small, self-contained Go binary wired into PowerShell. The moment you type
+  a package-manager command, a popup appears under the prompt and tracks your keystrokes,
+  offering the candidates that fit the context. Tab inserts the current one; Enter
+  completes the last part and runs the line in a single keystroke.
+
+  It never replaces your commands: winget install and scoop install keep working exactly
+  as before, popup included. The jg facade adds one syntax across every manager on the
+  machine, and the same popup completes ssh, scp and sftp from your ~/.ssh/config.
+
+  The binary alone completes nothing: the PowerShell module that draws the popup is
+  imported from the repository. See the guided tour at https://jigger.yg-devworks.com/parcours.html
+Moniker: jigger
+Tags:
+  - cli
+  - completion
+  - package-manager
+  - powershell
+  - scoop
+  - shell
+  - terminal
+  - tui
+  - winget
+ReleaseNotesUrl: https://gitlab.yg-devworks.com/yves/jigger/-/blob/main/CHANGELOG.md
+Documentations:
+  - DocumentLabel: Getting started
+    DocumentUrl: https://gitlab.yg-devworks.com/yves/jigger/-/blob/main/docs/getting-started.md
+ManifestType: defaultLocale
+ManifestVersion: 1.6.0

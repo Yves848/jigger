@@ -1,0 +1,63 @@
+# Maintainer: Yves Godart <yves.godart@yg-devworks.com>
+
+# Construit depuis les sources, au tag. `#tag=` plutôt qu'une archive : les
+# archives engendrées par GitLab n'ont pas toujours été stables octet pour
+# octet, et une somme qui change du jour au lendemain casse le paquet sans que
+# rien n'ait bougé côté projet.
+pkgname=jigger
+pkgver=0.15.0
+pkgrel=1
+pkgdesc='One syntax for pacman, yay, Homebrew, winget and scoop, with a live popup that follows your typing'
+arch=('x86_64')
+url='https://jigger.yg-devworks.com/'
+license=('Apache-2.0')
+depends=('glibc')
+makedepends=('go>=1.26' 'git')
+optdepends=(
+  'zsh: the plugin that draws the popup'
+  'yay: completion for the AUR alongside the repositories'
+)
+install=jigger.install
+source=("$pkgname::git+https://gitlab.yg-devworks.com/yves/jigger.git#tag=v$pkgver")
+sha256sums=('SKIP')
+
+build() {
+  cd "$pkgname"
+  # Préambule Go recommandé par les guidelines Arch : PIE, chemins nettoyés,
+  # module en lecture seule, cache de modules effaçable par makepkg.
+  export CGO_CPPFLAGS="${CPPFLAGS}"
+  export CGO_CFLAGS="${CFLAGS}"
+  export CGO_CXXFLAGS="${CXXFLAGS}"
+  export CGO_LDFLAGS="${LDFLAGS}"
+  export GOFLAGS='-buildmode=pie -trimpath -mod=readonly -modcacherw'
+  # La version est en dur dans main.go : aucun -ldflags à injecter, et donc
+  # aucun risque qu'un binaire annonce une version que le tag ne porte pas.
+  go build -o jigger .
+}
+
+check() {
+  cd "$pkgname"
+  # Les suites qui exigent un vrai pseudo-terminal (test-shell) ou une machine
+  # de référence (test-golden) ne tournent pas ici : elles échoueraient dans un
+  # chroot de compilation pour des raisons qui ne regardent pas le paquet.
+  go test ./...
+}
+
+package() {
+  cd "$pkgname"
+  install -Dm755 jigger "$pkgdir/usr/bin/jigger"
+
+  # Convention Arch pour les greffons zsh : /usr/share/zsh/plugins/<nom>/.
+  install -Dm644 shell/jigger.plugin.zsh \
+    "$pkgdir/usr/share/zsh/plugins/jigger/jigger.plugin.zsh"
+
+  # Les segments d'invite, optionnels mais inutilisables s'ils ne sont pas là.
+  install -Dm644 shell/oh-my-posh/pacman.segment.json \
+    "$pkgdir/usr/share/jigger/oh-my-posh/pacman.segment.json"
+  install -Dm644 shell/starship/pacman.toml \
+    "$pkgdir/usr/share/jigger/starship/pacman.toml"
+
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
+  install -Dm644 docs/getting-started.md "$pkgdir/usr/share/doc/$pkgname/getting-started.md"
+}

@@ -5,6 +5,11 @@
 **Package-manager assistance in the terminal** — context-aware completion and an
 interactive picker, right inside _your_ real shell.
 
+![jigger completing a brew install line, the popup narrowing with every letter](docs/media/out/macos-01-gestionnaire-natif.gif)
+
+*Captured on macOS — nothing is typed but the command itself. The [same popup on the three platforms](docs/getting-started.md#the-same-popup-on-all-three),
+and [how the captures are produced](docs/captures.md).*
+
 `jigger` is a small, self-contained Go binary (near-instant startup) wired into the
 shell: the moment you type a package-manager command, a **popup**
 ([Bubble Tea] / [Lip Gloss]) appears under the prompt and tracks your keystrokes,
@@ -32,11 +37,6 @@ completion contract is not reserved for package managers.
 
 Command-line companion to the **Cocktails** GUI app, but **fully independent**: it needs
 nothing but the package manager itself.
-
-![jigger completing a brew install line, the popup narrowing with every letter](docs/media/out/macos-01-gestionnaire-natif.gif)
-
-*Captured on macOS. The [same popup on the three platforms](docs/getting-started.md#the-same-popup-on-all-three),
-and [how the captures are produced](docs/captures.md).*
 
 ## What it does
 

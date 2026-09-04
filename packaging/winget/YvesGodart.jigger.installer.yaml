@@ -1,0 +1,18 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.6.0.schema.json
+PackageIdentifier: YvesGodart.jigger
+PackageVersion: 0.15.0
+MinimumOSVersion: 10.0.0.0
+InstallerType: zip
+# Le zip ne contient pas d'installeur : jigger.exe est un exécutable autonome,
+# posé à la racine de l'archive. « portable » est donc le type juste, et winget
+# se charge lui-même de l'alias sur le PATH.
+NestedInstallerType: portable
+NestedInstallerFiles:
+  - RelativeFilePath: jigger.exe
+    PortableCommandAlias: jigger
+Installers:
+  - Architecture: x64
+    InstallerUrl: https://gitlab.yg-devworks.com/api/v4/projects/25/packages/generic/jigger/0.15.0/jigger_0.15.0_windows_amd64.zip
+    InstallerSha256: D9702B69F05AD53ED28D2A9CFA94BF8AEA0B812C4B689AB61FAFB742AB50393C
+ManifestType: installer
+ManifestVersion: 1.6.0

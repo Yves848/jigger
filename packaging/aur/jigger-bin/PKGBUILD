@@ -1,0 +1,42 @@
+# Maintainer: Yves Godart <yves.godart@yg-devworks.com>
+
+# Variante précompilée, pour qui ne veut pas installer Go. Deux sources, et
+# c'est délibéré : l'archive de publication ne contient QUE le binaire, la
+# licence et le README — pas le greffon zsh, qui est pourtant ce qui dessine le
+# cadre. Un paquet qui n'installerait que l'archive livrerait un jigger muet.
+pkgname=jigger-bin
+_pkgname=jigger
+pkgver=0.15.0
+pkgrel=1
+pkgdesc='One syntax for pacman, yay, Homebrew, winget and scoop, with a live popup that follows your typing (prebuilt)'
+arch=('x86_64')
+url='https://jigger.yg-devworks.com/'
+license=('Apache-2.0')
+depends=('glibc')
+provides=("$_pkgname=$pkgver")
+conflicts=("$_pkgname")
+optdepends=(
+  'zsh: the plugin that draws the popup'
+  'yay: completion for the AUR alongside the repositories'
+)
+install=jigger-bin.install
+
+_base='https://gitlab.yg-devworks.com/api/v4/projects/25/packages/generic/jigger'
+source=(
+  "$_pkgname-$pkgver.tar.gz::$_base/$pkgver/jigger_${pkgver}_linux_amd64.tar.gz"
+  "jigger.plugin.zsh::https://gitlab.yg-devworks.com/yves/jigger/-/raw/v$pkgver/shell/jigger.plugin.zsh"
+)
+# Relevées sur le SHA256SUMS de la publication, et revérifiées après
+# téléchargement — pas recopiées de confiance.
+sha256sums=(
+  '811284b51e65df4e41c37150659681e9aca54614b16cd326b675462bc3d4e74a'
+  '27856a9f5f0c124511823363b5c2801f68004c10bc41b13734589a7b2cb6747a'
+)
+
+package() {
+  install -Dm755 "$srcdir/jigger" "$pkgdir/usr/bin/jigger"
+  install -Dm644 "$srcdir/jigger.plugin.zsh" \
+    "$pkgdir/usr/share/zsh/plugins/jigger/jigger.plugin.zsh"
+  install -Dm644 "$srcdir/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -Dm644 "$srcdir/README.md" "$pkgdir/usr/share/doc/$pkgname/README.md"
+}

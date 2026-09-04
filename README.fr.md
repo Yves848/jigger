@@ -5,6 +5,11 @@
 **Assistance aux gestionnaires de paquets dans le terminal** — complétion contextuelle
 et sélecteur interactif, dans _ton_ vrai shell.
 
+![jigger complétant une ligne brew install, le popup se resserrant à chaque lettre](docs/media/out/macos-01-gestionnaire-natif.gif)
+
+*Prise sur macOS — rien n'est tapé d'autre que la commande elle-même. Le [même popup sur les trois plateformes](docs/fr/getting-started.md#le-même-popup-sur-les-trois),
+et [comment les captures sont produites](docs/captures.md).*
+
 `jigger` est un petit binaire Go autonome (démarrage quasi instantané) branché dans le
 shell : dès que tu tapes une commande de gestionnaire de paquets, un **sélecteur**
 ([Bubble Tea] / [Lip Gloss]) s'affiche sous le prompt et suit ta frappe, proposant les
@@ -33,11 +38,6 @@ contrat de complétion n'est pas réservé aux gestionnaires de paquets.
 
 Compagnon en ligne de commande de l'app GUI **Cocktails**, mais **totalement indépendant** :
 il ne requiert que le gestionnaire lui-même.
-
-![jigger complétant une ligne brew install, le popup se resserrant à chaque lettre](docs/media/out/macos-01-gestionnaire-natif.gif)
-
-*Prise sur macOS. Le [même popup sur les trois plateformes](docs/fr/getting-started.md#le-même-popup-sur-les-trois),
-et [comment les captures sont produites](docs/captures.md).*
 
 ## Ce qu'il fait
 
