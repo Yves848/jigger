@@ -303,6 +303,40 @@ a:hover .arw { transform: translateX(3px); }
 }
 .demo-frame video,
 .demo-frame img { width: 100%; height: auto; display: block; }
+
+/* --- contrôle de lecture -------------------------------------------------
+   Une vidéo qui tourne en boucle sans moyen de l'arrêter est un défaut
+   d'accessibilité (WCAG 2.2.2) : le bouton est donc là pour tout le monde. Il
+   couvre tout le cadre — on clique l'image, pas une cible de 30 px — et
+   s'efface pendant la lecture pour ne pas masquer ce qu'on vient regarder.
+   Quand le système demande moins d'animations, rien ne démarre et le bouton
+   reste bien visible : c'est par lui qu'on voit les enregistrements. */
+.demo-frame { position: relative; }
+.demo-play {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0; border: 0; background: none;
+  color: var(--text); font: inherit; cursor: pointer;
+}
+.demo-play span {
+  display: flex; align-items: center; justify-content: center;
+  width: 66px; height: 66px; border-radius: 999px;
+  background: var(--crust);
+  border: 1px solid var(--surface-2);
+  font-size: 25px; line-height: 1; padding-left: 3px;
+  transition: opacity .15s ease, transform .15s ease;
+}
+.demo-play[data-state="paused"] span { padding-left: 5px; }
+.demo-play[data-state="playing"] span { opacity: 0; padding-left: 0; }
+.demo-play[data-state="playing"]:hover span,
+.demo-play[data-state="playing"]:focus-visible span { opacity: 1; }
+.demo-play:hover span { transform: scale(1.06); }
+.demo-play:focus-visible { outline: 2px solid var(--mauve); outline-offset: -4px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .demo-play span { transition: none; }
+  .demo-play:hover span { transform: none; }
+}
 .demo figcaption {
   margin-top: 10px;
   color: var(--subtext);

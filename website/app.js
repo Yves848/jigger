@@ -277,6 +277,9 @@
       b.setAttribute('aria-pressed', on ? 'true' : 'false');
       b.classList.toggle('on', on);
     });
+    if (boutons) {
+      boutons.forEach(function (b) { etiqueter(b, b.getAttribute('data-state')); });
+    }
     try { localStorage.setItem('jigger-lang', lang); } catch (e) {}
   }
 
@@ -292,16 +295,83 @@
 
   /* --- démonstrations ---------------------------------------------------
      Les vidéos ne portent pas leur src : app.js le pose au moment où la
-     démonstration devient visible. Deux raisons — ne pas télécharger les
-     enregistrements du système que le lecteur n'a pas choisi, et respecter
-     prefers-reduced-motion, où l'affiche suffit et rien ne démarre. */
+     démonstration doit jouer. Deux raisons — ne pas télécharger les
+     enregistrements du système que le lecteur n'a pas choisi, et ne rien
+     démarrer chez qui a demandé moins d'animations à son système. */
   var immobile = false;
   try {
     immobile = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   } catch (e) {}
 
+  /* Préférence explicite du lecteur, qui l'emporte sur le réglage système.
+     Sans elle, prefers-reduced-motion décidait SEUL — et un lecteur qui a
+     demandé « moins d'animations » n'avait alors aucun moyen de voir les
+     enregistrements : la page se réduisait à des images fixes, sans le dire.
+     C'est tout le contenu illustré du site qui lui restait invisible. */
+  var prefAnim = null;
+  try { prefAnim = localStorage.getItem('jigger-anim'); } catch (e) {}
+
+  function animationsAuto() {
+    if (prefAnim === 'on') { return true; }
+    if (prefAnim === 'off') { return false; }
+    return !immobile;
+  }
+
+  /* Le libellé du bouton ne passe pas par data-i18n : il change avec l'état
+     autant qu'avec la langue, ce que le remplacement d'innerHTML ne sait pas
+     faire. setLang le rappelle, plus bas. */
+  var ETIQ = {
+    en: { paused: 'Play this recording', playing: 'Pause this recording' },
+    fr: { paused: 'Lire cet enregistrement', playing: 'Mettre en pause' }
+  };
+
+  function etiqueter(b, etat) {
+    b.setAttribute('data-state', etat);
+    b.setAttribute('aria-label', (ETIQ[lang] || ETIQ.en)[etat]);
+    /* U+FE0E force la présentation TEXTE : sans lui, macOS rend ces deux
+       caractères en émoji couleur, hors de la palette du cadre. */
+    b.firstChild.textContent = (etat === 'playing') ? '\u23F8\uFE0E' : '\u25B6\uFE0E';
+  }
+
+  function lire(v) {
+    if (!v.src) { v.src = v.getAttribute('data-src'); }
+    var p = v.play();
+    if (p && p.catch) { p.catch(function () {}); }
+  }
+
+  /* Un bouton par démonstration, pour tout le monde : une vidéo qui tourne en
+     boucle sans moyen de l'arrêter est un défaut d'accessibilité (WCAG 2.2.2).
+     Il s'efface quand la lecture est en cours, et revient au survol ou au
+     clavier. */
+  var boutons = [];
+  Array.prototype.forEach.call(document.querySelectorAll('.demo-frame'), function (cadre) {
+    var v = cadre.querySelector('video[data-src]');
+    if (!v) { return; }
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'demo-play';
+    b.appendChild(document.createElement('span'));
+    cadre.appendChild(b);
+    boutons.push(b);
+
+    b.addEventListener('click', function () {
+      if (!v.paused) { v.pause(); return; }
+      if (animationsAuto()) { lire(v); return; }
+      /* Premier « lire » d'un lecteur en mouvement réduit : on retient le
+         choix et on lance tout ce qui est visible, sinon il devrait le refaire
+         sur chaque démonstration et sur chaque page. Le réglage système n'est
+         pas contourné — il est arbitré par un geste explicite. */
+      prefAnim = 'on';
+      try { localStorage.setItem('jigger-anim', 'on'); } catch (e) {}
+      activerDemos();
+    });
+
+    v.addEventListener('play', function () { etiqueter(b, 'playing'); });
+    v.addEventListener('pause', function () { etiqueter(b, 'paused'); });
+    etiqueter(b, 'paused');
+  });
+
   function activerDemos() {
-    if (immobile) return;
     Array.prototype.forEach.call(document.querySelectorAll('video[data-src]'), function (v) {
       /* offsetParent vaut null quand un ancêtre est en display:none — c'est
          ainsi qu'on sait qu'une démonstration appartient au système inactif.
@@ -310,9 +380,7 @@
          d'un système à l'autre toutes les démonstrations de la page
          décoderaient en même temps, dont celles que personne ne regarde. */
       if (v.offsetParent === null) { v.pause(); return; }
-      if (!v.src) { v.src = v.getAttribute('data-src'); }
-      var p = v.play();
-      if (p && p.catch) { p.catch(function () {}); }
+      if (animationsAuto()) { lire(v); }
     });
   }
 
