@@ -46,7 +46,7 @@ lui-même là où il doit être dans les crochets de zsh.
 ### 3. Vérifier
 
 ```sh
-jigger --version          # → jigger 0.15.0, ou plus récent
+jigger --version          # → jigger 0.16.0, ou plus récent
 which -a jigger           # exactement une ligne : deux binaires sur le PATH, c'est
                           # la panne la plus pénible à diagnostiquer
 ```
@@ -115,7 +115,7 @@ binaire antérieur à 0.11.0, et le dit.
 ### 3. Vérifier
 
 ```sh
-jigger --version          # → jigger 0.15.0, ou plus récent
+jigger --version          # → jigger 0.16.0, ou plus récent
 which -a jigger           # exactement une ligne
 ```
 
@@ -181,7 +181,7 @@ importer jigger **après**.
 ### 3. Vérifier
 
 ```powershell
-jigger --version              # → jigger 0.15.0, ou plus récent
+jigger --version              # → jigger 0.16.0, ou plus récent
 Get-Command jigger -All       # exactement une ligne
 ```
 

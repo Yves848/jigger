@@ -9,9 +9,53 @@ The format follows [Keep a Changelog](https://keepachangelog.com/1.1.0/) and
 [SemVer](https://semver.org/). Versions before `v0.1.6` predate this log; their detail
 lives in the git history.
 
-## [Unreleased]
+## [v0.16.0] — 2026-09-04
 
 ### Added
+
+- **jigger accepts third-party package managers**, shipped as a separate binary and
+  discovered through a `config.json` descriptor — no recompiling jigger. Three folders are
+  searched — `~/.config/jigger/plugins/`, `/usr/local/lib/jigger-plugins/`, the cache — the
+  first descriptor found for a given name winning, so what you put in your own
+  configuration always overrides a system-wide plugin. A discovered plugin behaves like a
+  built-in one: it shows up in the popup, completes from its caches, and answers the
+  façade's verbs. A plugin taking the name of a built-in manager is refused with a line on
+  stderr — two `brew` in the list would run the line twice, and routing has no way to tell
+  them apart. (#125)
+
+  How a plugin is *run* was the one thing the injection plan had left too thin, and it is
+  now settled by [ADR-0008](docs/adr/0008-execution-des-plugins.md): the façade substitutes
+  the binary into the **native execution path** rather than wrapping output in a JSON
+  envelope. The envelope was tempting — one format across the whole protocol — but it
+  cancels the terminal relay, on which authentication prompts, progress bars and UAC
+  elevation all depend. A plugin therefore inherits the relay, the exit-code reading and
+  the elevated `Rejeu` of ADR-0004 for free, and the plugin-specific branch in
+  `ExecuterAvec` went from forty lines to four. (#124)
+
+- **A `git` plugin**, the first one shipped, in `packaging/plugins/git/`. It sees your
+  local clones as packages: installing is cloning, uninstalling is deleting the clone,
+  upgrading is pulling. A repository's *version* is its current branch — what tells two
+  states of the same clone apart — and its *source* is the origin URL. Roots come from
+  `$JIGGER_GIT_ROOTS`, otherwise the usual places, and the walk stops at any folder holding
+  a `.git` so submodules and worktrees do not surface as packages of their own. (#126)
+
+  Two guards carry most of the care. **No URL is ever guessed**: building
+  `https://github.com/<name>.git` out of a word amounts to cloning whatever answers, so a
+  name resolves through an explicit URL, then `depots.json` written by hand, then
+  `connus.json` where the plugin remembers the origins of clones it has seen — that last
+  one being what closes the `uninstall` → `install` loop. And **`uninstall` refuses while
+  the clone still holds work that deleting would lose** — uncommitted changes, unpushed
+  commits, or no remote at all; `--force` lifts the guard, but you have to write it.
+
+  `outdated` reads the tracking ref, which only moves on a fetch: with no network it
+  reports what the last synchronisation knows, and `--fetch` goes and asks. Not the default
+  on purpose — a read can cover dozens of repositories and should not go to the network
+  unasked. `upgrade` pulls `--ff-only`, so an update never quietly builds a merge commit.
+
+- **Plugin documentation**, [`docs/plugins.md`](docs/plugins.md) and its French mirror:
+  installing one, writing one — descriptor, JSON protocol, `pool`, argv markers — and the
+  rules a plugin lives by, starting with the one that matters most: never in the render
+  path.
 
 - **The documentation shows jigger instead of describing it.** Until now every frame in
   the guides was ASCII art, hand-kept in step with the binary. There are now real
