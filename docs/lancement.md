@@ -12,7 +12,7 @@ place de quelqu'un, et un lancement qui n'est pas porté par son auteur se voit.
 | | |
 |---|---|
 | Dépôt | GitLab auto-hébergé, public, clonable anonymement — 0 étoile, 0 fork |
-| Miroir | `github.com/Yves848/jigger`, push mirror automatique, en phase |
+| Miroir | `github.com/Yves848/jigger`, push mirror automatique, en phase — **7 releases avec binaires** depuis le 4 septembre |
 | Site | 4 pages, bilingue, 14 enregistrements — indexable depuis le 4 septembre |
 | Paquets | Homebrew (tap perso), scoop (bucket perso). **Ni AUR ni winget** |
 
@@ -20,6 +20,11 @@ Le frein principal n'est pas la qualité : c'est que jigger n'est visible nulle
 part où l'on cherche un outil de terminal. Le second est que la commande
 d'installation demande de faire confiance à un domaine inconnu — un `brew tap`
 vers `gitlab.yg-devworks.com` arrête beaucoup de monde.
+
+Ce second frein est en partie levé : les releases GitHub portent désormais les
+quatre archives, si bien qu'un lien d'annonce peut mener à un téléchargement
+depuis un domaine que tout le monde connaît. Reste le `tap` et le `bucket`, qui
+pointent toujours vers le GitLab.
 
 ## L'ordre qui a du sens
 

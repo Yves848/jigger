@@ -194,3 +194,27 @@ release:
       done
       attacher "jigger_${VERSION}_windows_amd64.zip" package
       attacher "SHA256SUMS" other
+
+# Les binaires sur le miroir GitHub.
+#
+# Le miroir ne copie que le code : sans ce job, un visiteur qui arrive sur
+# github.com/Yves848/jigger — c'est-à-dire la plupart de ceux qui découvriront le
+# projet — n'y trouve rien à télécharger, alors que la release GitLab porte quatre
+# archives. Et une release GitHub STOCKE ses fichiers là où une release GitLab ne
+# porte que des liens : on téléverse donc pour de bon, on ne renvoie pas vers ici.
+#
+# Le script est le même qu'à la main (`tools/publier-github.sh v0.15.0`), pour qu'un
+# rattrapage et une publication automatique ne puissent pas diverger. Il repart des
+# archives déjà construites plutôt que de les retélécharger, et revérifie les
+# condensats avant de téléverser.
+#
+# GITHUB_RELEASE_TOKEN : variable masquée du projet, jeton GitHub de scope `repo`.
+# Sans elle, le job échoue en le disant — comme le garde-fou du miroir, et pour la
+# même raison : publier à moitié en silence est pire que ne pas publier.
+github:
+  stage: publier
+  <<: *sur_tag
+  needs: [construire, release]
+  script:
+    - apt-get update -qq && apt-get install -y -qq python3
+    - tools/publier-github.sh "$CI_COMMIT_TAG" dist/
