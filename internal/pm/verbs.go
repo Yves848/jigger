@@ -31,6 +31,20 @@ const (
 // ne lance rien, ce qui la rend testable sur fichier.
 type Parser func(out []byte) ([]Package, error)
 
+// verbesNormalises : les verbes dont jigger capture la sortie pour la refondre en
+// tableau. Tout le reste est relayé au gestionnaire, terminal compris — et c'est ce qui
+// fait que les invites et les barres de progression fonctionnent sans une ligne de TTY.
+//
+// La table vit ici, et non dans facade, parce qu'un gestionnaire doit pouvoir en dériver
+// ses liaisons sans importer la façade : c'est le cas des plugins, dont la table de
+// verbes est construite à la lecture d'un descripteur (cf. internal/plugin).
+var verbesNormalises = map[Verb]bool{
+	"list": true, "outdated": true, "search": true, "source": true,
+}
+
+// Normalise dit si un verbe rend un tableau plutôt qu'une sortie relayée.
+func Normalise(v Verb) bool { return verbesNormalises[v] }
+
 // Marqueurs de gabarit. La distinction n'est pas cosmétique : winget n'installe qu'un
 // paquet par appel, brew en prend plusieurs.
 const (
