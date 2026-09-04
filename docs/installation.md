@@ -46,7 +46,7 @@ where it needs to in zsh's hooks.
 ### 3. Check
 
 ```sh
-jigger --version          # → jigger 0.16.0, or newer
+jigger --version          # → jigger 0.17.0, or newer
 which -a jigger           # exactly one line: two binaries on the PATH is the
                           # single most painful failure to diagnose
 ```
@@ -113,7 +113,7 @@ to load against a binary older than 0.11.0 and says so.
 ### 3. Check
 
 ```sh
-jigger --version          # → jigger 0.16.0, or newer
+jigger --version          # → jigger 0.17.0, or newer
 which -a jigger           # exactly one line
 ```
 
@@ -179,7 +179,7 @@ jigger **after** it.
 ### 3. Check
 
 ```powershell
-jigger --version              # → jigger 0.16.0, or newer
+jigger --version              # → jigger 0.17.0, or newer
 Get-Command jigger -All       # exactly one line
 ```
 
