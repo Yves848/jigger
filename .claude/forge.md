@@ -38,6 +38,31 @@ où le monde le cherche. Conséquences pratiques :
 la synchronisation suivante — irréversiblement, un dépôt supprimé pouvant déjà avoir été
 cloné ou indexé.
 
+## Publier une release — trois pièges vérifiés
+
+**Ne pas créer la release à la main.** Le job `release:` du stage `publier` s'en charge au
+tag : il teste si elle existe, la crée sinon, tire ses notes du `CHANGELOG.md` et la nomme
+`jigger <version>` (sans le `v`). La créer soi-même avant ne casse rien — le job bascule
+sur sa branche « release existante » et écrase titre et description — mais c'est un geste
+inutile, et le titre posé à la main est perdu. Le skill `gitlab-changelog` prescrit
+l'étape 4 « créer la release » de façon générique ; **ici, elle est automatisée**.
+
+**`GITHUB_RELEASE_TOKEN` doit exister avant de taguer.** Le job `github:` publie les
+archives sur la release du miroir, et sans jeton il échoue — bruyamment, ce qui est voulu :
+« sans jeton on ne peut rien publier : on s'arrête plutôt que de faire semblant ». Le
+rattrapage est prévu, `tools/publier-github.sh <tag> dist/` servant la CI et la main.
+Vérifier avant le tag :
+
+```bash
+glab api projects/25/variables | grep -o GITHUB_RELEASE_TOKEN
+```
+
+**Le tag n'est pas le seul geste.** `main.go` porte `var version`, et un test
+(`TestLesBannieresSuiventLaVersion`) exige que les bannières « jigger X.Y.Z » de six
+fichiers le suivent — les deux READMEs, les deux guides, les deux pages du site. Il nomme
+chaque fichier en retard, donc le laisser parler plutôt que les chercher. `docs/installation.md`
+et sa version française annoncent aussi un numéro concret sans être gardés.
+
 ## Conséquences
 
 - Les skills de cycle de vie d'ai-migration-kit (`create-issue`, `implement-issue`,
