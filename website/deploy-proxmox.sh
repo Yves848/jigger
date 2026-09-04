@@ -57,7 +57,7 @@ echo "Empreintes : styles.css?v=$V_CSS · app.js?v=$V_JS"
 
 # Pas de `sed -i` : il demande un argument sur BSD et pas sur GNU. On écrit la
 # copie, le fichier du dépôt n'est jamais touché.
-for page in index.html parcours.html utiliser.html ssh.html; do
+for page in index.html parcours.html utiliser.html ssh.html 404.html; do
   sed -e "s|href=\"/styles\.css\"|href=\"/styles.css?v=$V_CSS\"|" \
       -e "s|src=\"/app\.js\"|src=\"/app.js?v=$V_JS\"|" \
       "$SCRIPT_DIR/$page" > "$SITE_DIR/$page"
@@ -68,12 +68,14 @@ for page in index.html parcours.html utiliser.html ssh.html; do
 done
 
 cp "$SCRIPT_DIR/styles.css" "$SCRIPT_DIR/app.js" \
-   "$SCRIPT_DIR/jigger-icon.svg" "$SCRIPT_DIR/og.png" "$SITE_DIR/"
+   "$SCRIPT_DIR/jigger-icon.svg" "$SCRIPT_DIR/og.png" \
+   "$SCRIPT_DIR/robots.txt" "$SCRIPT_DIR/sitemap.xml" "$SITE_DIR/"
 cp -R "$SCRIPT_DIR/media" "$SITE_DIR/media"
 
 # og.html est le gabarit qui a produit og.png : il n'a rien à faire en ligne.
 tar -czf "$ARCHIVE" -C "$SITE_DIR" \
-  index.html parcours.html utiliser.html ssh.html styles.css app.js jigger-icon.svg og.png media
+  index.html parcours.html utiliser.html ssh.html 404.html \
+  robots.txt sitemap.xml styles.css app.js jigger-icon.svg og.png media
 
 echo "Publication des fichiers sur ${WEB_HOST}…"
 scp "${SSH_OPTIONS[@]}" \

@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title data-i18n="title.404">jigger — page not found</title>
+  <meta name="description" content="This address does not lead anywhere on jigger's site.">
+  <!-- Une page d'erreur n'a rien à faire dans un index : elle n'est le contenu
+       de personne, et l'indexer ferait remonter « page not found » sur le nom
+       du projet. Elle est donc absente du sitemap et refuse l'indexation. -->
+  <meta name="robots" content="noindex, follow">
+  <meta name="theme-color" content="#1e1e2e">
+  <link rel="icon" href="/jigger-icon.svg">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <!-- EN-TÊTE : copie exacte de celui d'index.html, hormis la classe « on ».
+       Aucun lien n'est marqué courant : on n'est sur aucune des quatre pages. -->
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="brand" href="/">jigger</a>
+      <nav aria-label="Main navigation">
+        <a href="/" data-i18n="nav.home">Home</a>
+        <a href="/parcours.html" data-i18n="nav.tour">Guided tour</a>
+        <a href="/utiliser.html" data-i18n="nav.use">Use it</a>
+        <a href="/ssh.html" data-i18n="nav.ssh">SSH</a>
+      </nav>
+      <div class="os-toggle" role="group" aria-label="Operating system">
+        <button type="button" data-os="macos" aria-pressed="true">macOS</button>
+        <button type="button" data-os="windows" aria-pressed="false">Windows</button>
+        <button type="button" data-os="omarchy" aria-pressed="false">Omarchy</button>
+      </div>
+      <div class="lang-toggle" role="group" aria-label="Language">
+        <button type="button" data-lang="en" aria-pressed="true">EN</button>
+        <button type="button" data-lang="fr" aria-pressed="false">FR</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="page-head">
+      <div class="wrap">
+        <p class="eyebrow" data-i18n="e404.eyebrow">404</p>
+        <h1 data-i18n="e404.h1">Nothing at this address.</h1>
+        <p class="lede" data-i18n="e404.lede">The site has four pages, and this is not one of them. The links above lead to all of them; the guided tour is the one to start with.</p>
+        <p class="foot-links">
+          <a href="/parcours.html" data-i18n="e404.tour">The guided tour <span class="arw">→</span></a>
+          <a href="/utiliser.html" data-i18n="e404.use">Download and install <span class="arw">→</span></a>
+          <a href="/" data-i18n="e404.home">Home <span class="arw">→</span></a>
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p data-i18n="foot.made">Free software, Apache 2.0. Built in the open.</p>
+      <p class="foot-links">
+        <a href="https://gitlab.yg-devworks.com/yves/jigger" data-i18n="foot.repo">Repository</a>
+        <a href="https://gitlab.yg-devworks.com/yves/jigger/-/blob/main/docs/getting-started.md" data-i18n="foot.guide">Getting started</a>
+        <a href="https://gitlab.yg-devworks.com/yves/jigger/-/blob/main/CHANGELOG.md" data-i18n="foot.changelog">Changelog</a>
+      </p>
+    </div>
+  </footer>
+</body>
+</html>

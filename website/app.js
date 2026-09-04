@@ -6,6 +6,7 @@
   var FR = {
     /* --- les titres de page : une clé par page, posée sur son <title> --- */
     'title.home': 'jigger — une syntaxe pour Homebrew, winget, scoop et pacman',
+    'title.404': 'jigger — page introuvable',
     'title.tour': 'jigger — le parcours, de l’installation à l’usage courant',
     'title.use': 'jigger — télécharger, brancher, utiliser',
     'title.ssh': 'jigger — le sélecteur SSH',
@@ -14,6 +15,13 @@
     'nav.tour': 'Le parcours',
     'nav.use': 'L’utiliser',
     'nav.ssh': 'SSH',
+    /* --- page 404 --- */
+    'e404.eyebrow': '404',
+    'e404.h1': 'Rien à cette adresse.',
+    'e404.lede': 'Le site compte quatre pages, et celle-ci n’en est pas une. Les liens ci-dessus mènent à toutes ; le parcours est celui par lequel commencer.',
+    'e404.tour': 'Le parcours <span class="arw">→</span>',
+    'e404.use': 'Télécharger et installer <span class="arw">→</span>',
+    'e404.home': 'L’accueil <span class="arw">→</span>',
     /* --- page « parcours » --- */
     'tour.eyebrow': 'Le parcours',
     'tour.h1': 'De rien d’installé à l’aisance.',

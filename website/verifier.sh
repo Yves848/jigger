@@ -9,7 +9,7 @@ RESEAU=0
 [ "${1:-}" = "--reseau" ] && RESEAU=1
 
 # Les quatre pages du site. Tout contrôle qui lit « la page » les lit toutes.
-PAGES=(index.html parcours.html utiliser.html ssh.html)
+PAGES=(index.html parcours.html utiliser.html ssh.html 404.html)
 
 # Les systèmes que le site montre. Le sélecteur en a trois depuis qu'Omarchy s'y
 # est ajouté ; les énumérer ici plutôt que de les écrire en dur dans le contrôle 8

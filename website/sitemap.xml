@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Les quatre pages du site. La 404 n'y figure pas : elle porte « noindex ». -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://jigger.yg-devworks.com/</loc>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://jigger.yg-devworks.com/parcours.html</loc>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://jigger.yg-devworks.com/utiliser.html</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://jigger.yg-devworks.com/ssh.html</loc>
+    <priority>0.7</priority>
+  </url>
+</urlset>

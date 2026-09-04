@@ -1,0 +1,6 @@
+# jigger — https://jigger.yg-devworks.com/
+# Tout est public et destiné à être lu : rien à interdire.
+User-agent: *
+Allow: /
+
+Sitemap: https://jigger.yg-devworks.com/sitemap.xml
