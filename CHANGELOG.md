@@ -9,6 +9,29 @@ The format follows [Keep a Changelog](https://keepachangelog.com/1.1.0/) and
 [SemVer](https://semver.org/). Versions before `v0.1.6` predate this log; their detail
 lives in the git history.
 
+## [v0.20.0] — 2026-09-05
+
+Nothing changes in the tool itself: this release exists so that the **publication chain**
+that reaches the GitHub mirror is finally exercised with the credential it needed. If you
+install jigger from the mirror, that chain is why the archives are there at all.
+
+### Fixed
+
+- **Releases now reach the GitHub mirror reliably, instead of when the timing happens to
+  work.** GitLab → GitHub replication is asynchronous, and the job that uploads the archives
+  starts within a second of the tag: GitHub refused with a `422` to create a release for a
+  tag it did not know yet. `v0.17.1` and `v0.18.0` both went out with a red pipeline and a
+  mirror release without binaries, and had to be fixed by hand.
+
+  Waiting for the tag was not enough — the mirror **does not restart on its own** when a push
+  lands just after its last run; measured once at *two seconds* too late, with no further run
+  twenty-five minutes on. The publication script now wakes the mirror before waiting for it,
+  using a project access token scoped to this project alone. (#161)
+
+  The token that seemed obvious, the CI job token, was measured and **refused with a `401`**:
+  a job token has no rights over project settings, which is where mirrors live. That
+  measurement is recorded rather than the assumption that preceded it. (#159)
+
 ## [v0.19.0] — 2026-09-05
 
 `v0.18.0` gave plugins the shape of a command helper. Using it made the point that shape
