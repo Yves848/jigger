@@ -12,7 +12,7 @@ gestionnaire de paquets, un cadre s'affiche sous le prompt et suit ta frappe.
 ```
 ❯ brew install fire
 ╭──────────────────────────────────────────────────────────╮
-│❯ brew install                               jigger 0.17.0│
+│❯ brew install                               jigger 0.17.1│
 │  ▣  firealpaca                                           │
 │  ▣  firebase-admin                                       │
 │  ◆  firebase-cli                                         │
@@ -234,7 +234,7 @@ avant cet appel : sinon la sortie de la commande coupe le cadre en deux.
 ## 4. Vérifier que ça marche
 
 ```sh
-jigger --version        # → jigger 0.17.0, ou plus récent
+jigger --version        # → jigger 0.17.1, ou plus récent
 ```
 
 Ouvre un shell neuf et tape `brew ins` (`pacman ins` sous Arch, `winget ins` sous Windows)
@@ -420,7 +420,7 @@ machine est rendue ensuite.
 ```
 ❯ jg
 ╭──────────────────────────────────────────────────────────╮
-│❯ jigger                                     jigger 0.17.0│
+│❯ jigger                                     jigger 0.17.1│
 │  •  cleanup                                              │
 │  •  doctor                                               │
 │  •  info                                                 │

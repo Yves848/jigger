@@ -9,6 +9,37 @@ The format follows [Keep a Changelog](https://keepachangelog.com/1.1.0/) and
 [SemVer](https://semver.org/). Versions before `v0.1.6` predate this log; their detail
 lives in the git history.
 
+## [v0.17.1] — 2026-09-05
+
+### Fixed
+
+- **The `git` plugin no longer confuses two clones of the same repository.** With
+  `~/git/app` and `~/git/bsca/app` side by side, `jg list --pm git` printed two rigorously
+  identical lines, and `jg uninstall app` **deleted one of them for good** with nothing
+  saying which. The existing guard — refusing while a clone holds uncommitted work,
+  unpushed commits, or has no remote at all — only narrowed the damage to a *clean* clone,
+  which is precisely the one you delete without thinking.
+
+  Same-named clones now carry a name qualified by their path relative to the root, **root
+  included** — `git/app` and `git/bsca/app`. Including the root is not cosmetic: without
+  it the clone sitting at the root would keep the bare name `app` and would still be the
+  one silently picked. `uninstall` and `upgrade` accept a qualified name or a path, and
+  refuse a bare ambiguous name by naming the candidates rather than answering "not
+  cloned", which would be both false and puzzling when jigger has just shown two of them.
+  Names that are already unique are left alone. (#145)
+
+  ```console
+  $ jg uninstall Moteur_IT_Csharp.Net --pm git
+  Moteur_IT_Csharp.Net désigne 2 clones : git/Moteur_IT_Csharp.Net,
+  git/bsca/Moteur_IT_Csharp.Net — donnez celui que vous visez
+  ```
+
+- **A repository with no commits keeps its branch.** Freshly `git init`-ed, it came out
+  with no version at all, though it really is on `master` — and a `git` package's *version*
+  **is** its current branch. The branch is now read off the *reference* rather than off the
+  commit: `rev-parse --abbrev-ref HEAD` requires `HEAD` to point at a commit, which an
+  unborn branch does not. Detached heads still show their short revision. (#145)
+
 ## [v0.17.0] — 2026-09-05
 
 Third-party plugins shipped in `v0.16.0` were complete on the binary side and invisible on
