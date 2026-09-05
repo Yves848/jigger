@@ -9,6 +9,50 @@ The format follows [Keep a Changelog](https://keepachangelog.com/1.1.0/) and
 [SemVer](https://semver.org/). Versions before `v0.1.6` predate this log; their detail
 lives in the git history.
 
+## [v0.17.0] — 2026-09-05
+
+Third-party plugins shipped in `v0.16.0` were complete on the binary side and invisible on
+the shell side: the popup never opened on a plugin's own command word. This release closes
+that gap, and fixes the two things that made closing it unsafe.
+
+### Added
+
+- **A plugin arms the popup on its own word.** Install the `git` plugin, run
+  `jigger warm --all`, open a new shell, and `git ⇥` answers — in zsh and in PowerShell
+  alike. Until now the shell plugins watched a **static** list of commands, and no default
+  could ever hold a word that depends on which plugins are installed on *this* machine.
+  `warm` now drops the discovered words into `plugin-commands` in the cache, and the shell
+  plugins read that file when they load — with a shell builtin, never by spawning jigger,
+  since neither side will pay a fork at shell startup. The file is rewritten on every
+  `warm`, empty included, so an uninstalled plugin stops being armed. (#143)
+
+- **`JIGGER_PLUGIN_COMMANDS=0`** turns that off without forcing you to rewrite
+  `JIGGER_COMMANDS` in full. This is what [ADR-0005](docs/adr/0005-completion-sans-facade.md)
+  asks for: `git` is a command you may legitimately want left alone, and taking that choice
+  away would be a defect. (#143)
+
+### Fixed
+
+- **A verb a plugin does not declare no longer offers packages.** With the `git` plugin,
+  `git checkout ` was served the list of cloned repositories — **marked executable**, so ⏎
+  would have completed *and run* `git checkout <some repository>`. Same on
+  `git push origin ` and inside the message of `git commit -m `. The cause was in the
+  completion path: whether a word was a package argument depended only on its **position**,
+  never on whether the previous word was one of the manager's verbs. (#142)
+
+  The fix deliberately does **not** tighten every manager. `Subcommands()` does not carry
+  the same weight everywhere: a plugin's verbs come from its `config.json` and the list is
+  complete by construction, whereas Homebrew declares twenty-five hand-picked subcommands
+  out of a hundred — `brew fetch fir` is valid and its argument really is a formula. The
+  new `pm.Exhaustif` contract is optional, like `Bindings` and `Elevateur`: whoever does
+  not declare it keeps the permissive behaviour. Only plugins declare it. (#142)
+
+- **The first word of a plugin no longer draws an empty frame.** `git st`, `git status`,
+  `git push` opened an "no candidates" frame on *every keystroke* — the very defect
+  [ADR-0006](docs/adr/0006-silence-sur-catalogue-vide.md) had already fixed for `ssh`. A
+  manager with exhaustive verbs, none of which start with the word being typed, now stays
+  quiet. A built-in still shows its frame: `winget zzz` has to say it doesn't know. (#143)
+
 ## [v0.16.0] — 2026-09-04
 
 ### Added
