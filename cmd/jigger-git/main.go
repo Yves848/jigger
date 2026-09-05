@@ -176,6 +176,10 @@ func depots() []depot {
 		}
 	}
 
+	// Deux clones du même dépôt doivent porter deux noms distincts, sans quoi tout ce qui
+	// désigne un dépôt par son nom en viserait un au hasard (#138).
+	out = desambiguer(out, racines())
+
 	sort.Slice(out, func(i, j int) bool { return out[i].nom < out[j].nom })
 	return out
 }
@@ -218,9 +222,14 @@ func estDepot(chemin string) bool {
 // initialisé, sans commit ni remote, reste un paquet valide.
 func decrire(chemin string) depot {
 	d := depot{nom: filepath.Base(chemin), chemin: chemin}
-	d.branche = git(chemin, "rev-parse", "--abbrev-ref", "HEAD")
-	if d.branche == "HEAD" {
-		// Tête détachée : la révision courte dit davantage que « HEAD ».
+	// La branche se lit sur la RÉFÉRENCE, et non sur le commit : `rev-parse --abbrev-ref
+	// HEAD` exige que HEAD désigne un commit, si bien qu'un dépôt fraîchement `git init`
+	// — branche non née — rendait une version vide alors qu'il est bien sur `master`.
+	// `symbolic-ref` lit la référence et répond dans les deux cas.
+	d.branche = git(chemin, "symbolic-ref", "--short", "HEAD")
+	if d.branche == "" {
+		// Tête détachée : il n'y a pas de branche, et symbolic-ref échoue. La révision
+		// courte dit alors davantage que « HEAD ».
 		d.branche = git(chemin, "rev-parse", "--short", "HEAD")
 	}
 	d.origine = git(chemin, "remote", "get-url", "origin")
@@ -290,8 +299,15 @@ func retenir(depots []depot) {
 	}
 	change := false
 	for _, d := range depots {
-		if d.origine != "" && connus[d.nom] != d.origine {
-			connus[d.nom] = d.origine
+		// La clé est le nom du DOSSIER, jamais le nom qualifié : cette table sert à
+		// RECLONER, et `install r/bsca/app` fabriquerait un chemin à rallonge. Sans
+		// chemin — un dépôt construit à la main —, le nom fait foi.
+		cle := d.nom
+		if d.chemin != "" {
+			cle = filepath.Base(d.chemin)
+		}
+		if d.origine != "" && connus[cle] != d.origine {
+			connus[cle] = d.origine
 			change = true
 		}
 	}
@@ -430,9 +446,12 @@ func correspond(nom string, motifs []string) bool {
 	return false
 }
 
+// estClone dit si un nom du catalogue est déjà cloné ici. La comparaison porte sur le nom
+// du DOSSIER et non sur `d.nom`, qui peut être qualifié quand deux clones se disputent le
+// même nom : un dépôt en double reste un dépôt cloné, et `search` ne doit pas le proposer.
 func estClone(depots []depot, nom string) bool {
 	for _, d := range depots {
-		if d.nom == nom {
+		if d.nom == nom || filepath.Base(d.chemin) == nom {
 			return true
 		}
 	}
@@ -570,9 +589,9 @@ func desinstaller(args []string) error {
 
 	tous := depots()
 	for _, nom := range noms {
-		d, ok := trouver(tous, nom)
-		if !ok {
-			return fmt.Errorf("%s n'est pas cloné", nom)
+		d, err := trouver(tous, nom)
+		if err != nil {
+			return err
 		}
 		if !force {
 			if raison := travailEnPeril(d); raison != "" {
@@ -613,9 +632,9 @@ func mettreAJour(args []string) error {
 	if len(noms) > 0 {
 		cibles = nil
 		for _, nom := range noms {
-			d, ok := trouver(tous, nom)
-			if !ok {
-				return fmt.Errorf("%s n'est pas cloné", nom)
+			d, err := trouver(tous, nom)
+			if err != nil {
+				return err
 			}
 			cibles = append(cibles, d)
 		}
@@ -637,13 +656,85 @@ func mettreAJour(args []string) error {
 	return nil
 }
 
-func trouver(depots []depot, nom string) (depot, bool) {
-	for _, d := range depots {
-		if d.nom == nom {
-			return d, true
+// desambiguer donne un nom distinct aux dépôts qui partagent le leur. Deux clones du même
+// dépôt — `~/git/app` et `~/git/bsca/app` — donnaient deux lignes rigoureusement
+// identiques, et `trouver` prenait la première venue : `uninstall app` supprimait donc un
+// dossier pour de bon sans que rien ne dise lequel.
+//
+// La qualification porte sur le chemin relatif à la racine, **racine comprise** :
+// `r/app` et `r/bsca/app`. Inclure la racine n'est pas cosmétique — sans elle le clone
+// posé à la racine garderait le nom nu `app`, et `uninstall app` continuerait d'en viser
+// un en silence. Si deux racines produisent malgré tout le même chemin relatif, on
+// descend jusqu'à l'absolu, qui ne peut plus coïncider.
+//
+// Les noms déjà uniques ne sont pas touchés : le cas courant reste `app`.
+func desambiguer(ds []depot, racines []string) []depot {
+	comptes := map[string]int{}
+	for _, d := range ds {
+		comptes[d.nom]++
+	}
+
+	out := make([]depot, len(ds))
+	copy(out, ds)
+
+	qualifie := map[string][]int{} // nom qualifié → indices qui le portent
+	for i, d := range out {
+		if comptes[d.nom] < 2 {
+			continue
+		}
+		out[i].nom = qualifier(d.chemin, racines)
+		qualifie[out[i].nom] = append(qualifie[out[i].nom], i)
+	}
+	// Deux racines de même nom de base peuvent rendre le même chemin relatif.
+	for _, idx := range qualifie {
+		if len(idx) < 2 {
+			continue
+		}
+		for _, i := range idx {
+			out[i].nom = out[i].chemin
 		}
 	}
-	return depot{}, false
+	return out
+}
+
+// qualifier rend le chemin relatif à la racine qui contient ce dépôt, racine comprise, ou
+// le chemin absolu si aucune racine ne le contient.
+func qualifier(chemin string, racines []string) string {
+	for _, r := range racines {
+		rel, err := filepath.Rel(r, chemin)
+		if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+			continue
+		}
+		return filepath.ToSlash(filepath.Join(filepath.Base(r), rel))
+	}
+	return chemin
+}
+
+// trouver rend le dépôt désigné par `arg` — son nom (qualifié le cas échéant) ou son
+// chemin. Il REFUSE de trancher quand plusieurs clones portent le nom nu demandé : la
+// suite est `uninstall`, qui supprime, et deviner lequel serait la pire des réponses.
+func trouver(depots []depot, arg string) (depot, error) {
+	for _, d := range depots {
+		if d.nom == arg || d.chemin == arg {
+			return d, nil
+		}
+	}
+
+	// Le nom nu ne désigne plus rien depuis la qualification. Répondre « n'est pas
+	// cloné » serait faux ET déroutant, puisque jigger vient d'en afficher deux : on
+	// nomme donc les candidats, et l'utilisateur choisit.
+	var candidats []string
+	for _, d := range depots {
+		if filepath.Base(d.chemin) == arg {
+			candidats = append(candidats, d.nom)
+		}
+	}
+	if len(candidats) > 0 {
+		return depot{}, fmt.Errorf(
+			"%s désigne %d clones : %s — donnez celui que vous visez",
+			arg, len(candidats), strings.Join(candidats, ", "))
+	}
+	return depot{}, fmt.Errorf("%s n'est pas cloné", arg)
 }
 
 // relayer lance git en lui laissant le terminal : c'est ce qui fait qu'une demande de

@@ -293,3 +293,153 @@ func écrire(t *testing.T, chemin, contenu string) {
 		t.Fatal(err)
 	}
 }
+
+// ── #139 : la branche d'un dépôt sans commit ───────────────────────────
+
+func TestDecrireUnDepotSansCommit(t *testing.T) {
+	// `rev-parse --abbrev-ref HEAD` exige que HEAD designe un COMMIT : sur une branche
+	// non nee il echoue, et la version tombait a la chaine vide. La branche existe
+	// pourtant, et c'est elle que le plugin appelle « version ».
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git absent")
+	}
+	dir := filepath.Join(t.TempDir(), "neuf")
+	run(t, "git", "init", "-q", "-b", "master", dir)
+
+	if got := decrire(dir).branche; got != "master" {
+		t.Errorf("branche = %q, want \"master\"", got)
+	}
+}
+
+func TestDecrireTeteDetachee(t *testing.T) {
+	// Non-regression : sur une tete detachee il n'y a pas de branche, et la revision
+	// courte dit davantage que « HEAD ».
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git absent")
+	}
+	dir := filepath.Join(t.TempDir(), "detache")
+	run(t, "git", "init", "-q", "-b", "main", dir)
+	écrire(t, filepath.Join(dir, "f.txt"), "un\n")
+	run(t, "git", "-C", dir, "add", ".")
+	run(t, "git", "-C", dir, "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "un")
+	run(t, "git", "-C", dir, "checkout", "-q", "--detach")
+
+	got := decrire(dir).branche
+	if got == "" || got == "HEAD" {
+		t.Errorf("branche = %q, want une revision courte", got)
+	}
+}
+
+// ── #138 : deux clones du meme nom ─────────────────────────────────────
+
+func TestDesambiguerQualifieLesHomonymes(t *testing.T) {
+	// Deux clones du meme depot donnaient deux lignes indiscernables, et `uninstall`
+	// prenait le premier venu — en supprimant un dossier pour de bon.
+	ds := []depot{
+		{nom: "app", chemin: "/r/app"},
+		{nom: "app", chemin: "/r/bsca/app"},
+		{nom: "seul", chemin: "/r/seul"},
+	}
+	got := map[string]bool{}
+	for _, d := range desambiguer(ds, []string{"/r"}) {
+		got[d.nom] = true
+	}
+	for _, veut := range []string{"r/app", "r/bsca/app", "seul"} {
+		if !got[veut] {
+			t.Errorf("%q absent de %v", veut, got)
+		}
+	}
+	// AUCUN ne doit garder le nom nu : sinon `uninstall app` en viserait un en silence.
+	if got["app"] {
+		t.Error("un homonyme a gardé le nom nu « app »")
+	}
+}
+
+func TestDesambiguerRacinesDeMemeNomDeBase(t *testing.T) {
+	// Deux racines dont le nom de base coincide — `/x/git` et `/y/git` — rendent le meme
+	// chemin qualifie, `git/app`. Il faut alors descendre jusqu'a l'absolu, qui ne peut
+	// plus coincider. C'est le seul cas ou la qualification ne suffit pas.
+	ds := []depot{{nom: "app", chemin: "/x/git/app"}, {nom: "app", chemin: "/y/git/app"}}
+	got := map[string]bool{}
+	for _, d := range desambiguer(ds, []string{"/x/git", "/y/git"}) {
+		got[d.nom] = true
+	}
+	if !got["/x/git/app"] || !got["/y/git/app"] {
+		t.Errorf("noms = %v, attendus les deux chemins absolus", got)
+	}
+}
+
+func TestDesambiguerRacinesDistinctes(t *testing.T) {
+	// Deux racines de noms differents suffisent a distinguer : pas besoin de l'absolu.
+	ds := []depot{{nom: "app", chemin: "/a/app"}, {nom: "app", chemin: "/b/app"}}
+	got := map[string]bool{}
+	for _, d := range desambiguer(ds, []string{"/a", "/b"}) {
+		got[d.nom] = true
+	}
+	if !got["a/app"] || !got["b/app"] {
+		t.Errorf("noms = %v, attendus a/app et b/app", got)
+	}
+}
+
+func TestDesambiguerLaisseLesNomsUniques(t *testing.T) {
+	ds := []depot{{nom: "app", chemin: "/r/app"}, {nom: "autre", chemin: "/r/autre"}}
+	for _, d := range desambiguer(ds, []string{"/r"}) {
+		if d.nom != filepath.Base(d.chemin) {
+			t.Errorf("nom = %q, un nom unique ne doit pas être qualifié", d.nom)
+		}
+	}
+}
+
+func TestTrouverRefuseUnNomAmbigu(t *testing.T) {
+	// Le nom nu ne designe plus rien apres qualification : plutot que « n'est pas
+	// clone », qui serait faux et deroutant, on dit ce qui porte ce nom.
+	ds := desambiguer([]depot{
+		{nom: "app", chemin: "/r/app"},
+		{nom: "app", chemin: "/r/bsca/app"},
+	}, []string{"/r"})
+
+	_, err := trouver(ds, "app")
+	if err == nil {
+		t.Fatal("trouver() = nil, un nom ambigu ne doit pas être tranché en silence")
+	}
+	for _, attendu := range []string{"r/app", "r/bsca/app"} {
+		if !strings.Contains(err.Error(), attendu) {
+			t.Errorf("l'erreur ne nomme pas %q : %v", attendu, err)
+		}
+	}
+}
+
+func TestTrouverAccepteUnCheminEtUnNomQualifie(t *testing.T) {
+	ds := desambiguer([]depot{
+		{nom: "app", chemin: "/r/app"},
+		{nom: "app", chemin: "/r/bsca/app"},
+	}, []string{"/r"})
+
+	d, err := trouver(ds, "r/bsca/app")
+	if err != nil || d.chemin != "/r/bsca/app" {
+		t.Errorf("par nom qualifié : (%v, %v)", d.chemin, err)
+	}
+	d, err = trouver(ds, "/r/app")
+	if err != nil || d.chemin != "/r/app" {
+		t.Errorf("par chemin : (%v, %v)", d.chemin, err)
+	}
+}
+
+func TestTrouverNomInconnu(t *testing.T) {
+	if _, err := trouver([]depot{{nom: "app", chemin: "/r/app"}}, "absent"); err == nil {
+		t.Error("trouver() = nil pour un nom inconnu")
+	}
+}
+
+func TestRetenirUtiliseLeNomDuDossier(t *testing.T) {
+	// connus.json sert a RECLONER : sa cle doit rester le nom du depot, jamais le nom
+	// qualifie, sinon `install` fabriquerait un chemin a rallonge.
+	cfg := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", cfg)
+	retenir([]depot{{nom: "r/bsca/app", chemin: "/r/bsca/app", origine: "https://exemple.test/app.git"}})
+
+	table := lireTable(cheminConnus())
+	if table["app"] != "https://exemple.test/app.git" {
+		t.Errorf("connus = %v, attendu la clé \"app\"", table)
+	}
+}
