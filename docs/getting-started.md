@@ -12,7 +12,7 @@ command, a frame appears under the prompt and tracks your keystrokes.
 ```
 ❯ brew install fire
 ╭──────────────────────────────────────────────────────────╮
-│❯ brew install                               jigger 0.17.1│
+│❯ brew install                               jigger 0.18.0│
 │  ▣  firealpaca                                           │
 │  ▣  firebase-admin                                       │
 │  ◆  firebase-cli                                         │
@@ -232,7 +232,7 @@ command's output cuts the frame in two.
 ## 4. Check that it works
 
 ```sh
-jigger --version        # → jigger 0.17.1, or newer
+jigger --version        # → jigger 0.18.0, or newer
 ```
 
 Open a fresh shell and type `brew ins` (`pacman ins` on Arch, `winget ins` on Windows)
@@ -423,7 +423,7 @@ packages:
 ```
 ❯ jg
 ╭──────────────────────────────────────────────────────────╮
-│❯ jigger                                     jigger 0.17.1│
+│❯ jigger                                     jigger 0.18.0│
 │  •  cleanup                                              │
 │  •  doctor                                               │
 │  •  info                                                 │

@@ -9,6 +9,73 @@ The format follows [Keep a Changelog](https://keepachangelog.com/1.1.0/) and
 [SemVer](https://semver.org/). Versions before `v0.1.6` predate this log; their detail
 lives in the git history.
 
+## [v0.18.0] — 2026-09-05
+
+Plugins were shipped in `v0.16.0` able to describe one thing only: another package manager.
+That is not what a plugin is for. A plugin exists to make an **existing command** friendlier
+— to show, in the popup, the subcommands, options and arguments that command actually
+accepts. This release makes the descriptor able to say so, and rewrites the `git` plugin as
+what it should always have been.
+
+### Added
+
+- **A plugin descriptor can describe a command helper.** A verb may draw from a **named
+  pool** and carry its own **options**, where it previously had a single machine-wide pool
+  (`catalogue`, `installees`, `aucun`) and no options at all.
+
+  ```jsonc
+  "verbs": {
+    "checkout": {"native": ["checkout", "{args}"], "pool": "branches",
+                 "options": ["-b", "--detach"]}
+  },
+  "pools": {
+    "branches": {"regime": "direct", "args": ["branch", "--format=%(refname:short)"]}
+  }
+  ```
+
+  A pool declares its **regime**: `cache`, warmed by `jigger warm` like the catalogue, when
+  it is large and slow to produce; `direct`, asked of the plugin's binary **as you type and
+  in the current directory**, when it is small and contextual. A repository's branches are
+  three lines long and change by the minute — caching them would make them *wrong*, not
+  fast. The reasoning, and what the decision costs, is in
+  [ADR-0009](docs/adr/0009-viviers-de-plugin-par-verbe.md). (#151)
+
+  The binary asked is always the plugin's own; a pool declares arguments only. A descriptor
+  must not be able to have any program run on every keystroke.
+
+### Changed
+
+- **The shipped `git` plugin is now a helper for git**, and no longer a package manager
+  wearing git's name. The old one saw your clones as packages: `git ⇥` offered `install`,
+  `list`, `upgrade`… — none of them git commands — and the completed line read like git
+  while running something else entirely. It has been withdrawn and rewritten. (#149, #152)
+
+  ```console
+  $ git ⇥          add branch checkout commit diff fetch log merge pull push
+                   rebase remote restore stash status switch tag
+  $ git checkout ⇥ feat/site-refonte  main
+  $ git push ⇥     github  origin
+  $ git add ⇥      the files you have actually modified, right now, right here
+  $ git tag ⇥      v0.17.1  v0.17.0  v0.16.0   (most recent first)
+  ```
+
+  It knows only the seventeen verbs it declares; on `git bisect`, `git worktree` or
+  `git submodule`, jigger stays quiet. Your ordinary git lines are never in its way.
+
+  It also has **no binary of its own**: it declares `git` as its command, so real git both
+  runs the verbs and fills the pools. Installing it is a `cp` and a `warm` — nothing to
+  compile — and `cmd/jigger-git`, 950 lines, is gone with the old design.
+
+### Fixed
+
+- **Publishing a release no longer loses a race against the mirror.** The `github:` job
+  starts within a second of the tag, while GitLab → GitHub replication is asynchronous:
+  GitHub refused with a `422` to create a release for a tag it did not know yet, and the tag
+  pipeline came out red. `tools/publier-github.sh` now waits for the tag — a minute at most,
+  then an explicit failure telling you how to force the mirror to sync. `v0.17.0` had won
+  the very same race six hours before `v0.17.1` lost it: the chain was not reliable, it had
+  been lucky. (#148)
+
 ## [v0.17.1] — 2026-09-05
 
 ### Fixed
