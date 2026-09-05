@@ -54,26 +54,50 @@ A plugin may take the name of a command you type a hundred times a day and would
 leave alone. On lines that are none of its business, jigger stays quiet by itself: the word
 is not one of its verbs, so it has nothing to say and draws no frame.
 
-## No plugin ships with jigger today
+## The `git` plugin
 
-jigger used to ship a `git` plugin that saw your local clones as packages: installing was
-cloning, upgrading was pulling. It has been withdrawn, and the reason is worth stating
-because it constrains every plugin to come.
+Ships with jigger, in [`packaging/plugins/git/`](../packaging/plugins/git). It does not
+replace git — **it makes it convenient**. `git ⇥` offers the real subcommands, and each verb
+offers what that verb expects.
 
-**A plugin exists to make an existing command friendlier** — to show, in the popup, the
-subcommands, options and arguments that command actually accepts. The `git` plugin did the
-opposite: it took the word `git` and offered six verbs (`install`, `list`, `upgrade`...)
-that are not git commands at all, so `git` proposed a vocabulary nobody types, and the
-completed line read like git while running something else entirely.
+```console
+$ git ⇥
+  add  branch  checkout  commit  diff  fetch  log  merge  pull  push
+  rebase  remote  restore  stash  status  switch  tag
 
-That was not a sloppy implementation. It was **the only shape this descriptor can
-express** - a package manager, two machine-wide pools, no per-verb candidates and no
-options. A real `git` helper needs your *branches* behind `checkout`, your *modified
-files* behind `add`, your *remotes* behind `push`, computed in the current directory at
-the moment you type. None of that fits below.
+$ git checkout ⇥          $ git push ⇥           $ git add ⇥
+  feat/site-refonte         github                 docs/historique/2026-09-05.md
+  main                      origin                 packaging/plugins/git/config.json
 
-Extending the protocol to allow it is the subject of an architecture decision record. Only
-once that lands can a `git` plugin be written that deserves the name.
+$ git commit -⇥           $ git tag ⇥
+  -m  -a  --amend           v0.17.1  v0.17.0  v0.16.0
+  --no-edit  --no-verify    (most recent first)
+```
+
+Candidates are **computed in the current directory, as you type**: these are the branches of
+*this* repository, not the ones a cache warmed this morning.
+
+### It has no binary
+
+It is a descriptor and nothing else. The binary it declares is **git itself**: jigger runs
+real git to execute a verb, and real git to fill a pool (`git branch --format=…`,
+`git remote`, `git ls-files --modified --others`). A helper needs no program of its own when
+the command it assists already knows how to answer.
+
+### Installing it
+
+```sh
+cp -r packaging/plugins/git ~/.config/jigger/plugins/
+jigger warm --all
+```
+
+Then open a new shell. Nothing to compile.
+
+### What it does not do
+
+It knows only the seventeen verbs it declares. On everything else — `git bisect`,
+`git worktree`, `git submodule` — jigger **stays quiet**: it has nothing to say, and an empty
+frame would be worth less than silence. Your ordinary git lines are never in its way.
 
 
 ## Writing a plugin

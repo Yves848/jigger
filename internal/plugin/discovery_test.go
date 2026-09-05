@@ -218,9 +218,9 @@ func TestPluginManagerCmd(t *testing.T) {
 	}
 }
 
-// TestBinaire tient la distinction qui manquait au premier jet : le mot de la ligne
-// (« git ») n'est pas le binaire (« jigger-git »). La façade lance Binaire() ; les
-// confondre lancerait le vrai git.
+// TestBinaire tient la distinction qui manquait au premier jet : le mot de la ligne n'est
+// pas forcement le binaire. Un helper les fait coincider — le plugin `git` declare
+// `cmd: "git"` — mais un gestionnaire tiers non, et la facade doit lancer Binaire().
 func TestBinaire(t *testing.T) {
 	dir := t.TempDir()
 	bin := filepath.Join(dir, "jigger-test-pm")
@@ -737,8 +737,10 @@ func TestVivierDirectInterrogeLeBinaire(t *testing.T) {
 	if !ok || cat == nil {
 		t.Fatal("Candidats() = false, le vivier direct doit repondre")
 	}
-	if len(cat.Names) != 2 || cat.Names[0] != "feat/x" || cat.Names[1] != "main" {
-		t.Errorf("Names = %v, attendu les deux branches triees", cat.Names)
+	// L'ORDRE DU PLUGIN EST PRESERVE : il l'a choisi, souvent par pertinence
+	// (`--sort=-creatordate`), et le retrier jetterait cette information.
+	if len(cat.Names) != 2 || cat.Names[0] != "main" || cat.Names[1] != "feat/x" {
+		t.Errorf("Names = %v, attendu l'ordre rendu par le plugin", cat.Names)
 	}
 	if cat.Badge("main") != "local" {
 		t.Errorf("Badge(main) = %q, attendu \"local\"", cat.Badge("main"))

@@ -1,0 +1,56 @@
+{
+  "name": "git",
+  "version": "2.0.0",
+  "cmd": "git",
+  "platforms": ["linux", "darwin", "windows"],
+
+  "verbs": {
+    "add":      {"native": ["add", "{args}"],      "pool": "modifies",
+                 "options": ["-p", "-A", "-u", "--all", "--patch", "--intent-to-add"]},
+    "restore":  {"native": ["restore", "{args}"],  "pool": "modifies",
+                 "options": ["--staged", "--worktree", "--source"]},
+    "diff":     {"native": ["diff", "{args}"],     "pool": "modifies",
+                 "options": ["--staged", "--cached", "--stat", "--name-only", "--word-diff"]},
+
+    "checkout": {"native": ["checkout", "{args}"], "pool": "branches",
+                 "options": ["-b", "-B", "--detach", "--track", "--orphan"]},
+    "switch":   {"native": ["switch", "{args}"],   "pool": "branches",
+                 "options": ["-c", "-C", "--detach", "--track"]},
+    "merge":    {"native": ["merge", "{args}"],    "pool": "branches",
+                 "options": ["--no-ff", "--ff-only", "--squash", "--abort", "--continue", "--no-commit"]},
+    "rebase":   {"native": ["rebase", "{args}"],   "pool": "branches",
+                 "options": ["-i", "--interactive", "--onto", "--abort", "--continue", "--skip"]},
+    "branch":   {"native": ["branch", "{args}"],   "pool": "branches",
+                 "options": ["-d", "-D", "-m", "-a", "-v", "--merged", "--no-merged"]},
+
+    "push":     {"native": ["push", "{args}"],     "pool": "distants",
+                 "options": ["-u", "--set-upstream", "--force-with-lease", "--tags", "--dry-run", "--delete"]},
+    "pull":     {"native": ["pull", "{args}"],     "pool": "distants",
+                 "options": ["--rebase", "--ff-only", "--no-rebase", "--autostash"]},
+    "fetch":    {"native": ["fetch", "{args}"],    "pool": "distants",
+                 "options": ["--all", "--prune", "--tags", "--depth"]},
+    "remote":   {"native": ["remote", "{args}"],   "pool": "distants",
+                 "options": ["-v", "add", "remove", "rename", "set-url", "get-url"]},
+
+    "tag":      {"native": ["tag", "{args}"],      "pool": "etiquettes",
+                 "options": ["-a", "-d", "-l", "-m", "-n", "--sort"]},
+
+    "commit":   {"native": ["commit", "{args}"],   "pool": "aucun",
+                 "options": ["-m", "-a", "--amend", "--no-edit", "--no-verify", "--fixup", "-S"]},
+    "status":   {"native": ["status", "{args}"],   "pool": "aucun",
+                 "options": ["-s", "--short", "-b", "--branch", "--porcelain", "--ignored"]},
+    "log":      {"native": ["log", "{args}"],      "pool": "aucun",
+                 "options": ["--oneline", "--graph", "--stat", "--patch", "-n", "--since", "--author"]},
+    "stash":    {"native": ["stash", "{args}"],    "pool": "aucun",
+                 "options": ["push", "pop", "list", "show", "drop", "--include-untracked"]}
+  },
+
+  "pools": {
+    "branches":   {"regime": "direct", "args": ["branch", "--format=%(refname:short)"]},
+    "distants":   {"regime": "direct", "args": ["remote"]},
+    "etiquettes": {"regime": "direct", "args": ["tag", "--sort=-creatordate"]},
+    "modifies":   {"regime": "direct", "args": ["ls-files", "--modified", "--others", "--exclude-standard"]}
+  },
+
+  "parse": {"package_fields": ["name"], "encoding": "utf-8"}
+}

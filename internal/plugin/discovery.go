@@ -402,7 +402,10 @@ func (m *PluginManager) Candidats(sub string) (*pm.Catalog, bool) {
 		}
 		cat.Add(nom, strings.TrimSpace(badge))
 	}
-	cat.Sort()
+	// PAS de tri : l'ordre du vivier est celui que le plugin a choisi, et c'est une
+	// information. `git tag --sort=-creatordate` veut dire « la plus récente d'abord » ;
+	// la retrier alphabétiquement rendrait v0.1.2 avant v0.17.1 et jetterait précisément
+	// ce que le descripteur avait pris soin de demander.
 	return cat, true
 }
 
