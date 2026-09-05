@@ -58,48 +58,83 @@ API=(curl --fail --silent --show-error
 # Le plafond est court. Passé une minute, ce n'est plus un décalage de réplication mais
 # un miroir en panne, et il vaut mieux le dire que réessayer sans fin — même doctrine
 # que le jeton absent : on s'arrête plutôt que de faire semblant.
-# Réveiller le miroir avant de l'attendre. ATTENDRE NE SUFFIT PAS (#154) : le miroir ne
-# repart pas de lui-même quand une poussée arrive juste après son passage — mesuré sur la
-# v0.18.0, deux secondes de retard et vingt-cinq minutes sans rejouer, dans un état
-# `finished` et sans erreur. Le plafond d'attente n'était donc ni trop court ni trop long :
-# il ne jouait pas le rôle qu'on lui prêtait.
+# Faire passer le miroir, et le VÉRIFIER. Trois correctifs successifs ont échoué ici, et
+# toujours pour la même raison de fond : prendre la réponse d'une API pour la preuve de
+# l'effet cherché.
 #
-# GITLAB_API_TOKEN est le SEUL jeton qui convienne, et c'est une mesure, pas une supposition :
-# la v0.19.0 a essayé CI_JOB_TOKEN en vraie grandeur, l'API a répondu **401**. Un jeton de job
-# n'a pas de droit sur les réglages du projet, dont relèvent les miroirs. On ne le réessaie
-# donc plus — imprimer ce 401 à chaque release ferait chercher une panne là où il n'y a qu'un
-# jeton hors sujet.
+#   · attendre le tag ne suffit pas — le miroir ne repart pas de lui-même quand une poussée
+#     arrive juste après son passage (v0.18.0 : deux secondes de retard, vingt-cinq minutes
+#     sans rejouer) ;
+#   · CI_JOB_TOKEN ne peut pas le réveiller — mesuré sur la v0.19.0, HTTP 401 : un jeton de
+#     job n'a aucun droit sur les réglages du projet ;
+#   · et surtout, **`204` ne veut pas dire que le miroir a tourné**. GitLab accepte la
+#     demande et l'ignore si elle tombe dans les CINQ MINUTES qui suivent le passage
+#     précédent. Mesuré sur la v0.20.0 : réveil accepté à 4 min 53 s, jamais exécuté ; la
+#     même demande à 7 min 01 s est passée aussitôt. Sept secondes de trop.
 #
-# La variable n'est pas requise. Sans elle on se contente d'attendre : le comportement d'avant,
-# ni mieux ni pire, et la chaîne redevient dépendante de l'ordonnancement du miroir.
-reveiller_miroir() {
-  local code
+# On observe donc `last_update_started_at`, qui est la seule chose qui dise que le miroir a
+# réellement démarré, et on insiste jusqu'à ce qu'il avance. Le plafond couvre la fenêtre.
+etat_miroir() {
+  curl --silent --header "PRIVATE-TOKEN: ${GITLAB_API_TOKEN}" \
+       "$GITLAB/remote_mirrors" \
+    | python3 -c "import sys,json;print(json.load(sys.stdin)[0]['last_update_started_at'])" 2>/dev/null
+}
+
+tag_sur_le_miroir() {
+  "${API[@]}" --output /dev/null "https://api.github.com/repos/$DEPOT/git/refs/tags/$TAG" 2>/dev/null
+}
+
+faire_passer_le_miroir() {
+  local depart maintenant i
   [ -n "${GITLAB_API_TOKEN:-}" ] || {
     echo "  · GITLAB_API_TOKEN absente — on se contente d'attendre le miroir"
     return 1
   }
-  code="$(curl --silent --output /dev/null --write-out '%{http_code}' --request POST \
-          --header "PRIVATE-TOKEN: ${GITLAB_API_TOKEN}" \
-          "$GITLAB/remote_mirrors/${GITHUB_MIROIR_ID:-2}/sync")"
-  case "$code" in
-    20*) echo "→ miroir réveillé" ; return 0 ;;
-    *)   echo "  · le miroir a refusé le réveil : HTTP ${code} — on se contente d'attendre"
-         return 1 ;;
-  esac
+  depart="$(etat_miroir)"
+  [ -n "$depart" ] || {
+    echo "  · état du miroir illisible — on se contente de l'attendre"
+    return 1
+  }
+  echo "→ le tag n'est pas sur $DEPOT ; dernier passage du miroir : $depart"
+
+  # 32 × 15 s = 8 min : la fenêtre de blocage est de 5 min, et on veut de la marge sans
+  # attendre indéfiniment. On sort dès que le miroir démarre — le cas courant coûte donc
+  # une poignée de secondes, pas huit minutes.
+  for i in $(seq 1 "${JIGGER_INSISTANCE_MIROIR:-32}"); do
+    curl --silent --output /dev/null --request POST \
+         --header "PRIVATE-TOKEN: ${GITLAB_API_TOKEN}" \
+         "$GITLAB/remote_mirrors/${GITHUB_MIROIR_ID:-2}/sync"
+    sleep 15
+    maintenant="$(etat_miroir)"
+    if [ -n "$maintenant" ] && [ "$maintenant" != "$depart" ]; then
+      echo "→ le miroir a tourné à $maintenant (après $((i * 15)) s d'insistance)"
+      return 0
+    fi
+  done
+  echo "  · le miroir n'a pas démarré après $(( ${JIGGER_INSISTANCE_MIROIR:-32} * 15 )) s" >&2
+  return 1
 }
-reveiller_miroir || true
+
+# Le chemin rapide d'abord : si le miroir a déjà répliqué le tag de lui-même — ce qui arrive
+# une fois sur deux — il n'y a rien à faire, et surtout rien à attendre.
+if tag_sur_le_miroir; then
+  echo "→ le tag est déjà sur $DEPOT"
+else
+  faire_passer_le_miroir || true
+fi
 
 ATTENTE="${JIGGER_ATTENTE_TAG:-60}"
 attendu=0
 until "${API[@]}" --output /dev/null \
       "https://api.github.com/repos/$DEPOT/git/refs/tags/$TAG" 2>/dev/null; do
   if [ "$attendu" -ge "$ATTENTE" ]; then
-    echo "Le tag $TAG n'est pas arrivé sur $DEPOT après ${ATTENTE} s." >&2
-    echo "Le miroir GitLab → GitHub ne l'a pas répliqué : il n'y a rien à publier ici" >&2
-    echo "tant qu'il n'est pas passé. Forcer la synchronisation du miroir, puis" >&2
-    echo "relancer ce job :" >&2
-    echo "  curl -X POST -H \"PRIVATE-TOKEN: \$TOK\" \\" >&2
-    echo "       $GITLAB/remote_mirrors/2/sync" >&2
+    echo "Le tag $TAG n'est pas arrivé sur $DEPOT après ${ATTENTE} s," >&2
+    echo "alors que le miroir a été poussé et attendu. Il n'y a rien à publier ici tant" >&2
+    echo "qu'il n'est pas passé, et cette fois ce n'est PAS la fenêtre de cinq minutes :" >&2
+    echo "elle est traitée plus haut. Regarder l'état réel du miroir avant de relancer :" >&2
+    echo "  curl -H \"PRIVATE-TOKEN: \$TOK\" $GITLAB/remote_mirrors" >&2
+    echo "  → last_update_started_at doit être postérieur à la date du tag," >&2
+    echo "    et last_error dire pourquoi si le miroir a échoué." >&2
     exit 1
   fi
   if [ "$attendu" -eq 0 ]; then

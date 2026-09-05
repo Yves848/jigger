@@ -142,10 +142,21 @@ projet, ou par `POST /projects/25/access_tokens`.
 sur la v0.19.0, l'API a répondu **401**. Un jeton de job n'a aucun droit sur les réglages du
 projet, dont relèvent les miroirs. Le script ne le réessaie plus.
 
-Sans la variable, le script se contente d'attendre, et la chaîne dépend alors de
-l'ordonnancement du miroir : il réagit à la poussée s'il n'a pas tourné juste avant, et
-l'ignore sinon. Sur quatre releases, deux l'ont perdue — v0.17.1 et v0.18.0 — et deux l'ont
-gagnée.
+**La fenêtre est de cinq minutes, et `204` ne veut pas dire que le miroir a tourné.** C'est
+le piège qui a fait échouer trois correctifs successifs : GitLab accepte la demande de
+synchronisation et l'ignore si elle tombe dans les cinq minutes suivant le passage précédent.
+Mesuré deux fois le 5 septembre — un réveil accepté à 4 min 53 s n'a jamais été exécuté, la
+même demande à 7 min 01 s est passée aussitôt, et une insistance a fait démarrer le miroir à
+5 min 00 pile.
+
+Le script observe donc `last_update_started_at`, la seule valeur qui dise que le miroir a
+**réellement démarré**, et insiste jusqu'à ce qu'elle avance — jusqu'à huit minutes, en
+sortant dès que c'est le cas. Il commence par vérifier si le tag est déjà là : une fois sur
+deux le miroir a répliqué de lui-même, et le chemin rapide coûte alors moins d'une seconde.
+
+Sans la variable, le script se contente d'attendre, et la chaîne dépend de l'ordonnancement
+du miroir. Sur cinq releases, **trois l'ont perdue** — v0.17.1, v0.18.0 et v0.20.0 — et deux
+l'ont gagnée.
 
 Sans jeton qui marche, le script se contente d'attendre — ni mieux ni pire qu'avant. Le
 journal du job dit lequel a servi : `→ miroir réveillé (JOB-TOKEN)`, ou
