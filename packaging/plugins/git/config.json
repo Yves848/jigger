@@ -49,7 +49,8 @@
     "branches":   {"regime": "direct",
                    "args": ["branch", "--format=%(refname:short)\t\t%(upstream:track) %(committerdate:relative)"]},
     "etiquettes": {"regime": "direct",
-                   "args": ["tag", "--sort=-creatordate", "--format=%(refname:short)\t\t%(creatordate:relative)"]},
+                   "args": ["tag", "--sort=-creatordate",
+                            "--format=%(refname:short)\t\t%(creatordate:relative) · %(contents:subject)"]},
     "distants":   {"regime": "direct", "args": ["remote"]},
     "modifies":   {"regime": "direct", "args": ["ls-files", "--modified", "--others", "--exclude-standard"]}
   },

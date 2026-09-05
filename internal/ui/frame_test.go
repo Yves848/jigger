@@ -221,3 +221,45 @@ func TestScrollOffset(t *testing.T) {
 		}
 	}
 }
+
+// TestContexteLongNeChassePasLeNom : depuis l'ADR-0009, la colonne de droite est remplie
+// par un DESCRIPTEUR TIERS et non plus par une version de gestionnaire natif, toujours
+// courte. Une chaine longue n'est donc plus un cas tordu. Sans borne, elle chassait le nom
+// entierement — cadre deborde, candidat illisible, et c'est le nom qui sera insere (#156).
+func TestContexteLongNeChassePasLeNom(t *testing.T) {
+	long := "il y a 17 minutes · Version 0.18.0 — les plugins servent enfin à ce qu'ils sont"
+	items := []complete.Item{{Name: "v0.18.0", Version: long}}
+
+	for _, w := range []int{30, 40, 58, 80} {
+		for _, sel := range []int{-1, 0} {
+			f := Frame{Title: "git tag", Items: items, Width: w, Rows: 3, Sel: sel,
+				Keys: []Key{{"⇥", "insérer"}}}
+			rendu := f.Render()
+
+			// Le nom doit survivre en entier : c'est lui qu'on insere.
+			if !strings.Contains(rendu, "v0.18.0") {
+				t.Errorf("largeur %d (sel=%d) : le nom a disparu\n%s", w, sel, rendu)
+			}
+			// Et aucune ligne ne deborde, sans quoi le terminal replie le popup.
+			for i, line := range strings.Split(rendu, "\n") {
+				if got := lipgloss.Width(line); got != w+2 {
+					t.Errorf("largeur %d (sel=%d) : ligne %d fait %d colonnes (attendu %d)",
+						w, sel, i, got, w+2)
+				}
+			}
+		}
+	}
+}
+
+// TestContexteCourtResteEntier : la borne ne doit pas mutiler ce qui tenait deja. Les
+// gestionnaires natifs mettent la des versions et des adresses, et elles doivent rester
+// lisibles telles quelles.
+func TestContexteCourtResteEntier(t *testing.T) {
+	f := Frame{Title: "ssh", Width: 58, Rows: 3,
+		Items: []complete.Item{{Name: "archlight", Version: "192.168.50.207"}},
+		Keys:  []Key{{"⇥", "insérer"}}}
+	rendu := f.Render()
+	if !strings.Contains(rendu, "192.168.50.207") {
+		t.Errorf("l'adresse a été tronquée alors qu'elle tenait\n%s", rendu)
+	}
+}

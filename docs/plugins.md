@@ -66,9 +66,9 @@ $ git ⇥
   rebase  remote  restore  stash  status  switch  tag
 
 $ git checkout ⇥                         $ git tag ⇥
-  feat/site-refonte      2 days ago          v0.18.0    18 minutes ago
-  main                5 minutes ago          v0.17.1       5 hours ago
-  vieille    [behind 3] 2 days ago          v0.17.0      11 hours ago
+  feat/site-refonte      2 days ago          v0.18.0   27 min ago · Version 0.…
+  main                5 minutes ago          v0.17.1    6 hours ago · Version 0.1…
+  vieille    [behind 3] 2 days ago          v0.17.0   11 hours ago · Version 0.…
 
 $ git push ⇥           $ git add ⇥
   github                 docs/historique/2026-09-05.md
@@ -196,8 +196,8 @@ A `direct` pool prints **one candidate per line** on standard output: `name`,
 `name<TAB>badge`, or `name<TAB>badge<TAB>context` — the same convention as the installed
 cache. The **context** is the popup's right-hand column, and it is what separates a helper
 from plain completion: your shell already completes a branch name, it does not tell you
-which one is behind or when it last moved. Keep it **short** — a column wider than the frame
-pushes the name out. If it fails or overruns the deadline it returns nothing and **nothing is drawn**: in
+which one is behind or when it last moved. It is truncated at half the row: the name stays whole,
+since the name is what gets inserted. If it fails or overruns the deadline it returns nothing and **nothing is drawn**: in
 the render path, one error per keystroke would be worse than silence.
 
 **`options`** lists the flags offered behind `-` for that verb. The descriptor is the only

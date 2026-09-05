@@ -167,9 +167,18 @@ func (f Frame) renderRow(it complete.Item, selected bool, avecPM bool) string {
 	// Partie droite (alignée au bord) : version installée, point « installé », puis PM
 	// (façade seulement, cf. avecPM). On la compose d'abord en texte nu pour calculer le
 	// remplissage.
+	// Le contexte cède avant le nom, et jamais l'inverse. Depuis l'ADR-0009 cette colonne
+	// n'est plus une version de gestionnaire natif — toujours courte — mais ce qu'un
+	// DESCRIPTEUR TIERS a bien voulu y mettre : la date d'une branche, le sujet d'un
+	// commit, ce qu'on veut. Sans borne, une chaîne plus large que le cadre chassait le
+	// nom entièrement (#156) — or le nom est ce qui sera inséré ; le contexte n'est
+	// qu'une aide à choisir. La moitié de la ligne lui suffit, et `tronquer` ne touche
+	// rien qui tienne déjà.
+	version := tronquer(it.Version, f.rowWidth()/2)
+
 	rightPlain := ""
-	if it.Version != "" {
-		rightPlain = it.Version
+	if version != "" {
+		rightPlain = version
 	}
 	if it.Installed {
 		if rightPlain != "" {
@@ -212,11 +221,11 @@ func (f Frame) renderRow(it complete.Item, selected bool, avecPM bool) string {
 
 	left := pad(2) + couleur(it.Badge).Render(glyph) + pad(2) + nameStyle.Render(name)
 	right := ""
-	if it.Version != "" {
-		right = verStylePkg.Render(it.Version)
+	if version != "" {
+		right = verStylePkg.Render(version)
 	}
 	if it.Installed {
-		if it.Version != "" {
+		if version != "" {
 			right += pad(2)
 		}
 		right += dotStyle.Render("●")

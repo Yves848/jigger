@@ -68,9 +68,9 @@ $ git ⇥
   rebase  remote  restore  stash  status  switch  tag
 
 $ git checkout ⇥                         $ git tag ⇥
-  feat/site-refonte      2 days ago          v0.18.0    18 minutes ago
-  main                5 minutes ago          v0.17.1       5 hours ago
-  vieille    [behind 3] 2 days ago          v0.17.0      11 hours ago
+  feat/site-refonte      2 days ago          v0.18.0   27 min ago · Version 0.…
+  main                5 minutes ago          v0.17.1    6 hours ago · Version 0.1…
+  vieille    [behind 3] 2 days ago          v0.17.0   11 hours ago · Version 0.…
 
 $ git push ⇥           $ git add ⇥
   github                 docs/historique/2026-09-05.md
@@ -201,8 +201,8 @@ Un vivier `direct` rend **une ligne par candidat** sur sa sortie standard :
 `nom`, `nom<TAB>badge`, ou `nom<TAB>badge<TAB>contexte` — même convention que le cache des
 installés. Le **contexte** est la colonne de droite du popup, et c'est ce qui sépare un
 helper d'une simple complétion : votre shell sait déjà compléter un nom de branche, il ne
-vous dit pas laquelle est en retard ni quand elle a bougé. Gardez-le **court** — une colonne
-plus large que le cadre chasse le nom. S'il échoue ou dépasse le délai, il ne rend rien et **rien ne s'affiche** : dans le
+vous dit pas laquelle est en retard ni quand elle a bougé. Il est tronqué à la moitié de la ligne : le nom, lui,
+reste entier, puisque c'est lui qui sera inséré. S'il échoue ou dépasse le délai, il ne rend rien et **rien ne s'affiche** : dans le
 chemin du rendu, une erreur par frappe serait pire que le silence.
 
 **`options`** liste les drapeaux proposés derrière `-` pour ce verbe. Le descripteur en est
