@@ -276,6 +276,23 @@ func completeWith(line string, m pm.Manager, cat *pm.Catalog, regex bool) Result
 	isOption := strings.HasPrefix(word, "-")
 	isPackage := !isOption && (!firstWord || sansVerbes)
 
+	// Un gestionnaire aux verbes exhaustifs — un plugin — ne prend pas de paquets derrière
+	// un mot qui n'est pas un de ses verbes. Sans cette garde, `git checkout ` se voit
+	// servir la liste des dépôts clonés, marquée exécutable : ⏎ complèterait ET lancerait
+	// `git checkout <un dépôt au hasard>`. Voir pm.Exhaustif et #141.
+	//
+	// La garde ne vise QUE ce cas : le premier mot continue de lister les verbes, une
+	// option reste complétée par Options(), et un natif n'est pas concerné — les
+	// sous-commandes que brew déclare sont un choix, pas un inventaire.
+	if isPackage && !sansVerbes && pm.VerbesExhaustifsDe(m) && !pm.VerbeConnu(m, sub) {
+		return Result{
+			Prefix: prefix, Word: word, Cmd: m.Cmd(), Sub: sub, subBrut: subBrut,
+			mgr: m, cat: cat,
+			// Se taire, et non dessiner un cadre vide : la ligne ne regarde pas jigger.
+			Silencieux: true,
+		}
+	}
+
 	res := Result{
 		Prefix: prefix, Word: word, Cmd: m.Cmd(), Sub: sub, subBrut: subBrut,
 		// Un fournisseur sans verbes n'a pas de pm.Bindings : rien à exécuter. Le

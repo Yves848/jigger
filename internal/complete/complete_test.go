@@ -549,3 +549,76 @@ func TestSshSeTaitSansConfigurationSSH(t *testing.T) {
 		t.Fatalf("Items = %v, attendu [serveur]", res.Items)
 	}
 }
+
+// --- Verbes exhaustifs : ce qu'un plugin declare fait foi (#141) --------------------
+
+// fauxAVerbesExhaustifs modelise un PLUGIN : ses verbes viennent de son config.json, la
+// liste est donc complete par construction. Tout autre mot n'est pas un verbe, et ses
+// arguments ne sont pas des paquets.
+type fauxAVerbesExhaustifs struct{ cmd string }
+
+func (f fauxAVerbesExhaustifs) Cmd() string { return f.cmd }
+func (fauxAVerbesExhaustifs) Subcommands() []string {
+	return []string{"install", "list", "uninstall"}
+}
+func (fauxAVerbesExhaustifs) Options(string) []string                     { return nil }
+func (fauxAVerbesExhaustifs) InstalledOnly(string) bool                   { return false }
+func (fauxAVerbesExhaustifs) Available() bool                             { return true }
+func (fauxAVerbesExhaustifs) Load() *pm.Catalog                           { return nil }
+func (fauxAVerbesExhaustifs) Warm(pm.Scope) error                         { return nil }
+func (fauxAVerbesExhaustifs) Insert(_ *pm.Catalog, _, _, n string) string { return n }
+func (fauxAVerbesExhaustifs) VerbesExhaustifs() bool                      { return true }
+
+// fauxAVerbesPartiels est le MEME gestionnaire sans le contrat : c'est brew, dont les 25
+// sous-commandes declarees sont un choix et non un inventaire.
+type fauxAVerbesPartiels struct{ fauxAVerbesExhaustifs }
+
+func (fauxAVerbesPartiels) VerbesExhaustifs() bool { return false }
+
+func catalogueDepots() *pm.Catalog {
+	c := pm.NewCatalog()
+	c.Add("aquarium", "")
+	c.Add("jigger", "")
+	c.Sort()
+	return c
+}
+
+func TestVerbeInconnuDUnPluginNeProposeRien(t *testing.T) {
+	// `git checkout ` ne concerne pas le plugin git : proposer des depots comme argument
+	// de checkout est faux, et le faire avec Executable serait dangereux.
+	res := CompleteWith("plug checkout ", fauxAVerbesExhaustifs{"plug"}, catalogueDepots())
+	if len(res.Items) != 0 {
+		t.Errorf("Items = %v, attendu aucun", res.Items)
+	}
+	if res.Executable {
+		t.Error("Executable = true sur un verbe inconnu")
+	}
+	if !res.Silencieux {
+		t.Error("Silencieux = false : le popup s'ouvrirait sur un cadre vide")
+	}
+}
+
+func TestVerbeConnuDUnPluginProposeToujours(t *testing.T) {
+	res := CompleteWith("plug install ", fauxAVerbesExhaustifs{"plug"}, catalogueDepots())
+	if len(res.Items) != 2 {
+		t.Fatalf("Items = %v, attendu les deux depots", res.Items)
+	}
+}
+
+func TestPluginCommandeSeuleProposeSesVerbes(t *testing.T) {
+	// La garde ne doit pas manger le premier mot : `plug ` liste bien les verbes.
+	res := CompleteWith("plug ", fauxAVerbesExhaustifs{"plug"}, catalogueDepots())
+	if len(res.Items) != 3 {
+		t.Fatalf("Items = %v, attendu les trois verbes", res.Items)
+	}
+}
+
+func TestVerbeInconnuDUnNatifProposeToujours(t *testing.T) {
+	// Non-regression : `brew fetch fir` propose des formules aujourd'hui, et doit
+	// continuer. Les 25 sous-commandes declarees par brew sont un choix, pas un
+	// inventaire de la centaine qu'il a.
+	res := CompleteWith("plug fetch ", fauxAVerbesPartiels{}, catalogueDepots())
+	if len(res.Items) != 2 {
+		t.Fatalf("Items = %v, attendu les deux depots", res.Items)
+	}
+}

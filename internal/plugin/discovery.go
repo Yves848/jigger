@@ -293,6 +293,13 @@ func (m *PluginManager) Subcommands() []string {
 	return out
 }
 
+// VerbesExhaustifs : oui, toujours. Les verbes d'un plugin viennent de son `config.json`
+// et de nulle part ailleurs — jigger n'en connaît pas d'autres, et le plugin n'en exécutera
+// pas d'autres. La liste rendue par Subcommands est donc un inventaire, pas une sélection,
+// ce qui autorise la complétion à se taire sur tout le reste plutôt que d'y proposer des
+// paquets. C'est ce qui distingue un plugin d'un natif comme brew (cf. pm.Exhaustif, #141).
+func (*PluginManager) VerbesExhaustifs() bool { return true }
+
 // trierMots range des mots par ordre alphabétique. La liste tient en quelques entrées :
 // une insertion suffit, et évite d'importer sort pour cela.
 func trierMots(s []string) {

@@ -640,3 +640,13 @@ func TestParsePluginOutputMalformed(t *testing.T) {
 		t.Error("parsePluginOutput(malformed) devrait échouer")
 	}
 }
+
+func TestUnPluginDeclareSesVerbesExhaustifs(t *testing.T) {
+	// Le contrat pm.Exhaustif est ce qui fait taire la completion sur un verbe que le
+	// plugin ne declare pas — `git checkout ` ne doit pas proposer de depots (#141). Sans
+	// cette declaration, la garde de complete ne s'arme jamais.
+	var m pm.Manager = &PluginManager{}
+	if !pm.VerbesExhaustifsDe(m) {
+		t.Error("un plugin doit declarer ses verbes exhaustifs")
+	}
+}
