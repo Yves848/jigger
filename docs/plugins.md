@@ -137,6 +137,43 @@ against it:
 A search term is not a package name: `search` takes `aucun`, otherwise jigger would refuse
 to search for a word that is precisely not yet a known name.
 
+**Per-verb pools, for a command helper.** The three `pool` values above describe a package
+manager. A helper — an existing command made friendlier — needs something else: *branches*
+behind `checkout`, *modified files* behind `add`, *remotes* behind `push`. A verb can
+therefore draw from a **named pool**, declared separately:
+
+```jsonc
+"verbs": {
+  "checkout": {"native": ["checkout", "{args}"], "pool": "branches",
+               "options": ["-b", "--detach"]}
+},
+
+"pools": {
+  // "direct": asked for as you type, in the current directory.
+  "branches": {"regime": "direct", "args": ["pools", "branches"]}
+}
+```
+
+Two regimes, and the choice is not one of convenience:
+
+| `regime` | When | What it costs |
+|---|---|---|
+| `cache` | pool is **large and slow** to produce, stable from hour to hour | warmed by `jigger warm`, like the catalogue |
+| `direct` | pool is **small and contextual**, wrong the moment it is cached | one subprocess **per keystroke**, capped at 200 ms |
+
+The binary asked is **always the plugin's own**: a pool declares arguments only. A
+descriptor must not be able to have any program run on every keystroke.
+
+A `direct` pool prints **one candidate per line**, `name` or `name<TAB>badge`, on standard
+output. If it fails or overruns the deadline it returns nothing and **nothing is drawn**: in
+the render path, one error per keystroke would be worse than silence.
+
+**`options`** lists the flags offered behind `-` for that verb. The descriptor is the only
+source: jigger has no way to guess what a third-party command accepts.
+
+The full reasoning — and what the decision costs — is in
+[ADR-0009](../adr/0009-viviers-de-plugin-par-verbe.md).
+
 **Markers** in `native`: `{args}` spreads every argument into a single call — the usual
 case; `{arg}` makes **one call per argument**, for a manager that installs one package at
 a time. Flags typed on the line are prepended to the arguments, so `{arg}` would send them

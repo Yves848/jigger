@@ -41,6 +41,7 @@ type Config struct {
 	Cmd      string               `json:"cmd"`
 	Platform []string             `json:"platforms"`
 	Verbs    map[string]Verb      `json:"verbs"`
+	Pools    map[string]Vivier    `json:"pools"`
 	Warmup   map[string]WarmupCmd `json:"warmup"`
 	Parse    Parse                `json:"parse"`
 }
@@ -57,7 +58,35 @@ type WarmupCmd struct {
 // ajoute rien.
 type Verb struct {
 	Native []string `json:"native"`
-	Pool   string   `json:"pool"` // "catalogue", "installees", "aucun"
+
+	// Pool nomme le vivier où puiser les candidats de ce verbe : une des trois valeurs
+	// historiques — "catalogue", "installees", "aucun" — ou le nom d'une entrée de
+	// Config.Pools (ADR-0009).
+	Pool string `json:"pool"`
+
+	// Options sont les drapeaux proposés derrière `-` pour ce verbe. Sans elles, un
+	// plugin ne pouvait rien proposer là où un natif déclare ses options par
+	// sous-commande — c'était la moitié de ce qui manquait à un helper de commande.
+	Options []string `json:"options"`
+}
+
+// Vivier est une source de candidats nommée, déclarée par le descripteur (ADR-0009).
+//
+// Deux régimes, et le choix n'est pas de commodité :
+//
+//   - "cache" — le vivier est réchauffé par `jigger warm` et lu depuis le disque. C'est
+//     ce qu'il faut d'un catalogue : gros, lent à produire, stable d'une heure à l'autre.
+//   - "direct" — le vivier est demandé AU MOMENT DE LA FRAPPE, dans le répertoire
+//     courant. C'est ce qu'il faut de candidats petits et contextuels — les branches d'un
+//     dépôt, les fichiers modifiés — qu'un cache rendrait faux plutôt que rapides.
+//
+// Le binaire interrogé est TOUJOURS celui du plugin : le descripteur ne nomme que les
+// arguments. Un descripteur ne doit pas pouvoir faire lancer n'importe quel programme à
+// chaque frappe — c'est la contrainte 4 du plan d'injection, et le régime direct la rend
+// d'autant plus sensible qu'il s'exécute sans que l'utilisateur ait rien lancé.
+type Vivier struct {
+	Regime string   `json:"regime"` // "cache" ou "direct"
+	Args   []string `json:"args"`
 }
 
 // Parse dit comment interpréter la sortie JSON du plugin.
@@ -163,9 +192,25 @@ func validate(cfg *Config) error {
 		}
 		switch v.Pool {
 		case "catalogue", "installees", "aucun":
+			// Valeurs historiques : contrat public depuis la 0.16.0, elles restent.
+		default:
+			// Sinon, le pool doit désigner un vivier déclaré. Un nom qui ne correspond à
+			// rien est une faute de frappe silencieuse : le verbe ne proposerait jamais
+			// rien, et personne ne saurait pourquoi.
+			if _, ok := cfg.Pools[v.Pool]; !ok {
+				return errors.New("plugin : le verbe " + k + " puise dans un vivier non déclaré : " + v.Pool)
+			}
+		}
+	}
+	for nom, vi := range cfg.Pools {
+		switch vi.Regime {
+		case "cache", "direct":
 			// valide
 		default:
-			return errors.New("plugin : le verbe " + k + " a un pool invalide : " + v.Pool)
+			return errors.New("plugin : le vivier " + nom + " a un régime inconnu : " + vi.Regime)
+		}
+		if len(vi.Args) == 0 {
+			return errors.New("plugin : le vivier " + nom + " n'a pas d'arguments")
 		}
 	}
 	if len(cfg.Parse.Fields) == 0 {
@@ -312,7 +357,54 @@ func trierMots(s []string) {
 
 // Options rend les options proposées derrière `-`. Les descripteurs ne les déclarent pas
 // encore (phase P4 du plan) : un plugin ne propose donc aucune option.
-func (m *PluginManager) Options(_ string) []string { return nil }
+// Options rend les drapeaux déclarés pour ce verbe. Le descripteur en est la seule
+// source : jigger n'a aucun moyen de deviner ce qu'une commande tierce accepte.
+func (m *PluginManager) Options(sub string) []string {
+	return m.cfg.Verbs[strings.ToLower(sub)].Options
+}
+
+// Candidats rend le vivier propre à un verbe, et false si ce verbe n'en déclare pas —
+// auquel cas la complétion retombe sur le catalogue, comme avant l'ADR-0009.
+//
+// Le second retour n'est pas décoratif : il distingue « ce verbe n'a pas de vivier » de
+// « le vivier a répondu vide ». Le premier fait retomber sur le catalogue, le second doit
+// afficher zéro candidat — confondre les deux ferait proposer tout le catalogue derrière
+// `git checkout` d'un dépôt sans branche.
+func (m *PluginManager) Candidats(sub string) (*pm.Catalog, bool) {
+	v, ok := m.cfg.Verbs[strings.ToLower(sub)]
+	if !ok {
+		return nil, false
+	}
+	vi, ok := m.cfg.Pools[v.Pool]
+	if !ok || vi.Regime != "direct" {
+		return nil, false // vivier historique, ou réchauffé : Load() s'en charge
+	}
+	if m.binaire == "" {
+		return nil, false
+	}
+
+	// Le répertoire courant est celui du shell : jigger y est lancé à chaque frappe, et
+	// le plugin en hérite sans qu'on ait à le lui passer. C'est ce qui rend le vivier
+	// contextuel.
+	sortie, err := runDelai(m.binaire, vi.Args, delaiVivier())
+	if err != nil {
+		// Un vivier qui échoue ou qui traîne ne dit rien, et ne dit pas pourquoi : on est
+		// dans le chemin du rendu, où une ligne d'erreur par frappe serait pire que le
+		// silence (ADR-0006).
+		return pm.NewCatalog(), true
+	}
+
+	cat := pm.NewCatalog()
+	for _, ligne := range strings.Split(string(sortie), "\n") {
+		nom, badge, _ := strings.Cut(strings.TrimRight(ligne, "\r"), "\t")
+		if nom = strings.TrimSpace(nom); nom == "" {
+			continue
+		}
+		cat.Add(nom, strings.TrimSpace(badge))
+	}
+	cat.Sort()
+	return cat, true
+}
 
 // InstalledOnly indique qu'une sous-commande n'accepte que des paquets déjà installés.
 func (m *PluginManager) InstalledOnly(sub string) bool {

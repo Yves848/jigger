@@ -142,6 +142,45 @@ arguments :
 Un terme de recherche n'est pas un nom de paquet : `search` prend `aucun`, sans quoi jigger
 refuserait de chercher un mot qui n'est justement pas encore un nom connu.
 
+**Des viviers par verbe, pour un helper de commande.** Les trois `pool` ci-dessus décrivent
+un gestionnaire de paquets. Un helper — une commande existante qu'on rend commode — a besoin
+d'autre chose : les *branches* derrière `checkout`, les *fichiers modifiés* derrière `add`,
+les *distants* derrière `push`. Un verbe peut donc puiser dans un **vivier nommé**, déclaré
+à part :
+
+```jsonc
+"verbs": {
+  "checkout": {"native": ["checkout", "{args}"], "pool": "branches",
+               "options": ["-b", "--detach"]}
+},
+
+"pools": {
+  // « direct » : demandé à la frappe, dans le répertoire courant.
+  "branches": {"regime": "direct", "args": ["viviers", "branches"]}
+}
+```
+
+Deux régimes, et le choix n'est pas de commodité :
+
+| `regime` | Quand | Ce que ça coûte |
+|---|---|---|
+| `cache` | vivier **gros et lent** à produire, stable d'une heure à l'autre | réchauffé par `jigger warm`, comme le catalogue |
+| `direct` | vivier **petit et contextuel**, faux dès qu'il est mis en cache | un sous-processus **à chaque frappe**, borné à 200 ms |
+
+Le binaire interrogé est **toujours celui du plugin** : le vivier ne déclare que des
+arguments. Un descripteur ne doit pas pouvoir faire lancer n'importe quel programme à chaque
+frappe.
+
+Un vivier `direct` rend **une ligne par candidat**, `nom` ou `nom<TAB>badge`, sur sa sortie
+standard. S'il échoue ou dépasse le délai, il ne rend rien et **rien ne s'affiche** : dans le
+chemin du rendu, une erreur par frappe serait pire que le silence.
+
+**`options`** liste les drapeaux proposés derrière `-` pour ce verbe. Le descripteur en est
+la seule source : jigger n'a aucun moyen de deviner ce qu'une commande tierce accepte.
+
+Le raisonnement complet — et ce que la décision coûte — est dans
+l'[ADR-0009](../adr/0009-viviers-de-plugin-par-verbe.md).
+
 **Les marqueurs** de `native` : `{args}` étale tous les arguments dans un seul appel — le
 cas ordinaire ; `{arg}` fait **un appel par argument**, pour un gestionnaire qui n'installe
 qu'un paquet à la fois. Les drapeaux tapés sur la ligne sont mis en tête des arguments, et

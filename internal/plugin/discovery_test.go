@@ -5,7 +5,9 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
+	"time"
 
 	"gitlab.yg-devworks.com/yves/jigger/internal/pm"
 )
@@ -648,5 +650,140 @@ func TestUnPluginDeclareSesVerbesExhaustifs(t *testing.T) {
 	var m pm.Manager = &PluginManager{}
 	if !pm.VerbesExhaustifsDe(m) {
 		t.Error("un plugin doit declarer ses verbes exhaustifs")
+	}
+}
+
+// ── ADR-0009 : viviers par verbe et options par verbe ──────────────────
+
+// plantePlugin fabrique un plugin dont le binaire est un script shell qui imprime ce
+// qu'on lui dit. C'est le seul moyen d'eprouver un vivier « direct » de bout en bout.
+func plantePlugin(t *testing.T, corps string, cfg Config) *PluginManager {
+	t.Helper()
+	if runtime.GOOS == "windows" {
+		t.Skip("script shell")
+	}
+	dir := t.TempDir()
+	cfg.Cmd = "faux-pm"
+	if err := os.WriteFile(filepath.Join(dir, "faux-pm"), []byte(corps), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	return NewPluginManager(cfg, dir)
+}
+
+func configAVivier(regime string) Config {
+	return Config{
+		Name: "faux", Cmd: "faux-pm",
+		Verbs: map[string]Verb{
+			"checkout": {Native: []string{"checkout", "{args}"}, Pool: "branches",
+				Options: []string{"-b", "--detach"}},
+		},
+		Pools: map[string]Vivier{"branches": {Regime: regime, Args: []string{"viviers", "branches"}}},
+	}
+}
+
+func TestDescripteurAccepteUnVivierNomme(t *testing.T) {
+	cfg := configAVivier("direct")
+	if err := validate(&cfg); err != nil {
+		t.Fatalf("validate() = %v, un vivier nomme doit etre accepte", err)
+	}
+}
+
+func TestDescripteurRefuseUnVivierNonDeclare(t *testing.T) {
+	// Un pool qui ne designe ni une valeur historique ni un vivier declare est une faute
+	// de frappe silencieuse : le verbe ne proposerait jamais rien.
+	cfg := configAVivier("direct")
+	cfg.Verbs["checkout"] = Verb{Native: []string{"checkout"}, Pool: "branhces"}
+	err := validate(&cfg)
+	if err == nil || !strings.Contains(err.Error(), "branhces") {
+		t.Fatalf("validate() = %v, doit nommer le vivier inconnu", err)
+	}
+}
+
+func TestDescripteurRefuseUnRegimeInconnu(t *testing.T) {
+	cfg := configAVivier("magique")
+	err := validate(&cfg)
+	if err == nil || !strings.Contains(err.Error(), "magique") {
+		t.Fatalf("validate() = %v, doit nommer le regime inconnu", err)
+	}
+}
+
+func TestDescripteurGardeLesValeursHistoriques(t *testing.T) {
+	// Non-regression : `catalogue`, `installees` et `aucun` restent valides sans qu'un
+	// bloc `pools` soit necessaire. C'est un contrat public depuis la 0.16.0.
+	cfg := validConfig(t)
+	if err := validate(&cfg); err != nil {
+		t.Fatalf("validate() = %v sur un descripteur historique", err)
+	}
+}
+
+func TestOptionsViennentDuVerbe(t *testing.T) {
+	// Options() rendait nil : un plugin ne pouvait proposer aucune option, la ou brew en
+	// declare par sous-commande. C'est la moitie de ce qui manquait a un helper.
+	m := plantePlugin(t, "#!/bin/sh\n", configAVivier("direct"))
+	got := m.Options("checkout")
+	if len(got) != 2 || got[0] != "-b" {
+		t.Errorf("Options(checkout) = %v, attendu [-b --detach]", got)
+	}
+	if len(m.Options("verbe-sans-options")) != 0 {
+		t.Error("Options() d'un verbe inconnu doit etre vide")
+	}
+}
+
+func TestVivierDirectInterrogeLeBinaire(t *testing.T) {
+	// Le contrat : le binaire DU PLUGIN est lance avec les args declares, et rend une
+	// ligne par candidat, « nom<TAB>badge » comme le cache du catalogue.
+	m := plantePlugin(t, "#!/bin/sh\nprintf 'main\\tlocal\\nfeat/x\\n'\n", configAVivier("direct"))
+	cat, ok := m.Candidats("checkout")
+	if !ok || cat == nil {
+		t.Fatal("Candidats() = false, le vivier direct doit repondre")
+	}
+	if len(cat.Names) != 2 || cat.Names[0] != "feat/x" || cat.Names[1] != "main" {
+		t.Errorf("Names = %v, attendu les deux branches triees", cat.Names)
+	}
+	if cat.Badge("main") != "local" {
+		t.Errorf("Badge(main) = %q, attendu \"local\"", cat.Badge("main"))
+	}
+}
+
+func TestVivierDirectTourneDansLeRepertoireCourant(t *testing.T) {
+	// C'est LA raison d'etre du regime direct : les candidats dependent d'ou l'on est.
+	m := plantePlugin(t, "#!/bin/sh\npwd\n", configAVivier("direct"))
+	ailleurs := t.TempDir()
+	avant, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(avant) })
+	if err := os.Chdir(ailleurs); err != nil {
+		t.Fatal(err)
+	}
+	cat, ok := m.Candidats("checkout")
+	if !ok || len(cat.Names) != 1 {
+		t.Fatalf("Candidats() = %v, %v", cat, ok)
+	}
+	reel, _ := filepath.EvalSymlinks(ailleurs)
+	if vu, _ := filepath.EvalSymlinks(cat.Names[0]); vu != reel {
+		t.Errorf("le vivier a tourne dans %q, attendu %q", cat.Names[0], reel)
+	}
+}
+
+func TestVivierDirectAbandonneAuDelai(t *testing.T) {
+	// Un plugin lent ne doit pas tenir le prompt : au dela du delai, rien plutot que
+	// d'attendre (doctrine de l'ADR-0006, reprise par l'ADR-0009).
+	t.Setenv("JIGGER_DELAI_VIVIER", "50")
+	m := plantePlugin(t, "#!/bin/sh\nsleep 5\necho tard\n", configAVivier("direct"))
+	debut := time.Now()
+	cat, ok := m.Candidats("checkout")
+	if ok && cat != nil && len(cat.Names) > 0 {
+		t.Errorf("Candidats() = %v, un plugin trop lent ne doit rien rendre", cat.Names)
+	}
+	if d := time.Since(debut); d > 2*time.Second {
+		t.Errorf("Candidats() a attendu %s : le delai n'a pas ete tenu", d)
+	}
+}
+
+func TestVerbeSansVivierNommeNInterrogeRien(t *testing.T) {
+	// Non-regression : un verbe a pool historique ne doit pas declencher de
+	// sous-processus a la frappe.
+	m := plantePlugin(t, "#!/bin/sh\necho ne-doit-pas-etre-appele\n", configAVivier("direct"))
+	if cat, ok := m.Candidats("verbe-inconnu"); ok {
+		t.Errorf("Candidats(verbe-inconnu) = %v, attendu false", cat)
 	}
 }

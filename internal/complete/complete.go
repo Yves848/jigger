@@ -328,6 +328,17 @@ func completeWith(line string, m pm.Manager, cat *pm.Catalog, regex bool) Result
 			res.Silencieux = true
 		}
 	default: // paquet
+		// Le vivier du verbe l'emporte sur le catalogue quand il y en a un : les branches
+		// derrière `checkout` n'ont rien à voir avec ce que Load() a construit. Le
+		// contrat est optionnel, et l'appel n'a lieu QUE dans cette branche — jamais
+		// pendant que l'utilisateur tape encore le verbe, où il coûterait un
+		// sous-processus pour rien (ADR-0009).
+		if propre, ok := pm.CandidatsDe(m, sub); ok {
+			// res.cat suit, sans quoi InsertItem chercherait le candidat retenu dans un
+			// catalogue où il ne figure pas — le texte inséré viendrait d'une table qui
+			// ne l'a jamais contenu.
+			cat, res.cat = propre, propre
+		}
 		pool := cat.Names
 		if m.InstalledOnly(sub) {
 			pool = cat.InstalledNames()

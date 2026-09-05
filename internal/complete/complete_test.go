@@ -655,3 +655,59 @@ func TestPremierMotSansCorrespondanceResteVisibleChezUnNatif(t *testing.T) {
 		t.Error("Silencieux = true pour un natif : le cadre « aucune correspondance » est voulu")
 	}
 }
+
+// --- ADR-0009 : la completion consulte le vivier du verbe -----------------------------
+
+// fauxAViviers rend des candidats propres a chaque verbe, comme un plugin a vivier direct.
+type fauxAViviers struct {
+	fauxAVerbesExhaustifs
+	appels *int
+}
+
+func (f fauxAViviers) Candidats(sub string) (*pm.Catalog, bool) {
+	if f.appels != nil {
+		*f.appels++
+	}
+	if sub != "install" {
+		return nil, false
+	}
+	c := pm.NewCatalog()
+	c.Add("main", "")
+	c.Add("feat/x", "")
+	c.Sort()
+	return c, true
+}
+
+func TestLaCompletionPrefereLeVivierDuVerbe(t *testing.T) {
+	// Le catalogue dit « aquarium, jigger » ; le vivier du verbe dit « feat/x, main ».
+	// C'est le vivier qui doit gagner : c'est tout l'objet de l'ADR-0009.
+	res := CompleteWith("plug install ", fauxAViviers{fauxAVerbesExhaustifs{"plug"}, nil}, catalogueDepots())
+	if len(res.Items) != 2 || res.Items[0].Name != "feat/x" {
+		t.Fatalf("Items = %v, attendu les candidats du vivier", res.Items)
+	}
+}
+
+func TestSansVivierLaCompletionRetombeSurLeCatalogue(t *testing.T) {
+	// Non-regression : un verbe sans vivier propre garde le comportement d'avant.
+	res := CompleteWith("plug list ", fauxAViviers{fauxAVerbesExhaustifs{"plug"}, nil}, catalogueDepots())
+	if len(res.Items) != 2 || res.Items[0].Name != "aquarium" {
+		t.Fatalf("Items = %v, attendu le catalogue", res.Items)
+	}
+}
+
+func TestLeVivierEstFiltreParLeMotEnCours(t *testing.T) {
+	res := CompleteWith("plug install fea", fauxAViviers{fauxAVerbesExhaustifs{"plug"}, nil}, catalogueDepots())
+	if len(res.Items) != 1 || res.Items[0].Name != "feat/x" {
+		t.Fatalf("Items = %v, attendu [feat/x]", res.Items)
+	}
+}
+
+func TestLePremierMotNInterrogeAucunVivier(t *testing.T) {
+	// Le vivier coute un sous-processus : il ne doit pas etre interroge quand
+	// l'utilisateur tape encore le verbe.
+	appels := 0
+	CompleteWith("plug ins", fauxAViviers{fauxAVerbesExhaustifs{"plug"}, &appels}, catalogueDepots())
+	if appels != 0 {
+		t.Errorf("le vivier a ete interroge %d fois sur le premier mot", appels)
+	}
+}
