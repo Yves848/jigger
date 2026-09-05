@@ -144,3 +144,42 @@ func Vocabulaire(mgrs []pm.Manager) []string {
 	sort.Strings(out)
 	return out
 }
+
+// PluginCommandsPath est le fichier où jigger dépose les mots de commande apportés par les
+// plugins. Il vit dans le cache, à côté des catalogues, et se lit d'un `< fichier` par les
+// greffons shell.
+func PluginCommandsPath() string { return filepath.Join(pm.CacheDir(), "plugin-commands") }
+
+// PluginCommands rend les mots de commande des plugins découverts, triés. Les natifs n'y
+// sont pas : ils figurent déjà dans le défaut de JIGGER_COMMANDS, qu'un greffon connaît
+// sans rien lire.
+func PluginCommands() []string {
+	var out []string
+	for _, m := range All() {
+		if _, ok := m.(*plugin.PluginManager); ok {
+			out = append(out, m.Cmd())
+		}
+	}
+	sort.Strings(out)
+	return out
+}
+
+// WritePluginCommands écrit cette liste dans le cache, un mot par ligne.
+//
+// Pourquoi un fichier plutôt qu'un appel : le greffon shell doit connaître ces mots à son
+// CHARGEMENT, pour armer le popup dessus. Or il ne peut pas les deviner — ils dépendent
+// des plugins installés sur la machine —, et lancer jigger à chaque ouverture de terminal
+// pour les demander ferait payer un processus à chaque shell. Le fichier est écrit par
+// `jigger warm`, que la documentation prescrit déjà comme dernière étape de l'installation
+// d'un plugin (#140).
+//
+// Il est réécrit à chaque fois, y compris VIDE : un plugin désinstallé doit cesser d'être
+// armé, et un fichier qu'on n'écrit plus resterait à dire le contraire indéfiniment.
+func WritePluginCommands() error {
+	var b strings.Builder
+	for _, c := range PluginCommands() {
+		b.WriteString(c)
+		b.WriteByte('\n')
+	}
+	return os.WriteFile(PluginCommandsPath(), []byte(b.String()), 0o644)
+}

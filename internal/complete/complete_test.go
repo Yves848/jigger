@@ -622,3 +622,36 @@ func TestVerbeInconnuDUnNatifProposeToujours(t *testing.T) {
 		t.Fatalf("Items = %v, attendu les deux depots", res.Items)
 	}
 }
+
+func TestPremierMotSansVerbeCorrespondantEstMuetChezUnExhaustif(t *testing.T) {
+	// `git status`, `git push`, `git ch`… : aucun verbe du plugin ne commence par ces
+	// mots. Sans cette regle, un cadre « aucun candidat » s'ouvre a CHAQUE FRAPPE d'une
+	// commande git ordinaire — le defaut que l'ADR-0006 avait deja fait corriger pour
+	// ssh. Prealable indispensable a #140.
+	res := CompleteWith("plug st", fauxAVerbesExhaustifs{"plug"}, catalogueDepots())
+	if len(res.Items) != 0 {
+		t.Errorf("Items = %v, attendu aucun", res.Items)
+	}
+	if !res.Silencieux {
+		t.Error("Silencieux = false : un cadre vide s'ouvrirait sur « plug st »")
+	}
+}
+
+func TestPremierMotDUnExhaustifQuiCorrespondResteVisible(t *testing.T) {
+	res := CompleteWith("plug ins", fauxAVerbesExhaustifs{"plug"}, catalogueDepots())
+	if len(res.Items) != 1 || res.Items[0].Name != "install" {
+		t.Fatalf("Items = %v, attendu [install]", res.Items)
+	}
+	if res.Silencieux {
+		t.Error("Silencieux = true alors qu'un verbe correspond")
+	}
+}
+
+func TestPremierMotSansCorrespondanceResteVisibleChezUnNatif(t *testing.T) {
+	// Non-regression : « winget zzz » garde son cadre « aucune correspondance », ce que
+	// pm.Manager documente. Seul un exhaustif se tait.
+	res := CompleteWith("plug zzz", fauxAVerbesPartiels{}, catalogueDepots())
+	if res.Silencieux {
+		t.Error("Silencieux = true pour un natif : le cadre « aucune correspondance » est voulu")
+	}
+}

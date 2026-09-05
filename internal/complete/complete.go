@@ -319,6 +319,14 @@ func completeWith(line string, m pm.Manager, cat *pm.Catalog, regex bool) Result
 				res.Items = append(res.Items, Item{Name: s})
 			}
 		}
+		// Aucun verbe d'un exhaustif ne commence par ce mot : la ligne ne le regarde pas.
+		// Sans ce silence, `git status` ouvrirait un cadre « aucun candidat » à CHAQUE
+		// frappe — « g », « gi », « git s »… —, exactement le défaut que l'ADR-0006 a fait
+		// corriger pour ssh. Un natif, lui, garde son cadre : « winget zzz » doit dire
+		// qu'il ne connaît pas, c'est ce que pm.Manager documente.
+		if len(res.Items) == 0 && pm.VerbesExhaustifsDe(m) {
+			res.Silencieux = true
+		}
 	default: // paquet
 		pool := cat.Names
 		if m.InstalledOnly(sub) {

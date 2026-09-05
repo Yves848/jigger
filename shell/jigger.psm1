@@ -111,6 +111,32 @@ function Get-JiggerCacheDefaut {
 $script:CacheDir   = Get-JiggerSetting 'JIGGER_CACHE_DIR' (Get-JiggerCacheDefaut)
 $script:StatusFile = Join-Path $script:CacheDir 'status'
 
+# Les gestionnaires apportés par un PLUGIN ne peuvent pas figurer dans le défaut de
+# JIGGER_COMMANDS : ils dépendent de ce qui est installé sur la machine. `jigger warm` les
+# dépose dans `plugin-commands`, un mot par ligne, et le module les lit ici — une lecture
+# de fichier, jamais un lancement de jigger, le module refusant d'en payer un au
+# chargement du profil. Un plugin installé mais jamais réchauffé n'est donc pas armé :
+# `jigger warm --all` est la dernière étape de son installation (#140).
+#
+# JIGGER_PLUGIN_COMMANDS=0 refuse cet armement sans obliger à réécrire JIGGER_COMMANDS en
+# entier — même esprit que l'ADR-0005 pour `ssh` : l'utilisateur garde la main sur ce que
+# jigger intercepte. Le greffon zsh lit le même fichier et honore le même réglage : les
+# deux côtés doivent répondre à la même frappe.
+#
+# La lecture est enveloppée : un fichier illisible ne doit pas empêcher un shell de
+# s'ouvrir, pas plus qu'un descripteur de plugin cassé n'empêche jigger de compléter.
+if ((Get-JiggerSetting 'JIGGER_PLUGIN_COMMANDS' '1') -ne '0') {
+    $fichierPlugins = Join-Path $script:CacheDir 'plugin-commands'
+    if (Test-Path -LiteralPath $fichierPlugins) {
+        try {
+            foreach ($mot in (Get-Content -LiteralPath $fichierPlugins -ErrorAction Stop)) {
+                $mot = $mot.Trim()
+                if ($mot -and $script:Commands -notcontains $mot) { $script:Commands += $mot }
+            }
+        } catch { }
+    }
+}
+
 # Langue des messages du module. $env:JIGGER_LANG est déjà une variable d'environnement :
 # le binaire la voit sans qu'on ait rien à exporter.
 #

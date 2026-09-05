@@ -38,6 +38,22 @@ A plugin whose binary cannot be found is skipped in silence, and picked up again
 as it appears. A plugin that takes the name of a built-in manager is refused, with a line
 on stderr: `brew` is `brew`.
 
+That `warm` is not only about caches: it is what **arms the popup** on the plugin's own
+word. It drops the discovered words into `plugin-commands`, deep in the cache, and the
+shell plugins — zsh and PowerShell alike — read it when they load. No default could know
+them: they depend on what is installed on *this* machine. Open a new shell after the
+`warm`, and `git ⇥` answers.
+
+To keep a plugin *unarmed*, without rewriting `JIGGER_COMMANDS` in full:
+
+```sh
+JIGGER_PLUGIN_COMMANDS=0
+```
+
+`git` is a command you may legitimately want left alone. On lines that are none of the
+plugin's business — `git status`, `git checkout a-branch` — jigger stays quiet by itself:
+the word is not one of its verbs, so it has nothing to say and draws no frame.
+
 ## The `git` plugin
 
 It ships with jigger, in [`packaging/plugins/git/`](../packaging/plugins/git). It sees

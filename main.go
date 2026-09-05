@@ -448,6 +448,16 @@ func runWarm(args []string) int {
 			code = 1
 		}
 	}
+
+	// Les greffons shell lisent ce fichier à leur chargement pour armer le popup sur les
+	// gestionnaires apportés par un plugin — mots qu'aucun défaut ne peut connaître,
+	// puisqu'ils dépendent de ce qui est installé ici (#140). C'est `warm` qui l'écrit
+	// parce que c'est déjà l'étape que la documentation prescrit après l'installation
+	// d'un plugin.
+	if err := managers.WritePluginCommands(); err != nil {
+		fmt.Fprintf(os.Stderr, "jigger: %v\n", err)
+		code = 1
+	}
 	return code
 }
 

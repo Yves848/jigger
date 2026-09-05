@@ -178,8 +178,39 @@ typeset -g _jigger_accept_widget=''                    # ce que ⏎ faisait
 # `pacman` et `yay` ici, `winget` et `scoop` là-bas. Elle ne dépend pas de la
 # distribution : un `pacman` tapé sur macOS reste complété — au pire sur un catalogue
 # vide —, exactement comme un `brew` tapé sous Windows (cf. managers.All).
+# Le dossier de cache, résolu comme os.UserCacheDir() côté Go — qui sur macOS ignore
+# XDG_CACHE_HOME. `jigger prompt --path` donnerait le chemin exact, mais l'interroger
+# coûterait un fork, et ce greffon en refuse un au chargement du shell.
+_jigger_cache_dir() {
+  [[ -n $JIGGER_CACHE_DIR ]] && return
+  if [[ $OSTYPE == darwin* ]]; then
+    typeset -g JIGGER_CACHE_DIR="$HOME/Library/Caches/jigger"
+  else
+    typeset -g JIGGER_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/jigger"
+  fi
+}
+_jigger_cache_dir
+
 : "${JIGGER_COMMANDS:=brew pacman yay ssh scp sftp}"
 typeset -ga _jigger_commands=( ${=JIGGER_COMMANDS//,/ } )
+
+# Les gestionnaires apportés par un PLUGIN ne peuvent pas figurer dans le défaut : ils
+# dépendent de ce qui est installé sur la machine. `jigger warm` les dépose dans
+# `plugin-commands`, un mot par ligne, et on les lit ici avec le seul builtin `$(<…)` —
+# aucun fork. Un plugin installé mais jamais réchauffé n'est donc pas armé, ce qui est
+# cohérent : `jigger warm --all` est la dernière étape de son installation (#140).
+#
+# JIGGER_PLUGIN_COMMANDS=0 refuse cet armement sans obliger à réécrire JIGGER_COMMANDS en
+# entier. C'est l'esprit de l'ADR-0005 : l'utilisateur garde la main sur ce que jigger
+# intercepte, et `git` est une commande qu'on peut légitimement vouloir laisser tranquille.
+: "${JIGGER_PLUGIN_COMMANDS:=1}"
+if (( JIGGER_PLUGIN_COMMANDS )) && [[ -r $JIGGER_CACHE_DIR/plugin-commands ]]; then
+  for _jigger_cmd in ${(f)"$(<$JIGGER_CACHE_DIR/plugin-commands)"}; do
+    [[ -n $_jigger_cmd ]] || continue
+    (( ${_jigger_commands[(I)$_jigger_cmd]} )) || _jigger_commands+=( $_jigger_cmd )
+  done
+  unset _jigger_cmd
+fi
 
 # « jigger » et son alias « jg » (posé plus haut) s'ajoutent TOUJOURS à ce que
 # l'utilisateur a posé : ce sont les commandes DE jigger, les éteindre serait un défaut,
@@ -763,15 +794,9 @@ _jigger_precmd() {
 # JIGGER_PROMPT_SYNC).
 
 if (( JIGGER_PROMPT )); then
-  # Même règle que os.UserCacheDir() côté Go, qui sur macOS ignore XDG_CACHE_HOME.
-  # `jigger prompt --path` donne le chemin exact — mais l'interroger coûterait un fork.
-  if [[ -z $JIGGER_CACHE_DIR ]]; then
-    if [[ $OSTYPE == darwin* ]]; then
-      typeset -g JIGGER_CACHE_DIR="$HOME/Library/Caches/jigger"
-    else
-      typeset -g JIGGER_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/jigger"
-    fi
-  fi
+  # Résolu plus haut, une seule fois : le bloc des mots surveillés en a besoin avant ce
+  # point pour lire `plugin-commands`.
+  _jigger_cache_dir
   typeset -g _jigger_status_file="$JIGGER_CACHE_DIR/status"
   typeset -gi _jigger_last_refresh=0
 

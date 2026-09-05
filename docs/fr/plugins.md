@@ -40,6 +40,23 @@ Un plugin dont le binaire est introuvable est ignoré en silence, et repris dès
 apparaît. Un plugin qui prend le nom d'un gestionnaire natif est refusé, avec une ligne sur
 la sortie d'erreur : `brew`, c'est `brew`.
 
+Ce `warm` n'est pas qu'une affaire de caches : c'est lui qui **arme le popup** sur le mot
+du plugin. Il dépose les mots découverts dans `plugin-commands`, au fond du cache, et les
+greffons — zsh comme PowerShell — le lisent à leur chargement. Aucun défaut ne pourrait les
+connaître : ils dépendent de ce qui est installé sur cette machine-ci. Ouvrez un nouveau
+shell après le `warm`, et `git ⇥` répond.
+
+Pour ne PAS armer un plugin, sans avoir à réécrire `JIGGER_COMMANDS` en entier :
+
+```sh
+JIGGER_PLUGIN_COMMANDS=0
+```
+
+`git` est une commande qu'on peut légitimement vouloir laisser tranquille. Sur les lignes
+qui ne concernent pas le plugin — `git status`, `git checkout une-branche` — jigger se tait
+de lui-même : le mot n'est pas un de ses verbes, il n'a rien à en dire et n'ouvre aucun
+cadre.
+
 ## Le plugin `git`
 
 Il est livré avec jigger, dans [`packaging/plugins/git/`](../../packaging/plugins/git). Il
