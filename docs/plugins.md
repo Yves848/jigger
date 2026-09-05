@@ -42,7 +42,7 @@ That `warm` is not only about caches: it is what **arms the popup** on the plugi
 word. It drops the discovered words into `plugin-commands`, deep in the cache, and the
 shell plugins — zsh and PowerShell alike — read it when they load. No default could know
 them: they depend on what is installed on *this* machine. Open a new shell after the
-`warm`, and `git ⇥` answers.
+`warm`, and the plugin's word answers.
 
 To keep a plugin *unarmed*, without rewriting `JIGGER_COMMANDS` in full:
 
@@ -50,93 +50,31 @@ To keep a plugin *unarmed*, without rewriting `JIGGER_COMMANDS` in full:
 JIGGER_PLUGIN_COMMANDS=0
 ```
 
-`git` is a command you may legitimately want left alone. On lines that are none of the
-plugin's business — `git status`, `git checkout a-branch` — jigger stays quiet by itself:
-the word is not one of its verbs, so it has nothing to say and draws no frame.
+A plugin may take the name of a command you type a hundred times a day and would rather
+leave alone. On lines that are none of its business, jigger stays quiet by itself: the word
+is not one of its verbs, so it has nothing to say and draws no frame.
 
-## The `git` plugin
+## No plugin ships with jigger today
 
-It ships with jigger, in [`packaging/plugins/git/`](../packaging/plugins/git). It sees
-**your local clones as packages**: installing is cloning, uninstalling is deleting the
-clone, upgrading is pulling.
+jigger used to ship a `git` plugin that saw your local clones as packages: installing was
+cloning, upgrading was pulling. It has been withdrawn, and the reason is worth stating
+because it constrains every plugin to come.
 
-```sh
-cp -r packaging/plugins/git ~/.config/jigger/plugins/
-go build -o ~/.config/jigger/plugins/git/jigger-git ./cmd/jigger-git
-jigger warm --all
-```
+**A plugin exists to make an existing command friendlier** — to show, in the popup, the
+subcommands, options and arguments that command actually accepts. The `git` plugin did the
+opposite: it took the word `git` and offered six verbs (`install`, `list`, `upgrade`...)
+that are not git commands at all, so `git` proposed a vocabulary nobody types, and the
+completed line read like git while running something else entirely.
 
-```console
-$ jg list --pm git
-PACKAGE        CURRENT                SOURCE
-config         feat/clavier-macarchy  https://gitlab.yg-devworks.com/yves/config.git
-jigger         main                   https://gitlab.yg-devworks.com/yves/jigger.git
-omarchy        fix/sddm-greeter…      https://github.com/Yves848/omarchy.git
-```
+That was not a sloppy implementation. It was **the only shape this descriptor can
+express** - a package manager, two machine-wide pools, no per-verb candidates and no
+options. A real `git` helper needs your *branches* behind `checkout`, your *modified
+files* behind `add`, your *remotes* behind `push`, computed in the current directory at
+the moment you type. None of that fits below.
 
-The **version** of a repository is its current branch — that is what tells two states of
-the same clone apart. Its **source** is the origin URL.
+Extending the protocol to allow it is the subject of an architecture decision record. Only
+once that lands can a `git` plugin be written that deserves the name.
 
-### Where it looks
-
-`$JIGGER_GIT_ROOTS` (a `$PATH`-style list) has the last word. Without it: `~/git`,
-`~/Projets`, `~/Code`, `~/dev`, `~/src`. It descends two levels, so both `~/git/project`
-and `~/git/client/project` are found — and it stops at any folder holding a `.git`, so
-submodules and worktrees do not show up as packages of their own.
-
-### The verbs
-
-| Command | What it does |
-|---|---|
-| `jg list --pm git` | the clones it found |
-| `jg outdated --pm git [--fetch]` | clones behind their upstream |
-| `jg search --pm git <pattern>` | filters the catalogue |
-| `jg install --pm git <name>` | clones it |
-| `jg uninstall --pm git <name> [--force]` | deletes the clone |
-| `jg upgrade --pm git [<name>…]` | `git pull --ff-only`, all of them if you name none |
-
-`outdated` reads the tracking ref, which only moves on a fetch: with no network it reports
-what the last synchronisation knows, and can well answer *nothing* about a repository that
-has moved on. `--fetch` goes and asks. It is not the default on purpose — `outdated` can
-cover dozens of repositories, and a read should not go to the network unasked.
-
-`upgrade` pulls `--ff-only`: an update must not quietly build a merge commit, nor leave
-you in the middle of a conflict.
-
-### Deleting is guarded
-
-`uninstall` removes a folder for good, so it refuses while the clone still holds work that
-deleting would lose: uncommitted changes, unpushed commits, or no remote at all. `--force`
-lifts the guard, but you have to write it.
-
-```console
-$ jg uninstall --pm git jigger
-jigger-git : jigger: some commits are not pushed — run again with --force to delete anyway
-```
-
-### Where clone URLs come from
-
-Nothing is guessed. jigger will not build `https://github.com/<name>.git` out of a word
-and clone whatever answers. A name resolves in this order:
-
-1. **a URL** you passed — `jigger-git run install https://…` (any form git clones);
-2. **`depots.json`**, the table you write by hand, next to the descriptor;
-3. **`connus.json`**, the origins jigger remembers from the clones it has already seen.
-
-That third one is what makes the model whole: without it, a repository deleted by
-`uninstall` could never be cloned back, though jigger had just shown you its URL.
-
-```jsonc
-// ~/.config/jigger/plugins/git/depots.json
-{
-  "jigger":  "https://gitlab.yg-devworks.com/yves/jigger.git",
-  "omarchy": "https://github.com/Yves848/omarchy.git"
-}
-```
-
-`jg install` only accepts catalogue names — the guard that catches a typo before it clones
-something. To clone a URL that is in neither table, either add it to `depots.json`, or
-call the binary directly: `jigger-git run install <url>`.
 
 ## Writing a plugin
 
