@@ -129,11 +129,16 @@ minutes plus tard, dans un état `finished` et sans erreur.
 Le script **réveille donc le miroir** avant de l'attendre, et il cherche son jeton dans cet
 ordre — aucun n'est requis :
 
-1. **`CI_JOB_TOKEN`**, présent sans rien demander. Son droit sur cet endpoint n'est pas
-   documenté de façon fiable : le script l'essaie et **imprime ce que l'API répond**, plutôt
-   que de le supposer. La prochaine release tranchera.
-2. **`GITLAB_API_TOKEN`**, variable masquée à poser si le premier est refusé. C'est le coût
-   qu'on avait refusé de payer, et que la mesure a rendu nécessaire.
+1. **`CI_JOB_TOKEN`** — **mesuré sur la v0.19.0 : refusé, HTTP 401.** Le jeton de job n'a
+   pas le droit d'appeler cet endpoint, qui relève des réglages du projet. La question est
+   donc tranchée, et il est inutile d'y revenir.
+2. **`GITLAB_API_TOKEN`**, variable masquée de portée `api`. **C'est le seul chemin qui
+   marche**, et il n'est pas encore posé.
+
+Tant qu'il ne l'est pas, la chaîne dépend de la chance : le miroir réagit à la poussée s'il
+n'a pas tourné juste avant, et l'ignore sinon. Deux releases sur quatre l'ont perdue —
+v0.17.1 et v0.18.0 — deux l'ont gagnée. La v0.19.0 est passée **malgré** le réveil refusé,
+le miroir ayant répliqué une seconde après la poussée.
 
 Sans jeton qui marche, le script se contente d'attendre — ni mieux ni pire qu'avant. Le
 journal du job dit lequel a servi : `→ miroir réveillé (JOB-TOKEN)`, ou
