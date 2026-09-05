@@ -67,13 +67,17 @@ $ git ⇥
   add  branch  checkout  commit  diff  fetch  log  merge  pull  push
   rebase  remote  restore  stash  status  switch  tag
 
-$ git checkout ⇥          $ git push ⇥           $ git add ⇥
-  feat/site-refonte         github                 docs/historique/2026-09-05.md
-  main                      origin                 packaging/plugins/git/config.json
+$ git checkout ⇥                         $ git tag ⇥
+  feat/site-refonte      2 days ago          v0.18.0    18 minutes ago
+  main                5 minutes ago          v0.17.1       5 hours ago
+  vieille    [behind 3] 2 days ago          v0.17.0      11 hours ago
 
-$ git commit -⇥           $ git tag ⇥
-  -m  -a  --amend           v0.17.1  v0.17.0  v0.16.0
-  --no-edit  --no-verify    (la plus récente d'abord)
+$ git push ⇥           $ git add ⇥
+  github                 docs/historique/2026-09-05.md
+  origin                 packaging/plugins/git/config.json
+
+$ git commit -⇥
+  -m  -a  --amend  --no-edit  --no-verify  --fixup  -S
 ```
 
 Les candidats sont **calculés dans le répertoire courant, à la frappe** : ce sont vos
@@ -193,8 +197,12 @@ Le binaire interrogé est **toujours celui du plugin** : le vivier ne déclare q
 arguments. Un descripteur ne doit pas pouvoir faire lancer n'importe quel programme à chaque
 frappe.
 
-Un vivier `direct` rend **une ligne par candidat**, `nom` ou `nom<TAB>badge`, sur sa sortie
-standard. S'il échoue ou dépasse le délai, il ne rend rien et **rien ne s'affiche** : dans le
+Un vivier `direct` rend **une ligne par candidat** sur sa sortie standard :
+`nom`, `nom<TAB>badge`, ou `nom<TAB>badge<TAB>contexte` — même convention que le cache des
+installés. Le **contexte** est la colonne de droite du popup, et c'est ce qui sépare un
+helper d'une simple complétion : votre shell sait déjà compléter un nom de branche, il ne
+vous dit pas laquelle est en retard ni quand elle a bougé. Gardez-le **court** — une colonne
+plus large que le cadre chasse le nom. S'il échoue ou dépasse le délai, il ne rend rien et **rien ne s'affiche** : dans le
 chemin du rendu, une erreur par frappe serait pire que le silence.
 
 **`options`** liste les drapeaux proposés derrière `-` pour ce verbe. Le descripteur en est

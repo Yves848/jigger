@@ -394,13 +394,29 @@ func (m *PluginManager) Candidats(sub string) (*pm.Catalog, bool) {
 		return pm.NewCatalog(), true
 	}
 
+	// « nom<TAB>badge<TAB>version », même convention que le cache des installés. Le
+	// troisième champ est ce qui sépare un helper d'une simple complétion : la colonne
+	// de droite du popup. zsh sait compléter un nom de branche ; il ne dit pas laquelle
+	// est en retard, ni quand elle a bougé, ni ce que disait son dernier commit.
 	cat := pm.NewCatalog()
 	for _, ligne := range strings.Split(string(sortie), "\n") {
-		nom, badge, _ := strings.Cut(strings.TrimRight(ligne, "\r"), "\t")
-		if nom = strings.TrimSpace(nom); nom == "" {
+		champs := strings.Split(strings.TrimRight(ligne, "\r"), "\t")
+		nom := strings.TrimSpace(champs[0])
+		if nom == "" {
 			continue
 		}
-		cat.Add(nom, strings.TrimSpace(badge))
+		badge := ""
+		if len(champs) > 1 {
+			badge = strings.TrimSpace(champs[1])
+		}
+		cat.Add(nom, badge)
+		// Versions, et non MarkInstalled : un candidat de vivier n'est pas « installé »,
+		// et le marquer ainsi changerait sa pastille et son style dans le popup.
+		if len(champs) > 2 {
+			if v := strings.TrimSpace(champs[2]); v != "" {
+				cat.Versions[nom] = v
+			}
+		}
 	}
 	// PAS de tri : l'ordre du vivier est celui que le plugin a choisi, et c'est une
 	// information. `git tag --sort=-creatordate` veut dire « la plus récente d'abord » ;

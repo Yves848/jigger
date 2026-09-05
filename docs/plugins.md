@@ -65,13 +65,17 @@ $ git ⇥
   add  branch  checkout  commit  diff  fetch  log  merge  pull  push
   rebase  remote  restore  stash  status  switch  tag
 
-$ git checkout ⇥          $ git push ⇥           $ git add ⇥
-  feat/site-refonte         github                 docs/historique/2026-09-05.md
-  main                      origin                 packaging/plugins/git/config.json
+$ git checkout ⇥                         $ git tag ⇥
+  feat/site-refonte      2 days ago          v0.18.0    18 minutes ago
+  main                5 minutes ago          v0.17.1       5 hours ago
+  vieille    [behind 3] 2 days ago          v0.17.0      11 hours ago
 
-$ git commit -⇥           $ git tag ⇥
-  -m  -a  --amend           v0.17.1  v0.17.0  v0.16.0
-  --no-edit  --no-verify    (most recent first)
+$ git push ⇥           $ git add ⇥
+  github                 docs/historique/2026-09-05.md
+  origin                 packaging/plugins/git/config.json
+
+$ git commit -⇥
+  -m  -a  --amend  --no-edit  --no-verify  --fixup  -S
 ```
 
 Candidates are **computed in the current directory, as you type**: these are the branches of
@@ -188,8 +192,12 @@ Two regimes, and the choice is not one of convenience:
 The binary asked is **always the plugin's own**: a pool declares arguments only. A
 descriptor must not be able to have any program run on every keystroke.
 
-A `direct` pool prints **one candidate per line**, `name` or `name<TAB>badge`, on standard
-output. If it fails or overruns the deadline it returns nothing and **nothing is drawn**: in
+A `direct` pool prints **one candidate per line** on standard output: `name`,
+`name<TAB>badge`, or `name<TAB>badge<TAB>context` — the same convention as the installed
+cache. The **context** is the popup's right-hand column, and it is what separates a helper
+from plain completion: your shell already completes a branch name, it does not tell you
+which one is behind or when it last moved. Keep it **short** — a column wider than the frame
+pushes the name out. If it fails or overruns the deadline it returns nothing and **nothing is drawn**: in
 the render path, one error per keystroke would be worse than silence.
 
 **`options`** lists the flags offered behind `-` for that verb. The descriptor is the only

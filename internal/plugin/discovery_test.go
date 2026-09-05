@@ -789,3 +789,32 @@ func TestVerbeSansVivierNommeNInterrogeRien(t *testing.T) {
 		t.Errorf("Candidats(verbe-inconnu) = %v, attendu false", cat)
 	}
 }
+
+func TestVivierDirectRendUneColonneDeContexte(t *testing.T) {
+	// La colonne de droite du popup est ce qui distingue un helper d'une simple
+	// completion : zsh sait completer un nom de branche, il ne dit pas laquelle est en
+	// retard ni quand elle a bouge. Le vivier rend donc « nom<TAB>badge<TAB>version »,
+	// meme convention que le cache des installes.
+	m := plantePlugin(t,
+		"#!/bin/sh\nprintf 'main\\t\\t[behind 2] il y a 3 h\\nfeat/x\\t\\thier\\n'\n",
+		configAVivier("direct"))
+	cat, ok := m.Candidats("checkout")
+	if !ok {
+		t.Fatal("Candidats() = false")
+	}
+	if got := cat.Version("main"); got != "[behind 2] il y a 3 h" {
+		t.Errorf("Version(main) = %q, attendu le contexte", got)
+	}
+	if got := cat.Version("feat/x"); got != "hier" {
+		t.Errorf("Version(feat/x) = %q", got)
+	}
+}
+
+func TestVivierDirectSansContexteResteValide(t *testing.T) {
+	// Non-regression : un vivier qui ne rend que des noms garde son sens.
+	m := plantePlugin(t, "#!/bin/sh\nprintf 'origin\\ngithub\\n'\n", configAVivier("direct"))
+	cat, _ := m.Candidats("checkout")
+	if len(cat.Names) != 2 || cat.Version("origin") != "" {
+		t.Errorf("Names = %v, Version(origin) = %q", cat.Names, cat.Version("origin"))
+	}
+}
