@@ -129,16 +129,23 @@ minutes plus tard, dans un état `finished` et sans erreur.
 Le script **réveille donc le miroir** avant de l'attendre, et il cherche son jeton dans cet
 ordre — aucun n'est requis :
 
-1. **`CI_JOB_TOKEN`** — **mesuré sur la v0.19.0 : refusé, HTTP 401.** Le jeton de job n'a
-   pas le droit d'appeler cet endpoint, qui relève des réglages du projet. La question est
-   donc tranchée, et il est inutile d'y revenir.
-2. **`GITLAB_API_TOKEN`**, variable masquée de portée `api`. **C'est le seul chemin qui
-   marche**, et il n'est pas encore posé.
+`GITLAB_API_TOKEN` est **posée**, masquée et non protégée, et porte un **jeton d'accès de
+projet** — `jigger-ci-miroir`, portée `api`, rôle Maintainer, lié à ce seul projet et
+révocable seul. Pas le PAT personnel : réveiller un miroir ne justifie pas un jeton qui porte
+les droits sur tous les dépôts.
 
-Tant qu'il ne l'est pas, la chaîne dépend de la chance : le miroir réagit à la poussée s'il
-n'a pas tourné juste avant, et l'ignore sinon. Deux releases sur quatre l'ont perdue —
-v0.17.1 et v0.18.0 — deux l'ont gagnée. La v0.19.0 est passée **malgré** le réveil refusé,
-le miroir ayant répliqué une seconde après la poussée.
+**⚠️ Il expire le 31 décembre 2026.** Ce jour-là, le réveil cessera sans bruit et la chaîne
+redeviendra dépendante de la chance. Le renouveler se fait dans *Settings → Access Tokens* du
+projet, ou par `POST /projects/25/access_tokens`.
+
+`CI_JOB_TOKEN` **ne convient pas**, et c'est mesuré, pas supposé : essayé en vraie grandeur
+sur la v0.19.0, l'API a répondu **401**. Un jeton de job n'a aucun droit sur les réglages du
+projet, dont relèvent les miroirs. Le script ne le réessaie plus.
+
+Sans la variable, le script se contente d'attendre, et la chaîne dépend alors de
+l'ordonnancement du miroir : il réagit à la poussée s'il n'a pas tourné juste avant, et
+l'ignore sinon. Sur quatre releases, deux l'ont perdue — v0.17.1 et v0.18.0 — et deux l'ont
+gagnée.
 
 Sans jeton qui marche, le script se contente d'attendre — ni mieux ni pire qu'avant. Le
 journal du job dit lequel a servi : `→ miroir réveillé (JOB-TOKEN)`, ou

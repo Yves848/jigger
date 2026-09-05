@@ -64,32 +64,28 @@ API=(curl --fail --silent --show-error
 # `finished` et sans erreur. Le plafond d'attente n'était donc ni trop court ni trop long :
 # il ne jouait pas le rôle qu'on lui prêtait.
 #
-# Le jeton se cherche dans cet ordre, et AUCUN n'est requis :
+# GITLAB_API_TOKEN est le SEUL jeton qui convienne, et c'est une mesure, pas une supposition :
+# la v0.19.0 a essayé CI_JOB_TOKEN en vraie grandeur, l'API a répondu **401**. Un jeton de job
+# n'a pas de droit sur les réglages du projet, dont relèvent les miroirs. On ne le réessaie
+# donc plus — imprimer ce 401 à chaque release ferait chercher une panne là où il n'y a qu'un
+# jeton hors sujet.
 #
-#   1. CI_JOB_TOKEN — il est là sans rien demander. Son droit sur cet endpoint n'est pas
-#      documenté de façon fiable pour cette version de GitLab : plutôt que de le supposer,
-#      on l'essaie et on imprime ce que l'API répond. La première release le dira.
-#   2. GITLAB_API_TOKEN — variable masquée à poser si le premier est refusé. C'est le coût
-#      que l'ADR de #147 refusait de payer, et que la mesure a rendu nécessaire.
-#
-# Sans jeton qui marche, on se contente d'attendre : exactement ce que faisait la version
-# précédente, ni mieux ni pire.
+# La variable n'est pas requise. Sans elle on se contente d'attendre : le comportement d'avant,
+# ni mieux ni pire, et la chaîne redevient dépendante de l'ordonnancement du miroir.
 reveiller_miroir() {
-  local entete jeton code
-  for essai in "JOB-TOKEN|${CI_JOB_TOKEN:-}" "PRIVATE-TOKEN|${GITLAB_API_TOKEN:-}"; do
-    entete="${essai%%|*}"
-    jeton="${essai#*|}"
-    [ -n "$jeton" ] || continue
-    code="$(curl --silent --output /dev/null --write-out '%{http_code}' --request POST \
-            --header "${entete}: ${jeton}" \
-            "$GITLAB/remote_mirrors/${GITHUB_MIROIR_ID:-2}/sync")"
-    case "$code" in
-      20*) echo "→ miroir réveillé (${entete})" ; return 0 ;;
-      *)   echo "  · ${entete} refusé par l'API du miroir : HTTP ${code}" ;;
-    esac
-  done
-  echo "  · aucun jeton n'a réveillé le miroir — on se contente de l'attendre"
-  return 1
+  local code
+  [ -n "${GITLAB_API_TOKEN:-}" ] || {
+    echo "  · GITLAB_API_TOKEN absente — on se contente d'attendre le miroir"
+    return 1
+  }
+  code="$(curl --silent --output /dev/null --write-out '%{http_code}' --request POST \
+          --header "PRIVATE-TOKEN: ${GITLAB_API_TOKEN}" \
+          "$GITLAB/remote_mirrors/${GITHUB_MIROIR_ID:-2}/sync")"
+  case "$code" in
+    20*) echo "→ miroir réveillé" ; return 0 ;;
+    *)   echo "  · le miroir a refusé le réveil : HTTP ${code} — on se contente d'attendre"
+         return 1 ;;
+  esac
 }
 reveiller_miroir || true
 
