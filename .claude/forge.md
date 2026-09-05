@@ -118,9 +118,14 @@ pas encore — message trompeur, qui ressemble à un problème de droits alors q
 course. La `v0.17.0` l'a gagnée, la `v0.17.1` l'a perdue six heures plus tard : la chaîne
 n'était pas fiable, elle avait eu de la chance.
 
-`tools/publier-github.sh` **attend désormais le tag** avant de publier — une minute au
-plus, puis échec explicite (#147). Il n'y a donc plus rien à faire dans le cas courant.
-Si l'attente expire, le miroir est en panne et non en retard :
+`tools/publier-github.sh` **attend le tag** avant de publier — une minute au plus, puis
+échec explicite (#147).
+
+**Cette attente ne suffit pas, et il faut le savoir** (#154). Le miroir **ne repart pas tout
+seul** quand une poussée arrive juste après son passage : mesuré sur la v0.18.0, le tag est
+arrivé *deux secondes* après une synchro réussie, et le miroir n'avait toujours pas rejoué
+vingt-cinq minutes plus tard. Une attente expirée ne veut donc **pas** dire que le miroir est
+en panne — son état sera `finished`, sans erreur. Elle veut dire qu'il faut le réveiller :
 
 ```bash
 TOK=$(printf "protocol=https\nhost=gitlab.yg-devworks.com\n\n" | git credential fill | sed -n 's/^password=//p')
@@ -128,10 +133,13 @@ curl -X POST -H "PRIVATE-TOKEN: $TOK" \
      https://gitlab.yg-devworks.com/api/v4/projects/25/remote_mirrors/2/sync
 ```
 
-puis relancer le job `github:`. L'état du miroir se lit sur
-`GET projects/25/remote_mirrors` — `last_successful_update_at` dit tout, et un
-`update_status: finished` sans erreur ne signifie pas que la dernière poussée est passée,
-seulement que la dernière *exécution* s'est bien terminée.
+puis relancer le job `github:`. Ce rattrapage a fonctionné deux fois, sur la v0.17.1 et sur
+la v0.18.0.
+
+L'état du miroir se lit sur `GET projects/25/remote_mirrors` : `last_successful_update_at`
+dit tout, et un `update_status: finished` sans erreur ne signifie pas que la dernière poussée
+est passée, seulement que la dernière *exécution* s'est bien terminée. Comparer cet
+horodatage à celui du tag (`git log -1 --format=%cI <tag>`) tranche en une commande.
 
 **Le tag n'est pas le seul geste.** `main.go` porte `var version`, et un test
 (`TestLesBannieresSuiventLaVersion`) exige que les bannières « jigger X.Y.Z » de six
