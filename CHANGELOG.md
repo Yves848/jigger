@@ -9,6 +9,51 @@ The format follows [Keep a Changelog](https://keepachangelog.com/1.1.0/) and
 [SemVer](https://semver.org/). Versions before `v0.1.6` predate this log; their detail
 lives in the git history.
 
+## [v0.19.0] — 2026-09-05
+
+`v0.18.0` gave plugins the shape of a command helper. Using it made the point that shape
+alone is not enough: your shell already completes git's branches, files and remotes, and it
+does it well. A helper that only matches that is a helper you have no reason to install.
+
+### Added
+
+- **The popup shows what your shell's completion does not say.** A `direct` pool now returns
+  `name<TAB>badge<TAB>context`, and the context fills the popup's right-hand column — the one
+  where `ssh ⇥` shows each host's address, and which pools had been leaving empty.
+
+  ```
+  git checkout ⇥                        git tag ⇥
+   • main                 5 min ago      • v0.19.0   3 minutes ago · Version 0.…
+   • old-branch [behind 3] 2 days ago    • v0.18.0     6 hours ago · Version 0.…
+  ```
+
+  Knowing **which branch is behind, and when it last moved** is what plain completion cannot
+  tell you. The shipped `git` plugin fills the column with git's own format strings —
+  `%(upstream:track)`, `%(committerdate:relative)`, `%(creatordate:relative)` — so there is
+  still no git-specific code anywhere in jigger. (#157)
+
+  Two limits worth knowing before writing a helper: remotes and files keep bare names.
+  `git remote -v` puts the URL in the badge field and nothing can move it there, and
+  `git status` cannot format its output at all. **A helper with no binary is bounded by what
+  the command it assists can produce.**
+
+### Fixed
+
+- **An over-long context no longer pushes the candidate's name out of the popup.** It is
+  truncated instead, with an ellipsis, and the name stays whole — the name is what gets
+  inserted, the context is only an aid to choosing. The field had never had to defend itself:
+  built-in managers put versions and addresses there, always short. Since a pool is filled by
+  a **third-party descriptor**, a long string is no longer an odd case, and a plugin must not
+  be able to break the frame. (#158)
+
+- **Publishing a release now wakes the mirror instead of only waiting for it.** The wait
+  added in `v0.18.0` was not enough: the GitLab → GitHub mirror **does not restart on its
+  own** when a push lands just after its last run. Measured on `v0.18.0`, the tag arrived
+  *two seconds* late and the mirror had still not run again twenty-five minutes later, in a
+  `finished` state with no error — the timeout was neither too short nor too long, it simply
+  was not doing the job we thought it was. `tools/publier-github.sh` now calls the mirror's
+  sync endpoint before waiting. (#159)
+
 ## [v0.18.0] — 2026-09-05
 
 Plugins were shipped in `v0.16.0` able to describe one thing only: another package manager.
