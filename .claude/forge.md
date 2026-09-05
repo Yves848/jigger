@@ -121,11 +121,25 @@ n'était pas fiable, elle avait eu de la chance.
 `tools/publier-github.sh` **attend le tag** avant de publier — une minute au plus, puis
 échec explicite (#147).
 
-**Cette attente ne suffit pas, et il faut le savoir** (#154). Le miroir **ne repart pas tout
-seul** quand une poussée arrive juste après son passage : mesuré sur la v0.18.0, le tag est
-arrivé *deux secondes* après une synchro réussie, et le miroir n'avait toujours pas rejoué
-vingt-cinq minutes plus tard. Une attente expirée ne veut donc **pas** dire que le miroir est
-en panne — son état sera `finished`, sans erreur. Elle veut dire qu'il faut le réveiller :
+**Attendre ne suffisait pas** (#154). Le miroir **ne repart pas tout seul** quand une
+poussée arrive juste après son passage : mesuré sur la v0.18.0, le tag est arrivé *deux
+secondes* après une synchro réussie, et le miroir n'avait toujours pas rejoué vingt-cinq
+minutes plus tard, dans un état `finished` et sans erreur.
+
+Le script **réveille donc le miroir** avant de l'attendre, et il cherche son jeton dans cet
+ordre — aucun n'est requis :
+
+1. **`CI_JOB_TOKEN`**, présent sans rien demander. Son droit sur cet endpoint n'est pas
+   documenté de façon fiable : le script l'essaie et **imprime ce que l'API répond**, plutôt
+   que de le supposer. La prochaine release tranchera.
+2. **`GITLAB_API_TOKEN`**, variable masquée à poser si le premier est refusé. C'est le coût
+   qu'on avait refusé de payer, et que la mesure a rendu nécessaire.
+
+Sans jeton qui marche, le script se contente d'attendre — ni mieux ni pire qu'avant. Le
+journal du job dit lequel a servi : `→ miroir réveillé (JOB-TOKEN)`, ou
+`· JOB-TOKEN refusé par l'API du miroir : HTTP 401`.
+
+Le rattrapage à la main reste celui-ci :
 
 ```bash
 TOK=$(printf "protocol=https\nhost=gitlab.yg-devworks.com\n\n" | git credential fill | sed -n 's/^password=//p')

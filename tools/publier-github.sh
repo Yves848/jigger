@@ -58,6 +58,41 @@ API=(curl --fail --silent --show-error
 # Le plafond est court. Passé une minute, ce n'est plus un décalage de réplication mais
 # un miroir en panne, et il vaut mieux le dire que réessayer sans fin — même doctrine
 # que le jeton absent : on s'arrête plutôt que de faire semblant.
+# Réveiller le miroir avant de l'attendre. ATTENDRE NE SUFFIT PAS (#154) : le miroir ne
+# repart pas de lui-même quand une poussée arrive juste après son passage — mesuré sur la
+# v0.18.0, deux secondes de retard et vingt-cinq minutes sans rejouer, dans un état
+# `finished` et sans erreur. Le plafond d'attente n'était donc ni trop court ni trop long :
+# il ne jouait pas le rôle qu'on lui prêtait.
+#
+# Le jeton se cherche dans cet ordre, et AUCUN n'est requis :
+#
+#   1. CI_JOB_TOKEN — il est là sans rien demander. Son droit sur cet endpoint n'est pas
+#      documenté de façon fiable pour cette version de GitLab : plutôt que de le supposer,
+#      on l'essaie et on imprime ce que l'API répond. La première release le dira.
+#   2. GITLAB_API_TOKEN — variable masquée à poser si le premier est refusé. C'est le coût
+#      que l'ADR de #147 refusait de payer, et que la mesure a rendu nécessaire.
+#
+# Sans jeton qui marche, on se contente d'attendre : exactement ce que faisait la version
+# précédente, ni mieux ni pire.
+reveiller_miroir() {
+  local entete jeton code
+  for essai in "JOB-TOKEN|${CI_JOB_TOKEN:-}" "PRIVATE-TOKEN|${GITLAB_API_TOKEN:-}"; do
+    entete="${essai%%|*}"
+    jeton="${essai#*|}"
+    [ -n "$jeton" ] || continue
+    code="$(curl --silent --output /dev/null --write-out '%{http_code}' --request POST \
+            --header "${entete}: ${jeton}" \
+            "$GITLAB/remote_mirrors/${GITHUB_MIROIR_ID:-2}/sync")"
+    case "$code" in
+      20*) echo "→ miroir réveillé (${entete})" ; return 0 ;;
+      *)   echo "  · ${entete} refusé par l'API du miroir : HTTP ${code}" ;;
+    esac
+  done
+  echo "  · aucun jeton n'a réveillé le miroir — on se contente de l'attendre"
+  return 1
+}
+reveiller_miroir || true
+
 ATTENTE="${JIGGER_ATTENTE_TAG:-60}"
 attendu=0
 until "${API[@]}" --output /dev/null \
