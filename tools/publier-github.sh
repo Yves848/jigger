@@ -44,6 +44,43 @@ API=(curl --fail --silent --show-error
      --header "Accept: application/vnd.github+json"
      --header "X-GitHub-Api-Version: 2022-11-28")
 
+# --- le tag doit d'abord être arrivé sur le miroir ------------------------
+# Le miroir GitLab → GitHub est ASYNCHRONE : GitLab le déclenche au push, mais il
+# s'exécute quand il s'exécute. Ce script, lui, part dans la seconde qui suit le tag.
+# GitHub refuse alors en 422 de créer une release sur un tag qu'il ne connaît pas
+# encore — c'est ce qui a fait échouer la v0.17.1. La v0.17.0 avait gagné la même
+# course six heures plus tôt, ce qui rendait la chaîne fiable en apparence seulement.
+#
+# On attend donc, au lieu de supposer. Le contrôle est en tête, avant la lecture du
+# CHANGELOG : sans le tag, rien de ce qui suit n'a de sens, et l'erreur doit nommer sa
+# cause plutôt que de sortir d'un `curl` trois étapes plus loin.
+#
+# Le plafond est court. Passé une minute, ce n'est plus un décalage de réplication mais
+# un miroir en panne, et il vaut mieux le dire que réessayer sans fin — même doctrine
+# que le jeton absent : on s'arrête plutôt que de faire semblant.
+ATTENTE="${JIGGER_ATTENTE_TAG:-60}"
+attendu=0
+until "${API[@]}" --output /dev/null \
+      "https://api.github.com/repos/$DEPOT/git/refs/tags/$TAG" 2>/dev/null; do
+  if [ "$attendu" -ge "$ATTENTE" ]; then
+    echo "Le tag $TAG n'est pas arrivé sur $DEPOT après ${ATTENTE} s." >&2
+    echo "Le miroir GitLab → GitHub ne l'a pas répliqué : il n'y a rien à publier ici" >&2
+    echo "tant qu'il n'est pas passé. Forcer la synchronisation du miroir, puis" >&2
+    echo "relancer ce job :" >&2
+    echo "  curl -X POST -H \"PRIVATE-TOKEN: \$TOK\" \\" >&2
+    echo "       $GITLAB/remote_mirrors/2/sync" >&2
+    exit 1
+  fi
+  if [ "$attendu" -eq 0 ]; then
+    echo "→ le tag n'est pas encore sur $DEPOT, attente du miroir…"
+  fi
+  sleep 5
+  attendu=$((attendu + 5))
+done
+if [ "$attendu" -gt 0 ]; then
+  echo "  · tag arrivé après ${attendu} s"
+fi
+
 # --- les notes de version -------------------------------------------------
 # Mêmes notes que la release GitLab : celles du CHANGELOG, écrites avant le tag.
 awk -v tag="$TAG" '

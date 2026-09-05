@@ -38,7 +38,7 @@ où le monde le cherche. Conséquences pratiques :
 la synchronisation suivante — irréversiblement, un dépôt supprimé pouvant déjà avoir été
 cloné ou indexé.
 
-## Publier une release — quatre pièges vérifiés
+## Publier une release — cinq pièges vérifiés
 
 **Ne pas créer la release à la main.** Le job `release:` du stage `publier` s'en charge au
 tag : il teste si elle existe, la crée sinon, tire ses notes du `CHANGELOG.md` et la nomme
@@ -110,6 +110,28 @@ on le protège — et c'est faux ici : le projet n'a **aucun tag protégé**
 sur tag (`rules: if: $CI_COMMIT_TAG`). Une variable protégée ne lui serait donc *jamais*
 exposée, et l'échec serait exactement celui d'un jeton absent — de quoi accuser le jeton
 pendant un moment.
+
+**Le miroir est plus lent que la CI.** Le job `github:` part dans la seconde qui suit le
+tag ; la réplication GitLab → GitHub, elle, est **asynchrone** et s'exécute quand elle
+s'exécute. GitHub refuse alors en `422` de créer une release sur un tag qu'il ne connaît
+pas encore — message trompeur, qui ressemble à un problème de droits alors que c'est une
+course. La `v0.17.0` l'a gagnée, la `v0.17.1` l'a perdue six heures plus tard : la chaîne
+n'était pas fiable, elle avait eu de la chance.
+
+`tools/publier-github.sh` **attend désormais le tag** avant de publier — une minute au
+plus, puis échec explicite (#147). Il n'y a donc plus rien à faire dans le cas courant.
+Si l'attente expire, le miroir est en panne et non en retard :
+
+```bash
+TOK=$(printf "protocol=https\nhost=gitlab.yg-devworks.com\n\n" | git credential fill | sed -n 's/^password=//p')
+curl -X POST -H "PRIVATE-TOKEN: $TOK" \
+     https://gitlab.yg-devworks.com/api/v4/projects/25/remote_mirrors/2/sync
+```
+
+puis relancer le job `github:`. L'état du miroir se lit sur
+`GET projects/25/remote_mirrors` — `last_successful_update_at` dit tout, et un
+`update_status: finished` sans erreur ne signifie pas que la dernière poussée est passée,
+seulement que la dernière *exécution* s'est bien terminée.
 
 **Le tag n'est pas le seul geste.** `main.go` porte `var version`, et un test
 (`TestLesBannieresSuiventLaVersion`) exige que les bannières « jigger X.Y.Z » de six
