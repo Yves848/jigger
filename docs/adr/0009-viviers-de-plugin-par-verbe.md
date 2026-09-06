@@ -1,6 +1,6 @@
 # ADR-0009 — Un plugin fournit ses candidats par verbe, en cache ou à la frappe
 
-5 septembre 2026 — **acceptée**
+5 septembre 2026 — **remplacée par l'[ADR-0010](0010-perimetre-gestionnaires-de-paquets.md)**
 
 ## Contexte
 
