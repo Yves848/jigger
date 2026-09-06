@@ -224,11 +224,13 @@ func lignesSync(ttl time.Duration) []string {
 func init() {
 	config.Declarer(config.Reglage{
 		Cle: "pacman_ttl", CleI18n: "cfg.ttl", Portee: config.Binaire,
-		Type: config.TypeDuree, Defaut: "24h", PM: "pacman",
+		Type: config.TypeDuree, Defaut: "24h",
+		Choix: []string{"1h", "6h", "24h", "168h"}, AideI18n: "cfg.aide_duree", PM: "pacman",
 	})
 	config.Declarer(config.Reglage{
 		Cle: "aur_ttl", CleI18n: "cfg.ttl_aur", Portee: config.Binaire,
-		Type: config.TypeDuree, Defaut: "24h", PM: "yay",
+		Type: config.TypeDuree, Defaut: "24h",
+		Choix: []string{"1h", "6h", "24h", "168h"}, AideI18n: "cfg.aide_duree", PM: "yay",
 	})
 	// Le préfixe « sudo » posé par le greffon sur une opération pacman qui exige root
 	// (#167). Portée Greffon : c'est zsh qui l'applique, le binaire n'exécute rien sur ce

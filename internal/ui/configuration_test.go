@@ -190,3 +190,93 @@ func TestEspaceBasculeUnBooleenEtLuiSeul(t *testing.T) {
 		t.Error("l'espace a modifié une ligne qui n'est pas un booléen")
 	}
 }
+
+// ecranAssiste : une liste fermée, un combo, et un champ à saisir avec son aide — les trois
+// formes d'assistance, dans un seul écran.
+func ecranAssiste() Configuration {
+	return NouvelleConfiguration([]GroupeConfig{{
+		Titre: "Réglages",
+		Lignes: []LigneConfig{
+			{Cle: "lang", Env: "JIGGER_LANG", Valeur: "—", Provenance: "défaut",
+				Description: "langue", Choix: []string{"", "en", "fr"}, Ferme: true},
+			{Cle: "rows", Env: "JIGGER_ROWS", Valeur: "8", Provenance: "défaut",
+				Description: "candidats", Type: LigneEntier, Choix: []string{"5", "8", "12"}},
+			{Cle: "bin", Env: "JIGGER_BIN", Valeur: "jigger", Provenance: "défaut",
+				Description: "binaire", Aide: "un nom du PATH, ou un chemin absolu"},
+		},
+	}})
+}
+
+var (
+	entree = tea.KeyMsg{Type: tea.KeyEnter}
+	droite = tea.KeyMsg{Type: tea.KeyRight}
+	bas    = tea.KeyMsg{Type: tea.KeyDown}
+)
+
+// Une liste fermée se parcourt, elle ne se tape pas : les frappes ordinaires n'y écrivent
+// rien, sans quoi la saisie serait invisible — l'écran n'affiche pas de champ dans ce mode.
+func TestListeFermeeSeParcourtEtNeSeTapePas(t *testing.T) {
+	c := configTouche(ecranAssiste(), entree)
+	if !c.choix {
+		t.Fatal("une liste fermée devait ouvrir le mode choix, pas un champ")
+	}
+
+	c = configTouche(c, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("z")})
+	if v := c.input.Value(); v != "" {
+		t.Errorf("une frappe a écrit dans un champ invisible : %q", v)
+	}
+
+	c = configTouche(c, droite) // "" → "en"
+	c = configTouche(c, entree)
+	if c.Modifs["lang"] != "en" {
+		t.Errorf("lang = %q, attendu \"en\"", c.Modifs["lang"])
+	}
+}
+
+// Un combo remplit le champ, et le laisse corrigeable : c'est ce qui le distingue d'une
+// liste fermée.
+func TestComboRemplitLeChampSansLeFermer(t *testing.T) {
+	c := configTouche(ecranAssiste(), bas) // sur rows
+	c = configTouche(c, entree)
+	if c.choix {
+		t.Fatal("un combo ne doit pas fermer la saisie")
+	}
+
+	c = configTouche(c, droite) // 8 → 12
+	if v := c.input.Value(); v != "12" {
+		t.Errorf("la proposition n'a pas rempli le champ : %q", v)
+	}
+	c = configTouche(c, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("0")})
+	c = configTouche(c, entree)
+	if c.Modifs["rows"] != "120" {
+		t.Errorf("rows = %q : la proposition devait rester corrigeable", c.Modifs["rows"])
+	}
+}
+
+// L'aide et les propositions se montrent pendant la saisie, et seulement là.
+func TestLAssistanceNApparaitQuePendantLaSaisie(t *testing.T) {
+	repos := visible(ecranAssiste().View())
+	if strings.Contains(repos, "chemin absolu") || strings.Contains(repos, "un nom du PATH") {
+		t.Error("l'aide s'affiche hors saisie")
+	}
+
+	c := configTouche(ecranAssiste(), bas)
+	c = configTouche(c, bas) // sur bin
+	c = configTouche(c, entree)
+	if vue := visible(c.View()); !strings.Contains(vue, "un nom du PATH") {
+		t.Errorf("l'aide ne s'affiche pas pendant la saisie :\n%s", vue)
+	}
+}
+
+// « — » est ce que l'écran MONTRE d'une valeur vide. Le réinjecter dans le champ mettrait
+// littéralement un tiret à éditer.
+func TestLeTiretNeSeRetrouvePasDansLeChamp(t *testing.T) {
+	c := ecranAssiste()
+	c.groupes[0].Lignes[2].Valeur = "—" // bin, vidé
+	c = configTouche(c, bas)
+	c = configTouche(c, bas)
+	c = configTouche(c, entree)
+	if v := c.input.Value(); v != "" {
+		t.Errorf("le champ contient %q au lieu d'être vide", v)
+	}
+}

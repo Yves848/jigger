@@ -146,6 +146,7 @@ func groupesConfig(fic *config.Fichier) []ui.GroupeConfig {
 			Cle: r.Cle, Env: r.Env(), Valeur: valeur,
 			Provenance: provenanceLisible(prov), Description: i18n.T(r.CleI18n),
 			Type: typeAffichage(r.Type), ParDefaut: prov == config.DuDefaut,
+			Choix: r.Choix, Ferme: r.Ferme, Aide: aide(r.AideI18n),
 		}
 		if r.Portee == config.Greffon {
 			shell = append(shell, ligne)
@@ -217,6 +218,15 @@ func afficherReglages(fic *config.Fichier) {
 // Deux énumérations pour la même notion, et c'est délibéré : l'écran ne dépend pas de
 // internal/config, ce qui le laisse éprouvable sans fichier ni environnement. La traduction
 // tient en un switch, et c'est le seul endroit qui connaît les deux.
+// aide traduit la clé d'aide, ou rend la chaîne vide s'il n'y en a pas — i18n.T d'une clé
+// absente rendrait la clé elle-même, qui s'afficherait telle quelle à l'écran.
+func aide(cle string) string {
+	if cle == "" {
+		return ""
+	}
+	return i18n.T(cle)
+}
+
 func typeAffichage(t config.Type) ui.TypeLigne {
 	switch t {
 	case config.TypeBooleen:

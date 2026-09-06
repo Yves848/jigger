@@ -33,6 +33,11 @@ type LigneConfig struct {
 	Provenance  string
 	Description string
 	Type        TypeLigne
+	// Choix propose des valeurs ; Ferme dit si la liste est exhaustive. Aide dit le format
+	// attendu, pour un champ qu'on saisit. Cf. config.Reglage, qui les déclare.
+	Choix []string
+	Ferme bool
+	Aide  string
 	// ParDefaut : rien n'a été choisi pour cette ligne. L'écran l'estompe, pour que l'œil
 	// aille droit aux réglages réellement posés — ils sont trois sur dix-huit, et se
 	// noyaient dans autant de « [default] » de même poids visuel.
@@ -58,10 +63,15 @@ type GroupeConfig struct {
 // champ prend tout, et seuls ↵ et esc en sortent. La pénurie de touches qui contraint le
 // popup (A-19) n'existe pas ici.
 type Configuration struct {
-	groupes  []GroupeConfig
-	plates   []indexLigne // les lignes modifiables, à plat, dans l'ordre d'affichage
-	curseur  int
-	edition  bool
+	groupes []GroupeConfig
+	plates  []indexLigne // les lignes modifiables, à plat, dans l'ordre d'affichage
+	curseur int
+	edition bool
+	// choix : la saisie en cours se fait dans une liste fermée, donc au curseur et non au
+	// clavier. idxChoix sert aux deux modes — il désigne la valeur retenue dans une liste
+	// fermée, et la proposition suivante dans un combo.
+	choix    bool
+	idxChoix int
 	input    textinput.Model
 	largeur  int
 	quitting bool
@@ -168,7 +178,17 @@ func (c Configuration) naviguer(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return c, nil
 		}
 		c.edition = true
-		c.input.SetValue(li.Valeur)
+		c.idxChoix = indexDe(li.Choix, brut(li.Valeur))
+
+		// Liste FERMÉE : la valeur se prend dans la liste. Ouvrir un champ libre inviterait
+		// à écrire ce qui sera refusé — « francais » pour la langue, par exemple — sans
+		// jamais dire pourquoi.
+		if li.Ferme && len(li.Choix) > 0 {
+			c.choix = true
+			return c, nil
+		}
+		c.choix = false
+		c.input.SetValue(brut(li.Valeur))
 		c.input.CursorEnd()
 		c.input.Focus()
 		return c, textinput.Blink
@@ -222,6 +242,41 @@ func (c *Configuration) poser(li *LigneConfig, v string) {
 
 // vrai lit un booléen de configuration. « 1 » est la forme écrite dans le fichier ; les
 // autres sont acceptées parce qu'un humain les tape.
+// affiche rend une valeur telle qu'on la montre : le vide se voit, sinon la ligne aurait
+// l'air tronquée.
+func affiche(v string) string {
+	if v == "" {
+		return "—"
+	}
+	return v
+}
+
+// brut fait l'inverse : « — » est ce que l'écran MONTRE d'une valeur vide, pas ce qu'il
+// faut chercher dans les choix ni réinjecter dans un champ de saisie. Les confondre mettait
+// littéralement « — » dans le champ au moment d'éditer une valeur absente.
+func brut(v string) string {
+	if v == "—" {
+		return ""
+	}
+	return v
+}
+
+func indexDe(choix []string, v string) int {
+	for i, c := range choix {
+		if c == v {
+			return i
+		}
+	}
+	return 0
+}
+
+func choixA(choix []string, i int, repli string) string {
+	if i < 0 || i >= len(choix) {
+		return repli
+	}
+	return choix[i]
+}
+
 func vrai(v string) bool {
 	switch v {
 	case "1", "true", "on", "yes", "oui":
@@ -231,18 +286,51 @@ func vrai(v string) bool {
 }
 
 func (c Configuration) editer(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	li := c.courante()
+
 	switch msg.String() {
 	case "esc", "ctrl+g":
-		c.edition = false
+		c.edition, c.choix = false, false
 		c.input.Blur()
 		return c, nil
 
 	case "enter":
-		if li := c.courante(); li != nil {
-			c.poser(li, c.input.Value())
+		if li != nil {
+			if c.choix {
+				c.poser(li, choixA(li.Choix, c.idxChoix, brut(li.Valeur)))
+			} else {
+				c.poser(li, c.input.Value())
+			}
 		}
-		c.edition = false
+		c.edition, c.choix = false, false
 		c.input.Blur()
+		return c, nil
+	}
+
+	// Parcourir les propositions. Les mêmes touches dans les deux modes, et c'est ce qui
+	// rend le geste apprenable : dans une liste fermée elles CHOISISSENT, dans un combo
+	// elles remplissent le champ — qu'on reste libre de corriger ensuite.
+	if li != nil && len(li.Choix) > 0 {
+		var pas int
+		switch msg.String() {
+		case "left", "shift+tab":
+			pas = -1
+		case "right", "tab":
+			pas = 1
+		}
+		if pas != 0 {
+			c.idxChoix = (c.idxChoix + pas + len(li.Choix)) % len(li.Choix)
+			if !c.choix {
+				c.input.SetValue(li.Choix[c.idxChoix])
+				c.input.CursorEnd()
+			}
+			return c, nil
+		}
+	}
+
+	// Liste fermée : rien d'autre ne s'écrit. Laisser filer les frappes vers un champ que
+	// l'écran n'affiche pas donnerait une saisie invisible.
+	if c.choix {
 		return c, nil
 	}
 
@@ -270,6 +358,11 @@ func (c Configuration) View() string {
 		for _, li := range gr.Lignes {
 			courante := !li.Fige && plate == c.curseur
 			b.WriteString(c.ligne(li, courante, l) + "\n")
+			if courante && c.edition {
+				for _, aide := range c.panneauAide(li, l) {
+					b.WriteString(aide + "\n")
+				}
+			}
 			if !li.Fige {
 				plate++
 			}
@@ -343,10 +436,56 @@ func valeurAffichee(li LigneConfig) string {
 	return "[ ]"
 }
 
+// panneauAide rend les lignes d'assistance montrées SOUS la ligne en cours de saisie.
+//
+// Sous la ligne et non ailleurs : l'aide sert au moment où l'on tape, et un encart posé en
+// pied de l'écran obligerait l'œil à faire l'aller-retour à chaque frappe. Elle n'apparaît
+// que pendant la saisie, donc elle ne coûte rien au reste du temps.
+func (c Configuration) panneauAide(li LigneConfig, largeur int) []string {
+	var out []string
+	marge := strings.Repeat(" ", colNom)
+
+	if len(li.Choix) > 0 {
+		var rendu, brutLigne strings.Builder
+		rendu.WriteString(base.Render(marge))
+		brutLigne.WriteString(marge)
+		for i, v := range li.Choix {
+			t := " " + affiche(v) + " "
+			brutLigne.WriteString(t)
+			if i == c.idxChoix {
+				rendu.WriteString(configSelStyle.Render(t))
+			} else {
+				rendu.WriteString(base.Foreground(ink).Render(t))
+			}
+		}
+		// Ce que les touches font ici, dit à l'endroit où on les cherche — et avec le MÊME
+		// mot que le pied. Une liste fermée « se choisit » ; un combo « se propose », et
+		// c'est là qu'il faut dire qu'on peut aussi écrire.
+		note := "   " + i18n.T("cfg.choose")
+		if !li.Ferme {
+			note = "   " + i18n.T("cfg.suggest") + " · " + i18n.T("cfg.free")
+		}
+		brutLigne.WriteString(note)
+		rendu.WriteString(hintStyle.Render(note))
+		rendu.WriteString(base.Render(caler("", largeur-lipgloss.Width(brutLigne.String()))))
+		out = append(out, rendu.String())
+	}
+
+	if li.Aide != "" {
+		out = append(out, filterHint.Render(caler(marge+tronquer(li.Aide, largeur-colNom), largeur)))
+	}
+	return out
+}
+
 func (c Configuration) ligne(li LigneConfig, courante bool, largeur int) string {
 	valeur := valeurAffichee(li)
 	if courante && c.edition {
-		valeur = c.input.View()
+		if c.choix {
+			// Les chevrons disent « ça se parcourt » là où un champ dirait « ça se tape ».
+			valeur = "‹ " + affiche(choixA(li.Choix, c.idxChoix, brut(li.Valeur))) + " ›"
+		} else {
+			valeur = c.input.View()
+		}
 	}
 
 	nom := caler("  "+li.Env, colNom)
@@ -391,10 +530,20 @@ func (c Configuration) ligne(li LigneConfig, courante bool, largeur int) string 
 func (c Configuration) pied() string {
 	var keys []Key
 	if c.edition {
-		keys = []Key{
-			{"↵", i18n.T("table.confirm")},
-			{"esc", i18n.T("popup.cancel")},
+		keys = []Key{}
+		// Annoncer le parcours seulement là où il existe : promettre des propositions
+		// devant un champ qui n'en a pas serait pire que se taire.
+		if li := c.courante(); li != nil && len(li.Choix) > 0 {
+			libelle := i18n.T("cfg.suggest")
+			if li.Ferme {
+				libelle = i18n.T("cfg.choose")
+			}
+			keys = append(keys, Key{"←→", libelle})
 		}
+		keys = append(keys,
+			Key{"↵", i18n.T("table.confirm")},
+			Key{"esc", i18n.T("popup.cancel")},
+		)
 	} else {
 		keys = []Key{
 			{"↵", i18n.T("cfg.edit")},

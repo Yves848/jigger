@@ -41,6 +41,22 @@ type Reglage struct {
 	// PM, s'il est renseigné, rattache le réglage à un gestionnaire : l'écran groupe alors
 	// le réglage sous lui plutôt que dans les réglages généraux.
 	PM string
+
+	// Choix propose des valeurs à l'écran, et Ferme dit si la liste est exhaustive.
+	//
+	// Un seul mécanisme pour trois besoins, et c'est voulu :
+	//   Ferme + Choix   → une liste de choix : la valeur se prend dans la liste, un champ
+	//                     libre n'aurait aucun sens (`lang` vaut en, fr, ou rien).
+	//   Choix seul      → un combo : on pioche ou on écrit. Une durée de cache a des
+	//                     valeurs usuelles sans être bornée à elles.
+	//   AideI18n seul   → un champ à saisir, mais jamais à l'aveugle.
+	// Les trois se rendent avec le même code d'affichage ; seule la saisie diffère.
+	Choix []string
+	Ferme bool
+	// AideI18n : clé de catalogue d'une ligne d'aide montrée pendant la saisie. Elle dit le
+	// FORMAT attendu, là où CleI18n dit à quoi sert le réglage — deux questions distinctes,
+	// et c'est la seconde qu'on se pose au moment de taper.
+	AideI18n string
 }
 
 // Env rend le nom de la variable d'environnement correspondante.
@@ -63,19 +79,35 @@ func majuscules(s string) string {
 var Declares = []Reglage{
 	// ── Ce qui prend effet tout de suite ────────────────────────────────────────────
 	{Cle: "pager", CleI18n: "cfg.pager", Portee: Binaire, Type: TypeBooleen, Defaut: "1"},
-	{Cle: "lang", CleI18n: "cfg.lang", Portee: LesDeux, Type: TypeTexte, Defaut: ""},
-	{Cle: "cache_dir", CleI18n: "cfg.cache_dir", Portee: LesDeux, Type: TypeTexte, Defaut: ""},
+	// La langue est un ensemble FINI : « fr », « en », ou rien — auquel cas jigger suit la
+	// locale. Un champ libre y laisserait écrire « francais » sans jamais dire pourquoi
+	// c'est refusé.
+	{Cle: "lang", CleI18n: "cfg.lang", Portee: LesDeux, Type: TypeTexte, Defaut: "",
+		Choix: []string{"", "en", "fr"}, Ferme: true},
+	{Cle: "cache_dir", CleI18n: "cfg.cache_dir", Portee: LesDeux, Type: TypeTexte, Defaut: "",
+		AideI18n: "cfg.aide_cache_dir"},
 
 	// ── Ce qui prend effet au prochain shell ────────────────────────────────────────
 	{Cle: "live", CleI18n: "cfg.live", Portee: LesDeux, Type: TypeBooleen, Defaut: "1"},
-	{Cle: "rows", CleI18n: "cfg.rows", Portee: Greffon, Type: TypeEntier, Defaut: "8"},
-	{Cle: "key", CleI18n: "cfg.key", Portee: Greffon, Type: TypeTexte, Defaut: "^I"},
-	{Cle: "keys_extra", CleI18n: "cfg.keys_extra", Portee: Greffon, Type: TypeTexte, Defaut: ""},
-	{Cle: "commands", CleI18n: "cfg.commands", Portee: Greffon, Type: TypeTexte, Defaut: ""},
-	{Cle: "min_columns", CleI18n: "cfg.min_columns", Portee: Greffon, Type: TypeEntier, Defaut: "30"},
+	{Cle: "rows", CleI18n: "cfg.rows", Portee: Greffon, Type: TypeEntier, Defaut: "8",
+		Choix: []string{"5", "8", "12", "20"}},
+	{Cle: "key", CleI18n: "cfg.key", Portee: Greffon, Type: TypeTexte, Defaut: "^I",
+		Choix: []string{"^I", "^ ", "^X^F"}, AideI18n: "cfg.aide_key"},
+	{Cle: "keys_extra", CleI18n: "cfg.keys_extra", Portee: Greffon, Type: TypeTexte, Defaut: "",
+		AideI18n: "cfg.aide_keys_extra"},
+	// Le défaut déclaré est vide parce que la vraie valeur vit dans le greffon ; la proposer
+	// ici est ce qui la rend visible, et surtout modifiable sans la deviner — la liste est
+	// écrasée, pas complétée, et l'ignorer coûtait les six commandes d'un coup.
+	{Cle: "commands", CleI18n: "cfg.commands", Portee: Greffon, Type: TypeTexte, Defaut: "",
+		Choix:    []string{"brew pacman yay ssh scp sftp", "brew pacman yay", "winget scoop"},
+		AideI18n: "cfg.aide_commands"},
+	{Cle: "min_columns", CleI18n: "cfg.min_columns", Portee: Greffon, Type: TypeEntier, Defaut: "30",
+		Choix: []string{"30", "40", "60", "80"}},
 	{Cle: "prompt", CleI18n: "cfg.prompt", Portee: Greffon, Type: TypeBooleen, Defaut: "0"},
-	{Cle: "prompt_ttl", CleI18n: "cfg.prompt_ttl", Portee: Greffon, Type: TypeEntier, Defaut: "1800"},
-	{Cle: "bin", CleI18n: "cfg.bin", Portee: Greffon, Type: TypeTexte, Defaut: "jigger"},
+	{Cle: "prompt_ttl", CleI18n: "cfg.prompt_ttl", Portee: Greffon, Type: TypeEntier, Defaut: "1800",
+		Choix: []string{"300", "900", "1800", "3600"}, AideI18n: "cfg.aide_secondes"},
+	{Cle: "bin", CleI18n: "cfg.bin", Portee: Greffon, Type: TypeTexte, Defaut: "jigger",
+		Choix: []string{"jigger"}, AideI18n: "cfg.aide_bin"},
 }
 
 // Declarer ajoute un réglage à la table. Les gestionnaires l'appellent depuis leur `init`,

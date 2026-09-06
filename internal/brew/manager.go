@@ -114,6 +114,7 @@ func (Manager) Warm(scope pm.Scope) error {
 func init() {
 	config.Declarer(config.Reglage{
 		Cle: "brew_ttl", CleI18n: "cfg.ttl", Portee: config.Binaire,
-		Type: config.TypeDuree, Defaut: "24h", PM: "brew",
+		Type: config.TypeDuree, Defaut: "24h",
+		Choix: []string{"1h", "6h", "24h", "168h"}, AideI18n: "cfg.aide_duree", PM: "brew",
 	})
 }

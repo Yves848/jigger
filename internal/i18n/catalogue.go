@@ -198,6 +198,20 @@ var catalogue = map[string][nbLangues]string{
 	"cfg.sudo":         {"prefix sudo on pacman operations needing root", "préfixer sudo sur les opérations pacman exigeant root"},
 	"cfg.quit_discard": {"discard", "abandonner"},
 	"cfg.toggle":       {"toggle", "basculer"},
+	"cfg.choose":       {"choose", "choisir"},
+	"cfg.suggest":      {"suggestion", "proposition"},
+	"cfg.free":         {"or type your own", "ou saisis la tienne"},
+
+	// Aides de saisie : elles disent le FORMAT attendu, avec des exemples. La description
+	// d'un réglage dit à quoi il sert ; c'est une autre question, et pas celle qu'on se
+	// pose au moment de taper.
+	"cfg.aide_cache_dir":  {"absolute path — empty means the standard location for your system", "chemin absolu — vide signifie l'emplacement standard de ton système"},
+	"cfg.aide_key":        {"zsh bindkey form: ^I is Tab, '^ ' is Ctrl-Space, ^X^F a two-key chord", "forme bindkey de zsh : ^I = Tab, '^ ' = Ctrl-Espace, ^X^F un accord à deux touches"},
+	"cfg.aide_keys_extra": {"keys to relay on top of printable ASCII, e.g. ^W ^U", "touches à relayer en plus de l'ASCII imprimable, ex. ^W ^U"},
+	"cfg.aide_commands":   {"spaces or commas; this REPLACES the list, it does not add to it", "espaces ou virgules ; la liste est REMPLACÉE, pas complétée"},
+	"cfg.aide_secondes":   {"in seconds — 1800 is 30 minutes", "en secondes — 1800 vaut 30 minutes"},
+	"cfg.aide_bin":        {"a name found in PATH, or an absolute path to a local build", "un nom trouvé dans le PATH, ou un chemin absolu vers une compilation locale"},
+	"cfg.aide_duree":      {"Go duration: 30m, 6h, 24h, 168h (one week)", "durée Go : 30m, 6h, 24h, 168h (une semaine)"},
 
 	"cfg.title":      {"jigger — settings", "jigger — réglages"},
 	"cfg.edit":       {"edit", "modifier"},

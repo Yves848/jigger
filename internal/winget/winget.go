@@ -321,6 +321,7 @@ func ttlCatalogue() time.Duration { return config.Duree("winget_ttl", ttlCatalog
 func init() {
 	config.Declarer(config.Reglage{
 		Cle: "winget_ttl", CleI18n: "cfg.ttl", Portee: config.Binaire,
-		Type: config.TypeDuree, Defaut: "24h", PM: "winget",
+		Type: config.TypeDuree, Defaut: "24h",
+		Choix: []string{"1h", "6h", "24h", "168h"}, AideI18n: "cfg.aide_duree", PM: "winget",
 	})
 }
