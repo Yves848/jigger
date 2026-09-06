@@ -54,54 +54,21 @@ A plugin may take the name of a command you type a hundred times a day and would
 leave alone. On lines that are none of its business, jigger stays quiet by itself: the word
 is not one of its verbs, so it has nothing to say and draws no frame.
 
-## The `git` plugin
+## No plugin ships with jigger
 
-Ships with jigger, in [`packaging/plugins/git/`](../packaging/plugins/git). It does not
-replace git — **it makes it convenient**. `git ⇥` offers the real subcommands, and each verb
-offers what that verb expects.
+jigger helps with **package managers**. That is its job, and the plugin mechanism exists to
+teach it one more — not to assist any command at all.
 
-```console
-$ git ⇥
-  add  branch  checkout  commit  diff  fetch  log  merge  pull  push
-  rebase  remote  restore  stash  status  switch  tag
+A `git` plugin shipped twice, and was withdrawn twice. The first time because it did not help
+git: it substituted a package manager's vocabulary, and `git ⇥` offered `install`, `list`,
+`upgrade`. The second time — the one worth remembering — because even rewritten as a genuine
+helper, with git's real subcommands, branches behind `checkout` and modified files behind
+`add`, **it fell outside the scope**. Your shell already completes git, and does it well;
+jigger has no business redoing that.
 
-$ git checkout ⇥                         $ git tag ⇥
-  feat/site-refonte      2 days ago          v0.18.0   27 min ago · Version 0.…
-  main                5 minutes ago          v0.17.1    6 hours ago · Version 0.1…
-  vieille    [behind 3] 2 days ago          v0.17.0   11 hours ago · Version 0.…
-
-$ git push ⇥           $ git add ⇥
-  github                 docs/historique/2026-09-05.md
-  origin                 packaging/plugins/git/config.json
-
-$ git commit -⇥
-  -m  -a  --amend  --no-edit  --no-verify  --fixup  -S
-```
-
-Candidates are **computed in the current directory, as you type**: these are the branches of
-*this* repository, not the ones a cache warmed this morning.
-
-### It has no binary
-
-It is a descriptor and nothing else. The binary it declares is **git itself**: jigger runs
-real git to execute a verb, and real git to fill a pool (`git branch --format=…`,
-`git remote`, `git ls-files --modified --others`). A helper needs no program of its own when
-the command it assists already knows how to answer.
-
-### Installing it
-
-```sh
-cp -r packaging/plugins/git ~/.config/jigger/plugins/
-jigger warm --all
-```
-
-Then open a new shell. Nothing to compile.
-
-### What it does not do
-
-It knows only the seventeen verbs it declares. On everything else — `git bisect`,
-`git worktree`, `git submodule` — jigger **stays quiet**: it has nothing to say, and an empty
-frame would be worth less than silence. Your ordinary git lines are never in its way.
+What a plugin should bring is therefore a **package manager jigger does not know**: a
+language's own, an in-house one, a corporate repository. The descriptor describes what
+installs, uninstalls, upgrades and searches — not some arbitrary command.
 
 
 ## Writing a plugin

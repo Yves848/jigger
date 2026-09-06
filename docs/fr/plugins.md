@@ -56,54 +56,21 @@ Un plugin peut porter le nom d'une commande que vous tapez cent fois par jour et
 préférez laisser tranquille. Sur les lignes qui ne le concernent pas, jigger se tait de
 lui-même : le mot n'est pas un de ses verbes, il n'a rien à en dire et n'ouvre aucun cadre.
 
-## Le plugin `git`
+## Aucun plugin n'est livré avec jigger
 
-Livré avec jigger, dans [`packaging/plugins/git/`](../../packaging/plugins/git). Il ne
-remplace pas git : **il le rend commode**. `git ⇥` propose les vraies sous-commandes, et
-chaque verbe propose ce que ce verbe attend.
+jigger aide aux **gestionnaires de paquets**. C'est sa tâche, et le mécanisme de plugins sert
+à lui en faire connaître un de plus — pas à assister n'importe quelle commande.
 
-```console
-$ git ⇥
-  add  branch  checkout  commit  diff  fetch  log  merge  pull  push
-  rebase  remote  restore  stash  status  switch  tag
+Un plugin `git` a été livré deux fois, et retiré deux fois. La première parce qu'il n'aidait
+pas git : il lui substituait le vocabulaire d'un gestionnaire de paquets, et `git ⇥` proposait
+`install`, `list`, `upgrade`. La seconde — celle qui vaut d'être retenue — parce que même
+réécrit en véritable helper, avec les vraies sous-commandes de git, les branches derrière
+`checkout` et les fichiers modifiés derrière `add`, **il sortait du périmètre**. Votre shell
+complète déjà git, et il le fait bien ; jigger n'a pas vocation à refaire cela.
 
-$ git checkout ⇥                         $ git tag ⇥
-  feat/site-refonte      2 days ago          v0.18.0   27 min ago · Version 0.…
-  main                5 minutes ago          v0.17.1    6 hours ago · Version 0.1…
-  vieille    [behind 3] 2 days ago          v0.17.0   11 hours ago · Version 0.…
-
-$ git push ⇥           $ git add ⇥
-  github                 docs/historique/2026-09-05.md
-  origin                 packaging/plugins/git/config.json
-
-$ git commit -⇥
-  -m  -a  --amend  --no-edit  --no-verify  --fixup  -S
-```
-
-Les candidats sont **calculés dans le répertoire courant, à la frappe** : ce sont vos
-branches de ce dépôt-ci, pas celles d'un cache réchauffé ce matin.
-
-### Il n'a pas de binaire
-
-C'est un descripteur, et rien d'autre. Le binaire qu'il déclare est **git lui-même** :
-jigger lance donc le vrai git pour exécuter un verbe, et le vrai git pour peupler un vivier
-(`git branch --format=…`, `git remote`, `git ls-files --modified --others`). Un helper n'a
-pas besoin d'un programme à lui quand la commande qu'il assiste sait déjà répondre.
-
-### L'installer
-
-```sh
-cp -r packaging/plugins/git ~/.config/jigger/plugins/
-jigger warm --all
-```
-
-Puis ouvrez un nouveau shell. Rien à compiler.
-
-### Ce qu'il ne fait pas
-
-Il ne connaît que les dix-sept verbes qu'il déclare. Sur tout le reste — `git bisect`,
-`git worktree`, `git submodule` — jigger **se tait** : il n'a rien à en dire, et un cadre
-vide vaudrait moins que le silence. Vos lignes git ordinaires ne sont donc jamais gênées.
+Ce qu'un plugin doit apporter est donc un **gestionnaire de paquets que jigger ne connaît
+pas** : celui d'un langage, un gestionnaire maison, un dépôt d'entreprise. Le descripteur
+décrit ce qui installe, désinstalle, met à jour et cherche — pas une commande quelconque.
 
 
 ## En écrire un
