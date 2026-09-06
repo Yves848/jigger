@@ -53,6 +53,12 @@ type Configuration struct {
 	// remises à leur défaut, donc à supprimer du fichier.
 	Modifs   map[string]string
 	Retraits []string
+
+	// Abandon dit que l'écran a été quitté SANS vouloir enregistrer. L'appelant écrit
+	// Modifs et Retraits ; c'est donc à lui de ne rien écrire quand ce drapeau est levé,
+	// et non à l'écran de vider ses champs — les effacer priverait un test de ce qu'il
+	// vérifie, et masquerait un appelant qui aurait oublié de lire le drapeau.
+	Abandon bool
 }
 
 type indexLigne struct{ groupe, ligne int }
@@ -112,7 +118,18 @@ func (c Configuration) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 // naviguer : aucun champ n'a le clavier, donc les lettres simples servent de raccourcis.
 func (c Configuration) naviguer(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
-	case "esc", "ctrl+c", "ctrl+g", "q":
+	// Quitter SANS enregistrer. « esc » et « ctrl+c » signifient « abandonne » partout
+	// ailleurs, et « ctrl+g » est déjà le geste d'annulation du dépôt — il annule une
+	// édition en cours quelques lignes plus bas, et referme le popup. Les trois faisaient
+	// pourtant enregistrer, avec « q », jusqu'ici : quelqu'un qui modifiait une valeur, se
+	// ravisait et frappait ctrl+c obtenait exactement ce qu'il essayait d'éviter.
+	case "esc", "ctrl+c", "ctrl+g":
+		c.Abandon = true
+		c.quitting = true
+		return c, tea.Quit
+
+	// Enregistrer et quitter. Une seule touche le fait, et c'est celle que le pied annonce.
+	case "q":
 		c.quitting = true
 		return c, tea.Quit
 
@@ -248,6 +265,7 @@ func (c Configuration) pied() string {
 			{"↵", i18n.T("cfg.edit")},
 			{"r", i18n.T("cfg.reset")},
 			{"↑↓", i18n.T("popup.navigate")},
+			{"esc", i18n.T("cfg.quit_discard")},
 			{"q", i18n.T("cfg.quit_save")},
 		}
 	}

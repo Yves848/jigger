@@ -25,6 +25,24 @@ import (
 //
 // L'export est ce que les greffons évaluent au chargement : c'est le seul chemin par
 // lequel un réglage du fichier atteint le shell (ADR-0003).
+// aEcrire dit si les choix de l'écran doivent atteindre le fichier.
+//
+// Extraite de runConfig pour une raison précise : piloter l'écran depuis un pseudo-terminal
+// s'est révélé peu fiable — trois tentatives, dont deux où le témoin « q » n'écrivait pas
+// davantage que le cas mesuré, ce qui ne prouvait rien. La décision, elle, est une fonction
+// pure : elle s'éprouve sans terminal, sans Bubble Tea et sans fichier.
+//
+// c.Abandon vient d'une sortie par esc, ctrl+c ou ctrl+g. L'écran quitté ainsi porte
+// ENCORE ses modifications — c'est ici, et nulle part ailleurs, qu'on décide de ne pas les
+// écrire. L'inverse (vider Modifs dans l'écran) rendrait ce test inopérant et laisserait
+// passer un appelant qui aurait oublié de lire le drapeau.
+func aEcrire(c ui.Configuration) bool {
+	if c.Abandon {
+		return false
+	}
+	return len(c.Modifs) > 0 || len(c.Retraits) > 0
+}
+
 func runConfig(argv []string) int {
 	fs := flag.NewFlagSet("config", flag.ContinueOnError)
 	export := fs.Bool("export", false, i18n.T("cli.flag_export"))
@@ -96,7 +114,7 @@ func ecranConfig(fic *config.Fichier) int {
 	}
 
 	c, ok := final.(ui.Configuration)
-	if !ok || (len(c.Modifs) == 0 && len(c.Retraits) == 0) {
+	if !ok || !aEcrire(c) {
 		return 0
 	}
 	for cle, valeur := range c.Modifs {

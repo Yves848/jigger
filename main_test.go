@@ -10,6 +10,7 @@ import (
 
 	"gitlab.yg-devworks.com/yves/jigger/internal/managers"
 	"gitlab.yg-devworks.com/yves/jigger/internal/pm"
+	"gitlab.yg-devworks.com/yves/jigger/internal/ui"
 )
 
 // Les six mots réservés ne doivent jamais devenir des verbes de façade. Contrainte
@@ -250,5 +251,32 @@ func TestLesBannieresSuiventLaVersion(t *testing.T) {
 				t.Errorf("%s : « %s » au lieu de « %s » — capture à reprendre", f, v, attendu)
 			}
 		}
+	}
+}
+
+// La décision d'écrire, éprouvée sans terminal : c'est elle qui distingue « q » d'« esc »,
+// et l'écran ne peut pas être piloté de façon fiable dans un pseudo-terminal (cf. aEcrire).
+func TestAEcrire(t *testing.T) {
+	for _, cas := range []struct {
+		nom    string
+		ecran  ui.Configuration
+		attend bool
+	}{
+		{"abandon avec des modifications : rien n'est écrit",
+			ui.Configuration{Abandon: true, Modifs: map[string]string{"rows": "12"}}, false},
+		{"abandon avec des remises : rien n'est écrit",
+			ui.Configuration{Abandon: true, Retraits: []string{"rows"}}, false},
+		{"enregistrement avec une modification",
+			ui.Configuration{Modifs: map[string]string{"rows": "12"}}, true},
+		{"enregistrement avec une remise",
+			ui.Configuration{Retraits: []string{"rows"}}, true},
+		{"enregistrement sans rien changer : inutile d'écrire",
+			ui.Configuration{}, false},
+	} {
+		t.Run(cas.nom, func(t *testing.T) {
+			if got := aEcrire(cas.ecran); got != cas.attend {
+				t.Errorf("aEcrire = %v, attendu %v", got, cas.attend)
+			}
+		})
 	}
 }
