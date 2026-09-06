@@ -49,6 +49,16 @@ import (
 
 var version = "0.21.0"
 
+// build est vide dans une version publiée, et porte l'empreinte du commit dans un binaire
+// compilé par `make build`.
+//
+// Il existe pour une raison vécue : le `bin` de Homebrew précède `~/.local/bin` dans un PATH
+// ordinaire, si bien qu'un jigger fraîchement compilé n'est pas celui que le shell lance.
+// Les deux annonçaient la même version, donc rien ne le disait — et on a cru tester un
+// changement qui n'était pas dans le binaire exécuté. Une version qui ne distingue pas ses
+// binaires ne sert à rien précisément quand on en a besoin.
+var build = ""
+
 // motsReserves sont les sous-commandes internes de jigger. Tout autre premier mot est un
 // verbe de façade.
 //
@@ -70,6 +80,10 @@ func main() {
 
 	switch os.Args[1] {
 	case "--version", "-v", "version":
+		if build != "" {
+			fmt.Printf("jigger %s (dev %s)\n", version, build)
+			return
+		}
 		fmt.Println("jigger", version)
 		return
 	case "--help", "-h", "help":

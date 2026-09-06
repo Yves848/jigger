@@ -13,8 +13,14 @@ ifeq ($(OS),Windows_NT)
   TEST_SHELL := test-shell-ps test-pty
 endif
 
+# L'empreinte du commit, injectee dans les binaires compiles ici -- et dans eux seuls : une
+# version publiee ne passe pas par cette cible, donc `build` y reste vide. C'est ce qui
+# distingue « le jigger que je viens de compiler » de « celui que Homebrew a installe »,
+# lequel precede ~/.local/bin dans le PATH.
+SHA := $(shell git rev-parse --short HEAD 2>/dev/null || echo inconnu)
+
 build:
-	go build -o $(BINARY) .
+	go build -ldflags "-X main.build=$(SHA)" -o $(BINARY) .
 
 install: build
 	install -d $(PREFIX)/bin
