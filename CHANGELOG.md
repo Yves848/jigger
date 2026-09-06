@@ -9,6 +9,47 @@ The format follows [Keep a Changelog](https://keepachangelog.com/1.1.0/) and
 [SemVer](https://semver.org/). Versions before `v0.1.6` predate this log; their detail
 lives in the git history.
 
+## [v0.21.0] — 2026-09-06
+
+jigger helps with **package managers**. That is now written down, and this release removes
+what had drifted outside it.
+
+### Removed
+
+- **The `git` plugin, and the machinery built for it.** It shipped twice and was withdrawn
+  twice. The first time because it did not help git at all — it substituted a package
+  manager's vocabulary, and `git ⇥` offered `install`, `list`, `upgrade`. The second time,
+  the one worth recording, because it **worked**: seventeen real subcommands, branches with
+  how far behind they were, the files you had actually modified. And it was still out of
+  scope. (#164)
+
+  Your shell already completes git, and does it well. What the helper added came down to one
+  context column — real, but slight against what had to be carried for it: a third-party
+  subprocess in the render path, on every keystroke, in your current directory. Two verbs out
+  of seventeen could not even get that context, because `git remote -v` puts the URL in the
+  badge field and `git status` cannot format its output at all: **a helper with no binary is
+  bounded by what the command it assists can produce.**
+
+  The reasoning, what the decision costs, and what would reopen it are in
+  [ADR-0010](docs/adr/0010-perimetre-gestionnaires-de-paquets.md). It supersedes
+  [ADR-0009](docs/adr/0009-viviers-de-plugin-par-verbe.md), which keeps its text: the record
+  is worth what it preserves of the reasoning that turned out wrong.
+
+  **What plugins keep:** discovery, execution through the native path, silence on verbs they
+  do not declare, and arming their own word in the shell. A third-party *package manager* is
+  still writable — that is the one use the mechanism promises.
+
+### Fixed
+
+- **Publishing a release now makes the mirror run, and checks that it did.** Three successive
+  fixes had failed here, each for the same reason: taking an API's answer for proof of the
+  effect wanted. `204` on the sync endpoint means the request was received — **not** that the
+  mirror ran. GitLab ignores one that lands within five minutes of the previous run; measured
+  at 4 min 53 s (silently dropped) and 7 min 01 s (run at once), a window `v0.20.0` missed by
+  **seven seconds**. The script now watches `last_update_started_at`, the one value that says
+  the mirror actually started, and insists until it moves. If the tag is already mirrored —
+  which happens about half the time — it costs 0.86 s and skips all of it. (#163)
+
 ## [v0.20.0] — 2026-09-05
 
 Nothing changes in the tool itself: this release exists so that the **publication chain**
