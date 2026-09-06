@@ -134,9 +134,14 @@ projet** — `jigger-ci-miroir`, portée `api`, rôle Maintainer, lié à ce seu
 révocable seul. Pas le PAT personnel : réveiller un miroir ne justifie pas un jeton qui porte
 les droits sur tous les dépôts.
 
-**⚠️ Il expire le 31 décembre 2026.** Ce jour-là, le réveil cessera sans bruit et la chaîne
-redeviendra dépendante de la chance. Le renouveler se fait dans *Settings → Access Tokens* du
-projet, ou par `POST /projects/25/access_tokens`.
+**Il expire le 31 décembre 2026**, et ce n'est plus à retenir de tête : le job `miroir`,
+qui tourne chaque jour, **surveille l'échéance de tous les jetons du projet** et ouvre une
+issue `garde-fou::jeton` un mois avant. Il lit `/access_tokens` avec `GITLAB_API_TOKEN`
+lui-même — `GARDE_FOU_TOKEN` y est refusé (401, mesuré) — si bien que le jeton surveille sa
+propre mort : le jour où il expire, la lecture échoue, et cet échec est le signal.
+
+Le renouveler se fait dans *Settings → Access Tokens* du projet, ou par
+`POST /projects/25/access_tokens`.
 
 `CI_JOB_TOKEN` **ne convient pas**, et c'est mesuré, pas supposé : essayé en vraie grandeur
 sur la v0.19.0, l'API a répondu **401**. Un jeton de job n'a aucun droit sur les réglages du

@@ -39,6 +39,66 @@ type Etat struct {
 	Tags map[string]string
 }
 
+// Jeton est un jeton d'accès de projet, tel que l'API GitLab le décrit.
+type Jeton struct {
+	Nom      string `json:"name"`
+	ExpireLe string `json:"expires_at"` // "2026-12-31", ou vide s'il n'expire pas
+	Actif    bool   `json:"active"`
+	Revoque  bool   `json:"revoked"`
+}
+
+// Alerte est un jeton dont l'échéance approche, ou qui l'a dépassée.
+type Alerte struct {
+	Nom      string
+	ExpireLe string
+	Jours    int // négatif quand l'échéance est passée
+	Raison   string
+}
+
+// JetonsAlarmants rend les jetons qui expirent dans moins de `seuil` jours, les expirés
+// compris, du plus urgent au moins urgent.
+//
+// Pourquoi cette surveillance existe : un jeton de projet expire **sans bruit**. Le jour
+// venu, la CI échoue sur un code d'erreur qui ne dit rien de sa cause — un 422 de GitHub
+// pour le miroir, un 401 pour l'issue du garde-fou — et rien ne relie spontanément le
+// symptôme à une date. Le cas a été constaté : `garde-fou-miroir` expirait dans dix jours
+// et personne ne le savait.
+//
+// Un jeton révoqué ou inactif est ignoré : il ne sert plus, ce n'est pas une panne à venir.
+// Un jeton sans échéance ne demande rien non plus.
+func JetonsAlarmants(jetons []Jeton, aujourdhui time.Time, seuil int) []Alerte {
+	var alertes []Alerte
+	for _, j := range jetons {
+		if j.ExpireLe == "" || j.Revoque || !j.Actif {
+			continue
+		}
+		fin, err := time.Parse("2006-01-02", j.ExpireLe)
+		if err != nil {
+			continue // une date illisible n'est pas une échéance : on ne devine pas
+		}
+		jours := int(fin.Sub(aujourdhui).Hours() / 24)
+		if jours >= seuil {
+			continue
+		}
+		raison := fmt.Sprintf("expire dans %d jour(s)", jours)
+		if jours < 0 {
+			raison = fmt.Sprintf("expiré depuis %d jour(s)", -jours)
+		}
+		alertes = append(alertes, Alerte{Nom: j.Nom, ExpireLe: j.ExpireLe, Jours: jours, Raison: raison})
+	}
+	sort.Slice(alertes, func(i, j int) bool { return alertes[i].Jours < alertes[j].Jours })
+	return alertes
+}
+
+// ResumeJetons met les alertes en liste, dans le même style que Resume.
+func ResumeJetons(alertes []Alerte) string {
+	var b strings.Builder
+	for _, a := range alertes {
+		fmt.Fprintf(&b, "- **%s** : %s (échéance %s)\n", a.Nom, a.Raison, a.ExpireLe)
+	}
+	return b.String()
+}
+
 // Ecart est une référence qui ne dit pas la même chose des deux côtés. Une chaîne vide
 // signifie « absente ici ».
 type Ecart struct {
@@ -107,8 +167,13 @@ func ou(sha string) string {
 const (
 	// Le libellé sert de mémoire : c'est à lui que la commande reconnaît son issue d'un
 	// passage à l'autre, plutôt qu'à un titre qu'une relecture pourrait réécrire.
-	libelle = "garde-fou::miroir"
-	branche = "main"
+	libelle       = "garde-fou::miroir"
+	libelleJetons = "garde-fou::jeton"
+	branche       = "main"
+
+	// Un jeton de projet est signalé à un mois de son échéance : de quoi en créer un,
+	// remplacer la variable et vérifier, sans travailler la veille de la panne.
+	seuilJetons = 30
 )
 
 func main() {
@@ -140,15 +205,52 @@ func main() {
 	if *notifier && len(ecarts) > 0 {
 		bannir(ecarts)
 	}
+	// Les jetons du projet, au même passage. Ils expirent sans bruit, et leur mort coupe
+	// précisément les automatismes qui devaient prévenir : c'est le cas de `garde-fou-miroir`,
+	// trouvé à dix jours de son échéance sans que rien ne l'ait signalé.
+	alertes := verifierJetons(*apiGitLab)
+
 	if *issue {
-		if err := tenirIssue(*apiGitLab, ecarts); err != nil {
+		if err := tenirIssue(*apiGitLab, libelle, "Le miroir GitHub a décroché",
+			corpsMiroir(ecarts), "le miroir est reparti.", len(ecarts) > 0); err != nil {
 			echouer("issue : %v", err)
+		}
+		if err := tenirIssue(*apiGitLab, libelleJetons, "Un jeton d'accès de projet arrive à échéance",
+			corpsJetons(alertes), "les jetons sont hors de la fenêtre d'alerte.",
+			len(alertes) > 0); err != nil {
+			echouer("issue des jetons : %v", err)
 		}
 	}
 
 	if len(ecarts) > 0 {
 		os.Exit(1)
 	}
+}
+
+// verifierJetons lit les jetons et imprime le constat. Le code de sortie n'en dépend PAS :
+// une échéance à trois semaines ferait rougir la planification tous les jours pendant trois
+// semaines, ce qui apprend surtout à ne plus la regarder. L'issue est le canal — elle
+// s'ouvre une fois et reste ouverte tant que rien n'a été fait.
+func verifierJetons(racine string) []Alerte {
+	jetons, err := lireJetons(racine)
+	if err != nil {
+		// L'échec est lui-même le signal : si la lecture est refusée, le jeton qui la
+		// portait est probablement expiré ou révoqué.
+		fmt.Printf("jetons : lecture impossible (%v) — le jeton du garde-fou est peut-être mort.\n", err)
+		return []Alerte{{Nom: "GITLAB_API_TOKEN", Raison: "lecture des jetons refusée : " + err.Error()}}
+	}
+	if len(jetons) == 0 {
+		return nil // GITLAB_API_TOKEN absente : rien à surveiller, rien à prétendre
+	}
+
+	alertes := JetonsAlarmants(jetons, time.Now().UTC(), seuilJetons)
+	if len(alertes) == 0 {
+		fmt.Printf("jetons : les %d jetons du projet sont hors de la fenêtre de %d jours.\n",
+			len(jetons), seuilJetons)
+	} else {
+		fmt.Printf("jetons — %d échéance(s) proche(s) :\n%s", len(alertes), ResumeJetons(alertes))
+	}
+	return alertes
 }
 
 func echouer(format string, args ...any) {
@@ -178,6 +280,22 @@ func lireJSON(url string, entetes map[string]string, cible any) error {
 		return fmt.Errorf("%s : HTTP %d %s", url, r.StatusCode, strings.TrimSpace(string(corps)))
 	}
 	return json.NewDecoder(r.Body).Decode(cible)
+}
+
+// lireJetons rend les jetons d'accès du projet. Le jeton employé est GITLAB_API_TOKEN,
+// et non GARDE_FOU_TOKEN : ce dernier est refusé sur cet endpoint (401, mesuré), les
+// jetons de projet relevant des réglages.
+//
+// Le jeton surveille donc sa propre échéance. Ce n'est pas un défaut : le jour où il
+// meurt, la lecture échoue, et cet échec est précisément le signal qu'on cherchait.
+func lireJetons(racine string) ([]Jeton, error) {
+	jeton := os.Getenv("GITLAB_API_TOKEN")
+	if jeton == "" {
+		return nil, nil // rien à dire plutôt qu'une fausse alerte
+	}
+	var jetons []Jeton
+	err := lireJSON(racine+"/access_tokens", map[string]string{"PRIVATE-TOKEN": jeton}, &jetons)
+	return jetons, err
 }
 
 func lireGitLab(racine string) (Etat, error) {
@@ -254,46 +372,66 @@ type issueGitLab struct {
 // tenirIssue ouvre une issue s'il y a un écart et qu'aucune n'est ouverte, la referme si
 // l'écart a disparu. Elle ne rouvre pas la même issue : une panne qui revient est une
 // panne neuve, et son message doit porter les sha du jour.
-func tenirIssue(racine string, ecarts []Ecart) error {
+func tenirIssue(racine, lbl, titre, corps, refermee string, present bool) error {
 	jeton := os.Getenv("GARDE_FOU_TOKEN")
 	if jeton == "" {
 		return fmt.Errorf("GARDE_FOU_TOKEN absent — un jeton d'API est nécessaire pour tenir l'issue")
 	}
 
-	ouvertes, err := issuesOuvertes(racine, jeton)
+	ouvertes, err := issuesOuvertes(racine, jeton, lbl)
 	if err != nil {
 		return err
 	}
 
 	switch {
-	case len(ecarts) == 0 && len(ouvertes) > 0:
+	case !present && len(ouvertes) > 0:
 		for _, i := range ouvertes {
 			if err := fermerIssue(racine, jeton, i.IID); err != nil {
 				return err
 			}
-			fmt.Printf("issue #%d refermée : le miroir est reparti.\n", i.IID)
+			fmt.Printf("issue #%d refermée : %s\n", i.IID, refermee)
 		}
-	case len(ecarts) > 0 && len(ouvertes) == 0:
-		i, err := ouvrirIssue(racine, jeton, ecarts)
+	case present && len(ouvertes) == 0:
+		i, err := ouvrirIssue(racine, jeton, lbl, titre, corps)
 		if err != nil {
 			return err
 		}
 		fmt.Printf("issue #%d ouverte : %s\n", i.IID, i.URL)
-	case len(ecarts) > 0:
+	case present:
 		fmt.Printf("issue #%d déjà ouverte, rien à signaler de neuf.\n", ouvertes[0].IID)
 	}
 	return nil
 }
 
-func issuesOuvertes(racine, jeton string) ([]issueGitLab, error) {
+func issuesOuvertes(racine, jeton, lbl string) ([]issueGitLab, error) {
 	var issues []issueGitLab
-	u := racine + "/issues?state=opened&labels=" + url.QueryEscape(libelle)
+	u := racine + "/issues?state=opened&labels=" + url.QueryEscape(lbl)
 	err := lireJSON(u, map[string]string{"PRIVATE-TOKEN": jeton}, &issues)
 	return issues, err
 }
 
-func ouvrirIssue(racine, jeton string, ecarts []Ecart) (issueGitLab, error) {
-	corps := "Les deux dépôts ne portent plus les mêmes références.\n\n" + Resume(ecarts) + `
+func corpsJetons(alertes []Alerte) string {
+	return "Un jeton d'accès de projet arrive à échéance.\n\n" + ResumeJetons(alertes) + `
+Un jeton expire **sans bruit**. Le jour venu, ce qu'il portait échoue sur un code qui ne dit
+rien de sa cause — un ` + "`422`" + ` de GitHub quand le miroir n'a pas été réveillé, un
+` + "`401`" + ` quand c'est ce garde-fou lui-même qui ne peut plus écrire — et rien ne relie
+spontanément le symptôme à une date.
+
+Renouveler :
+
+1. *Settings → Access Tokens* du projet, ou ` + "`POST /access_tokens`" + ` avec
+   ` + "`scopes[]=api`" + ` et ` + "`access_level=40`" + ` ;
+2. remplacer la variable CI correspondante — masquée, **non protégée** ;
+3. vérifier que le nouveau jeton répond, plutôt que de supposer qu'il répondra.
+
+Le détail est dans ` + "`.claude/forge.md`" + `, section « Publier une release ».
+
+Cette issue a été ouverte par ` + "`tools/miroir`" + `, et elle se refermera d'elle-même dès
+qu'aucun jeton ne sera plus dans la fenêtre d'alerte.`
+}
+
+func corpsMiroir(ecarts []Ecart) string {
+	return "Les deux dépôts ne portent plus les mêmes références.\n\n" + Resume(ecarts) + `
 Le constat ne dit pas la cause. À regarder, dans cet ordre :
 
 1. **L'état du miroir** — Settings → Repository → Mirroring repositories. Un jeton expiré
@@ -305,11 +443,13 @@ Le constat ne dit pas la cause. À regarder, dans cet ordre :
 
 Cette issue a été ouverte par ` + "`tools/miroir`" + `, et elle se refermera d'elle-même
 au premier passage où les deux dépôts se seront rejoints.`
+}
 
+func ouvrirIssue(racine, jeton, lbl, titre, corps string) (issueGitLab, error) {
 	champs := url.Values{}
-	champs.Set("title", "Le miroir GitHub a décroché")
+	champs.Set("title", titre)
 	champs.Set("description", corps)
-	champs.Set("labels", libelle+",type::interne")
+	champs.Set("labels", lbl+",type::interne")
 
 	return ecrireIssue(http.MethodPost, racine+"/issues", jeton, champs)
 }
