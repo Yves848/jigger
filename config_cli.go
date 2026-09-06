@@ -145,6 +145,7 @@ func groupesConfig(fic *config.Fichier) []ui.GroupeConfig {
 		ligne := ui.LigneConfig{
 			Cle: r.Cle, Env: r.Env(), Valeur: valeur,
 			Provenance: provenanceLisible(prov), Description: i18n.T(r.CleI18n),
+			Type: typeAffichage(r.Type), ParDefaut: prov == config.DuDefaut,
 		}
 		if r.Portee == config.Greffon {
 			shell = append(shell, ligne)
@@ -208,6 +209,24 @@ func afficherReglages(fic *config.Fichier) {
 	for _, l := range lignes {
 		fmt.Printf("%-*s  %-*s  %-*s  %s\n",
 			largeurs[0], l[0], largeurs[1], l[1], largeurs[2], l[2], l[3])
+	}
+}
+
+// typeAffichage traduit le type déclaré du réglage vers celui que l'écran comprend.
+//
+// Deux énumérations pour la même notion, et c'est délibéré : l'écran ne dépend pas de
+// internal/config, ce qui le laisse éprouvable sans fichier ni environnement. La traduction
+// tient en un switch, et c'est le seul endroit qui connaît les deux.
+func typeAffichage(t config.Type) ui.TypeLigne {
+	switch t {
+	case config.TypeBooleen:
+		return ui.LigneBooleen
+	case config.TypeEntier:
+		return ui.LigneEntier
+	case config.TypeDuree:
+		return ui.LigneDuree
+	default:
+		return ui.LigneTexte
 	}
 }
 

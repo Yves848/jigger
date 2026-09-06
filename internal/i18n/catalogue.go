@@ -197,6 +197,7 @@ var catalogue = map[string][nbLangues]string{
 	"cfg.ttl_aur":      {"how long the AUR name list stays fresh", "durée de validité de la liste AUR"},
 	"cfg.sudo":         {"prefix sudo on pacman operations needing root", "préfixer sudo sur les opérations pacman exigeant root"},
 	"cfg.quit_discard": {"discard", "abandonner"},
+	"cfg.toggle":       {"toggle", "basculer"},
 
 	"cfg.title":      {"jigger — settings", "jigger — réglages"},
 	"cfg.edit":       {"edit", "modifier"},

@@ -4,10 +4,15 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/charmbracelet/lipgloss"
+
 	tea "github.com/charmbracelet/bubbletea"
 
 	"gitlab.yg-devworks.com/yves/jigger/internal/i18n"
 )
+
+// `visible()`, qui retire les séquences de style, vient de picker_test.go : les assertions
+// de ce fichier portent, comme les siennes, sur ce que l'œil verrait.
 
 // configDeTest rend un écran d'une seule ligne modifiable, suffisant pour éprouver les
 // touches : ce qui est testé ici est la sortie, pas la mise en page.
@@ -109,5 +114,79 @@ func TestLePiedAnnonceLaSortieSansEnregistrer(t *testing.T) {
 	c = configTouche(c, tea.KeyMsg{Type: tea.KeyEnter})
 	if pied := c.pied(); strings.Contains(pied, i18n.T("cfg.quit_discard")) {
 		t.Errorf("le pied d'édition annonce l'abandon de l'écran : %q", pied)
+	}
+}
+
+// ecranRiche : un écran qui mélange les cas — un booléen, un texte, une ligne figée, et des
+// descriptions de longueurs très différentes. C'est cette disparité qui produisait les bords
+// en dents de scie.
+func ecranRiche() Configuration {
+	return NouvelleConfiguration([]GroupeConfig{{
+		Titre: "Réglages",
+		Note:  "prend effet tout de suite",
+		Lignes: []LigneConfig{
+			{Cle: "pager", Env: "JIGGER_PAGER", Valeur: "1", Provenance: "défaut",
+				Description: "vue paginée", Type: LigneBooleen, ParDefaut: true},
+			{Cle: "rows", Env: "JIGGER_ROWS", Valeur: "8", Provenance: "fichier",
+				Description: "une description nettement plus longue que les autres, pour voir",
+				Type:        LigneEntier},
+			{Env: "HOMEBREW_PREFIX", Valeur: "—", Provenance: "env", Fige: true},
+		},
+	}})
+}
+
+// Le défaut visuel corrigé : les styles de cet écran portent un fond, donc une ligne non
+// calée s'arrête où finit son texte et le bloc a des bords en dents de scie.
+func TestToutesLesLignesOntLaMemeLargeur(t *testing.T) {
+	vue := ecranRiche().View()
+
+	var largeurs = map[int][]string{}
+	for _, l := range strings.Split(vue, "\n") {
+		if strings.TrimSpace(visible(l)) == "" {
+			continue // lignes vides de séparation, et le pied qui a sa propre largeur
+		}
+		largeurs[lipgloss.Width(l)] = append(largeurs[lipgloss.Width(l)], visible(l))
+	}
+	// Le pied a sa propre largeur : on tolère deux valeurs au plus, pas davantage.
+	if len(largeurs) > 2 {
+		for l, exemples := range largeurs {
+			t.Errorf("largeur %d : %q", l, exemples[0])
+		}
+		t.Fatalf("%d largeurs différentes : le bloc a des bords en dents de scie", len(largeurs))
+	}
+}
+
+// Un booléen se montre coché. Le chiffre ne disait pas qu'on pouvait le basculer.
+func TestUnBooleenSAfficheCoche(t *testing.T) {
+	vue := visible(ecranRiche().View())
+	if !strings.Contains(vue, "[✓]") {
+		t.Errorf("un booléen à 1 devait s'afficher coché :\n%s", vue)
+	}
+	if strings.Contains(vue, "JIGGER_PAGER            1 ") {
+		t.Error("le booléen s'affiche encore en chiffre")
+	}
+}
+
+// Espace bascule un booléen sans entrer en édition, et ne touche pas à une ligne qui n'en
+// est pas un — promettre une bascule là où il n'y en a pas serait pire que rien.
+func TestEspaceBasculeUnBooleenEtLuiSeul(t *testing.T) {
+	espace := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{' '}}
+
+	c := configTouche(ecranRiche(), espace) // curseur sur pager, booléen à 1
+	if c.edition {
+		t.Error("la bascule ne doit pas entrer en édition")
+	}
+	if c.Modifs["pager"] != "0" {
+		t.Errorf("pager = %q, attendu \"0\"", c.Modifs["pager"])
+	}
+	if c = configTouche(c, espace); c.Modifs["pager"] != "1" {
+		t.Errorf("seconde bascule : pager = %q, attendu \"1\"", c.Modifs["pager"])
+	}
+
+	// Ligne suivante : un entier, que l'espace ne doit pas toucher.
+	c = configTouche(c, tea.KeyMsg{Type: tea.KeyDown})
+	c = configTouche(c, espace)
+	if _, touche := c.Modifs["rows"]; touche {
+		t.Error("l'espace a modifié une ligne qui n'est pas un booléen")
 	}
 }
