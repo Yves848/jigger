@@ -117,10 +117,8 @@ func ExecuterAvec(v pm.Verb, cibles []Cible, o Opts) Resultat {
 
 			// Un plugin s'exécute exactement comme un gestionnaire natif : même relais de
 			// terminal, même lecture du code de sortie, même rejeu sur défaut de droits. Seul
-			// le programme lancé change — le mot de la ligne n'est pas forcément le binaire.
-			// Un helper les fait coïncider (le plugin `git` déclare `cmd: "git"` et fait
-			// donc lancer le vrai git) ; un gestionnaire tiers, non (`mespa` → `jigger-mespa`).
-			// Les confondre lancerait n'importe quoi dans le second cas.
+			// le programme lancé change — le mot de la ligne (« mespa ») n'est pas le
+			// binaire (« jigger-mespa »), et les confondre lancerait n'importe quoi.
 			binaire := cible.Mgr.Cmd()
 			if b, ok := plugin.Binaire(cible.Mgr); ok {
 				binaire = b
