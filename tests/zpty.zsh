@@ -417,6 +417,10 @@ suite() {
     local casfile=$(mktemp) verdicts
     cat >$casfile <<'FINCAS'
 source $JIGGER_ROOT/shell/jigger.plugin.zsh
+# Sentinelle. Un greffon non chargé laisse _jigger_pacman_root indéfini ; l'appel échoue
+# alors, « échec » se lit « libre », et TOUTES les assertions négatives passent à vide.
+# Sans cette ligne, la suite dit « ok » sur un greffon mort.
+print -r -- "greffon:${+functions[_jigger_pacman_root]}"
 for op in -S -Syu -Sy -Sc -Sw -Su -R -Rns -Rdd -U -D -Fy -Ss -Si -Sl -Sg -Sp -Sup -Qs -Qu -Fs -V; do
   if _jigger_pacman_root $op; then print -r -- "${op}:root"; else print -r -- "${op}:libre"; fi
 done
@@ -430,7 +434,9 @@ for ligne in "${lignes[@]}"; do
   if _jigger_besoin_sudo "$ligne"; then print -r -- "[${ligne}]:sudo"; else print -r -- "[${ligne}]:tel-quel"; fi
 done
 FINCAS
-    verdicts=$(JIGGER_ROOT=$root JIGGER_SUDO=1 zsh -f $casfile 2>/dev/null)
+    verdicts=$(JIGGER_ROOT=$root JIGGER_BIN=$bin JIGGER_SUDO=1 zsh -f $casfile 2>/dev/null)
+
+    check "greffon chargé dans le zsh jetable" "$verdicts" 'greffon:1'
 
     local op
     for op in -S -Syu -Sy -Sc -Sw -Su -R -Rns -Rdd -U -D -Fy; do
@@ -456,7 +462,7 @@ FINCAS
       check "« $ligne » part telle quelle" "$verdicts" "[${ligne}]:tel-quel"
     done
 
-    verdicts=$(JIGGER_ROOT=$root JIGGER_SUDO=0 zsh -f $casfile 2>/dev/null)
+    verdicts=$(JIGGER_ROOT=$root JIGGER_BIN=$bin JIGGER_SUDO=0 zsh -f $casfile 2>/dev/null)
     check "JIGGER_SUDO=0 désarme"       "$verdicts" '[pacman -S fd]:tel-quel'
     rm -f $casfile
   fi
