@@ -561,6 +561,7 @@ Import-Module $HOME\git\jigger\shell\jigger.psm1
 | `JIGGER_ROWS` | `8` | candidates shown — lower it on a short terminal |
 | `JIGGER_KEY` | `^I` (Tab) | insertion key. `'^ '` for Ctrl-Space; under PowerShell, a PSReadLine name (`Ctrl+Spacebar`) |
 | `JIGGER_MIN_COLUMNS` | `30` | below this width, the frame stops making sense: nothing shows up |
+| `JIGGER_SUDO` | `1` | zsh, pacman: puts `sudo ` in front of an operation that needs root (`-S`, `-Syu`, `-Sy`, `-Sc`, `-Sw`, `-R`, `-U`, `-D`, `-Fy`) as ⏎ sends the line — not on insertion, so it never rewrites what you are still composing. `yay` and `paru` are **never** prefixed: they call sudo themselves at the right moment and refuse to run as root. An already-elevated line is not elevated twice, and `pacman` must be the first command on the line. `0` disarms it — password-less `sudoers` rule, local alias, or an already-root session |
 | `JIGGER_CACHE_DIR` | `~/Library/Caches/jigger`, `${XDG_CACHE_HOME:-~/.cache}/jigger`, `%LOCALAPPDATA%\jigger` | cache location — macOS, Linux, Windows. `jigger prompt --path` prints the file it actually uses |
 | `JIGGER_BIN` | `jigger` | which binary the plugin calls. Handy while developing: Homebrew's `bin` usually comes before `~/.local/bin`, so a freshly built jigger would otherwise never be the one that runs |
 | `JIGGER_PAGER` | `1` | `0` disables the paged view: listing verbs always print the plain table |

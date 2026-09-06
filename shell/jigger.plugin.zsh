@@ -45,6 +45,10 @@ eval "$(command "$JIGGER_BIN" config --export 2>/dev/null)"
 : "${JIGGER_ROWS:=8}"
 # En dessous de cette largeur de terminal, le cadre n'a plus de sens : on n'affiche rien.
 : "${JIGGER_MIN_COLUMNS:=30}"
+# Poser « sudo » en tête d'une opération pacman qui exige root, au moment de l'exécuter.
+# JIGGER_SUDO=0 le désarme — pour une règle sudoers sans mot de passe, un alias maison,
+# ou une machine où l'on est déjà root (cf. _jigger_besoin_sudo).
+: "${JIGGER_SUDO:=1}"
 
 # La langue des messages du greffon. Même ordre que le binaire : JIGGER_LANG, puis les
 # variables POSIX, puis l'anglais.
@@ -498,6 +502,7 @@ _jigger_accept() {
   if _jigger_completable; then
     _jigger_insert
   fi
+  _jigger_elever
   zle ${_jigger_accept_widget:-.accept-line}
 }
 
@@ -567,7 +572,12 @@ _jigger_widget() {
   zle reset-prompt
 
   # 10 = la commande est complète → on l'exécute directement (↩ dans le sélecteur).
-  (( ret == 10 )) && zle accept-line
+  # Même élévation qu'en popup vivant : les deux chemins qui LANCENT la portent, et eux
+  # seuls. Un `if` plutôt qu'un `&&`, pour la même raison que dans _jigger_accept.
+  if (( ret == 10 )); then
+    _jigger_elever
+    zle accept-line
+  fi
 }
 
 # Remise à zéro à chaque nouvelle ligne : ^G ne vaut que pour la ligne où il a été frappé.
@@ -700,6 +710,98 @@ _jigger_pacman_mutant() {
   esac
   return 1
 }
+# _jigger_pacman_root rend vrai si l'opération pacman exige root. C'est une question
+# DIFFÉRENTE de celle de _jigger_pacman_mutant, et les deux tables divergent : `-Sc` ne
+# change pas ce que `pacman -Qu` répondra — il est donc une lecture là-haut — mais il vide
+# /var/cache/pacman/pkg, donc il exige root ici. Même écart pour `-Sw` et `-Fy`. Les
+# fusionner ferait payer à l'une la table de l'autre (#167).
+#
+#   -R… -U… -D…   retrait, fichier local, base de données : toujours root
+#   -S…           root, SAUF les lectures pures -Ss -Si -Sl -Sg. `y`, `c` et `w` écrivent
+#                 (base de synchronisation, cache), donc ils exigent root même accolés à
+#                 une lecture ; `p` n'imprime que des URI, donc il ne l'exige jamais —
+#                 sauf si un `y` l'accompagne, et le test de `y` passe avant.
+#   -F…           root uniquement pour `y`, qui renouvelle la base des fichiers
+#
+# Les options LONGUES (`--sync`, `--remove`) ne sont pas lues : les distinguer de leurs
+# lectures (`--sync --search`) demanderait une vraie analyse d'options. La ligne part alors
+# sans préfixe — c'est-à-dire comme avant cette fonction, jamais moins bien.
+_jigger_pacman_root() {
+  local op=${1#-}
+  [[ $op == -* ]] && return 1        # option longue : hors de cette lecture
+  case $op in
+    (R*|U*|D*) return 0 ;;
+    (S*)
+      [[ $op == *[ycw]* ]] && return 0
+      [[ $op == *p* ]] && return 1
+      [[ $op == S[silg]* ]] && return 1
+      return 0
+      ;;
+    (F*) [[ $op == *y* ]] && return 0 ;;
+  esac
+  return 1
+}
+
+# Mots qui élèvent déjà : les rencontrer, c'est n'avoir plus rien à faire.
+typeset -ga _jigger_sudo_eleveurs=( sudo doas su pkexec run0 )
+
+# Mots qui peuvent précéder `pacman` sans que « sudo » en tête cesse d'être juste.
+# Volontairement plus court que _jigger_prefixes : `time` et `exec` en sont ABSENTS parce
+# que ce sont des mots du shell — `sudo time pacman …` chercherait un binaire `time`, et
+# `sudo exec …` n'a pas de sens. Un opérateur (`;`, `&&`, `|`) n'y est pas non plus, et
+# c'est le point important : sur « echo hi && pacman -S fd », préfixer la LIGNE élèverait
+# `echo`, pas `pacman`.
+typeset -ga _jigger_sudo_transparents=( command env nohup arch )
+
+# _jigger_besoin_sudo : la ligne réclame-t-elle qu'on lui pose « sudo » en tête ?
+#
+# Trois refus, et ils comptent autant que l'acceptation :
+#   * `yay` et `paru` ne sont JAMAIS préfixés. Ils appellent sudo eux-mêmes au bon moment
+#     et refusent de tourner en root : les élever casserait ce qui marche.
+#   * une ligne déjà élevée n'est pas élevée deux fois.
+#   * `pacman` doit être la PREMIÈRE commande de la ligne. Tout autre mot rencontré avant
+#     lui arrête la lecture, faute de quoi le préfixe irait sur la mauvaise commande.
+#
+# Rien n'est évalué : ${(z)…} découpe comme le ferait le shell, et on ne lit que des mots.
+_jigger_besoin_sudo() {
+  (( JIGGER_SUDO )) || return 1
+  (( EUID == 0 )) && return 1        # déjà root : il n'y a rien à élever
+
+  local mot
+  local -i vu_pacman=0
+  for mot in ${(z)1}; do
+    if (( vu_pacman )); then
+      [[ $mot == --* ]] && continue
+      [[ $mot == -* ]] && { _jigger_pacman_root "$mot" && return 0; continue }
+      continue
+    fi
+    (( ${_jigger_sudo_eleveurs[(Ie)${mot:t}]} ))   && return 1
+    (( ${_jigger_sudo_transparents[(Ie)${mot:t}]} )) && continue
+    [[ $mot == *=* || $mot == -* ]] && continue    # affectation ou option d'un préfixe
+    [[ ${mot:t} == pacman ]] && { vu_pacman=1; continue }
+    return 1                                       # une autre commande : ce n'est pas pour nous
+  done
+  return 1                                         # `pacman` sans opération : rien à élever
+}
+
+# _jigger_elever pose « sudo » en tête de la ligne sur le point de partir.
+#
+# À l'EXÉCUTION seulement, jamais à l'insertion : ⇥ ne réécrit pas une ligne qu'on est en
+# train de composer, et surtout la question ne se pose pas au même moment. ⏎ n'appelle
+# _jigger_insert que s'il reste un candidat à poser (cf. _jigger_completable) — un
+# « pacman -Syu » frappé en entier n'en a aucun, et devrait pourtant être élevé. C'est donc
+# la touche qui lance, pas celle qui complète, qui porte le préfixe.
+#
+# La ligne reste lisible : zsh la redessine avant de l'exécuter, l'écho et l'historique
+# portent le « sudo », et l'invite de mot de passe est celle de sudo, sur le terminal.
+# jigger ne détient aucun secret et n'ouvre aucune fenêtre (cf. #167, conception (a)).
+_jigger_elever() {
+  _jigger_besoin_sudo "$BUFFER" || return 0
+  BUFFER="sudo $BUFFER"
+  (( CURSOR += 5 ))
+  return 0
+}
+
 # Mots qui précèdent une commande sans en être une : la commande brew reste à venir.
 typeset -ga _jigger_prefixes=(
   ';' '&' '&&' '||' '|' '|&' '(' ')' '{' '}' '!' then do else elif

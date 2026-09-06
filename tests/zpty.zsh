@@ -385,6 +385,64 @@ suite() {
   out=$(visible "$(jigger_type $'echo brew upgrade\n' $rc)")
   check "brew cité ne compte pas"       "$(cat $dir/appels)" 'refresh' non
 
+  print -r -- "→ pacman : l'élévation du chemin popup (#167)"
+  # Les prédicats se lisent sans pseudo-terminal, dans un zsh jetable — comme la
+  # résolution de langue plus haut. Pas de zle, pas de pacman lancé : ce qui est testé,
+  # c'est la DÉCISION, et elle est pure.
+  #
+  # JIGGER_SUDO=1 est posé dans l'environnement à dessein : `config --export` n'écrase pas
+  # ce qui vient de l'environnement (internal/config/export.go), donc un fichier de
+  # configuration où l'utilisateur aurait mis « sudo = 0 » ne fait pas échouer la suite.
+  if (( EUID == 0 )); then
+    print -r -- "  (sauté : la suite tourne en root, où _jigger_besoin_sudo se désarme)"
+  else
+    local casfile=$(mktemp) verdicts
+    cat >$casfile <<'FINCAS'
+source $JIGGER_ROOT/shell/jigger.plugin.zsh
+for op in -S -Syu -Sy -Sc -Sw -Su -R -Rns -Rdd -U -D -Fy -Ss -Si -Sl -Sg -Sp -Sup -Qs -Qu -Fs -V; do
+  if _jigger_pacman_root $op; then print -r -- "$op:root"; else print -r -- "$op:libre"; fi
+done
+lignes=(
+  'pacman -S fd' 'pacman -Syu' 'pacman -Sc' 'pacman -Fy' 'pacman -S --noconfirm fd'
+  'command pacman -S fd' 'env FOO=1 pacman -S fd' '/usr/bin/pacman -S fd'
+  'pacman -Ss fd' 'pacman -Qu' 'sudo pacman -S fd' 'doas pacman -S fd'
+  'yay -S fd' 'paru -S fd' 'brew install fd' 'pacman' 'echo hi && pacman -S fd'
+)
+for ligne in "${lignes[@]}"; do
+  if _jigger_besoin_sudo "$ligne"; then print -r -- "[$ligne]:sudo"; else print -r -- "[$ligne]:tel-quel"; fi
+done
+FINCAS
+    verdicts=$(JIGGER_ROOT=$root JIGGER_SUDO=1 zsh -f $casfile 2>/dev/null)
+
+    local op
+    for op in -S -Syu -Sy -Sc -Sw -Su -R -Rns -Rdd -U -D -Fy; do
+      check "$op exige root"            "$verdicts" "$op:root"
+    done
+    # -Sc et -Sw sont l'écart assumé avec _jigger_pacman_mutant, qui les range en lecture.
+    for op in -Ss -Si -Sl -Sg -Sp -Sup -Qs -Qu -Fs -V; do
+      check "$op se passe de root"      "$verdicts" "$op:libre"
+    done
+
+    local ligne
+    for ligne in 'pacman -S fd' 'pacman -Syu' 'pacman -Sc' 'pacman -Fy' \
+                 'pacman -S --noconfirm fd' 'command pacman -S fd' \
+                 'env FOO=1 pacman -S fd' '/usr/bin/pacman -S fd'; do
+      check "« $ligne » est élevée"      "$verdicts" "[$ligne]:sudo"
+    done
+    # Les refus valent autant que l'acceptation — surtout yay et paru, qui appellent sudo
+    # eux-mêmes et refusent de tourner en root, et le ET logique, où préfixer la ligne
+    # élèverait `echo` au lieu de `pacman`.
+    for ligne in 'pacman -Ss fd' 'pacman -Qu' 'sudo pacman -S fd' 'doas pacman -S fd' \
+                 'yay -S fd' 'paru -S fd' 'brew install fd' 'pacman' \
+                 'echo hi && pacman -S fd'; do
+      check "« $ligne » part telle quelle" "$verdicts" "[$ligne]:tel-quel"
+    done
+
+    verdicts=$(JIGGER_ROOT=$root JIGGER_SUDO=0 zsh -f $casfile 2>/dev/null)
+    check "JIGGER_SUDO=0 désarme"       "$verdicts" '[pacman -S fd]:tel-quel'
+    rm -f $casfile
+  fi
+
   if (( failed )); then
     print -r -- ""
     print -r -- "$failed assertion(s) en échec"

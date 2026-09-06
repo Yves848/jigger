@@ -195,6 +195,7 @@ var catalogue = map[string][nbLangues]string{
 	"cfg.bin":         {"which jigger binary the plugin calls", "binaire jigger appelé par le greffon"},
 	"cfg.ttl":         {"how long the catalog stays fresh", "durée de validité du catalogue"},
 	"cfg.ttl_aur":     {"how long the AUR name list stays fresh", "durée de validité de la liste AUR"},
+	"cfg.sudo":        {"prefix sudo on pacman operations needing root", "préfixer sudo sur les opérations pacman exigeant root"},
 
 	"cfg.title":      {"jigger — settings", "jigger — réglages"},
 	"cfg.edit":       {"edit", "modifier"},

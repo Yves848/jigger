@@ -230,4 +230,11 @@ func init() {
 		Cle: "aur_ttl", CleI18n: "cfg.ttl_aur", Portee: config.Binaire,
 		Type: config.TypeDuree, Defaut: "24h", PM: "yay",
 	})
+	// Le préfixe « sudo » posé par le greffon sur une opération pacman qui exige root
+	// (#167). Portée Greffon : c'est zsh qui l'applique, le binaire n'exécute rien sur ce
+	// chemin (ADR-0005). Rattaché à pacman et non à yay — yay appelle sudo lui-même.
+	config.Declarer(config.Reglage{
+		Cle: "sudo", CleI18n: "cfg.sudo", Portee: config.Greffon,
+		Type: config.TypeBooleen, Defaut: "1", PM: "pacman",
+	})
 }
