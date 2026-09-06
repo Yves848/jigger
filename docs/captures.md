@@ -147,16 +147,42 @@ suivis. Et il contient deux motifs, `Host *.exemple.net` et `Host *`, qui ne doi
 ### macOS et Omarchy
 
 ```sh
-brew install vhs ffmpeg tmux        # macOS
-sudo pacman -S ffmpeg tmux && yay -S vhs   # Omarchy
+brew install vhs ffmpeg tmux                     # macOS
+sudo pacman -S vhs ffmpeg tmux ttf-meslo-nerd    # Arch et Omarchy
 
 ./docs/media/capturer.sh            # tous les scénarios de cette machine
 ./docs/media/capturer.sh macos-03-ssh   # ou un seul
 ```
 
+**`vhs` et la police sont dans les dépôts officiels** (`extra`) : l'AUR n'est plus
+nécessaire. Cette page a longtemps prescrit `yay -S vhs`, qui marchait encore mais faisait
+installer un assistant AUR pour rien.
+
+La police n'est pas un détail de confort. Le tape impose `MesloLGL Nerd Font` ; si elle
+manque, VHS retombe sur autre chose **sans le dire**, et la capture cesse d'être comparable
+à celle des autres plateformes — ce que toute cette page cherche à garantir.
+
 La plateforme est déduite d'`uname` : sur macOS le script ne produit que les `macos-*`,
 sur Arch que les `omarchy-*`. Il ouvre un serveur tmux sur un **socket dédié**
 (`-L jiggercap`) : les sessions tmux réelles de la machine ne sont jamais touchées.
+
+### Sur une machine sans affichage
+
+Un conteneur ou un serveur convient : **VHS enregistre sans écran**, aucun serveur X n'est
+requis. Il faut seulement lui donner un navigateur qui fonctionne.
+
+VHS embarque go-rod, qui télécharge son propre Chromium — auquel manquent `libnss3` et le
+reste des bibliothèques graphiques sur une machine dépouillée. L'échec est alors un
+`recording failed` qui ne dit pas sa cause. On installe donc celui du système, avec toutes
+ses dépendances, et on y renvoie go-rod :
+
+```sh
+sudo pacman -S chromium
+export ROD_BROWSER_BIN=/usr/bin/chromium    # à poser dans /etc/environment
+```
+
+Éprouvé dans un LXC Arch **non privilégié** : `nesting=1` suffit à fournir les espaces de
+noms dont le bac à sable de Chromium a besoin, et `--no-sandbox` n'est pas nécessaire.
 
 ### Windows
 
