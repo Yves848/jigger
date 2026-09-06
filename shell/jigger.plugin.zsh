@@ -105,11 +105,17 @@ unset _jigger_candidat _jigger_code
 
 # ── Vérifications d'installation ──────────────────────────────────────────────────────
 
-if ! command -v jigger >/dev/null 2>&1; then
+# `$JIGGER_BIN`, et non « jigger » en dur : ce réglage existe précisément pour désigner un
+# binaire que le PATH ne donne pas. C'est le cas courant en développement — le `bin` de
+# Homebrew précède `~/.local/bin`, si bien qu'un jigger fraîchement compilé n'est jamais
+# celui qui tournerait. Le test en dur rendait alors le greffon inactif en annonçant un
+# binaire « introuvable » qui, lui, marchait très bien : tous les autres appels du fichier
+# honoraient JIGGER_BIN, celui-ci seul l'ignorait. (#172)
+if ! command -v "$JIGGER_BIN" >/dev/null 2>&1; then
   if [[ $_jigger_lang == fr ]]; then
-    print -u2 "jigger : binaire introuvable dans le PATH. Greffon inactif."
+    print -u2 "jigger : binaire « $JIGGER_BIN » introuvable. Greffon inactif."
   else
-    print -u2 "jigger: binary not found in PATH. Plugin inactive."
+    print -u2 "jigger: binary \"$JIGGER_BIN\" not found. Plugin inactive."
   fi
   return 0
 fi

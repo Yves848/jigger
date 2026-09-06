@@ -385,10 +385,28 @@ suite() {
   out=$(visible "$(jigger_type $'echo brew upgrade\n' $rc)")
   check "brew cité ne compte pas"       "$(cat $dir/appels)" 'refresh' non
 
+  print -r -- "→ JIGGER_BIN désigne un binaire absent du PATH"
+  # Le cas de développement que la documentation recommande : le `bin` de Homebrew précède
+  # `~/.local/bin`, donc on désigne le binaire compilé par JIGGER_BIN. Le garde-fou
+  # d'installation cherchait « jigger » en dur dans le PATH et déclarait le greffon inactif
+  # alors que le binaire désigné marchait — panne d'autant plus déroutante que le message
+  # parlait d'un binaire introuvable.
+  local actif
+  actif=$(env PATH=/usr/bin:/bin JIGGER_BIN=$bin zsh -f -c \
+          "source $root/shell/jigger.plugin.zsh; print \${+functions[_jigger_elever]}" 2>&1 | tail -1)
+  check "greffon actif hors PATH"       "$actif" 1
+
   print -r -- "→ pacman : l'élévation du chemin popup (#167)"
   # Les prédicats se lisent sans pseudo-terminal, dans un zsh jetable — comme la
   # résolution de langue plus haut. Pas de zle, pas de pacman lancé : ce qui est testé,
   # c'est la DÉCISION, et elle est pure.
+  #
+  # Les expansions sont ACCOLÉES — « ${op}:root » et non « $op:root ». zsh applique les
+  # modificateurs d'historique à une expansion nue : « $op:root » se lit « ${op:r} » (retire
+  # l'extension) suivi du littéral « oot », et « :libre » se lit « :l » (minuscules) suivi
+  # de « ibre ». Le piège est sournois parce qu'il mutile les DEUX côtés de la comparaison :
+  # la suite passait sur macOS en comparant « -Soot » à « -Soot », et c'est Arch qui l'a
+  # démasqué.
   #
   # JIGGER_SUDO=1 est posé dans l'environnement à dessein : `config --export` n'écrase pas
   # ce qui vient de l'environnement (internal/config/export.go), donc un fichier de
@@ -400,7 +418,7 @@ suite() {
     cat >$casfile <<'FINCAS'
 source $JIGGER_ROOT/shell/jigger.plugin.zsh
 for op in -S -Syu -Sy -Sc -Sw -Su -R -Rns -Rdd -U -D -Fy -Ss -Si -Sl -Sg -Sp -Sup -Qs -Qu -Fs -V; do
-  if _jigger_pacman_root $op; then print -r -- "$op:root"; else print -r -- "$op:libre"; fi
+  if _jigger_pacman_root $op; then print -r -- "${op}:root"; else print -r -- "${op}:libre"; fi
 done
 lignes=(
   'pacman -S fd' 'pacman -Syu' 'pacman -Sc' 'pacman -Fy' 'pacman -S --noconfirm fd'
@@ -409,25 +427,25 @@ lignes=(
   'yay -S fd' 'paru -S fd' 'brew install fd' 'pacman' 'echo hi && pacman -S fd'
 )
 for ligne in "${lignes[@]}"; do
-  if _jigger_besoin_sudo "$ligne"; then print -r -- "[$ligne]:sudo"; else print -r -- "[$ligne]:tel-quel"; fi
+  if _jigger_besoin_sudo "$ligne"; then print -r -- "[${ligne}]:sudo"; else print -r -- "[${ligne}]:tel-quel"; fi
 done
 FINCAS
     verdicts=$(JIGGER_ROOT=$root JIGGER_SUDO=1 zsh -f $casfile 2>/dev/null)
 
     local op
     for op in -S -Syu -Sy -Sc -Sw -Su -R -Rns -Rdd -U -D -Fy; do
-      check "$op exige root"            "$verdicts" "$op:root"
+      check "$op exige root"            "$verdicts" "${op}:root"
     done
     # -Sc et -Sw sont l'écart assumé avec _jigger_pacman_mutant, qui les range en lecture.
     for op in -Ss -Si -Sl -Sg -Sp -Sup -Qs -Qu -Fs -V; do
-      check "$op se passe de root"      "$verdicts" "$op:libre"
+      check "$op se passe de root"      "$verdicts" "${op}:libre"
     done
 
     local ligne
     for ligne in 'pacman -S fd' 'pacman -Syu' 'pacman -Sc' 'pacman -Fy' \
                  'pacman -S --noconfirm fd' 'command pacman -S fd' \
                  'env FOO=1 pacman -S fd' '/usr/bin/pacman -S fd'; do
-      check "« $ligne » est élevée"      "$verdicts" "[$ligne]:sudo"
+      check "« $ligne » est élevée"      "$verdicts" "[${ligne}]:sudo"
     done
     # Les refus valent autant que l'acceptation — surtout yay et paru, qui appellent sudo
     # eux-mêmes et refusent de tourner en root, et le ET logique, où préfixer la ligne
@@ -435,7 +453,7 @@ FINCAS
     for ligne in 'pacman -Ss fd' 'pacman -Qu' 'sudo pacman -S fd' 'doas pacman -S fd' \
                  'yay -S fd' 'paru -S fd' 'brew install fd' 'pacman' \
                  'echo hi && pacman -S fd'; do
-      check "« $ligne » part telle quelle" "$verdicts" "[$ligne]:tel-quel"
+      check "« $ligne » part telle quelle" "$verdicts" "[${ligne}]:tel-quel"
     done
 
     verdicts=$(JIGGER_ROOT=$root JIGGER_SUDO=0 zsh -f $casfile 2>/dev/null)
