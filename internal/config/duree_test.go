@@ -9,6 +9,9 @@ import (
 
 func ecrireConfig(t *testing.T, contenu string) {
 	t.Helper()
+	// Avant le t.Setenv du fichier : un test qui pose ensuite sa propre variable
+	// l'emporte, la neutralisation ne le gene pas (#186).
+	neutraliseEnvironnement(t)
 	chemin := filepath.Join(t.TempDir(), "config")
 	if err := os.WriteFile(chemin, []byte(contenu), 0o644); err != nil {
 		t.Fatal(err)

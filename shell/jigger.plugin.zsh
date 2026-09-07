@@ -103,50 +103,107 @@ for _jigger_candidat in "${JIGGER_LANG-}" "${LC_ALL-}" "${LC_MESSAGES-}" "${LANG
 done
 unset _jigger_candidat _jigger_code
 
-# ── Vérifications d'installation ──────────────────────────────────────────────────────
+# ── Vérifications d'installation, faites à l'USAGE ────────────────────────────────────
 
-# `$JIGGER_BIN`, et non « jigger » en dur : ce réglage existe précisément pour désigner un
-# binaire que le PATH ne donne pas. C'est le cas courant en développement — le `bin` de
-# Homebrew précède `~/.local/bin`, si bien qu'un jigger fraîchement compilé n'est jamais
-# celui qui tournerait. Le test en dur rendait alors le greffon inactif en annonçant un
-# binaire « introuvable » qui, lui, marchait très bien : tous les autres appels du fichier
-# honoraient JIGGER_BIN, celui-ci seul l'ignorait. (#172)
-if ! command -v "$JIGGER_BIN" >/dev/null 2>&1; then
-  if [[ $_jigger_lang == fr ]]; then
-    print -u2 "jigger : binaire « $JIGGER_BIN » introuvable. Greffon inactif."
-  else
-    print -u2 "jigger: binary \"$JIGGER_BIN\" not found. Plugin inactive."
-  fi
-  return 0
-fi
-
-# Le greffon et le binaire vont par paire : le greffon passe à `jigger render` des options
-# qu'un binaire plus ancien ne connaît pas (`--focus`, entre autres). Celui-ci sortirait en
-# erreur, et le popup ne s'afficherait jamais — sans un mot, ce qui est la pire façon de
-# tomber en panne. Un appel au source (quelques millisecondes) suffit à le dire.
+# Ces deux vérifications — le binaire est joignable, et sa version comprend ce que ce
+# greffon lui demande — se faisaient au CHARGEMENT, et désarmaient le greffon par un
+# `return` pour toute la vie du shell.
 #
-# À relever **avec** la version du binaire, à chaque fois que le greffon se met à demander
-# quelque chose de neuf : 0.9.0 pour le bilinguisme, 0.11.0 pour « render --regex »,
-# que le greffon passe dès qu'on bascule en expression rationnelle. Un binaire 0.8.0 ne parle que français,
-# tandis que ce greffon, lui, sait dire ses messages dans les deux langues : les deux
-# parleraient alors des langues différentes dans la même fenêtre — précisément ce que
-# l'internationalisation existe pour empêcher.
+# C'était un piège silencieux. Le binaire absent à cet instant précis — formule Homebrew
+# déliée, PATH pas encore complet, chantier en cours, `make install` qui va suivre — et le
+# popup ne revenait plus jamais, alors que le message qui l'annonçait avait défilé depuis
+# longtemps. Il ne restait que le symptôme : « le sélecteur SSH ne marche plus ». Rouvrir
+# un terminal réparait, ce qui rendait la cause d'autant plus difficile à relier à l'effet.
+# (#184)
+#
+# Elles sont donc faites à l'usage, et le verdict POSITIF seul est mémorisé : une fois le
+# binaire vu et sa version acceptée, le coût retombe à une comparaison d'entier. Le verdict
+# négatif n'est jamais mémorisé — c'est précisément ce qui fait qu'un `make install`, un
+# `brew link` ou un PATH corrigé en cours de session est pris en compte dès la frappe
+# suivante, sans rouvrir de terminal.
+#
+# `$JIGGER_BIN`, et non « jigger » en dur : ce réglage existe précisément pour désigner un
+# binaire que le PATH ne donne pas. Le test en dur rendait le greffon inactif en annonçant
+# un binaire « introuvable » qui, lui, marchait très bien : tous les autres appels du
+# fichier honoraient JIGGER_BIN, celui-ci seul l'ignorait. (#172)
+
+# La version que ce greffon exige du binaire. À relever **avec** la version du binaire, à
+# chaque fois que le greffon se met à demander quelque chose de neuf : 0.9.0 pour le
+# bilinguisme, 0.11.0 pour « render --regex », que le greffon passe dès qu'on bascule en
+# expression rationnelle. Un binaire 0.8.0 ne parle que français, tandis que ce greffon
+# sait dire ses messages dans les deux langues : les deux parleraient alors des langues
+# différentes dans la même fenêtre — précisément ce que l'internationalisation existe pour
+# empêcher.
 typeset -g JIGGER_VERSION_REQUISE=0.11.0
 autoload -Uz is-at-least
-typeset -g _jigger_v=${${(z)"$(command "$JIGGER_BIN" --version 2>/dev/null)"}[2]}
-if [[ -n $_jigger_v ]] && ! is-at-least $JIGGER_VERSION_REQUISE $_jigger_v; then
-  if [[ $_jigger_lang == fr ]]; then
-    print -u2 "jigger : le binaire $(command -v "$JIGGER_BIN") est en $_jigger_v, or ce greffon en demande $JIGGER_VERSION_REQUISE. Recompile-le (« make install »), désigne-en un autre par JIGGER_BIN, ou remplace celui du PATH. Greffon inactif."
+
+typeset -g _jigger_bon=0        # 1 dès que binaire et version ont été acceptés
+typeset -g _jigger_vu=0         # 1 si le verdict NÉGATIF a déjà été rendu sur cette ligne
+typeset -g _jigger_dit=''       # la dernière plainte émise, pour ne pas la répéter
+
+# _jigger_plainte dit une fois ce qui ne va pas, là où l'utilisateur regarde.
+#
+# `zle -M` et non `print -u2` quand on est dans un widget : écrire sur stderr depuis zle
+# abîme la ligne en cours d'édition. Hors widget — au chargement, si quelque chose appelle
+# de là — stderr reste le bon canal.
+#
+# Une seule fois par MESSAGE, et non par shell : si le binaire réapparaît puis se révèle
+# trop ancien, la seconde raison mérite d'être dite. Répéter la même, en revanche, serait
+# du harcèlement à chaque frappe.
+_jigger_plainte() {
+  [[ $_jigger_dit == "$1" ]] && return 0
+  _jigger_dit=$1
+  if zle 2>/dev/null; then
+    zle -M -- "$1"
   else
-    # Le message nomme le binaire fautif ET les deux façons d'en changer : refaire
-    # l'installation, ou désigner un autre binaire par JIGGER_BIN. Sans cette seconde
-    # mention, quelqu'un dont le PATH privilégie un jigger plus ancien n'a aucune piste.
-    print -u2 "jigger: the binary at $(command -v "$JIGGER_BIN") is $_jigger_v, but this plugin requires $JIGGER_VERSION_REQUISE. Rebuild it (\"make install\"), set JIGGER_BIN to another one, or replace the one in PATH. Plugin inactive."
+    print -u2 -- "$1"
   fi
-  unset _jigger_v
+}
+
+# _jigger_utilisable rend vrai si le binaire est joignable ET assez récent.
+#
+# Trois granularités, et chacune répond à un coût précis :
+#
+#   • verdict POSITIF, mémorisé pour toujours — une fois le binaire vu et sa version
+#     acceptée, plus rien n'est mesuré : le coût retombe à une comparaison d'entier ;
+#   • verdict NÉGATIF, mémorisé pour la LIGNE en cours seulement — sans quoi un binaire
+#     trop ancien ferait payer un `--version`, donc un sous-processus, à CHAQUE frappe.
+#     La ligne est la bonne granularité : un `make install` ou un `brew link` se fait
+#     entre deux invites, jamais au milieu d'une frappe ;
+#   • la plainte, dite une fois par message (cf. _jigger_plainte).
+#
+# Le négatif n'est donc jamais définitif, et c'est tout l'objet de #184 : le popup repart
+# à la ligne suivante, sans rouvrir de terminal.
+_jigger_utilisable() {
+  (( _jigger_bon )) && return 0
+  (( _jigger_vu )) && return 1
+  _jigger_vu=1
+
+  if ! command -v "$JIGGER_BIN" >/dev/null 2>&1; then
+    if [[ $_jigger_lang == fr ]]; then
+      _jigger_plainte "jigger : binaire « $JIGGER_BIN » introuvable. Le popup reste en veille ; il repart dès que le binaire est là."
+    else
+      _jigger_plainte "jigger: binary \"$JIGGER_BIN\" not found. The popup stays idle; it resumes as soon as the binary is there."
+    fi
+    return 1
+  fi
+
+  local v=${${(z)"$(command "$JIGGER_BIN" --version 2>/dev/null)"}[2]}
+  if [[ -n $v ]] && ! is-at-least $JIGGER_VERSION_REQUISE $v; then
+    if [[ $_jigger_lang == fr ]]; then
+      _jigger_plainte "jigger : le binaire $(command -v "$JIGGER_BIN") est en $v, or ce greffon en demande $JIGGER_VERSION_REQUISE. Recompile-le (« make install »), désigne-en un autre par JIGGER_BIN, ou remplace celui du PATH."
+    else
+      # Le message nomme le binaire fautif ET les deux façons d'en changer : refaire
+      # l'installation, ou désigner un autre binaire par JIGGER_BIN. Sans cette seconde
+      # mention, quelqu'un dont le PATH privilégie un jigger plus ancien n'a aucune piste.
+      _jigger_plainte "jigger: the binary at $(command -v "$JIGGER_BIN") is $v, but this plugin requires $JIGGER_VERSION_REQUISE. Rebuild it (\"make install\"), set JIGGER_BIN to another one, or replace the one in PATH."
+    fi
+    return 1
+  fi
+
+  _jigger_bon=1
   return 0
-fi
-unset _jigger_v
+}
 
 # jg : l'alias court de la façade. Ajouté à la liste des commandes qui arment le popup —
 # sans quoi le widget ne se déclencherait que sur « jigger » en toutes lettres.
@@ -256,6 +313,10 @@ _jigger_color() {
 # _jigger_fetch appelle le binaire et met à jour l'état. Renvoie non-zéro s'il n'y a rien
 # à afficher.
 _jigger_fetch() {
+  # Seul endroit du popup vivant qui appelle le binaire : c'est ici que le test paresseux
+  # a sa place (#184). Un échec rend non-zéro, ce que l'appelant traite déjà comme « rien
+  # à afficher » — la dégradation était donc déjà écrite, il lui manquait ce garde-fou.
+  _jigger_utilisable || return 1
   local rows=${1:-$JIGGER_ROWS} out focus=false
   (( _jigger_focused )) && focus=true
   local -a extra=()
@@ -576,6 +637,13 @@ _jigger_widget() {
 
   # JIGGER_LIVE=0 : le sélecteur plein écran, celui qu'on a explicitement choisi. Il
   # possède le terminal le temps du choix.
+  # Même test qu'en popup vivant, l'autre chemin qui lance le binaire. Sans lui, ⇥ sur un
+  # binaire absent lancerait une substitution de commande vide et poserait une ligne vide.
+  if ! _jigger_utilisable; then
+    zle expand-or-complete
+    return
+  fi
+
   local out ret
   out="$(command "$JIGGER_BIN" pick "$LBUFFER")"
   ret=$?
@@ -605,6 +673,7 @@ _jigger_widget() {
 _jigger_line_finish() { _jigger_erase }
 
 _jigger_line_init() {
+  _jigger_vu=0      # le verdict négatif ne vaut que pour une ligne (cf. _jigger_utilisable)
   _jigger_shown=0   # nouvelle ligne : l'écran a défilé, il n'y a plus rien à effacer
   _jigger_sel=0
   _jigger_selline=''
