@@ -41,13 +41,32 @@ function Get-JiggerSetting([string]$Name, $Default) {
 
 $script:Exe        = Get-JiggerSetting 'JIGGER_BIN' 'jigger'
 
+# Les cadres sont dessinés en caractères semi-graphiques : sans console en UTF-8, ils
+# arriveraient en charabia. PowerShell 7 s'en charge, pas 5.1.
+#
+# Posé AVANT la lecture de l'export ci-dessous, et c'est la raison principale de sa place :
+# PowerShell décode la sortie d'une commande native avec [Console]::OutputEncoding. Plus bas,
+# un « cache_dir » accentué revenait du binaire relu en CP850 — « é » en deux caractères —, et
+# chaque processus fils recevait un chemin qui n'existe pas.
+try {
+    if ([Console]::OutputEncoding.CodePage -ne 65001) {
+        [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding $false
+    }
+} catch {
+    # Pas de console (session redirigée, tâche planifiée) : il n'y a alors pas de popup
+    # à dessiner non plus. Le reste du module — le bloc de prompt — fonctionne quand même.
+}
+
 # Les réglages du fichier de configuration, dictés par le binaire (ADR-0003) : une seule
 # implémentation de la préséance existe, et elle est en Go. Le module ne lit pas le
 # fichier, il demande — et l'export n'émet que ce que le fichier a fixé, jamais un défaut,
 # jamais ce qui vient déjà de l'environnement.
 #
-# Placé AVANT les lectures ci-dessous, sans quoi elles gagneraient. Silencieux si le
-# binaire est absent ou trop ancien : les défauts s'appliquent alors.
+# Placé AVANT les `Get-JiggerSetting` ci-dessous, sans quoi elles gagneraient. Silencieux si
+# le binaire est absent ou trop ancien : les défauts s'appliquent alors.
+#
+# Le réglage de la console, lui, doit précéder CE bloc — voir juste au-dessus. Ne pas le
+# redescendre sous prétexte qu'il sert au dessin des cadres.
 try {
     $lignes = & $script:Exe config --export --shell powershell 2>$null
     if ($LASTEXITCODE -eq 0 -and $lignes) { $lignes | ForEach-Object { Invoke-Expression $_ } }
@@ -277,17 +296,6 @@ if ($script:Live -and (Get-PSReadLineOption).EditMode -eq 'Vi') {
         'jigger : popup vivant désactivé en mode Vi (⇥ ouvre le sélecteur).')
     $script:Live = $false
 }
-# Les cadres sont dessinés en caractères semi-graphiques : sans console en UTF-8, ils
-# arriveraient en charabia. PowerShell 7 s'en charge, pas 5.1.
-try {
-    if ([Console]::OutputEncoding.CodePage -ne 65001) {
-        [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding $false
-    }
-} catch {
-    # Pas de console (session redirigée, tâche planifiée) : il n'y a alors pas de popup
-    # à dessiner non plus. Le reste du module — le bloc de prompt — fonctionne quand même.
-}
-
 # ── Rendu du popup ────────────────────────────────────────────────────────────────────
 
 # Le profil couleur ne peut pas être deviné par jigger : sa sortie est capturée. C'est
