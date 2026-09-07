@@ -1,12 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"gitlab.yg-devworks.com/yves/jigger/internal/managers"
 	"gitlab.yg-devworks.com/yves/jigger/internal/pm"
@@ -87,16 +89,64 @@ func capturerStdout(t *testing.T, f func()) string {
 	}
 	ancien := os.Stdout
 	os.Stdout = w
+
+	// Le tube est drainé PENDANT que f écrit, et non après : son tampon vaut 4096 octets
+	// sous Windows, et une écriture qui le dépasse bloque jusqu'à ce que quelqu'un lise.
+	// Lire après coup était donc un interblocage dès que la sortie grossissait — ce qu'elle
+	// a fait avec l'aperçu coloré de runDemo et ses 6043 octets, qui envoyait `go test ./...`
+	// au timeout de dix minutes. Sous Linux le tampon fait 64 Ko, si bien que la CI ne
+	// pouvait pas voir le défaut.
+	lu := make(chan string, 1)
+	go func() {
+		out, err := io.ReadAll(r)
+		if err != nil {
+			lu <- ""
+			return
+		}
+		lu <- string(out)
+	}()
+
 	f()
 	os.Stdout = ancien
+	// Fermer AVANT d'attendre : sans fin de flux, io.ReadAll ne rendrait jamais la main.
 	if err := w.Close(); err != nil {
 		t.Fatal(err)
 	}
-	out, err := io.ReadAll(r)
-	if err != nil {
-		t.Fatal(err)
+	return <-lu
+}
+
+// Le tube d'os.Pipe fait 4096 octets sous Windows. capturerStdout écrivait tout avant de
+// lire : au-delà du tampon, l'écriture bloquait et le lecteur qui l'aurait débloquée
+// n'était jamais atteint — il venait après. `go test ./...` partait alors au timeout de
+// dix minutes, sur l'aperçu coloré de runDemo et ses 6043 octets.
+//
+// Ce test lit sous délai plutôt que d'attendre : une régression doit ÉCHOUER, et non
+// reproduire le blocage de dix minutes qu'on cherche précisément à supprimer.
+func TestCapturerStdoutNeBloquePasSurUneGrosseSortie(t *testing.T) {
+	const taille = 8192 // deux fois le tampon Windows
+
+	// os.Stdout est repris ici pour pouvoir le rendre si l'attente expire. En cas de
+	// blocage, capturerStdout le laisse branché sur un tube plein : le t.Fatalf qui suit,
+	// et la ligne « FAIL » du framework, s'y bloqueraient à leur tour. Le test qui dénonce
+	// l'interblocage le reproduirait au lieu de le signaler.
+	ancien := os.Stdout
+
+	fait := make(chan string, 1)
+	go func() {
+		fait <- capturerStdout(t, func() {
+			fmt.Print(strings.Repeat("x", taille))
+		})
+	}()
+
+	select {
+	case sortie := <-fait:
+		if len(sortie) != taille {
+			t.Errorf("capturerStdout a rendu %d octets, attendu %d", len(sortie), taille)
+		}
+	case <-time.After(10 * time.Second):
+		os.Stdout = ancien
+		t.Fatalf("capturerStdout s'est bloqué sur %d octets — le tube n'est pas drainé", taille)
 	}
-	return string(out)
 }
 
 // TestRenderSeTaitSansConfigurationSSH vérifie le protocole du silence, et non seulement
