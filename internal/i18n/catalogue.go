@@ -216,7 +216,7 @@ var catalogue = map[string][nbLangues]string{
 	"cfg.title":      {"jigger — settings", "jigger — réglages"},
 	"cfg.edit":       {"edit", "modifier"},
 	"cfg.reset":      {"reset", "remise à zéro"},
-	"cfg.undo":       {"undo", "annuler"},
+	"cfg.undo":       {"undo", "défaire"},
 	"cfg.quit_save":  {"save and quit", "enregistrer et quitter"},
 	"cfg.now":        {"takes effect immediately", "prend effet tout de suite"},
 	"cfg.next_shell": {"takes effect in your next shell", "prend effet au prochain shell"},

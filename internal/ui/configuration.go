@@ -93,9 +93,10 @@ type Configuration struct {
 	histoire []geste
 }
 
-// geste retient l'état d'une ligne avant qu'on la change. Les cinq champs sont
-// nécessaires, pas seulement la valeur affichée : restituer celle-ci sans Modifs ni
-// Retraits donnerait un écran qui MONTRE l'ancienne valeur et ÉCRIT la nouvelle.
+// geste retient l'état d'une ligne avant qu'on la change. Il faut rendre cinq choses, pas
+// seulement la valeur affichée : Valeur, Provenance, ParDefaut, l'appartenance à Modifs
+// (d'où deux champs, la valeur et sa présence) et celle à Retraits. Restituer la valeur
+// sans les deux dernières donnerait un écran qui MONTRE l'ancienne et ÉCRIT la nouvelle.
 type geste struct {
 	cle        string
 	valeur     string // li.Valeur avant
@@ -229,7 +230,13 @@ func (c Configuration) naviguer(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "r":
 		if li := c.courante(); li != nil {
 			c.memoriser(li)
-			c.Retraits = append(c.Retraits, li.Cle)
+			// Retraits est un ensemble. Rien à l'écran ne distingue une ligne remise
+			// d'une ligne remise deux fois, donc la double frappe est ordinaire ; un
+			// doublon rendrait la clé à la fois posée et retirée dans le fichier, et
+			// survivrait à autant d'annulations qu'il y a eu de remises.
+			if !contientCle(c.Retraits, li.Cle) {
+				c.Retraits = append(c.Retraits, li.Cle)
+			}
 			delete(c.Modifs, li.Cle)
 			li.Valeur = "—"
 			li.Provenance = i18n.T("cfg.from_default")
@@ -252,13 +259,18 @@ func (c Configuration) naviguer(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (c *Configuration) memoriser(li *LigneConfig) {
 	g := geste{cle: li.Cle, valeur: li.Valeur, provenance: li.Provenance, parDefaut: li.ParDefaut}
 	g.modif, g.avaitModif = c.Modifs[li.Cle]
-	for _, cle := range c.Retraits {
-		if cle == li.Cle {
-			g.retrait = true
-			break
+	g.retrait = contientCle(c.Retraits, li.Cle)
+	c.histoire = append(c.histoire, g)
+}
+
+// contientCle dit si la tranche porte cette clé.
+func contientCle(cles []string, cle string) bool {
+	for _, c := range cles {
+		if c == cle {
+			return true
 		}
 	}
-	c.histoire = append(c.histoire, g)
+	return false
 }
 
 // ligneParCle rend l'index plat de la ligne portant cette clé, ou -1.
@@ -301,15 +313,18 @@ func (c *Configuration) annuler() {
 	}
 }
 
-// sansCle rend la tranche privée d'une clé. poser() faisait ce retrait à la main ;
-// annuler() en a besoin aussi, et deux copies de la même boucle divergeraient.
+// sansCle rend la tranche privée d'une clé — de TOUTES ses occurrences. poser() faisait ce
+// retrait à la main et n'en enlevait qu'une : il suffisait alors qu'un doublon existe pour
+// qu'une ligne reste à la fois posée et retirée. Retraits est désormais tenu sans doublon,
+// et cette fonction ne dépend plus de cette promesse pour être correcte.
 func sansCle(cles []string, cle string) []string {
-	for i, c := range cles {
-		if c == cle {
-			return append(cles[:i], cles[i+1:]...)
+	garde := cles[:0]
+	for _, c := range cles {
+		if c != cle {
+			garde = append(garde, c)
 		}
 	}
-	return cles
+	return garde
 }
 
 // poser inscrit une valeur choisie : même geste pour l'édition et pour la bascule à

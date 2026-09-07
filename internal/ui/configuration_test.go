@@ -337,6 +337,51 @@ func TestUSurPileVideNeFaitRien(t *testing.T) {
 	}
 }
 
+// « r » frappé deux fois ne doit pas survivre à deux « u ». Rien à l'écran ne distingue une
+// remise d'une remise répétée, donc la double frappe est ordinaire — et si Retraits garde un
+// doublon, l'écran montre la valeur d'origine, annonce n'avoir rien en attente, et fait
+// pourtant supprimer le réglage du fichier au moment d'enregistrer.
+func TestDeuxRemisesSeDefontEntierement(t *testing.T) {
+	c := configDeTest()
+	c = configTouche(c, cfgLettre('r'))
+	c = configTouche(c, cfgLettre('r'))
+
+	c = configTouche(c, cfgLettre('u'))
+	c = configTouche(c, cfgLettre('u'))
+
+	if len(c.Retraits) != 0 {
+		t.Errorf("après r,r,u,u : Retraits = %v, attendu vide — le fichier perdrait la clé", c.Retraits)
+	}
+	if len(c.Modifs) != 0 {
+		t.Errorf("après r,r,u,u : Modifs = %v, attendu vide", c.Modifs)
+	}
+	if li := c.courante(); li.Valeur != "8" {
+		t.Errorf("après r,r,u,u : Valeur = %q, attendu \"8\"", li.Valeur)
+	}
+}
+
+// Une remise répétée ne doit pas empiler la même clé : Retraits est un ensemble, et un
+// doublon rendrait une ligne à la fois modifiée et supprimée (poser() n'en retire qu'une).
+func TestUneRemiseRepeteeNeDoublePasLaCle(t *testing.T) {
+	c := configDeTest()
+	c = configTouche(c, cfgLettre('r'))
+	c = configTouche(c, cfgLettre('r'))
+
+	if len(c.Retraits) != 1 {
+		t.Errorf("après r,r : Retraits = %v, attendu une seule occurrence", c.Retraits)
+	}
+
+	c = configTouche(c, tea.KeyMsg{Type: tea.KeyEnter})
+	c.input.SetValue("12")
+	c = configTouche(c, tea.KeyMsg{Type: tea.KeyEnter})
+
+	for _, cle := range c.Retraits {
+		if cle == "rows" {
+			t.Errorf("rows est à la fois dans Modifs (%v) et Retraits (%v) : le fichier recevrait Poser puis Retirer", c.Modifs, c.Retraits)
+		}
+	}
+}
+
 // Une touche qui n'a rien à défaire ne se promet pas : le pied suit ici la même règle que
 // pour l'espace, qui ne s'annonce que sur une ligne qui bascule. Comparé au catalogue et
 // non à une chaîne en dur — c'est la concordance qui est l'exigence.
