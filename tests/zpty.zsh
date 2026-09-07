@@ -52,6 +52,32 @@ $extra
 RC
 }
 
+# rc pour le cas « suggestion périmée » : le greffon, zsh-autosuggestions, et une
+# histoire d'une seule ligne. L'histoire est ce qui donne matière à suggérer — sans elle
+# POSTDISPLAY reste vide et le test passerait sans rien éprouver.
+#
+# L'hôte suggéré (debian13) est choisi pour n'être le préfixe d'AUCUN hôte du
+# ~/.ssh/config de la machine : si la suggestion survit à l'insertion, elle se voit.
+_jigger_suggest_rc() {
+  local rc=$1 hist=$2
+  local as=/opt/homebrew/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+  [[ -r $as ]] || return 1
+  print -r -- 'ssh debian13' > $hist
+  cat > $rc <<RC
+PS1='%% '
+PATH="$root:\$PATH"
+COLORTERM=truecolor
+export JIGGER_LANG=fr
+KEYTIMEOUT=100
+HISTFILE=$hist
+HISTSIZE=100
+SAVEHIST=100
+fc -R \$HISTFILE
+source $root/shell/jigger.plugin.zsh
+source $as
+RC
+}
+
 # rc du bloc oh-my-posh (JIGGER_PROMPT). Trois pièces :
 #   • un cache fabriqué, frais et mensonger (10 formulae, 1 cask) ;
 #   • un faux binaire `jigger` qui journalise ses appels et, sur --refresh, réécrit le
@@ -465,6 +491,31 @@ FINCAS
     verdicts=$(JIGGER_ROOT=$root JIGGER_BIN=$bin JIGGER_SUDO=0 zsh -f $casfile 2>/dev/null)
     check "JIGGER_SUDO=0 désarme"       "$verdicts" '[pacman -S fd]:tel-quel'
     rm -f $casfile
+  fi
+
+  print -r -- "→ l'insertion ne laisse pas traîner la suggestion de zsh-autosuggestions"
+  # zsh-autosuggestions garde sa proposition dans POSTDISPLAY et ne la recalcule qu'aux
+  # widgets qu'il enveloppe. Les nôtres n'en sont pas : sans effacement explicite, la
+  # suggestion calculée pour « ssh » survit à l'insertion et se colle derrière l'hôte
+  # posé — « ssh aquarium » suivi d'un « debian13 » périmé (#185).
+  #
+  # Sauté, et non échoué, si zsh-autosuggestions n'est pas installé : c'est une
+  # dépendance de la machine de test, pas du greffon.
+  local srck=${TMPDIR:-/tmp}/jigger-zpty-suggest.zsh
+  local hist=${TMPDIR:-/tmp}/jigger-zpty-suggest.hist
+  if _jigger_suggest_rc $srck $hist 2>/dev/null; then
+    # Sans Tab : la suggestion DOIT être là, sinon le cas ne prouve rien.
+    out=$(visible "$(jigger_type 'ssh ' $srck)")
+    check "la suggestion est bien proposée avant l'insertion" "$out" 'debian13'
+
+    # Avec Tab : le candidat est posé, la suggestion périmée a disparu de la LIGNE.
+    # On cherche la collision elle-même — le candidat immédiatement suivi de la
+    # suggestion — et non « debian13 » seul, qui reste un hôte légitime du cadre.
+    out=$(visible "$(jigger_type $'ssh \taq' $srck)")
+    check "pas de suggestion collée au candidat inséré" "$out" 'aquariumdebian13' non
+    rm -f $srck $hist
+  else
+    print -r -- "  skip zsh-autosuggestions absent — cas « suggestion périmée » non joué"
   fi
 
   if (( failed )); then
