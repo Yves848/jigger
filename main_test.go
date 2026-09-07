@@ -83,12 +83,24 @@ func TestPMSansValeur(t *testing.T) {
 // capturerStdout rend ce que f a imprimé sur la sortie standard.
 func capturerStdout(t *testing.T, f func()) string {
 	t.Helper()
-	r, w, err := os.Pipe()
+	out, err := capturerStdoutErr(f)
 	if err != nil {
 		t.Fatal(err)
 	}
-	ancien := os.Stdout
-	os.Stdout = w
+	return out
+}
+
+// capturerStdoutErr fait le travail sans *testing.T, pour rester appelable depuis une
+// goroutine. La distinction n'est pas cosmétique : t.Fatal hors de la goroutine de test
+// n'interrompt pas le test, il l'égare — FailNow ne fait Goexit que sur la goroutine
+// appelante, si bien que l'appelant attendrait un résultat qui ne viendra jamais, et un
+// t.Fatal arrivé après la fin du test fait paniquer le binaire entier.
+func capturerStdoutErr(f func()) (string, error) {
+	r, w, err := os.Pipe()
+	if err != nil {
+		return "", err
+	}
+	defer r.Close()
 
 	// Le tube est drainé PENDANT que f écrit, et non après : son tampon vaut 4096 octets
 	// sous Windows, et une écriture qui le dépasse bloque jusqu'à ce que quelqu'un lise.
@@ -96,23 +108,32 @@ func capturerStdout(t *testing.T, f func()) string {
 	// a fait avec l'aperçu coloré de runDemo et ses 6043 octets, qui envoyait `go test ./...`
 	// au timeout de dix minutes. Sous Linux le tampon fait 64 Ko, si bien que la CI ne
 	// pouvait pas voir le défaut.
-	lu := make(chan string, 1)
+	type lecture struct {
+		texte string
+		err   error
+	}
+	lu := make(chan lecture, 1)
 	go func() {
 		out, err := io.ReadAll(r)
-		if err != nil {
-			lu <- ""
-			return
-		}
-		lu <- string(out)
+		lu <- lecture{string(out), err}
 	}()
 
+	ancien := os.Stdout
+	os.Stdout = w
 	f()
 	os.Stdout = ancien
+
 	// Fermer AVANT d'attendre : sans fin de flux, io.ReadAll ne rendrait jamais la main.
-	if err := w.Close(); err != nil {
-		t.Fatal(err)
+	// La fermeture a lieu même quand elle échoue, et le résultat est reçu dans tous les
+	// cas : sortir sans lire laisserait la goroutine bloquée sur le tube pour la durée du
+	// binaire de test.
+	errFermeture := w.Close()
+	res := <-lu
+
+	if res.err != nil {
+		return "", res.err
 	}
-	return <-lu
+	return res.texte, errFermeture
 }
 
 // Le tube d'os.Pipe fait 4096 octets sous Windows. capturerStdout écrivait tout avant de
@@ -123,29 +144,44 @@ func capturerStdout(t *testing.T, f func()) string {
 // Ce test lit sous délai plutôt que d'attendre : une régression doit ÉCHOUER, et non
 // reproduire le blocage de dix minutes qu'on cherche précisément à supprimer.
 func TestCapturerStdoutNeBloquePasSurUneGrosseSortie(t *testing.T) {
-	const taille = 8192 // deux fois le tampon Windows
+	// Au-delà du tampon de tube de TOUTES les plateformes : 4 Ko sous Windows, 16 Ko sous
+	// macOS, 64 Ko sous Linux. Dimensionner sur le seul Windows rendrait ce test muet sur
+	// la CI, qui tourne sous Linux — soit très exactement l'asymétrie qui a laissé le
+	// défaut passer jusqu'ici.
+	const taille = 1 << 17 // 128 Ko
 
 	// os.Stdout est repris ici pour pouvoir le rendre si l'attente expire. En cas de
-	// blocage, capturerStdout le laisse branché sur un tube plein : le t.Fatalf qui suit,
-	// et la ligne « FAIL » du framework, s'y bloqueraient à leur tour. Le test qui dénonce
+	// blocage, la capture le laisse branché sur un tube plein : le t.Fatalf qui suit, et
+	// la ligne « FAIL » du framework, s'y bloqueraient à leur tour. Le test qui dénonce
 	// l'interblocage le reproduirait au lieu de le signaler.
 	ancien := os.Stdout
 
-	fait := make(chan string, 1)
+	type resultat struct {
+		texte string
+		err   error
+	}
+	fait := make(chan resultat, 1)
 	go func() {
-		fait <- capturerStdout(t, func() {
+		texte, err := capturerStdoutErr(func() {
 			fmt.Print(strings.Repeat("x", taille))
 		})
+		fait <- resultat{texte, err}
 	}()
 
 	select {
-	case sortie := <-fait:
-		if len(sortie) != taille {
-			t.Errorf("capturerStdout a rendu %d octets, attendu %d", len(sortie), taille)
+	case res := <-fait:
+		if res.err != nil {
+			t.Fatalf("la capture a échoué : %v", res.err)
+		}
+		if len(res.texte) != taille {
+			t.Errorf("la capture a rendu %d octets, attendu %d", len(res.texte), taille)
 		}
 	case <-time.After(10 * time.Second):
+		// Écriture concurrente assumée : la goroutine bloquée détient encore os.Stdout.
+		// Ne pas le rendre coûterait le message d'échec lui-même, ce qui est pire que la
+		// course — et en cas de vrai interblocage la goroutine ne le rendra jamais.
 		os.Stdout = ancien
-		t.Fatalf("capturerStdout s'est bloqué sur %d octets — le tube n'est pas drainé", taille)
+		t.Fatalf("la capture s'est bloquée sur %d octets — le tube n'est pas drainé", taille)
 	}
 }
 
