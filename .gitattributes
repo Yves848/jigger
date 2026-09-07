@@ -1,3 +1,17 @@
+# Les sources Go sont en LF partout, y compris dans l'arbre de travail. gofmt refuse les
+# CRLF : sur une machine où core.autocrlf vaut true, il signalait TOUS les fichiers du
+# dépôt — 111 sur 111 — pendant que `git status` restait vide. Un contrôle qui accuse tout
+# le monde n'est plus lu, et le réflexe qu'il inspire, `gofmt -w .`, réécrivait le dépôt
+# entier. Invisible en CI, qui tourne sous Linux.
+#
+# Le dépôt les stocke déjà en LF : cette ligne ne change rien à ce qui est commité,
+# seulement à ce qui est posé sur le disque.
+#
+# EN TÊTE de fichier, et pas en queue : git applique la DERNIÈRE règle qui correspond.
+# Placée en bas, elle aurait pris le pas sur les `-text` ci-dessous et normalisé en silence
+# un futur jeu d'essai Go dont les CRLF font partie de ce qu'on teste.
+*.go text eol=lf
+
 # Les jeux d'essai winget sont des sorties réellement capturées : leurs fins de ligne
 # CRLF font partie de ce qu'on teste. Aucune normalisation, sur aucune plateforme.
 internal/winget/testdata/* -text
@@ -11,13 +25,3 @@ tests/captures/* -text
 # fins de ligne, ni tentative de diff — un GIF de 180 ko affiché en texte dans une revue
 # n'aide personne. Ils sont produits par docs/media/capturer.sh (cf. docs/captures.md).
 docs/media/out/* binary
-
-# Les sources Go sont en LF partout, y compris dans l'arbre de travail. gofmt refuse les
-# CRLF : sur une machine où core.autocrlf vaut true, il signalait TOUS les fichiers du
-# dépôt — 111 sur 111 — pendant que `git status` restait vide. Un contrôle qui accuse tout
-# le monde n'est plus lu, et le réflexe qu'il inspire, `gofmt -w .`, réécrivait le dépôt
-# entier. Invisible en CI, qui tourne sous Linux.
-#
-# Le dépôt les stocke déjà en LF : cette ligne ne change rien à ce qui est commité,
-# seulement à ce qui est posé sur le disque.
-*.go text eol=lf

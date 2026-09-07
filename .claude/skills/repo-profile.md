@@ -41,6 +41,11 @@
 - **Format/lint verify (the gate):** `go vet ./...` (+ `gofmt -l .` doit ne rien lister)
 - **Prerequisites / caveats:**
   - **Go 1.26.5 ou plus récent** — la version de `go.mod`, pas celle de la distribution.
+  - **`gofmt -w .` dans un clone antérieur à `*.go text eol=lf`** (`.gitattributes`) réécrit
+    les 111 fichiers du dépôt en LF sans que `git status` n'en montre rien, l'index étant déjà
+    en LF. Si `gofmt -l .` signale tout le dépôt, c'est ce cas : reposer l'arbre avec
+    `git rm --cached -r :/ && git reset --hard` sur un arbre propre, **pas** `gofmt -w .`.
+    Voir CONTRIBUTING.md, « Ce que le code attend ».
   - `make test-golden` **n'est pas dans `test-all`** et se lance à la main : sa référence dépend
     de la machine, de la version affichée dans la bannière et du catalogue Homebrew local.
     `--capturer` avant un chantier de rendu, `--verifier` après.

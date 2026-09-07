@@ -50,9 +50,17 @@ your evening to discover after the fact that a decision was already argued somew
 - **Go 1.26.5 or newer** — the version in `go.mod`, not the one in your distribution.
 - **Go sources are LF**, enforced by `.gitattributes`. A clone made before that rule keeps its
   CRLF, and `gofmt` will then flag every file in the repository while `git status` stays empty.
-  On a clean tree, `git rm --cached -r . && git reset --hard` lays them back down as LF. Never
-  "fix" that symptom with `gofmt -w .`: it rewrites the whole repository, and because the index
-  is already LF, git shows you nothing for it.
+  To lay them back down as LF — **commit or stash your work first, this discards anything
+  uncommitted**:
+
+  ```
+  git rm --cached -r :/ && git reset --hard
+  ```
+
+  The `:/` matters: a bare `.` is a pathspec relative to your current directory, so running
+  this from `internal/brew/` would re-lay that subtree alone and leave you thinking the fix
+  failed. Never "fix" the symptom with `gofmt -w .`: it rewrites the whole repository, and
+  because the index is already LF, git shows you nothing for it.
 - `make test` for the Go tests, `make test-all` to add the shell harnesses.
 - The CI runs `go vet ./...` and `go test ./...` on every tag. Tests must not depend on
   what is installed on the machine running them: a test that passes only where Homebrew
