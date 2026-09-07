@@ -41,12 +41,25 @@ func exporteEtRelit(t *testing.T, sh Shell, valeur string) (string, bool) {
 		// [Console]::Out.Write encode avec [Console]::OutputEncoding, qui vaut la page de
 		// code OEM quand la sortie est redirigée — CP850 sur un Windows français, où
 		// « éèçàù » ressortait en 82 8A 87 85 97. La valeur DANS pwsh était juste ; seule
-		// sa relecture la perdait, et l'export n'y était pour rien. La ligne appartient à
-		// la sonde et non au sujet : elle s'exécute avant `code` et ne change rien à ce qui
-		// est mesuré.
+		// sa relecture la perdait, et l'export n'y était pour rien. La sonde la pose donc
+		// en UTF-8, avant `code` : elle ne change rien à ce qui est mesuré.
+		//
+		// Deux précautions, toutes deux déjà pratiquées ailleurs dans le dépôt :
+		//
+		//   - le try/catch, parce que le setter lève quand aucune console n'est attachée
+		//     (session redirigée, tâche planifiée) — shell/jigger.psm1:282 le documente.
+		//     Sans lui, l'échec remonterait en « le shell a refusé ce que l'export a
+		//     produit », qui accuserait Export d'un défaut de la sonde ;
+		//   - la restitution, parce que la page de code appartient à la console PARTAGÉE
+		//     avec le parent et n'est pas rendue à la sortie du processus : sans elle, un
+		//     `go test ./internal/config` laisserait le terminal en CP65001 pour la suite
+		//     de la session. tests/captures-scoop.ps1 sauvegarde et restaure pour cette
+		//     même raison.
 		cmd = exec.Command("pwsh", "-NoProfile", "-Command",
-			"[Console]::OutputEncoding=[System.Text.Encoding]::UTF8\n"+
-				code+"\n[Console]::Out.Write($env:JIGGER_KEY)")
+			"$encodageInitial=[Console]::OutputEncoding\n"+
+				"try{[Console]::OutputEncoding=[System.Text.Encoding]::UTF8}catch{}\n"+
+				"try{\n"+code+"\n[Console]::Out.Write($env:JIGGER_KEY)\n}"+
+				"finally{[Console]::Out.Flush();try{[Console]::OutputEncoding=$encodageInitial}catch{}}")
 	default:
 		if _, err := exec.LookPath("zsh"); err != nil {
 			return "", false
