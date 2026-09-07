@@ -280,3 +280,122 @@ func TestLeTiretNeSeRetrouvePasDansLeChamp(t *testing.T) {
 		t.Errorf("le champ contient %q au lieu d'être vide", v)
 	}
 }
+
+// Une modification se défait sans emporter le reste de la session : c'est toute la
+// différence entre « annuler » et « abandonner ». esc jette tout ; entre les deux il
+// n'y avait rien.
+func TestUAnnuleLaDerniereModification(t *testing.T) {
+	c := configDeTest()
+	c = configTouche(c, tea.KeyMsg{Type: tea.KeyEnter}) // entre en édition
+	c.input.SetValue("12")
+	c = configTouche(c, tea.KeyMsg{Type: tea.KeyEnter}) // confirme
+
+	if c.Modifs["rows"] != "12" {
+		t.Fatalf("préalable : Modifs[rows] = %q, attendu \"12\"", c.Modifs["rows"])
+	}
+
+	c = configTouche(c, cfgLettre('u'))
+
+	if _, present := c.Modifs["rows"]; present {
+		t.Errorf("après u, Modifs porte encore rows : %v", c.Modifs)
+	}
+	if li := c.courante(); li.Valeur != "8" {
+		t.Errorf("après u, Valeur = %q, attendu \"8\"", li.Valeur)
+	}
+}
+
+// « r » détruisait la valeur précédente sans recours : une frappe, aucune confirmation,
+// et l'ancienne valeur cessait d'exister dans le modèle. C'est le geste qui a motivé
+// cette annulation ; il doit se défaire comme les autres.
+func TestUDefaitUneRemiseAuDefaut(t *testing.T) {
+	c := configDeTest()
+	c = configTouche(c, tea.KeyMsg{Type: tea.KeyEnter})
+	c.input.SetValue("12")
+	c = configTouche(c, tea.KeyMsg{Type: tea.KeyEnter})
+	c = configTouche(c, cfgLettre('r')) // remise : Modifs perd rows, Retraits le gagne
+
+	c = configTouche(c, cfgLettre('u'))
+
+	if c.Modifs["rows"] != "12" {
+		t.Errorf("après u, Modifs[rows] = %q, attendu \"12\"", c.Modifs["rows"])
+	}
+	for _, cle := range c.Retraits {
+		if cle == "rows" {
+			t.Errorf("après u, rows est resté dans Retraits : %v", c.Retraits)
+		}
+	}
+	if li := c.courante(); li.Valeur != "12" || li.ParDefaut {
+		t.Errorf("après u, Valeur = %q ParDefaut = %v, attendu \"12\" false", li.Valeur, li.ParDefaut)
+	}
+}
+
+// Une pile vide ne panique pas et ne change rien.
+func TestUSurPileVideNeFaitRien(t *testing.T) {
+	c := configTouche(configDeTest(), cfgLettre('u'))
+	if len(c.Modifs) != 0 || len(c.Retraits) != 0 {
+		t.Errorf("u sur pile vide a modifié l'état : Modifs=%v Retraits=%v", c.Modifs, c.Retraits)
+	}
+}
+
+// « r » frappé deux fois ne doit pas survivre à deux « u ». Rien à l'écran ne distingue une
+// remise d'une remise répétée, donc la double frappe est ordinaire — et si Retraits garde un
+// doublon, l'écran montre la valeur d'origine, annonce n'avoir rien en attente, et fait
+// pourtant supprimer le réglage du fichier au moment d'enregistrer.
+func TestDeuxRemisesSeDefontEntierement(t *testing.T) {
+	c := configDeTest()
+	c = configTouche(c, cfgLettre('r'))
+	c = configTouche(c, cfgLettre('r'))
+
+	c = configTouche(c, cfgLettre('u'))
+	c = configTouche(c, cfgLettre('u'))
+
+	if len(c.Retraits) != 0 {
+		t.Errorf("après r,r,u,u : Retraits = %v, attendu vide — le fichier perdrait la clé", c.Retraits)
+	}
+	if len(c.Modifs) != 0 {
+		t.Errorf("après r,r,u,u : Modifs = %v, attendu vide", c.Modifs)
+	}
+	if li := c.courante(); li.Valeur != "8" {
+		t.Errorf("après r,r,u,u : Valeur = %q, attendu \"8\"", li.Valeur)
+	}
+}
+
+// Une remise répétée ne doit pas empiler la même clé : Retraits est un ensemble, et un
+// doublon rendrait une ligne à la fois modifiée et supprimée (poser() n'en retire qu'une).
+func TestUneRemiseRepeteeNeDoublePasLaCle(t *testing.T) {
+	c := configDeTest()
+	c = configTouche(c, cfgLettre('r'))
+	c = configTouche(c, cfgLettre('r'))
+
+	if len(c.Retraits) != 1 {
+		t.Errorf("après r,r : Retraits = %v, attendu une seule occurrence", c.Retraits)
+	}
+
+	c = configTouche(c, tea.KeyMsg{Type: tea.KeyEnter})
+	c.input.SetValue("12")
+	c = configTouche(c, tea.KeyMsg{Type: tea.KeyEnter})
+
+	for _, cle := range c.Retraits {
+		if cle == "rows" {
+			t.Errorf("rows est à la fois dans Modifs (%v) et Retraits (%v) : le fichier recevrait Poser puis Retirer", c.Modifs, c.Retraits)
+		}
+	}
+}
+
+// Une touche qui n'a rien à défaire ne se promet pas : le pied suit ici la même règle que
+// pour l'espace, qui ne s'annonce que sur une ligne qui bascule. Comparé au catalogue et
+// non à une chaîne en dur — c'est la concordance qui est l'exigence.
+func TestLePiedNAnnonceUQuApresUnGeste(t *testing.T) {
+	c := configDeTest()
+	if strings.Contains(visible(c.View()), i18n.T("cfg.undo")) {
+		t.Errorf("pied : u annoncé alors que rien n'a été fait")
+	}
+
+	c = configTouche(c, tea.KeyMsg{Type: tea.KeyEnter})
+	c.input.SetValue("12")
+	c = configTouche(c, tea.KeyMsg{Type: tea.KeyEnter})
+
+	if !strings.Contains(visible(c.View()), i18n.T("cfg.undo")) {
+		t.Errorf("pied : u non annoncé après une modification :\n%s", visible(c.View()))
+	}
+}

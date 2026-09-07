@@ -86,6 +86,25 @@ type Configuration struct {
 	// et non à l'écran de vider ses champs — les effacer priverait un test de ce qu'il
 	// vérifie, et masquerait un appelant qui aurait oublié de lire le drapeau.
 	Abandon bool
+
+	// histoire empile ce qu'il faut pour défaire chaque geste, du plus ancien au plus
+	// récent. Non exportée : l'appelant lit Modifs, Retraits et Abandon, et n'a rien à
+	// savoir de la pile.
+	histoire []geste
+}
+
+// geste retient l'état d'une ligne avant qu'on la change. Il faut rendre cinq choses, pas
+// seulement la valeur affichée : Valeur, Provenance, ParDefaut, l'appartenance à Modifs
+// (d'où deux champs, la valeur et sa présence) et celle à Retraits. Restituer la valeur
+// sans les deux dernières donnerait un écran qui MONTRE l'ancienne et ÉCRIT la nouvelle.
+type geste struct {
+	cle        string
+	valeur     string // li.Valeur avant
+	provenance string // li.Provenance avant
+	parDefaut  bool   // li.ParDefaut avant
+	modif      string // la valeur portée par Modifs avant, si elle y était
+	avaitModif bool   // Modifs contenait-il la clé
+	retrait    bool   // Retraits contenait-il la clé
 }
 
 type indexLigne struct{ groupe, ligne int }
@@ -210,28 +229,111 @@ func (c Configuration) naviguer(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	// fichier. Distinct d'une valeur vide, qui est un choix délibéré.
 	case "r":
 		if li := c.courante(); li != nil {
-			c.Retraits = append(c.Retraits, li.Cle)
+			c.memoriser(li)
+			// Retraits est un ensemble. Rien à l'écran ne distingue une ligne remise
+			// d'une ligne remise deux fois, donc la double frappe est ordinaire ; un
+			// doublon rendrait la clé à la fois posée et retirée dans le fichier, et
+			// survivrait à autant d'annulations qu'il y a eu de remises.
+			if !contientCle(c.Retraits, li.Cle) {
+				c.Retraits = append(c.Retraits, li.Cle)
+			}
 			delete(c.Modifs, li.Cle)
 			li.Valeur = "—"
 			li.Provenance = i18n.T("cfg.from_default")
 			li.ParDefaut = true
 		}
 		return c, nil
+
+	// « u » comme undo : le dernier geste se défait, et lui seul. esc abandonne toute la
+	// session ; entre les deux il n'y avait rien, et « r » frappé sur la mauvaise ligne
+	// ne laissait que le dégât ou la perte du reste.
+	case "u":
+		c.annuler()
+		return c, nil
 	}
 	return c, nil
+}
+
+// memoriser empile l'état d'une ligne avant qu'on la change. Appelée par les deux gestes
+// qui modifient — poser() et la remise — donc par les trois touches qui y mènent.
+func (c *Configuration) memoriser(li *LigneConfig) {
+	g := geste{cle: li.Cle, valeur: li.Valeur, provenance: li.Provenance, parDefaut: li.ParDefaut}
+	g.modif, g.avaitModif = c.Modifs[li.Cle]
+	g.retrait = contientCle(c.Retraits, li.Cle)
+	c.histoire = append(c.histoire, g)
+}
+
+// contientCle dit si la tranche porte cette clé.
+func contientCle(cles []string, cle string) bool {
+	for _, c := range cles {
+		if c == cle {
+			return true
+		}
+	}
+	return false
+}
+
+// ligneParCle rend l'index plat de la ligne portant cette clé, ou -1.
+func (c *Configuration) ligneParCle(cle string) int {
+	for n, i := range c.plates {
+		if c.groupes[i.groupe].Lignes[i.ligne].Cle == cle {
+			return n
+		}
+	}
+	return -1
+}
+
+// annuler défait le dernier geste, et lui seul. Le curseur va sur la ligne rendue : une
+// annulation qu'on ne voit pas est une annulation dont on doute.
+func (c *Configuration) annuler() {
+	if len(c.histoire) == 0 {
+		return
+	}
+	g := c.histoire[len(c.histoire)-1]
+	c.histoire = c.histoire[:len(c.histoire)-1]
+
+	n := c.ligneParCle(g.cle)
+	if n < 0 {
+		// Les groupes sont fixes, donc le cas ne se produit pas ; l'écran ne doit pas
+		// paniquer pour autant.
+		return
+	}
+	c.curseur = n
+	li := c.courante()
+	li.Valeur, li.Provenance, li.ParDefaut = g.valeur, g.provenance, g.parDefaut
+
+	if g.avaitModif {
+		c.Modifs[g.cle] = g.modif
+	} else {
+		delete(c.Modifs, g.cle)
+	}
+	c.Retraits = sansCle(c.Retraits, g.cle)
+	if g.retrait {
+		c.Retraits = append(c.Retraits, g.cle)
+	}
+}
+
+// sansCle rend la tranche privée d'une clé — de TOUTES ses occurrences. poser() faisait ce
+// retrait à la main et n'en enlevait qu'une : il suffisait alors qu'un doublon existe pour
+// qu'une ligne reste à la fois posée et retirée. Retraits est désormais tenu sans doublon,
+// et cette fonction ne dépend plus de cette promesse pour être correcte.
+func sansCle(cles []string, cle string) []string {
+	garde := cles[:0]
+	for _, c := range cles {
+		if c != cle {
+			garde = append(garde, c)
+		}
+	}
+	return garde
 }
 
 // poser inscrit une valeur choisie : même geste pour l'édition et pour la bascule à
 // l'espace, donc un seul endroit où se tromper.
 func (c *Configuration) poser(li *LigneConfig, v string) {
+	c.memoriser(li)
 	c.Modifs[li.Cle] = v
 	// Une modification retire la ligne des remises : le dernier geste gagne.
-	for i, cle := range c.Retraits {
-		if cle == li.Cle {
-			c.Retraits = append(c.Retraits[:i], c.Retraits[i+1:]...)
-			break
-		}
-	}
+	c.Retraits = sansCle(c.Retraits, li.Cle)
 	li.Valeur = v
 	if v == "" {
 		li.Valeur = "—"
@@ -553,8 +655,14 @@ func (c Configuration) pied() string {
 		if li := c.courante(); li != nil && li.Type == LigneBooleen {
 			keys = append(keys, Key{"espace", i18n.T("cfg.toggle")})
 		}
+		keys = append(keys, Key{"r", i18n.T("cfg.reset")})
+		// « u » n'est annoncé que s'il a quelque chose à défaire, comme l'espace ne
+		// s'annonce que sur une ligne qui bascule : promettre une annulation devant une
+		// pile vide serait pire que se taire.
+		if len(c.histoire) > 0 {
+			keys = append(keys, Key{"u", i18n.T("cfg.undo")})
+		}
 		keys = append(keys,
-			Key{"r", i18n.T("cfg.reset")},
 			Key{"↑↓", i18n.T("popup.navigate")},
 			Key{"esc", i18n.T("cfg.quit_discard")},
 			Key{"q", i18n.T("cfg.quit_save")},
