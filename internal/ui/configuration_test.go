@@ -280,3 +280,59 @@ func TestLeTiretNeSeRetrouvePasDansLeChamp(t *testing.T) {
 		t.Errorf("le champ contient %q au lieu d'être vide", v)
 	}
 }
+
+// Une modification se défait sans emporter le reste de la session : c'est toute la
+// différence entre « annuler » et « abandonner ». esc jette tout ; entre les deux il
+// n'y avait rien.
+func TestUAnnuleLaDerniereModification(t *testing.T) {
+	c := configDeTest()
+	c = configTouche(c, tea.KeyMsg{Type: tea.KeyEnter}) // entre en édition
+	c.input.SetValue("12")
+	c = configTouche(c, tea.KeyMsg{Type: tea.KeyEnter}) // confirme
+
+	if c.Modifs["rows"] != "12" {
+		t.Fatalf("préalable : Modifs[rows] = %q, attendu \"12\"", c.Modifs["rows"])
+	}
+
+	c = configTouche(c, cfgLettre('u'))
+
+	if _, present := c.Modifs["rows"]; present {
+		t.Errorf("après u, Modifs porte encore rows : %v", c.Modifs)
+	}
+	if li := c.courante(); li.Valeur != "8" {
+		t.Errorf("après u, Valeur = %q, attendu \"8\"", li.Valeur)
+	}
+}
+
+// « r » détruisait la valeur précédente sans recours : une frappe, aucune confirmation,
+// et l'ancienne valeur cessait d'exister dans le modèle. C'est le geste qui a motivé
+// cette annulation ; il doit se défaire comme les autres.
+func TestUDefaitUneRemiseAuDefaut(t *testing.T) {
+	c := configDeTest()
+	c = configTouche(c, tea.KeyMsg{Type: tea.KeyEnter})
+	c.input.SetValue("12")
+	c = configTouche(c, tea.KeyMsg{Type: tea.KeyEnter})
+	c = configTouche(c, cfgLettre('r')) // remise : Modifs perd rows, Retraits le gagne
+
+	c = configTouche(c, cfgLettre('u'))
+
+	if c.Modifs["rows"] != "12" {
+		t.Errorf("après u, Modifs[rows] = %q, attendu \"12\"", c.Modifs["rows"])
+	}
+	for _, cle := range c.Retraits {
+		if cle == "rows" {
+			t.Errorf("après u, rows est resté dans Retraits : %v", c.Retraits)
+		}
+	}
+	if li := c.courante(); li.Valeur != "12" || li.ParDefaut {
+		t.Errorf("après u, Valeur = %q ParDefaut = %v, attendu \"12\" false", li.Valeur, li.ParDefaut)
+	}
+}
+
+// Une pile vide ne panique pas et ne change rien.
+func TestUSurPileVideNeFaitRien(t *testing.T) {
+	c := configTouche(configDeTest(), cfgLettre('u'))
+	if len(c.Modifs) != 0 || len(c.Retraits) != 0 {
+		t.Errorf("u sur pile vide a modifié l'état : Modifs=%v Retraits=%v", c.Modifs, c.Retraits)
+	}
+}

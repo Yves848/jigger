@@ -86,6 +86,24 @@ type Configuration struct {
 	// et non à l'écran de vider ses champs — les effacer priverait un test de ce qu'il
 	// vérifie, et masquerait un appelant qui aurait oublié de lire le drapeau.
 	Abandon bool
+
+	// histoire empile ce qu'il faut pour défaire chaque geste, du plus ancien au plus
+	// récent. Non exportée : l'appelant lit Modifs, Retraits et Abandon, et n'a rien à
+	// savoir de la pile.
+	histoire []geste
+}
+
+// geste retient l'état d'une ligne avant qu'on la change. Les cinq champs sont
+// nécessaires, pas seulement la valeur affichée : restituer celle-ci sans Modifs ni
+// Retraits donnerait un écran qui MONTRE l'ancienne valeur et ÉCRIT la nouvelle.
+type geste struct {
+	cle        string
+	valeur     string // li.Valeur avant
+	provenance string // li.Provenance avant
+	parDefaut  bool   // li.ParDefaut avant
+	modif      string // la valeur portée par Modifs avant, si elle y était
+	avaitModif bool   // Modifs contenait-il la clé
+	retrait    bool   // Retraits contenait-il la clé
 }
 
 type indexLigne struct{ groupe, ligne int }
@@ -210,6 +228,7 @@ func (c Configuration) naviguer(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	// fichier. Distinct d'une valeur vide, qui est un choix délibéré.
 	case "r":
 		if li := c.courante(); li != nil {
+			c.memoriser(li)
 			c.Retraits = append(c.Retraits, li.Cle)
 			delete(c.Modifs, li.Cle)
 			li.Valeur = "—"
@@ -217,21 +236,89 @@ func (c Configuration) naviguer(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			li.ParDefaut = true
 		}
 		return c, nil
+
+	// « u » comme undo : le dernier geste se défait, et lui seul. esc abandonne toute la
+	// session ; entre les deux il n'y avait rien, et « r » frappé sur la mauvaise ligne
+	// ne laissait que le dégât ou la perte du reste.
+	case "u":
+		c.annuler()
+		return c, nil
 	}
 	return c, nil
+}
+
+// memoriser empile l'état d'une ligne avant qu'on la change. Appelée par les deux gestes
+// qui modifient — poser() et la remise — donc par les trois touches qui y mènent.
+func (c *Configuration) memoriser(li *LigneConfig) {
+	g := geste{cle: li.Cle, valeur: li.Valeur, provenance: li.Provenance, parDefaut: li.ParDefaut}
+	g.modif, g.avaitModif = c.Modifs[li.Cle]
+	for _, cle := range c.Retraits {
+		if cle == li.Cle {
+			g.retrait = true
+			break
+		}
+	}
+	c.histoire = append(c.histoire, g)
+}
+
+// ligneParCle rend l'index plat de la ligne portant cette clé, ou -1.
+func (c *Configuration) ligneParCle(cle string) int {
+	for n, i := range c.plates {
+		if c.groupes[i.groupe].Lignes[i.ligne].Cle == cle {
+			return n
+		}
+	}
+	return -1
+}
+
+// annuler défait le dernier geste, et lui seul. Le curseur va sur la ligne rendue : une
+// annulation qu'on ne voit pas est une annulation dont on doute.
+func (c *Configuration) annuler() {
+	if len(c.histoire) == 0 {
+		return
+	}
+	g := c.histoire[len(c.histoire)-1]
+	c.histoire = c.histoire[:len(c.histoire)-1]
+
+	n := c.ligneParCle(g.cle)
+	if n < 0 {
+		// Les groupes sont fixes, donc le cas ne se produit pas ; l'écran ne doit pas
+		// paniquer pour autant.
+		return
+	}
+	c.curseur = n
+	li := c.courante()
+	li.Valeur, li.Provenance, li.ParDefaut = g.valeur, g.provenance, g.parDefaut
+
+	if g.avaitModif {
+		c.Modifs[g.cle] = g.modif
+	} else {
+		delete(c.Modifs, g.cle)
+	}
+	c.Retraits = sansCle(c.Retraits, g.cle)
+	if g.retrait {
+		c.Retraits = append(c.Retraits, g.cle)
+	}
+}
+
+// sansCle rend la tranche privée d'une clé. poser() faisait ce retrait à la main ;
+// annuler() en a besoin aussi, et deux copies de la même boucle divergeraient.
+func sansCle(cles []string, cle string) []string {
+	for i, c := range cles {
+		if c == cle {
+			return append(cles[:i], cles[i+1:]...)
+		}
+	}
+	return cles
 }
 
 // poser inscrit une valeur choisie : même geste pour l'édition et pour la bascule à
 // l'espace, donc un seul endroit où se tromper.
 func (c *Configuration) poser(li *LigneConfig, v string) {
+	c.memoriser(li)
 	c.Modifs[li.Cle] = v
 	// Une modification retire la ligne des remises : le dernier geste gagne.
-	for i, cle := range c.Retraits {
-		if cle == li.Cle {
-			c.Retraits = append(c.Retraits[:i], c.Retraits[i+1:]...)
-			break
-		}
-	}
+	c.Retraits = sansCle(c.Retraits, li.Cle)
 	li.Valeur = v
 	if v == "" {
 		li.Valeur = "—"
