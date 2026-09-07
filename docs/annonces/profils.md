@@ -60,6 +60,11 @@ runs. A small Go binary wired into zsh and PowerShell.
 Release notes land here. Apache-2.0.
 ```
 
+**La ligne vide avant « Release notes » compte.** Sans elle, Mastodon affiche
+`PowerShell.Release notes land here.` — deux phrases collées, que l'œil lit comme une
+coquille. Constaté sur le profil réel le 2026-09-07 : le saut s'était perdu à la copie. Le
+champ accepte les retours à la ligne, il faut simplement qu'ils survivent au presse-papiers.
+
 La dernière ligne n'est pas du remplissage. Un compte projet qui n'annonce que des versions
 **se lit comme un robot**, et les lecteurs comme les plateformes le pénalisent. Dire ce que
 le compte est évite qu'on le devine mal.
@@ -72,7 +77,7 @@ sont ces lignes qui portent les liens, et c'est l'une d'elles qui se vérifie.
 | `Site` | `https://jigger.yg-devworks.com` |
 | `Code` | `https://github.com/Yves848/jigger` |
 | `Install` | `brew install yves/cocktails/jigger` |
-| `Licence` | `Apache-2.0` |
+| `License` | `Apache-2.0` |
 
 **La ligne `Site` est celle qui compte pour la vérification.** L'instance la suit, cherche
 sur le site un `rel="me"` qui revient au profil, et affiche alors le domaine en vert. Ce
