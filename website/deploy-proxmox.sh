@@ -72,10 +72,17 @@ cp "$SCRIPT_DIR/styles.css" "$SCRIPT_DIR/app.js" \
    "$SCRIPT_DIR/robots.txt" "$SCRIPT_DIR/sitemap.xml" "$SITE_DIR/"
 cp -R "$SCRIPT_DIR/media" "$SITE_DIR/media"
 
+# .well-known : le répertoire prouve à Bluesky que le domaine nous appartient, en
+# servant le DID du compte en texte brut. Recopié à part parce que les `cp` ci-dessus
+# nomment leurs fichiers un par un — un glob les aurait manqués de toute façon, les
+# noms commençant par un point échappant à l'expansion par défaut.
+mkdir -p "$SITE_DIR/.well-known"
+cp -R "$SCRIPT_DIR/.well-known/." "$SITE_DIR/.well-known/"
+
 # og.html est le gabarit qui a produit og.png : il n'a rien à faire en ligne.
 tar -czf "$ARCHIVE" -C "$SITE_DIR" \
   index.html parcours.html utiliser.html ssh.html 404.html \
-  robots.txt sitemap.xml styles.css app.js jigger-icon.svg og.png media
+  robots.txt sitemap.xml styles.css app.js jigger-icon.svg og.png media .well-known
 
 echo "Publication des fichiers sur ${WEB_HOST}…"
 scp "${SSH_OPTIONS[@]}" \
