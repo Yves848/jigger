@@ -38,7 +38,15 @@ func exporteEtRelit(t *testing.T, sh Shell, valeur string) (string, bool) {
 		if _, err := exec.LookPath("pwsh"); err != nil {
 			return "", false
 		}
-		cmd = exec.Command("pwsh", "-NoProfile", "-Command", code+"\n[Console]::Out.Write($env:JIGGER_KEY)")
+		// [Console]::Out.Write encode avec [Console]::OutputEncoding, qui vaut la page de
+		// code OEM quand la sortie est redirigée — CP850 sur un Windows français, où
+		// « éèçàù » ressortait en 82 8A 87 85 97. La valeur DANS pwsh était juste ; seule
+		// sa relecture la perdait, et l'export n'y était pour rien. La ligne appartient à
+		// la sonde et non au sujet : elle s'exécute avant `code` et ne change rien à ce qui
+		// est mesuré.
+		cmd = exec.Command("pwsh", "-NoProfile", "-Command",
+			"[Console]::OutputEncoding=[System.Text.Encoding]::UTF8\n"+
+				code+"\n[Console]::Out.Write($env:JIGGER_KEY)")
 	default:
 		if _, err := exec.LookPath("zsh"); err != nil {
 			return "", false
