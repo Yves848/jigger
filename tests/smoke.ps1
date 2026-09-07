@@ -428,6 +428,9 @@ section 'un réglage accentué traverse la page de code'
 # par la page de code et l'on mesurerait deux fois le même défaut (cf. #180).
 $confAccents = Join-Path ([IO.Path]::GetTempPath()) ("jigger-accents-" + [Guid]::NewGuid().ToString('N'))
 $cacheInitial = $env:JIGGER_CACHE_DIR
+# JIGGER_CONFIG est une variable supportée (internal/config/config.go:122) : quelqu'un peut
+# lancer la suite avec la sienne. On la rend, on ne l'efface pas.
+$configInitial = $env:JIGGER_CONFIG
 try {
     # Les octets UTF-8 de « Jérôme », posés sans littéral : un littéral accentué dépendrait
     # de l'encodage sous lequel ce fichier a été enregistré.
@@ -440,17 +443,29 @@ try {
     $env:JIGGER_CACHE_DIR = $null
     $env:JIGGER_MODULE_SONDE = $module
 
-    # Le fils hérite de l'environnement : rien à interpoler, donc rien à mal citer.
-    $obtenu = & pwsh -NoProfile -Command '
+    # Le fils hérite de l'environnement : rien à interpoler, donc rien à mal citer. Il rend
+    # DEUX champs — la page de code qu'il a réellement obtenue, puis la valeur — séparés par
+    # une tabulation. Sans le premier, un `catch` sur l'affectation laisserait le fils en
+    # UTF-8 : l'assertion passerait sans rien éprouver, et un correctif défait ne serait pas
+    # vu. CP850 n'existe pas partout (.NET Core hors Windows ne la fournit pas), donc le cas
+    # est ANNONCÉ plutôt que fatal — la suite doit rester verte sur macOS et Linux, comme
+    # l'en-tête de ce fichier le veut.
+    $reponse = & pwsh -NoProfile -Command '
         try { [Console]::OutputEncoding = [Text.Encoding]::GetEncoding(850) } catch { }
+        $page = [Console]::OutputEncoding.CodePage
         Import-Module $env:JIGGER_MODULE_SONDE -Force
         try { [Console]::OutputEncoding = [Text.Encoding]::UTF8 } catch { }
-        [Console]::Out.Write($env:JIGGER_CACHE_DIR)
+        [Console]::Out.Write("$page`t$($env:JIGGER_CACHE_DIR)")
     '
+    $page, $obtenu = ($reponse -split "`t", 2)
 
-    check 'un cache_dir accentué traverse l''export' $obtenu $cheminAccentue
+    if ($page -ne '850') {
+        Write-Host "  (ignoré : page de code $page, CP850 indisponible ici — rien n'est éprouvé)"
+    } else {
+        check 'un cache_dir accentué traverse l''export' $obtenu $cheminAccentue
+    }
 } finally {
-    $env:JIGGER_CONFIG = $null
+    $env:JIGGER_CONFIG = $configInitial
     $env:JIGGER_MODULE_SONDE = $null
     $env:JIGGER_CACHE_DIR = $cacheInitial
     Remove-Item -ErrorAction SilentlyContinue $confAccents

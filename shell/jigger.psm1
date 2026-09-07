@@ -296,6 +296,7 @@ if ($script:Live -and (Get-PSReadLineOption).EditMode -eq 'Vi') {
         'jigger : popup vivant désactivé en mode Vi (⇥ ouvre le sélecteur).')
     $script:Live = $false
 }
+
 # ── Rendu du popup ────────────────────────────────────────────────────────────────────
 
 # Le profil couleur ne peut pas être deviné par jigger : sa sortie est capturée. C'est
