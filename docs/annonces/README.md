@@ -18,7 +18,7 @@ avant le passage qui ne se rejoue pas.
 | 3 | [`reddit-powershell.md`](reddit-powershell.md) | r/PowerShell | 2–3 jours |
 | 4 | [`show-hn.md`](show-hn.md) | Hacker News | 2–3 jours |
 
-**[`profils.md`](profils.md) n'est pas dans ce tableau, et c'est délibéré.** Les quatre
+**[`profils.md`](profils.md) et [`mastodon.md`](mastodon.md) ne sont pas dans ce tableau, et c'est délibéré.** Les quatre
 messages ci-dessus sont publiés par Yves, une fois, sur des canaux qui n'acceptent que
 cela. Les profils, eux, appartiennent au **compte projet** et parlent au nom de jigger.
 Deux métiers, dans le même dossier parce qu'ils partagent la même exigence : les textes
