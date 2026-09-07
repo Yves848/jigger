@@ -9,6 +9,72 @@ The format follows [Keep a Changelog](https://keepachangelog.com/1.1.0/) and
 [SemVer](https://semver.org/). Versions before `v0.1.6` predate this log; their detail
 lives in the git history.
 
+## [v0.22.0] — 2026-09-07
+
+jigger has had settings for a while, and no way to see them. This release adds the screen
+that shows them — and a run of fixes for how the zsh plugin lives beside other plugins,
+which turned out to be where the visible defects were.
+
+### Added
+
+- **A configuration screen.** `jigger config` opens it: every setting, its current value,
+  and — the column that matters — **where that value comes from**, file, environment or
+  default. Precedence was already implemented and entirely invisible; now
+  `JIGGER_ROWS=3 zsh` explains itself.
+
+  Space toggles a boolean. Anything else opens assisted entry rather than a bare prompt:
+  a setting worth typing by hand is worth being told what it accepts. `q` leaves without
+  saving, and `u` undoes the last gesture — including a reset, which used to survive its
+  own cancellation. (#178, #173)
+
+  `jigger config --list` prints the same table without the screen, and `--export` prints
+  the lines the shell plugin evaluates.
+
+  **Not yet in `jigger --help`.** The verb works, but the usage line does not mention it,
+  so it is found only by being told about it. (#175)
+
+- **The popup puts `sudo` in front of a pacman operation that requires root.** On Arch, a
+  `pacman -S` completed by the popup and launched with ⏎ failed with `you cannot perform
+  this operation unless you are root` — the completion was right and the line still did
+  not run. Elevation is now decided at the moment of launching, and only there: the two
+  paths that *execute* carry it, ⇥ does not.
+
+  The table that decides is deliberately **not** the one that decides whether an operation
+  mutates. `-Sc` changes nothing `pacman -Qu` would answer — a read, over there — but it
+  empties the package cache, so it needs root here. Merging them would make one pay the
+  other's table. `JIGGER_SUDO=0` disarms the whole thing, for a passwordless sudoers rule
+  or a machine where you are already root. (#167)
+
+### Changed
+
+- **A binary built from the repo says so.** `jigger --version` now carries the short commit
+  sha of the tree it was built from — `0.22.0 (dev 1fff45b)` — where a published build
+  prints the bare version. Two binaries on one machine is a situation worth being able to
+  tell apart at a glance, and it had already cost an afternoon of looking for a bug in the
+  wrong one.
+
+### Fixed
+
+- **The suggestion from zsh-autosuggestions no longer survives an insertion.** Popup open
+  on `ssh `, ⇥ to insert: the line read `ssh aquariumdebian13` — the host jigger had just
+  put there, followed with no space by the suggestion computed *before* the insertion.
+
+  zsh-autosuggestions keeps its proposal in `POSTDISPLAY` and only recomputes it on the
+  widgets it wraps. jigger's are not among them: it wrote `LBUFFER` directly, and nothing
+  told the other plugin. The command actually run was always correct — `POSTDISPLAY` is not
+  the line — but nobody should have to know that to trust what they read. (#185)
+
+- **The plugin honours `JIGGER_BIN` in its install guard.** Every other call in the file
+  respected the setting; this one test looked for `jigger` in `PATH`. On a machine where
+  Homebrew's `bin` precedes `~/.local/bin`, a freshly built jigger was therefore announced
+  as "not found" — a binary that worked perfectly, declared missing by the one check that
+  ignored where it had been told to look. (#172)
+
+- **Windows: an accented setting no longer reaches child processes corrupted.** The
+  PowerShell module captured a native command's output without fixing the console
+  encoding first, so a value like `café` arrived mangled — and every jigger child process
+  used it as-is. (#182)
+
 ## [v0.21.0] — 2026-09-06
 
 jigger helps with **package managers**. That is now written down, and this release removes
