@@ -27,6 +27,7 @@ var valeursHostiles = []struct{ nom, valeur string }{
 // prendre par une apostrophe non échappée.
 func exporteEtRelit(t *testing.T, sh Shell, valeur string) (string, bool) {
 	t.Helper()
+	neutraliseEnvironnement(t)
 
 	f := Nouveau()
 	f.Poser("key", valeur)
@@ -107,6 +108,8 @@ func TestExportSurvitAPowerShell(t *testing.T) {
 // L'export ne dicte que ce que le fichier a fixé : ni les défauts, que le greffon connaît
 // déjà, ni ce qui vient de l'environnement, qui y est déjà.
 func TestExportNEmetQueLeFichier(t *testing.T) {
+	neutraliseEnvironnement(t)
+
 	f := Nouveau()
 	f.Poser("rows", "12")
 	code := Export(f, Zsh)

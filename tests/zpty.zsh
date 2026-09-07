@@ -493,6 +493,44 @@ FINCAS
     rm -f $casfile
   fi
 
+  print -r -- "→ un binaire absent au chargement ne desarme plus le greffon"
+  # C'est LE cas de non-regression de #184. Le greffon testait le binaire une seule fois,
+  # au chargement, et sortait par `return` s'il ne le trouvait pas : plus aucun widget, et
+  # ce pour toute la vie du shell. Le message partait au premier effacement d'ecran, et il
+  # ne restait que « le popup ne marche plus », des heures apres la cause.
+  #
+  # Observable sans pseudo-terminal : il suffit de demander a un zsh jetable si le widget
+  # existe. C'est aussi la seule chose qui compte ici -- que le greffon soit ARME, pret a
+  # servir des que le binaire reparait.
+  local arme
+  arme=$(env -i HOME=$HOME PATH=/usr/bin:/bin zsh -f -c \
+         "source $root/shell/jigger.plugin.zsh; print \$(( \${+widgets[_jigger_widget]} ))" 2>/dev/null)
+  check "widget arme malgre l'absence de binaire" "$arme" 1
+
+  # Et il ne se plaint pas au chargement : la plainte appartient au moment ou l'utilisateur
+  # tape une commande surveillee, pas au demarrage du shell ou elle defilera.
+  local bruit
+  bruit=$(env -i HOME=$HOME PATH=/usr/bin:/bin zsh -f -c \
+          "source $root/shell/jigger.plugin.zsh" 2>&1)
+  check "rien n'est dit au chargement" "$bruit" 'jigger' non
+
+  # Le verdict positif est memoise pour toujours, le negatif pour la LIGNE seulement.
+  # Trois mesures d'affilee, qui disent les trois etages :
+  #   1. sans binaire            -> echec ;
+  #   2. binaire pose, meme ligne -> echec encore, et SANS relancer `--version` : c'est ce
+  #      qui evite un sous-processus par frappe a qui a un binaire trop ancien ;
+  #   3. ligne suivante           -> succes, sans rouvrir de terminal. C'est #184.
+  local rejoue
+  rejoue=$(env -i HOME=$HOME PATH=/usr/bin:/bin zsh -f -c \
+           "source $root/shell/jigger.plugin.zsh
+            _jigger_utilisable 2>/dev/null; a=\$?
+            path=( $root /usr/bin /bin )
+            _jigger_utilisable 2>/dev/null; b=\$?
+            _jigger_line_init 2>/dev/null
+            _jigger_utilisable 2>/dev/null; c=\$?
+            print \$a\$b\$c" 2>/dev/null)
+  check "verdict negatif borne a la ligne, binaire repris a la suivante" "$rejoue" '110'
+
   print -r -- "→ l'insertion ne laisse pas traîner la suggestion de zsh-autosuggestions"
   # zsh-autosuggestions garde sa proposition dans POSTDISPLAY et ne la recalcule qu'aux
   # widgets qu'il enveloppe. Les nôtres n'en sont pas : sans effacement explicite, la
