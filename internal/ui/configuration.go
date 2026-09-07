@@ -640,8 +640,14 @@ func (c Configuration) pied() string {
 		if li := c.courante(); li != nil && li.Type == LigneBooleen {
 			keys = append(keys, Key{"espace", i18n.T("cfg.toggle")})
 		}
+		keys = append(keys, Key{"r", i18n.T("cfg.reset")})
+		// « u » n'est annoncé que s'il a quelque chose à défaire, comme l'espace ne
+		// s'annonce que sur une ligne qui bascule : promettre une annulation devant une
+		// pile vide serait pire que se taire.
+		if len(c.histoire) > 0 {
+			keys = append(keys, Key{"u", i18n.T("cfg.undo")})
+		}
 		keys = append(keys,
-			Key{"r", i18n.T("cfg.reset")},
 			Key{"↑↓", i18n.T("popup.navigate")},
 			Key{"esc", i18n.T("cfg.quit_discard")},
 			Key{"q", i18n.T("cfg.quit_save")},

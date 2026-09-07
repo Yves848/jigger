@@ -336,3 +336,21 @@ func TestUSurPileVideNeFaitRien(t *testing.T) {
 		t.Errorf("u sur pile vide a modifié l'état : Modifs=%v Retraits=%v", c.Modifs, c.Retraits)
 	}
 }
+
+// Une touche qui n'a rien à défaire ne se promet pas : le pied suit ici la même règle que
+// pour l'espace, qui ne s'annonce que sur une ligne qui bascule. Comparé au catalogue et
+// non à une chaîne en dur — c'est la concordance qui est l'exigence.
+func TestLePiedNAnnonceUQuApresUnGeste(t *testing.T) {
+	c := configDeTest()
+	if strings.Contains(visible(c.View()), i18n.T("cfg.undo")) {
+		t.Errorf("pied : u annoncé alors que rien n'a été fait")
+	}
+
+	c = configTouche(c, tea.KeyMsg{Type: tea.KeyEnter})
+	c.input.SetValue("12")
+	c = configTouche(c, tea.KeyMsg{Type: tea.KeyEnter})
+
+	if !strings.Contains(visible(c.View()), i18n.T("cfg.undo")) {
+		t.Errorf("pied : u non annoncé après une modification :\n%s", visible(c.View()))
+	}
+}
