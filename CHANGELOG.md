@@ -9,6 +9,54 @@ The format follows [Keep a Changelog](https://keepachangelog.com/1.1.0/) and
 [SemVer](https://semver.org/). Versions before `v0.1.6` predate this log; their detail
 lives in the git history.
 
+## [v0.22.1] — 2026-09-07
+
+Two guards that bit in silence. Neither changed what jigger does — both changed whether it
+kept doing it.
+
+### Fixed
+
+- **A binary missing when the plugin loads no longer disarms it for the whole session.**
+  The zsh plugin checked for the binary **once**, at load, and returned if it did not find
+  it: no widgets, for the entire life of that shell. The message scrolled away with the
+  first `clear`, and what remained was "the picker stopped working" — hours after the
+  cause. Opening a new terminal fixed it, which made the connection harder to draw, not
+  easier.
+
+  Nothing here is exotic. The window opens on its own: a binary moved or rebuilt, a
+  Homebrew formula unlinked, a `PATH` not yet complete when the shell starts. Anyone whose
+  jigger lives outside the package manager will meet it.
+
+  The check now happens **at use**, with three memoisation scopes, each answering a
+  specific cost:
+
+  | Verdict | Kept for | Why |
+  |---|---|---|
+  | positive | forever | once the binary is seen and its version accepted, the cost drops to an integer comparison |
+  | negative | the current **line** | without that bound, a too-old binary would pay for a `--version` — a subprocess — on **every keystroke** |
+  | the complaint | once per **message** | if the binary reappears and then turns out to be too old, the second reason deserves saying |
+
+  The line is the right granularity for the negative: a `make install` or a `brew link`
+  happens between two prompts, never mid-keystroke. A binary installed during a session is
+  therefore picked up **on the next line**, with no terminal to reopen.
+
+  **The version guard had exactly the same defect**, and no issue said so. Treating them
+  separately would have left half the trap in place. Messages now go through `zle -M`
+  rather than stderr: writing to stderr from a widget corrupts the line being edited, and
+  the message now appears where you are looking — as you type a watched command, not at
+  shell start where it scrolls past. (#184)
+
+- **A test whose verdict depended on the shell that ran it.** `JIGGER_ROWS=8` — an entirely
+  ordinary setting — was enough to fail `TestExportNEmetQueLeFichier` on a clean checkout,
+  because `Export` deliberately skips what comes from the environment. The code was right;
+  the isolation was missing. And the subject of that very test is the precedence of
+  environment over file.
+
+  Every declared `JIGGER_*` variable is now neutralised for the duration of a test, from
+  the package's two shared helpers, walking `Declares` rather than a hand-written list —
+  so the next setting added to the catalogue is covered without anyone thinking about it.
+  (#186)
+
 ## [v0.22.0] — 2026-09-07
 
 jigger has had settings for a while, and no way to see them. This release adds the screen
