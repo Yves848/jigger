@@ -529,6 +529,18 @@ _jigger_dismiss() {
 # donc, pour les deux touches.
 _jigger_insert() {
   LBUFFER=$_jigger_left
+  # zsh-autosuggestions garde sa proposition dans POSTDISPLAY et ne la recalcule qu'aux
+  # widgets qu'il enveloppe — les nôtres n'en sont pas. Sans cette ligne, la suggestion
+  # calculée AVANT l'insertion reste affichée telle quelle, collée derrière le candidat
+  # qu'on vient de poser : « ssh aquarium » suivi d'un « debian13 » périmé se lit
+  # « ssh aquariumdebian13 ». La commande exécutée reste juste — POSTDISPLAY n'est pas la
+  # ligne — mais on ne demande pas à l'utilisateur de le savoir. (#185)
+  #
+  # POSTDISPLAY plutôt que ZSH_AUTOSUGGEST_CLEAR_WIDGETS : la variable zle existe
+  # toujours dans un widget, l'effacer ne coûte rien quand aucun greffon ne l'utilise, et
+  # cela ne dépend ni de la présence de zsh-autosuggestions ni de l'ordre dans lequel il
+  # est sourcé. Le tableau, lui, doit être garni AVANT son initialisation.
+  POSTDISPLAY=''
   _jigger_key=''          # la ligne a changé : le cadre est à refaire
   _jigger_selline=$LBUFFER
   _jigger_sel=0
@@ -575,6 +587,7 @@ _jigger_widget() {
   fi
 
   LBUFFER="$out"
+  POSTDISPLAY=''          # même suggestion périmée qu'en popup vivant (#185)
   zle reset-prompt
 
   # 10 = la commande est complète → on l'exécute directement (↩ dans le sélecteur).
