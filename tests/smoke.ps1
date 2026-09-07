@@ -408,6 +408,54 @@ check 'sans bloc de prompt, rien de plus' $appels.Count 1
 Update-JiggerPrompt
 check 'aucune commande mutante, aucun appel' @(& $jigger { $script:Appels }).Count 0
 
+section 'un réglage accentué traverse la page de code'
+# PowerShell décode la sortie d'une commande native avec [Console]::OutputEncoding. Tant que
+# le module ne la pose pas AVANT de capturer l'export, les octets UTF-8 du binaire sont relus
+# avec la page de code OEM : « é » (C3 A9) devient deux caractères, et le chemin posé dans
+# l'environnement n'existe pas.
+#
+# Trois choses rendent cette sonde fiable, et chacune corrige une manière de ne rien mesurer :
+#
+#   - la page de code est FORCÉE en 850, sinon le test ne verrait rien sur une machine déjà
+#     en UTF-8 — donc jamais là où le défaut existe ;
+#   - le module est importé dans un pwsh FILS, parce que sa capture d'export a lieu au
+#     chargement : rejouer le motif ici testerait le motif, pas le module, et le correctif
+#     ne ferait pas passer la sonde ;
+#   - JIGGER_CACHE_DIR est retiré de l'environnement du fils, car l'export n'émet pas ce qui
+#     en vient déjà (internal/config/export.go:36) — sans ce retrait la ligne serait sautée.
+#
+# Le fils rend sa réponse en UTF-8 explicitement : sans cela, sa propre sortie repasserait
+# par la page de code et l'on mesurerait deux fois le même défaut (cf. #180).
+$confAccents = Join-Path ([IO.Path]::GetTempPath()) ("jigger-accents-" + [Guid]::NewGuid().ToString('N'))
+$cacheInitial = $env:JIGGER_CACHE_DIR
+try {
+    # Les octets UTF-8 de « Jérôme », posés sans littéral : un littéral accentué dépendrait
+    # de l'encodage sous lequel ce fichier a été enregistré.
+    $nom = [Text.Encoding]::UTF8.GetString([byte[]](0x4A, 0xC3, 0xA9, 0x72, 0xC3, 0xB4, 0x6D, 0x65))
+    $cheminAccentue = "C:\Users\$nom\jigger"
+    [IO.File]::WriteAllText($confAccents, "cache_dir = $cheminAccentue`n",
+        (New-Object Text.UTF8Encoding $false))
+
+    $env:JIGGER_CONFIG = $confAccents
+    $env:JIGGER_CACHE_DIR = $null
+    $env:JIGGER_MODULE_SONDE = $module
+
+    # Le fils hérite de l'environnement : rien à interpoler, donc rien à mal citer.
+    $obtenu = & pwsh -NoProfile -Command '
+        try { [Console]::OutputEncoding = [Text.Encoding]::GetEncoding(850) } catch { }
+        Import-Module $env:JIGGER_MODULE_SONDE -Force
+        try { [Console]::OutputEncoding = [Text.Encoding]::UTF8 } catch { }
+        [Console]::Out.Write($env:JIGGER_CACHE_DIR)
+    '
+
+    check 'un cache_dir accentué traverse l''export' $obtenu $cheminAccentue
+} finally {
+    $env:JIGGER_CONFIG = $null
+    $env:JIGGER_MODULE_SONDE = $null
+    $env:JIGGER_CACHE_DIR = $cacheInitial
+    Remove-Item -ErrorAction SilentlyContinue $confAccents
+}
+
 Remove-Item -Recurse -Force $cache -ErrorAction SilentlyContinue
 
 Write-Host ''
