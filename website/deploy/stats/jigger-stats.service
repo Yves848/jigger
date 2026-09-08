@@ -1,0 +1,7 @@
+[Unit]
+Description=jigger visit stats (GoAccess report)
+After=nginx.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh /opt/jigger-stats.sh

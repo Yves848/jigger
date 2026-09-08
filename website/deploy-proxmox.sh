@@ -88,6 +88,9 @@ echo "Publication des fichiers sur ${WEB_HOST}…"
 scp "${SSH_OPTIONS[@]}" \
   "$ARCHIVE" \
   "$SCRIPT_DIR/deploy/nginx-jigger.conf" \
+  "$SCRIPT_DIR/deploy/stats/jigger-stats.sh" \
+  "$SCRIPT_DIR/deploy/stats/jigger-stats.service" \
+  "$SCRIPT_DIR/deploy/stats/jigger-stats.timer" \
   "${WEB_HOST}:/tmp/"
 
 ssh "${SSH_OPTIONS[@]}" "${WEB_HOST}" bash -s -- "$RELEASE" <<'REMOTE_WEB'
@@ -127,7 +130,42 @@ if ! nginx -t; then
 fi
 
 systemctl reload nginx
-rm -f /tmp/jigger-site.tar.gz /tmp/nginx-jigger.conf
+
+# ── Statistiques de visite ────────────────────────────────────────────────────────
+#
+# Posé APRÈS la validation de nginx, à dessein : si la configuration était mauvaise, on
+# a déjà restauré et quitté, et rien de tout ceci n'a bougé.
+install -m 0755 /tmp/jigger-stats.sh      /opt/jigger-stats.sh
+install -m 0644 /tmp/jigger-stats.service /etc/systemd/system/
+install -m 0644 /tmp/jigger-stats.timer   /etc/systemd/system/
+install -d -m 0755 /var/www/jigger-stats
+systemctl daemon-reload
+systemctl enable --now jigger-stats.timer >/dev/null
+
+# Une première génération tout de suite : sans elle, /stats/ rendrait 403 pendant cinq
+# minutes, ce qu'on lit comme un droit refusé et non comme un rapport pas encore écrit.
+systemctl start jigger-stats.service || echo "Première génération des statistiques en échec — voir journalctl -u jigger-stats" >&2
+
+# Le fichier de mots de passe ne peut pas être versionné, et son absence ne se voit qu'à
+# l'usage : nginx valide sa configuration sans vérifier que le fichier existe. La page
+# demande alors une authentification (401) puis refuse tout identifiant (403), ce qui
+# ressemble à un mot de passe faux plutôt qu'à un fichier manquant. On le dit ici.
+if [ ! -f /etc/nginx/jigger-stats.htpasswd ]; then
+    cat >&2 <<'AVIS'
+
+  ATTENTION — /etc/nginx/jigger-stats.htpasswd est absent.
+  /stats/ demandera un mot de passe puis refusera (403) tant qu'il n'existe pas.
+  Le créer une fois, sur l'hôte web :
+
+    printf 'yves:%s\n' "$(openssl passwd -apr1 'MOT_DE_PASSE')" > /etc/nginx/jigger-stats.htpasswd
+    chmod 0640 /etc/nginx/jigger-stats.htpasswd
+    chown root:www-data /etc/nginx/jigger-stats.htpasswd
+
+AVIS
+fi
+
+rm -f /tmp/jigger-site.tar.gz /tmp/nginx-jigger.conf \
+      /tmp/jigger-stats.sh /tmp/jigger-stats.service /tmp/jigger-stats.timer
 REMOTE_WEB
 
 echo "Ajout de la route HTTPS sur ${PROXY_HOST}…"
