@@ -91,6 +91,9 @@ scp "${SSH_OPTIONS[@]}" \
   "$SCRIPT_DIR/deploy/stats/jigger-stats.sh" \
   "$SCRIPT_DIR/deploy/stats/jigger-stats.service" \
   "$SCRIPT_DIR/deploy/stats/jigger-stats.timer" \
+  "$SCRIPT_DIR/deploy/etat/jigger-etat.py" \
+  "$SCRIPT_DIR/deploy/etat/jigger-etat.service" \
+  "$SCRIPT_DIR/deploy/etat/jigger-etat.timer" \
   "${WEB_HOST}:/tmp/"
 
 ssh "${SSH_OPTIONS[@]}" "${WEB_HOST}" bash -s -- "$RELEASE" <<'REMOTE_WEB'
@@ -146,6 +149,15 @@ systemctl enable --now jigger-stats.timer >/dev/null
 # minutes, ce qu'on lit comme un droit refusé et non comme un rapport pas encore écrit.
 systemctl start jigger-stats.service || echo "Première génération des statistiques en échec — voir journalctl -u jigger-stats" >&2
 
+# ── État de la chaîne de distribution ─────────────────────────────────────────────
+install -m 0755 /tmp/jigger-etat.py      /opt/jigger-etat.py
+install -m 0644 /tmp/jigger-etat.service /etc/systemd/system/
+install -m 0644 /tmp/jigger-etat.timer   /etc/systemd/system/
+install -d -m 0755 /var/www/jigger-etat
+systemctl daemon-reload
+systemctl enable --now jigger-etat.timer >/dev/null
+systemctl start jigger-etat.service || echo "Première génération de l'état en échec — voir journalctl -u jigger-etat" >&2
+
 # Le fichier de mots de passe ne peut pas être versionné, et son absence ne se voit qu'à
 # l'usage : nginx valide sa configuration sans vérifier que le fichier existe. La page
 # demande alors une authentification (401) puis refuse tout identifiant (403), ce qui
@@ -165,7 +177,8 @@ AVIS
 fi
 
 rm -f /tmp/jigger-site.tar.gz /tmp/nginx-jigger.conf \
-      /tmp/jigger-stats.sh /tmp/jigger-stats.service /tmp/jigger-stats.timer
+      /tmp/jigger-stats.sh /tmp/jigger-stats.service /tmp/jigger-stats.timer \
+      /tmp/jigger-etat.py /tmp/jigger-etat.service /tmp/jigger-etat.timer
 REMOTE_WEB
 
 echo "Ajout de la route HTTPS sur ${PROXY_HOST}…"
