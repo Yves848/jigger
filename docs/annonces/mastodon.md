@@ -10,6 +10,9 @@ Le profil lui-même — nom, bio, métadonnées — vit dans [`profils.md`](prof
 
 ## 1. Le premier message
 
+> **Publié le 2026-09-07**, épinglé —
+> [`mastodon.social/@jigger/117231575658736593`](https://mastodon.social/@jigger/117231575658736593)
+
 **Ce qu'il fait :** dire ce qu'est jigger, une fois, à un compte qui n'a encore rien
 publié. Ce n'est pas une annonce de version — le compte n'a pas d'audience à qui annoncer
 quoi que ce soit. C'est la carte de visite que liront ceux qui arriveront par la suite.
