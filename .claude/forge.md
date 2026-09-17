@@ -44,8 +44,8 @@ cloné ou indexé.
 tag : il teste si elle existe, la crée sinon, tire ses notes du `CHANGELOG.md` et la nomme
 `jigger <version>` (sans le `v`). La créer soi-même avant ne casse rien — le job bascule
 sur sa branche « release existante » et écrase titre et description — mais c'est un geste
-inutile, et le titre posé à la main est perdu. Le skill `gitlab-changelog` prescrit
-l'étape 4 « créer la release » de façon générique ; **ici, elle est automatisée**.
+inutile, et le titre posé à la main est perdu. Le skill `forge-cycle` prescrit
+l'étape « publier la release » de façon générique ; **ici, elle est automatisée**.
 
 **`GITHUB_RELEASE_TOKEN` doit exister *et être valide* avant de taguer.** Le job
 `github:` publie les archives sur la release du miroir, et sans jeton il échoue —
@@ -191,12 +191,12 @@ et sa version française annoncent aussi un numéro concret sans être gardés.
 
 ## Conséquences
 
-- Les skills de cycle de vie d'ai-migration-kit (`create-issue`, `implement-issue`,
+- Les skills de cycle de vie du kit `tagout` (`create-issue`, `implement-issue`,
   `merge-pr`, `auto-dev`) sont **GitHub-only** et ne fonctionnent pas ici — passer par
-  `glab`, ou par le skill `gitlab-changelog`, qui est le chemin habituel de ce dépôt.
+  `glab`, ou par le skill `forge-cycle`, qui est le chemin habituel de ce dépôt.
 - Le dépôt suit une consigne de consignation : chaque commit donne une issue GitLab
   (labels `type::*` et version cible), agrégée ensuite en notes de release et en
-  `CHANGELOG.md`. Voir le skill `gitlab-changelog`.
+  `CHANGELOG.md`. Voir le skill `forge-cycle` (mode release).
 - Si le MCP GitLab ne répond plus, le skill `reauth-mcp-gitlab` couvre la reconnexion —
   ne pas se rabattre sur l'API REST sans avoir essayé.
 - **`main` est protégée avec `allow_force_push: false`.** Un `push --force-with-lease`,

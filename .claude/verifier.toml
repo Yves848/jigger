@@ -1,0 +1,2 @@
+commande = "make test-all"
+succes = "tout passe"
