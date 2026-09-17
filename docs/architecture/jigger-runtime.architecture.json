@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "jigger — architecture d'exécution",
+    "output": "jigger-runtime.html",
+    "quality_profile": "showcase",
+    "viewBox": [1330, 560],
+    "views": [
+      { "id": "popup", "label": "Chemin du popup", "focus": ["shell", "cli", "complete", "managers", "cache", "ui"], "note": "Le trajet parcouru à chaque frappe : que des lectures de cache, aucun processus lancé." },
+      { "id": "fraicheur", "label": "Fraîcheur des catalogues", "focus": ["managers", "warm", "cache", "pmcli"], "note": "Le seul endroit où jigger interroge un gestionnaire : détaché, hors du chemin du rendu." },
+      { "id": "confiance", "label": "Frontières de confiance", "focus": ["facade", "elevate", "pmcli", "plugins"], "note": "Exécution, élévation constatée et code tiers : tout ce qui sort du processus sans privilège." }
+    ]
+  },
+  "components": [
+    { "id": "shell", "type": "frontend", "label": "Greffon du shell", "sublabel": "zsh · PowerShell", "pos": [60, 40], "size": [180, 60] },
+    { "id": "ui", "type": "frontend", "label": "Popup", "sublabel": "internal/ui — Bubble Tea", "pos": [560, 40], "size": [180, 60] },
+    { "id": "cli", "type": "backend", "label": "Binaire jigger", "sublabel": "main.go — sous-commandes", "pos": [310, 160], "size": [180, 60] },
+    { "id": "complete", "type": "backend", "label": "Moteur de complétion", "sublabel": "internal/complete", "pos": [560, 160], "size": [180, 60] },
+    { "id": "managers", "type": "backend", "label": "Registre + adaptateurs", "sublabel": "brew · winget · scoop · pacman · ssh", "pos": [810, 160], "size": [220, 60] },
+    { "id": "cache", "type": "database", "label": "Cache des catalogues", "sublabel": "$JIGGER_CACHE_DIR — TTL 24 h", "pos": [1100, 160], "size": [180, 60] },
+    { "id": "facade", "type": "backend", "label": "Façade jg", "sublabel": "internal/facade", "pos": [310, 280], "size": [180, 60] },
+    { "id": "warm", "type": "backend", "label": "jigger warm", "sublabel": "processus détaché", "pos": [1100, 280], "size": [180, 60] },
+    { "id": "elevate", "type": "security", "label": "Élévation", "sublabel": "UAC / sudo", "pos": [60, 420], "size": [180, 60] },
+    { "id": "pmcli", "type": "external", "label": "Binaires des gestionnaires", "sublabel": "brew, winget, scoop, pacman", "pos": [310, 420], "size": [180, 60] },
+    { "id": "plugins", "type": "external", "label": "Plugins tiers", "sublabel": "config.json + binaire", "pos": [560, 420], "size": [180, 60] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "Session du shell", "wraps": ["shell"], "pad": 24 },
+    { "kind": "security-group", "label": "Processus jigger — sans privilège", "wraps": ["ui", "cli", "complete", "managers", "cache", "facade", "warm"], "pad": 24 },
+    { "kind": "security-group", "label": "Élévation (ADR-0004)", "wraps": ["elevate"], "pad": 24 },
+    { "kind": "region", "label": "Hors processus — binaires et code tiers", "wraps": ["pmcli", "plugins"], "pad": 24 }
+  ],
+  "connections": [
+    { "id": "frappe", "from": "shell", "to": "cli", "label": "jigger render --line, à chaque frappe", "variant": "emphasis", "fromSide": "bottom", "toSide": "top" },
+    { "id": "ligne", "from": "cli", "to": "complete", "label": "ligne + curseur", "variant": "emphasis", "labelDy": 60 },
+    { "id": "premier-mot", "from": "complete", "to": "managers", "label": "le premier mot désigne le gestionnaire", "variant": "emphasis", "labelDy": 60 },
+    { "id": "lecture-cache", "from": "managers", "to": "cache", "label": "Load() lit les catalogues", "variant": "emphasis", "labelDy": -34 },
+    { "id": "candidats", "from": "complete", "to": "ui", "label": "candidats filtrés et classés", "fromSide": "top", "toSide": "bottom", "labelDy": -10 },
+    { "id": "cadre", "from": "ui", "to": "shell", "label": "cadre écrit sur /dev/tty", "fromSide": "left", "toSide": "right" },
+    { "id": "verbe-facade", "from": "cli", "to": "facade", "label": "verbe de façade (jg install …)", "fromSide": "bottom", "toSide": "top", "labelDy": 24 },
+    { "id": "constat-admin", "from": "facade", "to": "elevate", "label": "constat « admin requis »", "variant": "security", "fromSide": "left", "toSide": "top" },
+    { "id": "execution", "from": "facade", "to": "pmcli", "label": "exécute en relayant le terminal", "fromSide": "bottom", "toSide": "top", "labelDy": 24 },
+    { "id": "decouverte", "from": "managers", "to": "plugins", "label": "descripteurs JSON lus sur le disque", "variant": "dashed", "fromSide": "bottom", "toSide": "top" },
+    { "id": "reveil", "from": "managers", "to": "warm", "label": "cache périmé → réveil détaché", "variant": "dashed", "fromSide": "bottom", "toSide": "left" },
+    { "id": "interrogation", "from": "warm", "to": "pmcli", "label": "interroge les gestionnaires (1–5 s)", "fromSide": "bottom", "toSide": "bottom", "via": [[1190, 530], [400, 530]], "labelDy": 12 },
+    { "id": "ecriture", "from": "warm", "to": "cache", "label": "réécrit, atomique et sous verrou", "fromSide": "top", "toSide": "bottom", "labelDy": -10 }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Chemin du popup", "items": ["`jigger render --line` à chaque touche ; le binaire rend la main aussitôt.", "`Load()` ne lit que des caches et des répertoires, jamais un gestionnaire.", "`jigger pick` : 0 = insérer (⇥), 10 = exécuter (⏎), 2 = annulé."] },
+    { "dot": "emerald", "title": "Le premier mot décide", "items": ["brew, winget, scoop, pacman, yay — et ssh/scp/sftp, sur ~/.ssh/config.", "Les natifs priment : un plugin homonyme est écarté.", "Catalogue vide = pas de popup, plutôt qu'un cadre vide (ADR-0006)."] },
+    { "dot": "amber", "title": "Le lent est détaché", "items": ["Cache périmé servi quand même, puis `jigger warm` part détaché.", "60 s entre deux réveils ; verrou `warm.lock` abandonné après 5 min.", "Écriture atomique : jamais un catalogue lu à moitié écrit."] },
+    { "dot": "rose", "title": "Exécution et élévation", "items": ["`jg install fd Git.Git` route chaque nom ; un nom ambigu n'est pas tranché en silence.", "L'élévation part d'un constat et d'un oui explicite (ADR-0004).", "Un plugin ne tourne qu'au warm ou à l'exécution, borné à 30 s."] }
+  ]
+}
