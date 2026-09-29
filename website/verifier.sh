@@ -194,6 +194,56 @@ for p in "${PAGES[@]}"; do
     fi
 done
 
+# --- 9. Le nom d'hôte de la forge ne sort pas -----------------------------
+# Rien de ce que le site publie ne cite gitlab.yg-devworks.com. Une adresse
+# publiée est une porte de plus à défendre, et celle-ci désigne une machine du
+# domicile ; le miroir GitHub sert le même code sous la même licence, donc la
+# citer ne coûte rien au lecteur. Le contrôle vaut plus que la correction : sans
+# lui, la prochaine page écrite à partir d'une copie de celle-ci reproduira
+# l'adresse et personne ne rouvrira le pied de page.
+#
+# Les guides sont dans le lot parce que les pages y renvoient : une adresse
+# chassée du HTML mais laissée dans getting-started.md reste à un clic.
+FORGE='gitlab.yg-devworks.com'
+PUBLIES=("${PAGES[@]}" app.js "${GUIDES[@]}")
+
+# Trois formes n'ont pas d'équivalent sur GitHub : le tap Homebrew et le bucket
+# Scoop n'y sont pas miroités, et le chemin de module Go est celui inscrit dans
+# go.mod — le changer renommerait le module et casserait `go install` pour les
+# versions déjà publiées. Les énumérer une par une plutôt que de les exclure par
+# motif : tant qu'une ligne est ici, l'adresse est un choix assumé et pas un
+# oubli, et le contrôle réclame qu'on retire la ligne dès que la forme disparaît,
+# pour que la liste se vide au lieu de couvrir en silence un nouveau cas.
+TOLEREES=(
+    "$FORGE/yves/homebrew-cocktails.git" # tap Homebrew, pas de miroir GitHub
+    "$FORGE/yves/scoop-jigger.git"       # bucket Scoop, pas de miroir GitHub
+    "$FORGE/yves/jigger@latest"          # chemin de module Go, vit dans go.mod
+)
+
+for p in "${PUBLIES[@]}"; do
+    # `|| true` : un fichier sans occurrence fait sortir grep en 1, et `set -e`
+    # arrêterait le vérificateur avant les fichiers suivants.
+    trouvees="$(grep -oE "${FORGE//./\\.}[^\"'< )]*" "$p" | sort -u || true)"
+    while IFS= read -r url; do
+        [ -z "$url" ] && continue
+        toleree=0
+        for t in "${TOLEREES[@]}"; do
+            [ "$url" = "$t" ] && { toleree=1; break; }
+        done
+        [ "$toleree" = 1 ] || echec "$(basename "$p") publie l'adresse de la forge : $url"
+    done <<< "$trouvees"
+done
+
+# Une exception qui ne correspond plus à rien est une exception morte : elle
+# autoriserait demain une adresse que plus personne n'a décidé d'autoriser.
+for t in "${TOLEREES[@]}"; do
+    if grep -qF -- "$t" "${PUBLIES[@]}"; then
+        ok "exception assumée, toujours en place : $t"
+    else
+        echec "exception déclarée mais introuvable : $t — à retirer de TOLEREES"
+    fi
+done
+
 if [ "$echecs" -gt 0 ]; then
     printf '\n%d contrôle(s) en échec.\n' "$echecs" >&2
     exit 1
