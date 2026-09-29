@@ -2,8 +2,23 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-WEB_HOST="root@192.168.50.11"
-PROXY_HOST="root@192.168.50.10"
+
+# Les machines visées décrivent un réseau privé : elles changent d'une
+# installation à l'autre et n'ont rien à faire dans un dépôt public. Elles
+# arrivent par l'environnement, ou par un deploy.env non versionné posé à côté
+# de ce script. Modèle : deploy.env.example
+if [ -f "$SCRIPT_DIR/deploy.env" ]; then
+  # shellcheck source=/dev/null
+  . "$SCRIPT_DIR/deploy.env"
+fi
+: "${WEB_HOST:?non défini : cible SSH du conteneur nginx, ex. root@web.interne. Copier deploy.env.example en deploy.env, ou exporter la variable.}"
+: "${PROXY_HOST:?non défini : cible SSH du proxy Caddy, ex. root@proxy.interne. Copier deploy.env.example en deploy.env, ou exporter la variable.}"
+
+# Ce que le proxy doit joindre pour atteindre le site. Déduit de WEB_HOST pour
+# qu'une seule valeur reste à renseigner ; WEB_ORIGIN la remplace au besoin
+# (adresse interne différente de la cible SSH, port autre que 80).
+WEB_ORIGIN="${WEB_ORIGIN:-${WEB_HOST#*@}:80}"
+
 DOMAIN="jigger.yg-devworks.com"
 RELEASE="$(date -u +%Y%m%d%H%M%S)"
 WORK_DIR="$(mktemp -d)"
@@ -182,8 +197,17 @@ rm -f /tmp/jigger-site.tar.gz /tmp/nginx-jigger.conf \
 REMOTE_WEB
 
 echo "Ajout de la route HTTPS sur ${PROXY_HOST}…"
+# Le gabarit ne porte pas l'adresse du serveur web ; elle est posée ici, à
+# partir de la configuration locale. Ses commentaires sont retirés : le fragment
+# rendu est concaténé au Caddyfile du proxy, qui n'a pas à les recevoir.
+sed -e '/^#/d' -e "s|@@WEB_ORIGIN@@|${WEB_ORIGIN}|" \
+  "$SCRIPT_DIR/deploy/caddy-jigger.conf.tmpl" > "$WORK_DIR/caddy-jigger.conf"
+if grep -q '@@' "$WORK_DIR/caddy-jigger.conf"; then
+  echo "gabarit Caddy incomplet : un marqueur @@…@@ subsiste" >&2
+  exit 1
+fi
 scp "${SSH_OPTIONS[@]}" \
-  "$SCRIPT_DIR/deploy/caddy-jigger.conf" \
+  "$WORK_DIR/caddy-jigger.conf" \
   "${PROXY_HOST}:/tmp/"
 
 ssh "${SSH_OPTIONS[@]}" "${PROXY_HOST}" bash -s -- "${DOMAIN}" <<'REMOTE_PROXY'

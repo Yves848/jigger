@@ -100,8 +100,8 @@ func catalogueDe(chemin string) *pm.Catalog {
 }
 
 // repousserLesAdresses pousse après les noms les motifs qui sont eux-mêmes des adresses.
-// Un fragment généré peut écrire « Host archlight aquarium 192.168.50.207 » pour que
-// `ssh 192.168.50.207` profite du même bloc que `ssh archlight` (cf. le générateur du
+// Un fragment généré peut écrire « Host archlight aquarium 192.0.2.207 » pour que
+// `ssh 192.0.2.207` profite du même bloc que `ssh archlight` (cf. le générateur du
 // dépôt config, tools/reseau) : le parseur retient les trois motifs, comme la spec le
 // demande (§4). Sans ce tri, cat.Sort() range les adresses en tête — les chiffres
 // précèdent les lettres — et le popup s'ouvrait sur une poignée d'adresses avant le
@@ -110,7 +110,7 @@ func catalogueDe(chemin string) *pm.Catalog {
 // simplement plus devant à l'ouverture.
 //
 // Entre elles, les adresses reviennent à un ordre numérique plutôt qu'alphabétique :
-// cat.Sort() placerait 192.168.50.10 avant 192.168.50.8, ce qui saute aux yeux dès qu'on
+// cat.Sort() placerait 192.0.2.10 avant 192.0.2.8, ce qui saute aux yeux dès qu'on
 // parcourt la liste. net.ParseIP().To16() rend une représentation à largeur fixe,
 // comparable octet à octet — IPv4 et IPv6 compris, sans expression régulière à tenir.
 func repousserLesAdresses(cat *pm.Catalog) {

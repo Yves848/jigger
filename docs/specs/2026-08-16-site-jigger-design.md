@@ -1,5 +1,12 @@
 # Le site de jigger — conception
 
+> **Note d'édition (29 septembre 2026, YGD-14).** Les adresses du réseau privé
+> qui figuraient dans ce document ont été remplacées : par les noms de variables
+> (`WEB_HOST`, `PROXY_HOST`, cf. `website/deploy.env.example`) pour le déploiement,
+> et par la plage de documentation `192.0.2.0/24` (RFC 5737) pour les jeux d'essai.
+> Le dépôt est public ; seule la topologie a changé, pas le propos.
+
+
 16 août 2026 — état : validé, prêt pour le plan d'implémentation
 
 ## Objet
@@ -20,7 +27,7 @@ Ce qui existe déjà et qu'on ne réinvente pas :
 
 - **`cocktails-website`** — une page statique bilingue (111 clés `data-i18n`, dictionnaire
   dans `app.js`, sélecteur mémorisé dans `localStorage`), déployée par `deploy-proxmox.sh`
-  sur le LXC nginx `192.168.50.11`, publiée en HTTPS par le Caddy `192.168.50.10`. Elle
+  sur le conteneur nginx `WEB_HOST`, publiée en HTTPS par le Caddy `PROXY_HOST`. Elle
   répond en 0,2 s et sert `cocktails.yg-devworks.com`.
 - **Une section `#jigger`** dans cette page, qui présente jigger comme le compagnon en ligne
   de commande de Cocktails. Elle parle de Tab et d'Homebrew ; elle ignore winget, scoop, la
