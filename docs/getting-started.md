@@ -121,7 +121,7 @@ Windows). Check that this directory is on your `PATH`.
 ### From source
 
 ```sh
-git clone https://gitlab.yg-devworks.com/yves/jigger.git
+git clone https://github.com/Yves848/jigger.git
 cd jigger
 make install            # → ~/.local/bin/jigger  (PREFIX=… to change it)
 ```
@@ -177,7 +177,7 @@ popup — lives in the repository, so clone it first. This step has no macOS equ
 there, Homebrew drops the plugin next to the binary.
 
 ```powershell
-git clone https://gitlab.yg-devworks.com/yves/jigger.git $HOME\git\jigger
+git clone https://github.com/Yves848/jigger.git $HOME\git\jigger
 ```
 
 Then, in your profile:
