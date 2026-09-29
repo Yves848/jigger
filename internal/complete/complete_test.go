@@ -393,7 +393,7 @@ func catalogueHotes() *pm.Catalog {
 	c := pm.NewCatalog()
 	c.Add("archlight", "")
 	c.Add("pve", "")
-	c.Versions["pve"] = "192.168.50.8"
+	c.Versions["pve"] = "192.0.2.8"
 	c.Sort()
 	return c
 }
@@ -416,7 +416,7 @@ func TestSansSousCommandeLaCommandeSeuleProposeTout(t *testing.T) {
 
 func TestSansSousCommandeLAdresseSuitDansVersion(t *testing.T) {
 	res := CompleteWith("ssh pve", fauxManagerSansSub{"ssh"}, catalogueHotes())
-	if len(res.Items) != 1 || res.Items[0].Version != "192.168.50.8" {
+	if len(res.Items) != 1 || res.Items[0].Version != "192.0.2.8" {
 		t.Fatalf("Items = %+v, attendu pve avec son adresse", res.Items)
 	}
 }

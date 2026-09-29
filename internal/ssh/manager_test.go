@@ -41,14 +41,14 @@ func TestCmdRendLeMotDemande(t *testing.T) {
 
 func TestCatalogueDepuisUnFichier(t *testing.T) {
 	d := t.TempDir()
-	p := ecrire(t, d, "config", "Host pve\n    HostName 192.168.50.8\n\nHost solo\n")
+	p := ecrire(t, d, "config", "Host pve\n    HostName 192.0.2.8\n\nHost solo\n")
 	cat := catalogueDe(p)
 
 	egal(t, cat.Names, []string{"pve", "solo"})
 	// L'adresse voyage dans Versions : c'est le seul champ rendu en texte libre a
 	// droite de la ligne. Le nom du champ ment, la spec dit pourquoi.
-	if got := cat.Version("pve"); got != "192.168.50.8" {
-		t.Errorf("Version(pve) = %q, attendu 192.168.50.8", got)
+	if got := cat.Version("pve"); got != "192.0.2.8" {
+		t.Errorf("Version(pve) = %q, attendu 192.0.2.8", got)
 	}
 	// Un hote sans HostName n'affiche rien a droite plutot que de repeter son nom.
 	if got := cat.Version("solo"); got != "" {
@@ -72,28 +72,28 @@ func TestLesNomsPassentAvantLesAdresses(t *testing.T) {
 	d := t.TempDir()
 	// Trois motifs sur la meme ligne Host, comme le genere le fragment reseau du
 	// depot config : le nom, un alias, et l'adresse elle-meme en motif.
-	p := ecrire(t, d, "config", "Host zzz archlight 192.168.50.207\n")
+	p := ecrire(t, d, "config", "Host zzz archlight 192.0.2.207\n")
 	cat := catalogueDe(p)
 
 	// Sans repousserLesAdresses, cat.Sort() (alphabetique) placerait l'adresse en
 	// tete : les chiffres precedent les lettres. « archlight » et « zzz » d'abord,
 	// dans leur ordre alphabetique habituel ; l'adresse ensuite.
-	egal(t, cat.Names, []string{"archlight", "zzz", "192.168.50.207"})
+	egal(t, cat.Names, []string{"archlight", "zzz", "192.0.2.207"})
 }
 
 func TestLesAdressesSontTrieesNumeriquement(t *testing.T) {
 	d := t.TempDir()
-	p := ecrire(t, d, "config", "Host a 192.168.50.10\nHost b 192.168.50.8\n")
+	p := ecrire(t, d, "config", "Host a 192.0.2.10\nHost b 192.0.2.8\n")
 	cat := catalogueDe(p)
 
 	// Un tri lexicographique placerait .10 avant .8 (« 1 » < « 8 »). Ce test rate si
 	// le tri numerique est absent ou inverse.
-	egal(t, cat.Names, []string{"a", "b", "192.168.50.8", "192.168.50.10"})
+	egal(t, cat.Names, []string{"a", "b", "192.0.2.8", "192.0.2.10"})
 }
 
 func TestUneAdresseResteUnCandidat(t *testing.T) {
 	d := t.TempDir()
-	p := ecrire(t, d, "config", "Host archlight 192.168.50.207\n")
+	p := ecrire(t, d, "config", "Host archlight 192.0.2.207\n")
 	cat := catalogueDe(p)
 
 	for _, n := range cat.Names {
@@ -101,7 +101,7 @@ func TestUneAdresseResteUnCandidat(t *testing.T) {
 			return
 		}
 	}
-	t.Errorf("aucune adresse dans %v, attendu 192.168.50.207 conservee comme candidat", cat.Names)
+	t.Errorf("aucune adresse dans %v, attendu 192.0.2.207 conservee comme candidat", cat.Names)
 }
 
 func TestInsertColleUnDeuxPointsPourScp(t *testing.T) {

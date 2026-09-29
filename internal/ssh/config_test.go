@@ -43,25 +43,25 @@ func TestLireNomsEtHostName(t *testing.T) {
 	d := t.TempDir()
 	p := ecrire(t, d, "config", `
 Host pve
-    HostName 192.168.50.8
+    HostName 192.0.2.8
     User root
 
 Host archlight
-    HostName 192.168.50.207
+    HostName 192.0.2.207
 `)
 	hotes := Lire(p)
 	egal(t, noms(hotes), []string{"archlight", "pve"})
-	if hotes[1].HostName != "192.168.50.8" {
-		t.Errorf("HostName de pve = %q, attendu 192.168.50.8", hotes[1].HostName)
+	if hotes[1].HostName != "192.0.2.8" {
+		t.Errorf("HostName de pve = %q, attendu 192.0.2.8", hotes[1].HostName)
 	}
 }
 
 func TestLireUnBlocAPlusieursMotifs(t *testing.T) {
-	// « Host archlight aquarium 192.168.50.207 » declare trois facons valides de
+	// « Host archlight aquarium 192.0.2.207 » declare trois facons valides de
 	// designer la meme machine : les trois sont des candidats.
 	d := t.TempDir()
-	p := ecrire(t, d, "config", "Host archlight aquarium 192.168.50.207\n    HostName 192.168.50.207\n")
-	egal(t, noms(Lire(p)), []string{"192.168.50.207", "aquarium", "archlight"})
+	p := ecrire(t, d, "config", "Host archlight aquarium 192.0.2.207\n    HostName 192.0.2.207\n")
+	egal(t, noms(Lire(p)), []string{"192.0.2.207", "aquarium", "archlight"})
 }
 
 func TestLireEcarteLesMotifs(t *testing.T) {
@@ -85,8 +85,8 @@ Host reel
 
 func TestLireSuitUnInclude(t *testing.T) {
 	d := t.TempDir()
-	ecrire(t, d, "config.d/homelab.conf", "Host archlight\n    HostName 192.168.50.207\n")
-	p := ecrire(t, d, "config", "Include config.d/homelab.conf\n\nHost pve\n    HostName 192.168.50.8\n")
+	ecrire(t, d, "config.d/homelab.conf", "Host archlight\n    HostName 192.0.2.207\n")
+	p := ecrire(t, d, "config", "Include config.d/homelab.conf\n\nHost pve\n    HostName 192.0.2.8\n")
 	egal(t, noms(Lire(p)), []string{"archlight", "pve"})
 }
 
@@ -110,10 +110,10 @@ func TestLireNeBouclePasSurUnIncludeCirculaire(t *testing.T) {
 func TestLireIgnoreLaCasseDesMotsCles(t *testing.T) {
 	// OpenSSH est insensible a la casse sur ses mots-cles.
 	d := t.TempDir()
-	p := ecrire(t, d, "config", "HOST pve\n    hostname 192.168.50.8\n")
+	p := ecrire(t, d, "config", "HOST pve\n    hostname 192.0.2.8\n")
 	hotes := Lire(p)
 	egal(t, noms(hotes), []string{"pve"})
-	if hotes[0].HostName != "192.168.50.8" {
+	if hotes[0].HostName != "192.0.2.8" {
 		t.Errorf("HostName = %q", hotes[0].HostName)
 	}
 }
@@ -129,7 +129,7 @@ func TestLireDedoublonne(t *testing.T) {
 	// qu'une fois : le popup afficherait sinon deux lignes identiques.
 	d := t.TempDir()
 	ecrire(t, d, "f.conf", "Host pve\n    HostName 10.0.0.1\n")
-	p := ecrire(t, d, "config", "Include f.conf\nHost pve\n    HostName 192.168.50.8\n")
+	p := ecrire(t, d, "config", "Include f.conf\nHost pve\n    HostName 192.0.2.8\n")
 	hotes := Lire(p)
 	egal(t, noms(hotes), []string{"pve"})
 	// La premiere valeur rencontree gagne, comme le fait OpenSSH lui-meme.
@@ -164,11 +164,11 @@ func TestLireCoupeUnCommentaireDeFinDeLigne(t *testing.T) {
 	// proposait « # », « du », « le », « proxmox » et « salon », tous porteurs de
 	// l'adresse du bloc.
 	d := t.TempDir()
-	p := ecrire(t, d, "config", "Host pve  # le proxmox du salon\n    HostName 192.168.50.8\n")
+	p := ecrire(t, d, "config", "Host pve  # le proxmox du salon\n    HostName 192.0.2.8\n")
 	hotes := Lire(p)
 	egal(t, noms(hotes), []string{"pve"})
-	if hotes[0].HostName != "192.168.50.8" {
-		t.Errorf("HostName = %q, attendu 192.168.50.8", hotes[0].HostName)
+	if hotes[0].HostName != "192.0.2.8" {
+		t.Errorf("HostName = %q, attendu 192.0.2.8", hotes[0].HostName)
 	}
 }
 

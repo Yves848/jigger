@@ -13,3 +13,6 @@ dist/
 # elle est repetee ici pour le contributeur qui n'en a pas, et dont la MR arriverait
 # avec un .DS_Store par repertoire visite.
 .DS_Store
+
+# Cibles de publication, propres a chaque installation (cf. website/deploy.env.example).
+/website/deploy.env

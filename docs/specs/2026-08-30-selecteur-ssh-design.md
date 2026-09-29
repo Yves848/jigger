@@ -1,5 +1,12 @@
 # Sélecteur de serveurs SSH — conception
 
+> **Note d'édition (29 septembre 2026, YGD-14).** Les adresses du réseau privé
+> qui figuraient dans ce document ont été remplacées : par les noms de variables
+> (`WEB_HOST`, `PROXY_HOST`, cf. `website/deploy.env.example`) pour le déploiement,
+> et par la plage de documentation `192.0.2.0/24` (RFC 5737) pour les jeux d'essai.
+> Le dépôt est public ; seule la topologie a changé, pas le propos.
+
+
 30 août 2026 — état : validé, prêt pour le plan d'implémentation.
 
 ## Objet
@@ -98,7 +105,7 @@ if it.Version != "" {
 }
 ```
 
-C'est donc lui qui porte le `HostName`, et le popup affiche `archlight   192.168.50.207`.
+C'est donc lui qui porte le `HostName`, et le popup affiche `archlight   192.0.2.207`.
 
 **Le nom du champ ment, et c'est assumé.** L'alternative — renommer `Version` en `Detail`
 dans `pm.Item` — toucherait les trois gestionnaires, l'UI et les tests de rendu pour un
@@ -111,7 +118,7 @@ refactoriser un projet qui marche pour y greffer une fonctionnalité.
 - Les directives **`Include`** sont suivies, en résolvant `~` et les chemins relatifs à
   `~/.ssh/`. C'est indispensable : une configuration moderne se répartit en fragments, et
   celle de l'auteur en génère un depuis un inventaire.
-- Un bloc `Host` peut porter **plusieurs motifs** (`Host archlight aquarium 192.168.50.207`).
+- Un bloc `Host` peut porter **plusieurs motifs** (`Host archlight aquarium 192.0.2.207`).
   Tous sont retenus comme noms — ce sont autant de façons valides de désigner la machine.
 - Les motifs contenant `*`, `?` ou `!` sont **écartés** : `Host *` n'est pas un serveur.
 - Un fichier illisible n'est pas une erreur : il rend un catalogue vide. Le popup dira
