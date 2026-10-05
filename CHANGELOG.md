@@ -9,6 +9,40 @@ The format follows [Keep a Changelog](https://keepachangelog.com/1.1.0/) and
 [SemVer](https://semver.org/). Versions before `v0.1.6` predate this log; their detail
 lives in the git history.
 
+## [Unreleased]
+
+The popup, redrawn. It shows up at every keystroke, so it now takes three lines less and
+shouts less, and it stays readable in terminals that only speak 16 colors.
+
+### Changed
+
+- **Title and keys live in the borders.** `╭─ brew install ──── 3/18 ─╮` on top,
+  `╰─ ⇥ insert  ↩ execute  ↓ browse  ^G close ─╯` at the bottom. The header line, the
+  blank line and the footer are gone: 8 candidates now take 10 lines instead of 13. Both
+  plugins reserve two lines of chrome instead of five.
+- **A counter where the version was.** `3/18` says where you are and how many candidates
+  there are, the one thing the window could not show (271 installed packages, 8 visible
+  lines). The `jigger x.y.z` banner and the `❯` that mimicked the shell prompt are gone;
+  `jigger --version` still tells which binary runs.
+- **The current line is a marked band, not an underline.** A `▌` opens it and the band
+  runs from border to border. At rest it is slate; with focus, band and border light up
+  in teal and the name turns bold. Its glyph keeps the color of its type (◆ formula, ▣
+  cask): it used to turn gray or teal on the very line where the type decides what ⇥
+  inserts.
+- **Keys without pills.** The keys are bold, without a background, in the popup, the
+  table view and the configuration screen. When the terminal is narrow, labels drop
+  item by item, and the exit (`^G close`) keeps its label to the end.
+
+### Fixed
+
+- **16-color terminals** (`TERM=xterm` over SSH, `screen`, the Linux console). Footer
+  keys were cyan on cyan, which made them invisible in Catppuccin, and the current line at
+  rest was unreadable. Formulas turned bright red. The palette now picks its 16-color
+  indices: no panel background, the theme's default text, faint for secondary text,
+  yellow ◆, magenta ▣, green ●.
+- **No color at all.** With `TERM=dumb`, nothing marked the line ⏎ would run; the `▌`
+  marker now does. Both plugins honor `NO_COLOR`.
+
 ## [v0.22.1] — 2026-09-07
 
 Two guards that bit in silence. Neither changed what jigger does — both changed whether it

@@ -245,7 +245,7 @@ func (t Tableau) pied() string {
 	}
 	var parts []string
 	for _, k := range keys {
-		parts = append(parts, pillStyle.Render(k.Key)+hintStyle.Render(" "+k.Label))
+		parts = append(parts, keyStyle.Render(k.Key)+hintStyle.Render(" "+k.Label))
 	}
 	return lipgloss.NewStyle().Background(panelBg).Render(strings.Join(parts, hintStyle.Render("   ")))
 }

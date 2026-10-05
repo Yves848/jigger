@@ -314,8 +314,8 @@ Three things worth knowing, most of what makes this comfortable:
   candidate was designated, as typed otherwise. `^G` closes the popup for the current line
   if you want to run exactly what you typed.
 - **The arrow keys remain your history** as long as the popup doesn't hold the
-  keyboard — open or not. The frame shows which: the current line underlined and the
-  footer reading `↑↓ navigate` when it has focus, at rest and `↓ browse` when it
+  keyboard — open or not. The frame shows which: the current line and border lit up in
+  teal and the footer reading `↑↓ navigate` when it has focus, at rest and `↓ browse` when it
   doesn't.
 - **jigger corrects what it inserts** whenever the command would otherwise be wrong:
   `--cask` added in front of a Homebrew cask, the qualified name `main/flux` for a

@@ -196,9 +196,11 @@ func TestRowsHaveNoBackgroundGap(t *testing.T) {
 	}
 }
 
-// La ligne courante ne porte plus de boîte : seul le cadre du popup dessine des coins,
-// et la sélection se signale par un soulignement qui court sur toute la largeur.
-func TestSelectedRowIsUnderlinedNotBoxed(t *testing.T) {
+// La ligne courante ne porte pas de boîte : seul le cadre du popup dessine des coins. Elle
+// est une bande qui court d'un bord à l'autre — gouttière comprise, sans quoi la bande
+// s'arrêtait à deux colonnes du bord droit —, marquée d'un « ▌ », et son glyphe garde la
+// couleur de son type.
+func TestLigneCouranteEstUneBandeMarquee(t *testing.T) {
 	lipgloss.SetColorProfile(termenv.TrueColor)
 
 	out := New("brew install", complete.Result{Items: []complete.Item{
@@ -210,33 +212,90 @@ func TestSelectedRowIsUnderlinedNotBoxed(t *testing.T) {
 		t.Errorf("coin haut-gauche vu %d fois (attendu 1 : le cadre du popup, sans boîte de sélection)", got)
 	}
 
-	var row string
+	var row, autre string
 	for _, line := range strings.Split(out, "\n") {
-		if strings.Contains(visible(line), "wget ") || strings.HasSuffix(strings.TrimRight(visible(line), " │"), "wget") {
+		switch {
+		case strings.Contains(visible(line), "wgetpaste"):
+			autre = line
+		case strings.Contains(visible(line), "wget "):
 			row = line
+		}
+	}
+	if row == "" || autre == "" {
+		t.Fatal("lignes wget / wgetpaste introuvables dans le rendu")
+	}
+	if !strings.HasPrefix(visible(row), "│▌") || strings.Contains(visible(autre), "▌") {
+		t.Errorf("le marqueur ▌ doit ouvrir la seule ligne courante : %q / %q", visible(row), visible(autre))
+	}
+
+	// Fond de chaque colonne intérieure : celui de la bande partout, et pas celui du panneau.
+	fonds := fondsParColonne(row)
+	bande, panneau := fonds[1], fondsParColonne(autre)[1]
+	if bande == "" || bande == panneau {
+		t.Fatalf("la ligne courante n'a pas de bande distincte du panneau (%q)", bande)
+	}
+	for col := 1; col < len(fonds)-1; col++ {
+		if fonds[col] != bande {
+			t.Errorf("colonne %d hors de la bande (%q au lieu de %q) : %q", col, fonds[col], bande, visible(row))
 			break
 		}
 	}
-	if row == "" {
-		t.Fatal("ligne sélectionnée (wget) introuvable dans le rendu")
-	}
 
-	cols := underlinedColumns(row)
-	first, last := -1, -1
-	for i, u := range cols {
-		if u {
-			if first < 0 {
-				first = i
+	// Le glyphe ◆ porte la même couleur sur la ligne courante que sur les autres.
+	if teinteDe(row, "◆") == "" || teinteDe(row, "◆") != teinteDe(autre, "◆") {
+		t.Errorf("le glyphe perd sa couleur sur la ligne courante : %q contre %q",
+			teinteDe(row, "◆"), teinteDe(autre, "◆"))
+	}
+}
+
+// fondsParColonne dit, colonne par colonne, quel fond (paramètres SGR 48;…) est actif.
+func fondsParColonne(line string) []string {
+	var cols []string
+	fond := ""
+	for len(line) > 0 {
+		if loc := ansi.FindStringIndex(line); loc != nil && loc[0] == 0 {
+			ps := strings.Split(line[2:loc[1]-1], ";")
+			for i := 0; i < len(ps); i++ {
+				switch ps[i] {
+				case "0", "", "49":
+					fond = ""
+				case "38", "48":
+					n := 2 // 38;5;n
+					if i+1 < len(ps) && ps[i+1] == "2" {
+						n = 4 // 38;2;r;g;b
+					}
+					if ps[i] == "48" && i+n < len(ps) {
+						fond = strings.Join(ps[i:i+n+1], ";")
+					}
+					i += n
+				}
 			}
-			last = i
+			line = line[loc[1]:]
+			continue
+		}
+		r := []rune(line)[0]
+		for w := lipgloss.Width(string(r)); w > 0; w-- {
+			cols = append(cols, fond)
+		}
+		line = line[len(string(r)):]
+	}
+	return cols
+}
+
+// teinteDe rend la couleur de texte (paramètres 38;…) active quand `glyphe` est écrit.
+func teinteDe(line, glyphe string) string {
+	i := strings.Index(line, glyphe)
+	if i < 0 {
+		return ""
+	}
+	seqs := ansi.FindAllString(line[:i], -1)
+	for j := len(seqs) - 1; j >= 0; j-- {
+		if k := strings.Index(seqs[j], "38;"); k >= 0 {
+			ps := strings.Split(strings.TrimSuffix(seqs[j][k:], "m"), ";")
+			return strings.Join(ps[:min(len(ps), 5)], ";")
 		}
 	}
-	if first < 0 {
-		t.Fatalf("aucun soulignement sur la ligne courante : %q", visible(row))
-	}
-	if span := last - first + 1; span != rowW {
-		t.Errorf("soulignement large de %d colonnes, attendu %d (il doit courir sous le remplissage)", span, rowW)
-	}
+	return ""
 }
 
 // La hauteur ne doit pas changer selon la ligne sélectionnée : sinon le popup

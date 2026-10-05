@@ -314,8 +314,8 @@ Trois choses à savoir, qui font l'essentiel du confort :
   part, complétée si un candidat était désigné, telle quelle sinon. `^G` ferme le popup
   pour la ligne en cours si tu veux exécuter exactement ce que tu as tapé.
 - **Les flèches restent ton historique** tant que le popup n'a pas le clavier — popup
-  ouvert ou non. Le cadre le montre : ligne courante soulignée et pied `↑↓ naviguer` quand
-  il a le focus, au repos et `↓ parcourir` quand il ne l'a pas.
+  ouvert ou non. Le cadre le montre : ligne courante et bordure allumées et pied
+  `↑↓ naviguer` quand il a le focus, au repos et `↓ parcourir` quand il ne l'a pas.
 - **jigger corrige ce qu'il insère** quand la commande serait fautive sans cela : `--cask`
   ajouté devant un cask Homebrew, nom qualifié `main/flux` pour un paquet scoop présent
   dans plusieurs buckets, `extra/rustup` pour un nom que portent à la fois un dépôt Arch et

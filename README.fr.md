@@ -67,8 +67,8 @@ il ne requiert que le gestionnaire lui-même.
   et exécute d'une seule frappe, `^G` ferme.
 - **Focus explicite** : le popup ne prend les flèches qu'une fois qu'on y est entré. `↓`
   l'y fait entrer, `↑` en ressort dès le premier candidat — et tant qu'il n'a pas le
-  clavier, `↑`/`↓` restent l'historique du shell. La ligne courante le montre : soulignée
-  quand le popup a le clavier, au repos quand il ne l'a pas.
+  clavier, `↑`/`↓` restent l'historique du shell. La ligne courante le montre : allumée
+  en teal, bande et bordure, quand le popup a le clavier, au repos quand il ne l'a pas.
 - **Bloc de prompt** (optionnel) : version du gestionnaire et mises à jour en attente
   dans le prompt, comptées séparément — sans jamais le ralentir. Segments prêts à coller
   pour **oh-my-posh** et **starship**.
@@ -168,7 +168,7 @@ tu as tapé.
 Tant que le popup n'a pas le clavier, `↑` et `↓` sont **l'historique du shell**, popup
 ouvert ou non : ouvrir une liste de candidats ne coûte pas l'accès à la commande
 précédente. Ce qu'elles feront se lit dans le cadre — pied `↓ parcourir` et ligne
-courante au repos tant qu'il n'a pas le focus, `↑↓ naviguer` et ligne soulignée dès
+courante au repos tant qu'il n'a pas le focus, `↑↓ naviguer` et ligne allumée dès
 qu'il l'a. Et jigger rend toujours la touche à ce qu'elle faisait avant lui : si un autre
 greffon tient déjà tes flèches (recherche par préfixe dans l'historique, par exemple),
 c'est lui qui reprend la main.

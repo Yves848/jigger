@@ -12,17 +12,27 @@ import (
 	"gitlab.yg-devworks.com/yves/jigger/internal/i18n"
 )
 
-// Palette (vive, dérivée de Cocktails).
+// Palette (vive, dérivée de Cocktails), déclinée pour chaque profil de terminal.
+//
+// Les index 256 et 16 couleurs sont choisis, pas déduits : termenv projette un hex sur
+// l'index le plus proche, et en 16 couleurs cette projection trahissait le sens — l'ambre
+// devenait du rouge vif (91), et l'encre des touches tombait sur le cyan de leur propre
+// fond (96 sur 46), identiques dans Catppuccin : des touches invisibles. En 16 couleurs, le
+// cadre s'en remet donc au thème de l'utilisateur : pas de fond de panneau, texte à la
+// couleur par défaut, et des index de sens (3 jaune, 5 magenta, 2 vert, 6 cyan). Un index
+// vide ("") ne pose aucune couleur.
 var (
-	accent  = lipgloss.Color("#2DD4BF") // teal (accent + ligne courante)
-	ink     = lipgloss.Color("#EAFBF7") // texte clair (pastilles de touches)
-	fg      = lipgloss.Color("#CBD2DE") // texte normal
-	muted   = lipgloss.Color("#7C8598")
-	amber   = lipgloss.Color("#F5B841") // formula ◆
-	violet  = lipgloss.Color("#B79BFF") // cask ▣
-	green   = lipgloss.Color("#4ADE80") // installé
-	panelBg = lipgloss.Color("#0C131F")
-	sepCl   = lipgloss.Color("#26374C")
+	accent    = lipgloss.CompleteColor{TrueColor: "#2DD4BF", ANSI256: "43", ANSI: "6"}  // teal : bordure au focus, ligne courante
+	accentBas = lipgloss.CompleteColor{TrueColor: "#0F766E", ANSI256: "30", ANSI: "6"}  // teal éteint : bordure au repos
+	ink       = lipgloss.CompleteColor{TrueColor: "#EAFBF7", ANSI256: "195", ANSI: ""}  // texte clair (touches, nom courant)
+	fg        = lipgloss.CompleteColor{TrueColor: "#CBD2DE", ANSI256: "188", ANSI: ""}  // texte normal
+	muted     = lipgloss.CompleteColor{TrueColor: "#7C8598", ANSI256: "102", ANSI: ""}  // secondaire (cf. estompe)
+	amber     = lipgloss.CompleteColor{TrueColor: "#F5B841", ANSI256: "215", ANSI: "3"} // formula ◆
+	violet    = lipgloss.CompleteColor{TrueColor: "#B79BFF", ANSI256: "141", ANSI: "5"} // cask ▣
+	green     = lipgloss.CompleteColor{TrueColor: "#4ADE80", ANSI256: "78", ANSI: "2"}  // installé
+	panelBg   = lipgloss.CompleteColor{TrueColor: "#0C131F", ANSI256: "233", ANSI: ""}
+	sepCl     = lipgloss.CompleteColor{TrueColor: "#26374C", ANSI256: "236", ANSI: ""} // bande de la ligne courante au repos
+	bandeVive = lipgloss.CompleteColor{TrueColor: "#134E4A", ANSI256: "236", ANSI: ""} // bande de la ligne courante au focus
 )
 
 // Largeur intérieure fixe : chaque ligne est complétée à cette largeur.
@@ -41,19 +51,9 @@ var (
 	// (remplissage compris) s'affiche sur le fond du terminal — d'où une bande visible.
 	base = lipgloss.NewStyle().Background(panelBg)
 
-	// Le cadre porte le fond ET la largeur : lipgloss remplit uniformément les zones
-	// nues (espaces sans fond) avec panelBg, y compris après les resets internes.
-	boxStyle = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(accent).
-			BorderBackground(panelBg).
-			Background(panelBg).
-			Width(boxW)
-
-	// Ligne courante : pas de cadre, un simple soulignement. Elle garde exactement la
-	// géométrie d'une ligne ordinaire (même indentation, même gouttière), donc rien ne
-	// se décale quand le curseur bouge. Le soulignement porte aussi sur le remplissage
-	// (lipgloss souligne les espaces par défaut) : la règle court sur toute la largeur.
+	// Ligne courante de la vue tabulaire : un simple soulignement. Elle garde exactement
+	// la géométrie d'une ligne ordinaire, donc rien ne se décale quand le curseur bouge.
+	// (Le popup, lui, compose sa ligne courante segment par segment : cf. Frame.renderRow.)
 	selStyle = lipgloss.NewStyle().
 			Foreground(accent).
 			Background(panelBg).
@@ -61,22 +61,12 @@ var (
 			Underline(true).
 			Width(rowW)
 
-	// Ligne courante quand le popup n'a pas le clavier : elle reste désignée — c'est
-	// elle que ⇥ insère — mais au repos, sur le fond des pastilles plutôt qu'en accent
-	// souligné. C'est la convention des listes du système : sélection grisée tant que le
-	// contrôle n'a pas le focus, colorée dès qu'il l'a.
-	selIdleStyle = lipgloss.NewStyle().
-			Foreground(fg).
-			Background(sepCl).
-			Width(rowW)
+	// Rappels de touches : la touche en gras, sans fond. Les anciennes pastilles étaient
+	// les blocs les plus contrastés du cadre, pour l'information qui change le moins.
+	keyStyle = base.Foreground(ink).Bold(true)
 
-	// Rappels de touches : pastilles (fond + remplissage). Une vraie bordure coûterait
-	// deux lignes de plus au pied du popup pour le même effet.
-	pillStyle = lipgloss.NewStyle().Background(sepCl).Foreground(ink).Bold(true).Padding(0, 1)
-
-	promptStyle = base.Foreground(accent).Bold(true)
-	titleStyle  = base.Foreground(accent).Bold(true)
-	filterHint  = base.Foreground(muted)
+	titleStyle = base.Foreground(accent).Bold(true)
+	filterHint = base.Foreground(muted)
 
 	formulaStyle = base.Foreground(amber).Bold(true)
 	caskStyle    = base.Foreground(violet).Bold(true)
@@ -87,12 +77,7 @@ var (
 
 	hintStyle  = base.Foreground(muted)
 	emptyStyle = base.Foreground(muted).Italic(true)
-	verStyle   = base.Foreground(muted)
 )
-
-// Version est affichée (discrètement) dans l'en-tête du sélecteur pour lever toute
-// ambiguïté sur le binaire réellement lancé. Renseignée par main au démarrage.
-var Version = ""
 
 // itemLigne fait d'un candidat de complétion une Ligne : une clé, une cellule. Le
 // sélecteur délègue ainsi filtre, curseur et défilement au cœur commun (liste.go),

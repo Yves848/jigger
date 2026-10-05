@@ -71,8 +71,6 @@ var motsReserves = map[string]bool{
 }
 
 func main() {
-	ui.Version = version // affichée dans l'en-tête du sélecteur (repère du binaire lancé)
-
 	if len(os.Args) < 2 {
 		usage()
 		os.Exit(2)

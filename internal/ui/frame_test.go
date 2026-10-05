@@ -71,38 +71,40 @@ func TestFrameNeDeborderJamais(t *testing.T) {
 }
 
 // Le focus dit où ira la prochaine flèche — au popup ou à l'historique du shell. Il n'y
-// a aucun autre moyen de le savoir que de le voir : la ligne courante est soulignée
-// quand le popup a le clavier, au repos quand il ne l'a pas.
+// a aucun autre moyen de le savoir que de le voir : le cadre et la ligne courante
+// s'allument quand le popup a le clavier, et restent éteints sinon — sans que la ligne
+// cesse d'être désignée, puisque c'est elle que ⇥ insère.
 func TestFrameFocusChangeLaLigneCourante(t *testing.T) {
 	lipgloss.SetColorProfile(termenv.TrueColor)
-
-	souligne := func(f Frame) bool {
-		for _, line := range strings.Split(f.Render(), "\n") {
-			for _, on := range underlinedColumns(line) {
-				if on {
-					return true
-				}
-			}
-		}
-		return false
-	}
+	defer lipgloss.SetColorProfile(termenv.TrueColor)
 
 	repos := Frame{Title: "winget install", Items: items(3), Sel: 1, Keys: []Key{{"⇥", "insérer"}}}
 	actif := repos
 	actif.Focused = true
-
-	if !souligne(actif) {
-		t.Error("avec le focus, la ligne courante doit être soulignée")
-	}
-	if souligne(repos) {
-		t.Error("sans le focus, aucune ligne ne doit être soulignée")
-	}
-
-	// Elle reste tout de même désignée : c'est elle que ⇥ insère.
 	aucune := repos
 	aucune.Sel = -1
+
+	if actif.Render() == repos.Render() {
+		t.Error("le focus doit se voir : le rendu ne change pas avec lui")
+	}
 	if repos.Render() == aucune.Render() {
 		t.Error("sans le focus, la ligne courante doit rester distinguée des autres")
+	}
+
+	// La désignation ne tient pas à la couleur : sans aucune (TERM=dumb, NO_COLOR), le
+	// marqueur ▌ ouvre encore la ligne courante, et elle seule.
+	lipgloss.SetColorProfile(termenv.Ascii)
+	for _, f := range []Frame{repos, actif} {
+		var marquees []string
+		for _, l := range strings.Split(visible(f.Render()), "\n") {
+			if strings.Contains(l, "▌") {
+				marquees = append(marquees, l)
+			}
+		}
+		if len(marquees) != 1 || !strings.Contains(marquees[0], f.Items[f.Sel].Name) {
+			t.Errorf("focus=%v, sans couleur : lignes marquées %q, attendu la seule ligne %s",
+				f.Focused, marquees, f.Items[f.Sel].Name)
+		}
 	}
 }
 

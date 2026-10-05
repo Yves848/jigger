@@ -300,6 +300,8 @@ _jigger_is_watched() {
 # Le profil couleur ne peut pas être deviné par jigger : sa sortie est capturée. C'est
 # donc le shell, qui connaît $COLORTERM et $TERM, qui tranche.
 _jigger_color() {
+  # NO_COLOR (no-color.org) : le marqueur ▌ suffit à désigner la ligne courante sans couleur.
+  if [[ -n $NO_COLOR ]]; then print -r -- never; return; fi
   case $COLORTERM in
     (*truecolor*|*24bit*) print -r -- truecolor; return ;;
   esac
@@ -445,13 +447,13 @@ _jigger_redisplay() {
   # Où est le curseur ? De sa position dépend le nombre de lignes qu'on peut occuper
   # sans faire défiler l'écran (ce qui décalerait tout l'affichage de zsh).
   _jigger_row || return
-  # 5 lignes de décor : 2 bordures, l'en-tête, la respiration, le pied.
-  local -i fits=$(( LINES - _jigger_row_value - 5 ))
+  # 2 lignes de décor : les bordures, qui portent le titre et les touches (cf. Frame.Render).
+  local -i fits=$(( LINES - _jigger_row_value - 2 ))
   # Pas la place : on la fait, en poussant l'écran. Si le défilement échoue, on se
   # contente de ce qu'il reste — et de rien du tout s'il ne reste rien.
   if (( fits < JIGGER_ROWS )); then
     _jigger_room $(( JIGGER_ROWS - fits ))
-    fits=$(( LINES - _jigger_row_value - 5 ))
+    fits=$(( LINES - _jigger_row_value - 2 ))
   fi
   if (( fits < 1 )); then
     _jigger_erase

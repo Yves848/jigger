@@ -278,7 +278,7 @@ suite() {
   print -r -- "→ le popup apparaît en tapant une commande brew"
   out=$(visible "$(jigger_type 'brew inst')")
   check "cadre affiché"                 "$out" '╭─'
-  check "en-tête du contexte"           "$out" '❯ brew'
+  check "en-tête du contexte"           "$out" '╭─ brew'
   check "candidat install"              "$out" 'install'
 
   print -r -- "→ le popup s'affiche même quand le prompt est en bas de l'écran"
@@ -335,9 +335,9 @@ suite() {
 
   print -r -- "→ le pied dit où ira la prochaine flèche"
   out=$(visible "$(jigger_type 'brew u')")
-  check "invite à entrer dans la liste" "$out" '↓  parcourir'
+  check "invite à entrer dans la liste" "$out" '↓ parcourir'
   out=$(visible "$(jigger_type $'brew u\e[B')")
-  check "puis à naviguer"               "$out" '↑↓  naviguer'
+  check "puis à naviguer"               "$out" '↑↓ naviguer'
 
   print -r -- "→ ⏎ complète la dernière partie, et exécute dans la même frappe"
   # La frappe économisée : « brew u ⏎ » lance `brew uninstall`, sans le ⇥ qu'il fallait
