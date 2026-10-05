@@ -163,7 +163,10 @@ verb, sub-verb, option, package name. `winget li ⏎` runs `winget list`; it's `
 longer have to type. Pressing `⏎` means "go", and the line goes: completed if a candidate
 was designated, as typed otherwise — jigger doesn't decide on your behalf whether it is
 correct. `^G` closes the popup for the current line if you want to run exactly what you
-typed.
+typed. One exception: on an empty word, while the popup doesn't hold the keyboard, nothing
+has been chosen yet, so the line goes as typed. `brew uninstall ␣⏎` (␣: the space) used
+to remove the first installed package in alphabetical order; `brew upgrade ␣⏎` upgraded
+that one package only. `↓` then `⏎`, or `⇥`, still pick the current candidate.
 
 As long as the popup doesn't hold the keyboard, `↑` and `↓` remain the **shell's
 history** — whether the popup is open or not: opening a candidate list doesn't cost

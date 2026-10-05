@@ -163,7 +163,10 @@ verbe, sous-verbe, option, nom de paquet. `winget li ⏎` lance `winget list` ; 
 qu'on n'a plus à taper. Presser `⏎`, c'est dire « pars » : la ligne part, complétée si un
 candidat était désigné, telle quelle sinon — jigger ne juge pas à ta place si elle est
 correcte. `^G` ferme le popup pour la ligne en cours si tu veux exécuter exactement ce que
-tu as tapé.
+tu as tapé. Une exception : au mot vide, tant que le popup n'a pas le clavier, rien n'a
+encore été choisi, et la ligne part telle quelle. `brew uninstall ␣⏎` (␣ : l'espace)
+désinstallait le premier paquet installé par ordre alphabétique ; `brew upgrade ␣⏎` ne
+mettait plus à jour que celui-là. `↓` puis `⏎`, ou `⇥`, prennent toujours le candidat courant.
 
 Tant que le popup n'a pas le clavier, `↑` et `↓` sont **l'historique du shell**, popup
 ouvert ou non : ouvrir une liste de candidats ne coûte pas l'accès à la commande

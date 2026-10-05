@@ -351,6 +351,16 @@ suite() {
   out=$(visible "$(jigger_type $'brew install zzzzqq\n')")
   check "ligne exécutée telle quelle"   "$out" 'CMD:[install zzzzqq]'
 
+  print -r -- "→ ⏎ sans le focus, sur un mot vide, part telle quelle"
+  # Rien n'a été tapé, donc rien n'a été choisi : le premier candidat par ordre
+  # alphabétique n'est la réponse à rien. Sans la garde, « brew ␣⏎ » lançait
+  # `brew install` — et « brew uninstall ␣⏎ », le premier paquet installé.
+  out=$(visible "$(jigger_type $'brew \n')")
+  check "rien n'est posé"               "$out" 'CMD:[]'
+  # Le focus, lui, est un choix : ↓ puis ⏎ pose le candidat désigné.
+  out=$(visible "$(jigger_type $'brew \e[B\n')")
+  check "avec le focus, ⏎ pose"         "$out" 'CMD:[uninstall]'
+
   print -r -- "→ ^G ferme le popup et laisse la ligne intacte"
   out=$(visible "$(jigger_type $'brew u\x07\n')")
   check "ligne exécutée telle quelle"   "$out" 'CMD:[u]'

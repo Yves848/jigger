@@ -208,6 +208,43 @@ func TestRenderSeTaitSansConfigurationSSH(t *testing.T) {
 	}
 }
 
+// ⏎ ne pose le candidat courant que si quelque chose l'a choisi : un mot commencé, ou le
+// focus. Au mot vide sans le focus, le premier candidat par ordre alphabétique n'est la
+// réponse à rien — `brew uninstall ␣⏎` désinstallait le premier paquet venu. ⇥, lui,
+// insère toujours : `left` ne bouge pas.
+func TestRenderEnterAuMotVide(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	if err := os.MkdirAll(filepath.Join(home, ".ssh"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	cfg := filepath.Join(home, ".ssh", "config")
+	if err := os.WriteFile(cfg, []byte("Host serveur\n    HostName 10.0.0.1\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	cas := []struct {
+		ligne, focus, enter string
+	}{
+		{"ssh ", "false", "enter=0"},  // mot vide, sans focus : rien n'est choisi
+		{"ssh ", "true", "enter=1"},   // le focus est un choix
+		{"ssh s", "false", "enter=1"}, // un mot commencé aussi
+	}
+	for _, c := range cas {
+		sortie := capturerStdout(t, func() {
+			runRender([]string{"--line", c.ligne, "--focus=" + c.focus, "--color", "never"})
+		})
+		meta, _, _ := strings.Cut(sortie, "\n")
+		if !strings.Contains(meta, "\t"+c.enter+"\t") {
+			t.Errorf("%q focus=%s : métadonnées %q, attendu %s", c.ligne, c.focus, meta, c.enter)
+		}
+		if !strings.HasSuffix(meta, "left=ssh serveur") {
+			t.Errorf("%q focus=%s : ⇥ doit toujours pouvoir insérer, métadonnées %q", c.ligne, c.focus, meta)
+		}
+	}
+}
+
 // Le pendant : dès que la configuration existe, le cadre revient. Sans lui, faire taire
 // jigger en toutes circonstances passerait pour une correction.
 func TestRenderDessineUnCadreQuandLaConfigurationExiste(t *testing.T) {

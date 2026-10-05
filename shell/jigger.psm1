@@ -225,6 +225,7 @@ $script:SelLine   = ''     # ligne pour laquelle $Sel a un sens
 $script:Dismissed = $false # ^G : popup fermé jusqu'à la fin de la ligne
 $script:Count     = 0      # candidats du dernier rendu
 $script:Left      = ''     # ligne (jusqu'au curseur) après insertion du candidat courant
+$script:Enter     = $true   # ⏎ pose-t-il le candidat ? (champ enter= de render)
 $script:Frame     = ''     # cadre déjà rendu (évite un processus par redessin)
 $script:Key       = ''     # signature du dernier rendu
 $script:Shown     = $false # un cadre est-il actuellement à l'écran ?
@@ -362,6 +363,9 @@ function Get-JiggerFrame([string]$Buffer, [int]$Rows, [int]$Columns) {
     }
     $script:Count = [int]$champs['count']
     $script:Sel   = [int]$champs['sel']    # jigger a ramené l'index dans les bornes
+    # Absent (binaire plus ancien) : le comportement d'avant. Sinon, enter=0 dit qu'au mot vide
+    # sans le focus rien n'a été choisi — ⏎ part tel quel au lieu de poser le premier venu.
+    $script:Enter = $champs['enter'] -ne '0'
     $script:Frame = ($lines[1..($lines.Count - 1)]) -join "`n"
     return $true
 }
@@ -737,7 +741,7 @@ $script:RelaisEdition = @{
 # la tenait avant nous.
 $script:RelaisFin = @{
     'Enter'  = { param($key, $arg)
-                 if (Test-JiggerCompletion (Test-JiggerActive) (Get-JiggerBuffer) $script:Left) {
+                 if ($script:Enter -and (Test-JiggerCompletion (Test-JiggerActive) (Get-JiggerBuffer) $script:Left)) {
                      Write-JiggerCandidate
                  }
                  Hide-JiggerPopup; Reset-JiggerLine

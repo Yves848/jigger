@@ -42,6 +42,13 @@ shouts less, and it stays readable in terminals that only speak 16 colors.
   yellow ◆, magenta ▣, green ●.
 - **No color at all.** With `TERM=dumb`, nothing marked the line ⏎ would run; the `▌`
   marker now does. Both plugins honor `NO_COLOR`.
+- **`⏎` no longer picks for you on an empty word.** Without focus, `brew uninstall ␣⏎`
+  removed the first installed package in alphabetical order, `brew upgrade ␣⏎` upgraded
+  that one package instead of all of them, and `brew⏎` ran `brew install`. On an empty
+  word, while the popup doesn't hold the keyboard, nothing has been chosen, so the line
+  now goes as typed. `↓` then `⏎`, or `⇥`, still pick the current candidate. `render`
+  says so in a new `enter=` metadata field, which both plugins read. An older binary
+  doesn't emit it, and the plugins keep the previous behavior.
 
 ## [v0.22.1] — 2026-09-07
 

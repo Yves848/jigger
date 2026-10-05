@@ -624,8 +624,17 @@ func runRender(args []string) int {
 		frame.Sel = -1
 	}
 
-	fmt.Printf("count=%d\tsel=%d\texec=%s\tleft=%s\n",
-		len(frame.Items), frame.Sel, boolField(res.Executable), left)
+	// enter dit si ⏎ pose le candidat courant avant d'exécuter. Pas sans le focus sur un mot
+	// vide : rien n'a été tapé, donc rien n'a été choisi, et le premier candidat par ordre
+	// alphabétique n'est la réponse à rien. C'était pourtant ce qui partait — mesuré :
+	// `brew uninstall ␣⏎` lançait `brew uninstall 1password-cli`, `brew upgrade ␣⏎` ne
+	// mettait plus à jour qu'un seul paquet, `brew⏎` lançait `brew install`. La ligne part
+	// donc telle quelle. ⇥ insère toujours (`left` ne change pas) : c'est un geste
+	// explicite, et il se défait ; ↓ puis ⏎ aussi, puisque le focus est un choix.
+	enter := *focus || res.Word != ""
+
+	fmt.Printf("count=%d\tsel=%d\texec=%s\tenter=%s\tleft=%s\n",
+		len(frame.Items), frame.Sel, boolField(res.Executable), boolField(enter), left)
 	fmt.Println(frame.Render())
 	return 0
 }

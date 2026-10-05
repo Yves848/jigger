@@ -221,6 +221,7 @@ typeset -g _jigger_dismissed=0  # ^G : popup fermé jusqu'à la fin de la ligne
 typeset -g _jigger_regex=0
 typeset -g _jigger_count=0      # candidats du dernier rendu
 typeset -g _jigger_left=''      # LBUFFER après insertion du candidat courant
+typeset -gi _jigger_enter=1     # ⏎ pose-t-il le candidat ? (champ enter= de render)
 typeset -g _jigger_frame=''     # cadre déjà rendu (évite un fork par redisplay)
 typeset -g _jigger_key=''       # signature du dernier rendu
 typeset -g _jigger_shown=0      # un cadre est-il actuellement à l'écran ?
@@ -339,6 +340,7 @@ _jigger_fetch() {
   for kv in ${(ps:\t:)${meta%$'\t'left=*}}; do m[${kv%%=*}]=${kv#*=}; done
   _jigger_count=${m[count]:-0}
   _jigger_sel=${m[sel]:-0}   # jigger a ramené l'index dans les bornes
+  _jigger_enter=${m[enter]:-1}   # absent (binaire plus ancien) : le comportement d'avant
 
   _jigger_frame=${(F)lines[2,-1]}
   return 0
@@ -548,6 +550,9 @@ _jigger_bound_widget() {
 # la ligne part — complétée si un candidat était désigné, telle quelle sinon, sans qu'on
 # se demande à sa place si elle est correcte.
 #
+# Sauf au mot vide sans le focus : rien n'a été choisi, et `render` le dit (enter=0) —
+# `brew uninstall ␣⏎` part telle quelle au lieu de désinstaller le premier paquet venu.
+#
 # Reste à ne pas réécrire une ligne qui porte déjà son candidat : c'est tout ce que dit la
 # comparaison ci-dessous.
 #
@@ -556,6 +561,7 @@ _jigger_bound_widget() {
 # entre autres — se comparerait alors par glob, et la règle se tromperait.
 _jigger_completable() {
   _jigger_active || return 1
+  (( _jigger_enter )) || return 1
   [[ -n $_jigger_left && $_jigger_left != "$LBUFFER" ]]
 }
 
