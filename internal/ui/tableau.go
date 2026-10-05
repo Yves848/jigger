@@ -194,7 +194,7 @@ func (t Tableau) View() string {
 
 	visibles, sel := t.liste.Visibles()
 	if len(visibles) == 0 {
-		b.WriteString(emptyStyle.Render(i18n.T("popup.empty")) + "\n")
+		b.WriteString(emptyStyle.Render(videDuFiltre(t.input.Value())) + "\n")
 	}
 	debut := t.liste.Offset()
 	for i, l := range visibles {

@@ -75,10 +75,35 @@ func TestLibellesFrancaisInchanges(t *testing.T) {
 		"popup.cancel":   "annuler",
 		"popup.choose":   "choisir",
 		"popup.filter":   "filtrer…",
-		"popup.empty":    "aucun candidat",
+		"popup.empty":    "rien à proposer",
 	} {
 		if got := T(cle); got != attendu {
 			t.Errorf("%s : %q, attendu %q", cle, got, attendu)
+		}
+	}
+}
+
+// Les nombres du cadre se groupent par milliers, à la façon de la langue : « 16449 »
+// se lisait mal, et l'espace française doit être insécable pour ne jamais couper un
+// nombre en bout de ligne.
+func TestEntier(t *testing.T) {
+	for _, c := range []struct {
+		langue  string
+		n       int
+		attendu string
+	}{
+		{"fr", 16449, "16 449"},
+		{"fr", 1234567, "1 234 567"},
+		{"fr", 999, "999"},
+		{"fr", -1000, "-1 000"},
+		{"en", 16449, "16,449"},
+		{"en", 100000, "100,000"},
+		{"en", 0, "0"},
+	} {
+		t.Setenv("JIGGER_LANG", c.langue)
+		Recharger()
+		if got := Entier(c.n); got != c.attendu {
+			t.Errorf("%s : Entier(%d) = %q, attendu %q", c.langue, c.n, got, c.attendu)
 		}
 	}
 }

@@ -30,6 +30,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -602,17 +603,18 @@ func runRender(args []string) int {
 		frame.Width = min(58, *cols-2)
 	}
 
-	// Contexte paquet, mot vide : on invite à filtrer plutôt que d'égrener le catalogue.
+	// Contexte paquet, mot vide : on invite à taper plutôt que d'égrener le catalogue. Un
+	// cadre vide ne porte pas de touches — le popup n'y a pas la main, ⇥ et ↩ n'auraient
+	// rien à poser —, sauf ^R quand il sauve la mise (cf. etatVide).
 	if res.Executable && res.Word == "" && len(res.Items) > tropDeCandidats {
-		frame.Items = nil
-		frame.Empty = i18n.Tf("popup.filter_hint", len(res.Items))
-	} else if len(res.Items) == 0 {
-		// Le gestionnaire a parfois mieux à dire qu'« aucun candidat » — un catalogue
-		// winget encore en cours de constitution, par exemple.
-		frame.Empty = i18n.T("popup.empty")
-		if res.Note != "" {
-			frame.Empty = res.Note
+		frame.Items, frame.Keys = nil, nil
+		cle := "popup.filter_hint"
+		if *regex {
+			cle = "popup.filter_hint_regex"
 		}
+		frame.Empty = i18n.Tf(cle, i18n.Entier(len(res.Items)))
+	} else if len(res.Items) == 0 {
+		frame.Empty, frame.Keys = etatVide(res, *regex)
 	}
 
 	left := *line
@@ -637,6 +639,35 @@ func runRender(args []string) int {
 		len(frame.Items), frame.Sel, boolField(res.Executable), boolField(enter), left)
 	fmt.Println(frame.Render())
 	return 0
+}
+
+// etatVide dit pourquoi le cadre est vide, et ce qu'on peut y faire. « aucun candidat »
+// ne disait ni le mot cherché, ni la façon de chercher, ni l'issue — et le disait aussi
+// d'un motif regex qui ne compile pas, où la liste n'est pas vide de résultats mais de
+// sens.
+//
+// L'issue, c'est ^R, et seulement parmi les noms d'un catalogue (res.Catalogue) : les
+// verbes et les options gardent leur préfixe dans les deux modes. Elle va dans la bordure
+// basse, à la place des touches, et dit ce qu'elle fera — chercher partout dans le nom,
+// ou revenir au début — plutôt que le nom du mode.
+func etatVide(res complete.Result, regex bool) (string, []ui.Key) {
+	switch {
+	case res.Note != "":
+		// Le gestionnaire sait mieux : un catalogue encore en préparation, par exemple.
+		return res.Note, nil
+	case res.Word == "":
+		return i18n.T("popup.empty"), nil
+	case !res.Catalogue:
+		return i18n.Tf("popup.nostart", res.Word), nil
+	case !regex:
+		return i18n.Tf("popup.nostart", res.Word),
+			[]ui.Key{{Key: "^R", Label: i18n.T("popup.search_anywhere")}}
+	}
+	retour := []ui.Key{{Key: "^R", Label: i18n.T("popup.search_start")}}
+	if _, err := regexp.Compile(res.Word); err != nil {
+		return i18n.Tf("popup.badpattern", res.Word), retour
+	}
+	return i18n.Tf("popup.nomatch", res.Word), retour
 }
 
 // colorProfile traduit --color. La sortie de `render` est toujours capturée par le

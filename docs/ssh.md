@@ -67,7 +67,7 @@ out on disk, one manifest per package, so reading it costs less than caching it.
 ## When it shows nothing
 
 **On a machine with no `~/.ssh/config`, nothing appears at all** — no popup, no empty
-box, no "no candidates". Same when nothing matches what you typed.
+box, no "nothing to suggest". Same when nothing matches what you typed.
 
 That is a deliberate rule ([ADR-0006](adr/0006-silence-sur-catalogue-vide.md)): a
 provider with an empty catalogue draws no frame. Without it, anyone with no SSH

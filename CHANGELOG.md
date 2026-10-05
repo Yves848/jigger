@@ -29,6 +29,17 @@ shouts less, and it stays readable in terminals that only speak 16 colors.
   in teal and the name turns bold. Its glyph keeps the color of its type (◆ formula, ▣
   cask): it used to turn gray or teal on the very line where the type decides what ⇥
   inserts.
+- **Empty frames say what was searched, and how to get out.**
+  - `no matches` is now `nothing starts with "zzqxw"`, with `^R search anywhere` in the
+    bottom border, since the regex mode matches anywhere in the name. In regex mode, the
+    message is `nothing matches "…"`, with `^R search from the start`.
+  - A regex that doesn't compile says `invalid pattern: "fire("`. It used to claim there
+    were no matches.
+  - The catalog-too-big invitation reads `16,449 packages — start typing`, with the
+    thousands separator of the language (a no-break space in French). The French copy
+    now uses *tu*, like the rest of the catalog.
+  - The picker and the table view say `nothing matches "…"`, and the picker's empty footer
+    keeps only the keys that still do something.
 - **Keys without pills.** The keys are bold, without a background, in the popup, the
   table view and the configuration screen. When the terminal is narrow, labels drop
   item by item, and the exit (`^G close`) keeps its label to the end.

@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"gitlab.yg-devworks.com/yves/jigger/internal/complete"
+	"gitlab.yg-devworks.com/yves/jigger/internal/i18n"
 	"gitlab.yg-devworks.com/yves/jigger/internal/managers"
 	"gitlab.yg-devworks.com/yves/jigger/internal/pm"
 	"gitlab.yg-devworks.com/yves/jigger/internal/ui"
@@ -401,5 +403,47 @@ func TestAEcrire(t *testing.T) {
 				t.Errorf("aEcrire = %v, attendu %v", got, cas.attend)
 			}
 		})
+	}
+}
+
+// Un cadre vide dit ce qui a été cherché, et comment s'en sortir. « aucun candidat » ne
+// disait ni l'un ni l'autre — et le disait aussi d'un motif regex qui ne compile pas.
+// ^R n'est proposé que là où il agit : parmi les noms d'un catalogue, jamais pour un
+// verbe ou une option, qui gardent leur préfixe dans les deux modes.
+func TestEtatVide(t *testing.T) {
+	t.Setenv("JIGGER_LANG", "fr")
+	i18n.Recharger()
+	defer i18n.Recharger()
+
+	cas := []struct {
+		nom     string
+		res     complete.Result
+		regex   bool
+		message string
+		touche  string // libellé de ^R attendu ; "" = aucune touche
+	}{
+		{"préfixe sans résultat", complete.Result{Word: "zzqxw", Catalogue: true}, false,
+			"rien ne commence par « zzqxw »", "chercher partout"},
+		{"regex sans résultat", complete.Result{Word: "(bird|fx)z", Catalogue: true}, true,
+			"rien ne correspond à « (bird|fx)z »", "chercher depuis le début"},
+		{"regex fautive", complete.Result{Word: "fire(", Catalogue: true}, true,
+			"motif invalide : « fire( »", "chercher depuis le début"},
+		{"option : pas de ^R", complete.Result{Word: "--zz"}, true,
+			"rien ne commence par « --zz »", ""},
+		{"mot vide", complete.Result{Catalogue: true}, false, "rien à proposer", ""},
+		{"note du gestionnaire", complete.Result{Word: "fd", Catalogue: true, Note: "catalogue en préparation…"}, false,
+			"catalogue en préparation…", ""},
+	}
+	for _, c := range cas {
+		message, touches := etatVide(c.res, c.regex)
+		if message != c.message {
+			t.Errorf("%s : %q, attendu %q", c.nom, message, c.message)
+		}
+		switch {
+		case c.touche == "" && len(touches) != 0:
+			t.Errorf("%s : touches %v, attendu aucune", c.nom, touches)
+		case c.touche != "" && (len(touches) != 1 || touches[0].Key != "^R" || touches[0].Label != c.touche):
+			t.Errorf("%s : touches %v, attendu ^R %s", c.nom, touches, c.touche)
+		}
 	}
 }

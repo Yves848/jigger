@@ -29,6 +29,12 @@ type Result struct {
 	Executable bool   // contexte paquet → accepter complète une commande exécutable
 	Note       string // message à afficher à la place de « aucun candidat »
 
+	// Catalogue dit que le mot a été cherché parmi les noms d'un catalogue — paquets,
+	// hôtes ssh —, seul endroit où le mode regex s'applique (cf. Filtre). Les verbes, les
+	// sous-commandes et les options gardent leur préfixe : un cadre vide ne peut pas y
+	// proposer ^R comme issue.
+	Catalogue bool
+
 	// Silencieux dit que le fournisseur n'a rien à dire du tout — pas même « aucun
 	// candidat ». `jigger render` n'émet alors aucun cadre, et les deux greffons
 	// effacent ce qui restait à l'écran. C'est ce qui évite qu'une boîte vide clignote
@@ -184,7 +190,7 @@ func completeFacade(line string, dispo []pm.Manager, cats map[string]*pm.Catalog
 		}
 	}
 
-	res.Executable = true
+	res.Executable, res.Catalogue = true, true
 	for _, m := range dispo {
 		b, ok := m.(pm.Bindings)
 		if !ok {
@@ -328,6 +334,7 @@ func completeWith(line string, m pm.Manager, cat *pm.Catalog, regex bool) Result
 			res.Silencieux = true
 		}
 	default: // paquet
+		res.Catalogue = true
 		pool := cat.Names
 		if m.InstalledOnly(sub) {
 			pool = cat.InstalledNames()

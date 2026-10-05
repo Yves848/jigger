@@ -76,7 +76,7 @@ check 'la ligne reste lisible' $e 'PS> winget ins'
 Write-Host "`n→ « winget » seul propose les sous-commandes"
 $e = ecran 'winget'
 check 'sous-commandes listées' $e 'uninstall'
-check 'pas de liste vide'      $e 'aucun candidat' $false
+check 'pas de liste vide'      $e 'rien à proposer' $false
 
 Write-Host "`n→ la façade arme le popup, sous ses deux noms"
 # Les verbes proposés ici viennent des gestionnaires **disponibles** : ce cas suppose donc

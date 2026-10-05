@@ -111,9 +111,12 @@ func (f Frame) Render() string {
 		lignes = append(lignes, clip(f.FilterView, w))
 	}
 
+	// Cadre vide : le message seul, et les touches que l'appelant y juge utiles — l'issue
+	// d'une recherche sans résultat (^R), jamais ⇥ ni ↩, qui n'auraient rien à poser.
+	// `tronquer` plutôt que `clip` : un mot long coupé net se lit comme un mot entier.
 	if len(f.Items) == 0 {
-		lignes = append(lignes, clip(pad(2)+estompe(emptyStyle).Render(f.Empty), w))
-		return f.encadrer(lignes, "", "")
+		lignes = append(lignes, clip(pad(2)+estompe(emptyStyle).Render(tronquer(f.Empty, w-4)), w))
+		return f.encadrer(lignes, "", f.footer(w-5))
 	}
 
 	// Lignes jointives, toutes d'une ligne de haut : la hauteur du popup ne dépend pas de

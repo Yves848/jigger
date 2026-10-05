@@ -17,12 +17,21 @@ var catalogue = map[string][nbLangues]string{
 	"popup.cancel":   {"cancel", "annuler"},
 	"popup.choose":   {"choose", "choisir"},
 	"popup.filter":   {"filter…", "filtrer…"},
-	"popup.empty":    {"no matches", "aucun candidat"},
-	// %d est le nombre de paquets du catalogue.
-	"popup.filter_hint":    {"type to filter… (%d packages)", "tapez pour filtrer… (%d paquets)"},
-	"popup.catalog_brew":   {"building the Homebrew catalog…", "catalogue Homebrew en préparation…"},
-	"popup.catalog_winget": {"building the winget catalog…", "catalogue winget en préparation…"},
-	"popup.catalog_pacman": {"building the pacman catalog…", "catalogue pacman en préparation…"},
+	// États vides du cadre. Chacun dit ce qui a été cherché : « aucun candidat » ne disait
+	// ni le mot, ni la façon de chercher, ni l'issue. %s est le mot tapé.
+	"popup.empty":      {"nothing to suggest", "rien à proposer"},
+	"popup.nostart":    {"nothing starts with \"%s\"", "rien ne commence par « %s »"},
+	"popup.nomatch":    {"nothing matches \"%s\"", "rien ne correspond à « %s »"},
+	"popup.badpattern": {"invalid pattern: \"%s\"", "motif invalide : « %s »"},
+	// Ce que ^R fera, dans la bordure basse d'un cadre vide : l'issue, pas le mécanisme.
+	"popup.search_anywhere": {"search anywhere", "chercher partout"},
+	"popup.search_start":    {"search from the start", "chercher depuis le début"},
+	// %s est le nombre de paquets du catalogue, déjà groupé par milliers (i18n.Entier).
+	"popup.filter_hint":       {"%s packages — start typing", "%s paquets — commence à taper"},
+	"popup.filter_hint_regex": {"%s packages — type a pattern", "%s paquets — tape un motif"},
+	"popup.catalog_brew":      {"building the Homebrew catalog…", "catalogue Homebrew en préparation…"},
+	"popup.catalog_winget":    {"building the winget catalog…", "catalogue winget en préparation…"},
+	"popup.catalog_pacman":    {"building the pacman catalog…", "catalogue pacman en préparation…"},
 	// Titre du popup de désambiguïsation ouvert par trancher() (main.go) : fuite
 	// assemblée trouvée hors des lignes citées par le brief — un fmt.Sprintf qui
 	// fabriquait ce titre en français, y compris à JIGGER_LANG=en. Préfixée popup. (et

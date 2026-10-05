@@ -4,6 +4,8 @@
 package ui
 
 import (
+	"strings"
+
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -246,9 +248,13 @@ func (m Model) View() string {
 
 	keys := m.Keys
 	if keys == nil {
-		keys = []Key{{"⇥", i18n.T("popup.insert")}}
-		if m.executable {
-			keys = append(keys, Key{"↩", i18n.T("popup.execute")})
+		// Liste vide : ⇥ et ↩ n'auraient rien à poser — ⇥ quitterait même sans rien
+		// choisir. Restent ce qui marche encore : changer de mode, et sortir.
+		if len(m.filtered) > 0 {
+			keys = []Key{{"⇥", i18n.T("popup.insert")}}
+			if m.executable {
+				keys = append(keys, Key{"↩", i18n.T("popup.execute")})
+			}
 		}
 		// ^R prend la place de « ↑↓ naviguer » : le cadre a une largeur fixe, et un pied
 		// qui déborde perd son dernier libellé. Dans une liste, les flèches sont
@@ -270,8 +276,18 @@ func (m Model) View() string {
 		Sel:        m.cursor,
 		Offset:     m.offset,
 		FilterView: filtre,
-		Empty:      i18n.T("popup.empty"),
+		Empty:      videDuFiltre(m.input.Value()),
 		Keys:       keys,
 		Focused:    true, // le sélecteur plein écran possède le clavier, par construction
 	}.Render()
+}
+
+// videDuFiltre dit pourquoi la liste filtrée est vide. Le filtre du sélecteur et de la vue
+// tabulaire cherche partout dans le nom (sous-chaîne ou regex), d'où « ne correspond »
+// plutôt que « ne commence » ; sans saisie, c'est la liste elle-même qui est vide.
+func videDuFiltre(saisie string) string {
+	if strings.TrimSpace(saisie) == "" {
+		return i18n.T("popup.empty")
+	}
+	return i18n.Tf("popup.nomatch", saisie)
 }
