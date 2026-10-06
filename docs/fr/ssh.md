@@ -68,7 +68,7 @@ manifeste par paquet, et le lire coûte moins cher que le mettre en cache.
 ## Quand il ne montre rien
 
 **Sur une machine sans `~/.ssh/config`, rien n'apparaît du tout** — pas de popup, pas de
-boîte vide, pas de « aucun candidat ». Idem quand rien ne correspond à ce qu'on a tapé.
+boîte vide, pas de « rien à proposer ». Idem quand rien ne correspond à ce qu'on a tapé.
 
 C'est une règle délibérée ([ADR-0006](../adr/0006-silence-sur-catalogue-vide.md)) : un
 fournisseur au catalogue vide ne fait dessiner aucun cadre. Sans elle, quiconque n'a pas

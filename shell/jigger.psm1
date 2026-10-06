@@ -225,6 +225,7 @@ $script:SelLine   = ''     # ligne pour laquelle $Sel a un sens
 $script:Dismissed = $false # ^G : popup fermé jusqu'à la fin de la ligne
 $script:Count     = 0      # candidats du dernier rendu
 $script:Left      = ''     # ligne (jusqu'au curseur) après insertion du candidat courant
+$script:Enter     = $true   # ⏎ pose-t-il le candidat ? (champ enter= de render)
 $script:Frame     = ''     # cadre déjà rendu (évite un processus par redessin)
 $script:Key       = ''     # signature du dernier rendu
 $script:Shown     = $false # un cadre est-il actuellement à l'écran ?
@@ -302,6 +303,7 @@ if ($script:Live -and (Get-PSReadLineOption).EditMode -eq 'Vi') {
 # Le profil couleur ne peut pas être deviné par jigger : sa sortie est capturée. C'est
 # donc le shell, qui connaît son terminal, qui tranche.
 function Get-JiggerColor {
+    if ($env:NO_COLOR) { return 'never' }   # no-color.org : le marqueur ▌ suffit sans couleur
     if ($env:WT_SESSION -or $env:COLORTERM -match 'truecolor|24bit') { return 'truecolor' }
     if ($env:TERM -match '256color') { return '256' }
     if ($env:TERM -eq 'dumb') { return 'never' }
@@ -361,6 +363,9 @@ function Get-JiggerFrame([string]$Buffer, [int]$Rows, [int]$Columns) {
     }
     $script:Count = [int]$champs['count']
     $script:Sel   = [int]$champs['sel']    # jigger a ramené l'index dans les bornes
+    # Absent (binaire plus ancien) : le comportement d'avant. Sinon, enter=0 dit qu'au mot vide
+    # sans le focus rien n'a été choisi — ⏎ part tel quel au lieu de poser le premier venu.
+    $script:Enter = $champs['enter'] -ne '0'
     $script:Frame = ($lines[1..($lines.Count - 1)]) -join "`n"
     return $true
 }
@@ -489,9 +494,9 @@ function Update-JiggerPopup {
         if ($largeur -lt $script:MinColumns) { Hide-JiggerPopup; return }
 
         # Où est le curseur ? De sa position dépend la place disponible sous la ligne de
-        # commande. 5 lignes de décor : 2 bordures, l'en-tête, la respiration, le pied.
+        # commande. 2 lignes de décor : les bordures, qui portent le titre et les touches (cf. Frame.Render).
         $sousLeCurseur = [Console]::WindowHeight - ([Console]::CursorTop - [Console]::WindowTop) - 1
-        $voulu = $script:Rows + 5
+        $voulu = $script:Rows + 2
         if ($sousLeCurseur -lt $voulu) {
             # Pas la place : on la fait. Si le défilement n'est pas possible, on se
             # contente de ce qu'il reste — et de rien du tout s'il ne reste rien.
@@ -499,7 +504,7 @@ function Update-JiggerPopup {
                 $sousLeCurseur = $voulu
             }
         }
-        $tiennent = $sousLeCurseur - 5
+        $tiennent = $sousLeCurseur - 2
         if ($tiennent -lt 1) { Hide-JiggerPopup; return }
         $rows = [Math]::Min($script:Rows, $tiennent)
 
@@ -736,7 +741,7 @@ $script:RelaisEdition = @{
 # la tenait avant nous.
 $script:RelaisFin = @{
     'Enter'  = { param($key, $arg)
-                 if (Test-JiggerCompletion (Test-JiggerActive) (Get-JiggerBuffer) $script:Left) {
+                 if ($script:Enter -and (Test-JiggerCompletion (Test-JiggerActive) (Get-JiggerBuffer) $script:Left)) {
                      Write-JiggerCandidate
                  }
                  Hide-JiggerPopup; Reset-JiggerLine

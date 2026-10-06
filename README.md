@@ -66,7 +66,8 @@ nothing but the package manager itself.
 - **Explicit focus**: the popup only takes the arrow keys once you've entered it. `↓`
   moves you in; `↑` moves you back out on the first candidate — and until it holds the
   keyboard, `↑`/`↓` remain the shell's history. The current line shows which is which:
-  underlined when the popup holds the keyboard, at rest when it doesn't.
+  lit up in teal, band and border, when the popup holds the keyboard, at rest when it
+  doesn't.
 - **Prompt block** (optional): the manager's version and pending upgrades in the prompt,
   counted separately — never slowing it down. Segments ready to paste for
   **oh-my-posh** and **starship**.
@@ -162,13 +163,16 @@ verb, sub-verb, option, package name. `winget li ⏎` runs `winget list`; it's `
 longer have to type. Pressing `⏎` means "go", and the line goes: completed if a candidate
 was designated, as typed otherwise — jigger doesn't decide on your behalf whether it is
 correct. `^G` closes the popup for the current line if you want to run exactly what you
-typed.
+typed. One exception: on an empty word, while the popup doesn't hold the keyboard, nothing
+has been chosen yet, so the line goes as typed. `brew uninstall ␣⏎` (␣: the space) used
+to remove the first installed package in alphabetical order; `brew upgrade ␣⏎` upgraded
+that one package only. `↓` then `⏎`, or `⇥`, still pick the current candidate.
 
 As long as the popup doesn't hold the keyboard, `↑` and `↓` remain the **shell's
 history** — whether the popup is open or not: opening a candidate list doesn't cost
 access to the previous command. What they'll do is shown in the frame — footer
 `↓ browse` and the current line at rest while it doesn't have focus, `↑↓ navigate` and
-an underlined line once it does. And jigger always hands the key back to whatever it
+a lit-up line and border once it does. And jigger always hands the key back to whatever it
 was doing before: if another plugin already holds your arrow keys (prefix search in
 history, for example), that one keeps control.
 

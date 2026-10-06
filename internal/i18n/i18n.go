@@ -12,6 +12,7 @@ package i18n
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -49,6 +50,30 @@ func T(cle string) string {
 
 // Tf formate la traduction avec des paramètres.
 func Tf(cle string, args ...any) string { return fmt.Sprintf(T(cle), args...) }
+
+// Entier écrit un entier avec le séparateur de milliers de la langue : « 16 449 » en
+// français, « 16,449 » en anglais. L'espace française est insécable (U+00A0) : une
+// ligne étroite ne coupe pas un nombre en deux. Pas l'espace fine (U+202F), que la
+// typographie préfère mais que bien des polices de terminal n'ont pas.
+func Entier(n int) string {
+	s := strconv.Itoa(n)
+	signe := ""
+	if n < 0 {
+		signe, s = "-", s[1:]
+	}
+	sep := ","
+	if courante == FR {
+		sep = " "
+	}
+	var b strings.Builder
+	for i, c := range s {
+		if i > 0 && (len(s)-i)%3 == 0 {
+			b.WriteString(sep)
+		}
+		b.WriteRune(c)
+	}
+	return signe + b.String()
+}
 
 // culture est la dernière source de resoudre — la langue de l'utilisateur sous Windows —
 // et la seule qui ne se lise pas dans l'environnement.

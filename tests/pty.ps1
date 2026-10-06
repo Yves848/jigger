@@ -69,14 +69,14 @@ function check([string]$Nom, [string]$Ecran, [string]$Aiguille, [bool]$Attendu =
 Write-Host "`n→ le popup s'affiche même quand le prompt occupe la dernière ligne"
 $e = ecran 'winget ins'
 check 'cadre affiché'          $e '╭'
-check 'en-tête du contexte'    $e '❯ winget'
+check 'en-tête du contexte'    $e '╭─ winget'
 check 'candidat install'       $e 'install'
 check 'la ligne reste lisible' $e 'PS> winget ins'
 
 Write-Host "`n→ « winget » seul propose les sous-commandes"
 $e = ecran 'winget'
 check 'sous-commandes listées' $e 'uninstall'
-check 'pas de liste vide'      $e 'aucun candidat' $false
+check 'pas de liste vide'      $e 'rien à proposer' $false
 
 Write-Host "`n→ la façade arme le popup, sous ses deux noms"
 # Les verbes proposés ici viennent des gestionnaires **disponibles** : ce cas suppose donc
@@ -84,13 +84,13 @@ Write-Host "`n→ la façade arme le popup, sous ses deux noms"
 # pour winget, et c'est de toute façon la seule où cette suite tourne.
 $e = ecran 'jg ins'
 check 'cadre affiché'            $e '╭'
-check 'en-tête de la façade'     $e '❯ jigger'
+check 'en-tête de la façade'     $e '╭─ jigger'
 check 'candidat install'         $e 'install'
 check 'la ligne reste lisible'   $e 'PS> jg ins'
 # Le nom en toutes lettres arme le même popup : le relais lit le tampon, où « jg » n'a pas
 # été développé — les deux noms doivent donc y être reconnus séparément.
 $e = ecran 'jigger ins'
-check '« jigger » aussi'         $e '❯ jigger'
+check '« jigger » aussi'         $e '╭─ jigger'
 # Et rien d'autre : un mot qui *commence* par jg n'est pas la façade.
 $e = ecran 'jgit ins'
 check 'aucun cadre sur « jgit »' $e '╭' $false
@@ -131,13 +131,13 @@ check 'aucun « annuler »'      $e 'annuler' $false
 
 Write-Host "`n→ les flèches prennent le clavier, puis le rendent"
 $e = ecran 'winget install Git.'
-check 'sans focus : ↓ parcourir' $e '↓  parcourir'
+check 'sans focus : ↓ parcourir' $e '↓ parcourir'
 $e = ecran 'winget install Git.\x1b[B'
-check 'après ↓ : ↑↓ naviguer'    $e '↑↓  naviguer'
+check 'après ↓ : ↑↓ naviguer'    $e '↑↓ naviguer'
 # Un premier ↑ revient sur le premier candidat, un second rend le clavier au shell : on
 # ne retombe donc jamais dans l'historique par inadvertance.
 $e = ecran 'winget install Git.\x1b[B\x1b[A\x1b[A'
-check 'deux ↑ rendent le clavier' $e '↓  parcourir'
+check 'deux ↑ rendent le clavier' $e '↓ parcourir'
 $e = ecran 'winget install Git.\x1b[B\x1b[B\t'
 check '⇥ insère le candidat visé' $e 'PS> winget install Git.MinGit'
 
