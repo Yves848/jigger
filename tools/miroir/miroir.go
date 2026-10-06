@@ -64,12 +64,14 @@ type Alerte struct {
 // symptôme à une date. Le cas a été constaté : `garde-fou-miroir` expirait dans dix jours
 // et personne ne le savait.
 //
-// Un jeton révoqué ou inactif est ignoré : il ne sert plus, ce n'est pas une panne à venir.
+// Un jeton révoqué est ignoré : la révocation est un retrait volontaire. Un jeton
+// simplement inactif, lui, ne l'est PAS — GitLab rend inactif tout jeton expiré, sans le
+// révoquer, et l'ignorer faisait taire l'alerte le jour même où la panne commençait (#202).
 // Un jeton sans échéance ne demande rien non plus.
 func JetonsAlarmants(jetons []Jeton, aujourdhui time.Time, seuil int) []Alerte {
 	var alertes []Alerte
 	for _, j := range jetons {
-		if j.ExpireLe == "" || j.Revoque || !j.Actif {
+		if j.ExpireLe == "" || j.Revoque {
 			continue
 		}
 		fin, err := time.Parse("2006-01-02", j.ExpireLe)
@@ -422,7 +424,9 @@ Renouveler :
 1. *Settings → Access Tokens* du projet, ou ` + "`POST /access_tokens`" + ` avec
    ` + "`scopes[]=api`" + ` et ` + "`access_level=40`" + ` ;
 2. remplacer la variable CI correspondante — masquée, **non protégée** ;
-3. vérifier que le nouveau jeton répond, plutôt que de supposer qu'il répondra.
+3. vérifier que le nouveau jeton répond, plutôt que de supposer qu'il répondra ;
+4. révoquer l'ancien (` + "`DELETE /access_tokens/:id`" + `) : un jeton expiré mais non
+   révoqué reste en alerte, faute de savoir s'il sert encore.
 
 Le détail est dans ` + "`.claude/forge.md`" + `, section « Publier une release ».
 
