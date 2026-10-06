@@ -136,7 +136,10 @@ func TestUnJetonProcheAlarme(t *testing.T) {
 
 func TestUnJetonExpireAlarmeAussi(t *testing.T) {
 	// Passé l'échéance, l'alerte doit rester : c'est le moment où la panne est réelle.
-	alertes := JetonsAlarmants([]Jeton{jeton("mort", "2026-09-01")}, aujourdhui(), 30)
+	// GitLab rend alors le jeton inactif, sans le révoquer — mesuré le 6 octobre 2026 sur
+	// garde-fou-miroir : active=false, revoked=false. C'est cette forme-là qu'on éprouve.
+	mort := Jeton{Nom: "mort", ExpireLe: "2026-09-01", Actif: false}
+	alertes := JetonsAlarmants([]Jeton{mort}, aujourdhui(), 30)
 	if len(alertes) != 1 || alertes[0].Jours >= 0 {
 		t.Fatalf("alerte attendue avec un compte négatif, obtenu %v", alertes)
 	}
@@ -153,11 +156,11 @@ func TestUnJetonSansEcheanceNAlarmePas(t *testing.T) {
 	}
 }
 
-func TestUnJetonInactifOuRevoqueEstIgnore(t *testing.T) {
-	// Un jeton déjà révoqué n'est pas une panne à venir : il ne sert plus.
+func TestUnJetonRevoqueEstIgnore(t *testing.T) {
+	// La révocation est un retrait volontaire : il ne sert plus, expiré ou non.
 	js := []Jeton{
 		{Nom: "revoque", ExpireLe: "2026-09-10", Actif: true, Revoque: true},
-		{Nom: "inactif", ExpireLe: "2026-09-10", Actif: false},
+		{Nom: "revoque-et-expire", ExpireLe: "2026-09-01", Actif: false, Revoque: true},
 	}
 	if alertes := JetonsAlarmants(js, aujourdhui(), 30); len(alertes) != 0 {
 		t.Fatalf("aucune alerte attendue, obtenu %v", alertes)

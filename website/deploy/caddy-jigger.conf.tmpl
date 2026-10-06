@@ -1,0 +1,7 @@
+# Gabarit : le marqueur ci-dessous est remplacé par deploy-proxmox.sh au moment
+# de la publication, à partir de WEB_HOST / WEB_ORIGIN. Ce fichier n'est donc
+# pas un fragment de Caddyfile valide tel quel.
+jigger.yg-devworks.com {
+    encode zstd gzip
+    reverse_proxy @@WEB_ORIGIN@@
+}

@@ -258,10 +258,10 @@ func TestContexteLongNeChassePasLeNom(t *testing.T) {
 // lisibles telles quelles.
 func TestContexteCourtResteEntier(t *testing.T) {
 	f := Frame{Title: "ssh", Width: 58, Rows: 3,
-		Items: []complete.Item{{Name: "archlight", Version: "192.168.50.207"}},
+		Items: []complete.Item{{Name: "archlight", Version: "192.0.2.207"}},
 		Keys:  []Key{{"⇥", "insérer"}}}
 	rendu := f.Render()
-	if !strings.Contains(rendu, "192.168.50.207") {
+	if !strings.Contains(rendu, "192.0.2.207") {
 		t.Errorf("l'adresse a été tronquée alors qu'elle tenait\n%s", rendu)
 	}
 }

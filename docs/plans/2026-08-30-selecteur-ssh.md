@@ -1,5 +1,12 @@
 # Sélecteur de serveurs SSH — plan d'implémentation
 
+> **Note d'édition (29 septembre 2026, YGD-14).** Les adresses du réseau privé
+> qui figuraient dans ce document ont été remplacées : par les noms de variables
+> (`WEB_HOST`, `PROXY_HOST`, cf. `website/deploy.env.example`) pour le déploiement,
+> et par la plage de documentation `192.0.2.0/24` (RFC 5737) pour les jeux d'essai.
+> Le dépôt est public ; seule la topologie a changé, pas le propos.
+
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal :** proposer les serveurs de `~/.ssh/config` dès qu'on tape `ssh`, `scp` ou `sftp`, dans la popup de jigger.
@@ -85,25 +92,25 @@ func TestLireNomsEtHostName(t *testing.T) {
 	d := t.TempDir()
 	p := ecrire(t, d, "config", `
 Host pve
-    HostName 192.168.50.8
+    HostName 192.0.2.8
     User root
 
 Host archlight
-    HostName 192.168.50.207
+    HostName 192.0.2.207
 `)
 	hotes := Lire(p)
 	egal(t, noms(hotes), []string{"archlight", "pve"})
-	if hotes[1].HostName != "192.168.50.8" {
-		t.Errorf("HostName de pve = %q, attendu 192.168.50.8", hotes[1].HostName)
+	if hotes[1].HostName != "192.0.2.8" {
+		t.Errorf("HostName de pve = %q, attendu 192.0.2.8", hotes[1].HostName)
 	}
 }
 
 func TestLireUnBlocAPlusieursMotifs(t *testing.T) {
-	// « Host archlight aquarium 192.168.50.207 » declare trois facons valides de
+	// « Host archlight aquarium 192.0.2.207 » declare trois facons valides de
 	// designer la meme machine : les trois sont des candidats.
 	d := t.TempDir()
-	p := ecrire(t, d, "config", "Host archlight aquarium 192.168.50.207\n    HostName 192.168.50.207\n")
-	egal(t, noms(Lire(p)), []string{"192.168.50.207", "aquarium", "archlight"})
+	p := ecrire(t, d, "config", "Host archlight aquarium 192.0.2.207\n    HostName 192.0.2.207\n")
+	egal(t, noms(Lire(p)), []string{"192.0.2.207", "aquarium", "archlight"})
 }
 
 func TestLireEcarteLesMotifs(t *testing.T) {
@@ -127,8 +134,8 @@ Host reel
 
 func TestLireSuitUnInclude(t *testing.T) {
 	d := t.TempDir()
-	ecrire(t, d, "config.d/homelab.conf", "Host archlight\n    HostName 192.168.50.207\n")
-	p := ecrire(t, d, "config", "Include config.d/homelab.conf\n\nHost pve\n    HostName 192.168.50.8\n")
+	ecrire(t, d, "config.d/homelab.conf", "Host archlight\n    HostName 192.0.2.207\n")
+	p := ecrire(t, d, "config", "Include config.d/homelab.conf\n\nHost pve\n    HostName 192.0.2.8\n")
 	egal(t, noms(Lire(p)), []string{"archlight", "pve"})
 }
 
@@ -152,10 +159,10 @@ func TestLireNeBouclePasSurUnIncludeCirculaire(t *testing.T) {
 func TestLireIgnoreLaCasseDesMotsCles(t *testing.T) {
 	// OpenSSH est insensible a la casse sur ses mots-cles.
 	d := t.TempDir()
-	p := ecrire(t, d, "config", "HOST pve\n    hostname 192.168.50.8\n")
+	p := ecrire(t, d, "config", "HOST pve\n    hostname 192.0.2.8\n")
 	hotes := Lire(p)
 	egal(t, noms(hotes), []string{"pve"})
-	if hotes[0].HostName != "192.168.50.8" {
+	if hotes[0].HostName != "192.0.2.8" {
 		t.Errorf("HostName = %q", hotes[0].HostName)
 	}
 }
@@ -171,7 +178,7 @@ func TestLireDedoublonne(t *testing.T) {
 	// qu'une fois : le popup afficherait sinon deux lignes identiques.
 	d := t.TempDir()
 	ecrire(t, d, "f.conf", "Host pve\n    HostName 10.0.0.1\n")
-	p := ecrire(t, d, "config", "Include f.conf\nHost pve\n    HostName 192.168.50.8\n")
+	p := ecrire(t, d, "config", "Include f.conf\nHost pve\n    HostName 192.0.2.8\n")
 	hotes := Lire(p)
 	egal(t, noms(hotes), []string{"pve"})
 	// La premiere valeur rencontree gagne, comme le fait OpenSSH lui-meme.
@@ -419,14 +426,14 @@ func TestCmdRendLeMotDemande(t *testing.T) {
 
 func TestCatalogueDepuisUnFichier(t *testing.T) {
 	d := t.TempDir()
-	p := ecrire(t, d, "config", "Host pve\n    HostName 192.168.50.8\n\nHost solo\n")
+	p := ecrire(t, d, "config", "Host pve\n    HostName 192.0.2.8\n\nHost solo\n")
 	cat := catalogueDe(p)
 
 	egal(t, cat.Names, []string{"pve", "solo"})
 	// L'adresse voyage dans Versions : c'est le seul champ rendu en texte libre a
 	// droite de la ligne. Le nom du champ ment, la spec dit pourquoi.
-	if got := cat.Version("pve"); got != "192.168.50.8" {
-		t.Errorf("Version(pve) = %q, attendu 192.168.50.8", got)
+	if got := cat.Version("pve"); got != "192.0.2.8" {
+		t.Errorf("Version(pve) = %q, attendu 192.0.2.8", got)
 	}
 	// Un hote sans HostName n'affiche rien a droite plutot que de repeter son nom.
 	if got := cat.Version("solo"); got != "" {
@@ -665,7 +672,7 @@ func catalogueHotes() *pm.Catalog {
 	c := pm.NewCatalog()
 	c.Add("archlight", "")
 	c.Add("pve", "")
-	c.Versions["pve"] = "192.168.50.8"
+	c.Versions["pve"] = "192.0.2.8"
 	c.Sort()
 	return c
 }
@@ -688,7 +695,7 @@ func TestSansSousCommandeLaCommandeSeuleProposeTout(t *testing.T) {
 
 func TestSansSousCommandeLAdresseSuitDansVersion(t *testing.T) {
 	res := CompleteWith("ssh pve", fauxManagerSansSub{"ssh"}, catalogueHotes())
-	if len(res.Items) != 1 || res.Items[0].Version != "192.168.50.8" {
+	if len(res.Items) != 1 || res.Items[0].Version != "192.0.2.8" {
 		t.Fatalf("Items = %+v, attendu pve avec son adresse", res.Items)
 	}
 }

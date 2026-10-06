@@ -101,7 +101,7 @@ grep -q 'go/bin' ~/.zshrc || echo 'export PATH="$HOME/go/bin:$PATH"' >> ~/.zshrc
 The plugin is not in the Go module — it comes from the repository:
 
 ```sh
-git clone https://gitlab.yg-devworks.com/yves/jigger.git ~/git/jigger
+git clone https://github.com/Yves848/jigger.git ~/git/jigger
 echo 'source ~/git/jigger/shell/jigger.plugin.zsh' >> ~/.zshrc
 exec zsh
 ```
@@ -166,7 +166,7 @@ The bucket installs the **binary** only. The module — the part that draws the 
 comes from the repository:
 
 ```powershell
-git clone https://gitlab.yg-devworks.com/yves/jigger.git $HOME\git\jigger
+git clone https://github.com/Yves848/jigger.git $HOME\git\jigger
 Add-Content $PROFILE "`nImport-Module $HOME\git\jigger\shell\jigger.psm1"
 . $PROFILE
 ```
